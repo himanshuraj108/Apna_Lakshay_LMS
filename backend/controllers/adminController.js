@@ -433,14 +433,20 @@ exports.assignSeat = async (req, res) => {
         const now = new Date();
         const dueDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-        await Fee.create({
-            student: studentId,
-            month: now.getMonth() + 1,
-            year: now.getFullYear(),
-            amount: seat.negotiatedPrice,
-            dueDate,
-            status: 'pending'
-        });
+        // Create or update fee record
+        await Fee.findOneAndUpdate(
+            {
+                student: studentId,
+                month: now.getMonth() + 1,
+                year: now.getFullYear()
+            },
+            {
+                amount: seat.negotiatedPrice,
+                dueDate,
+                status: 'pending'
+            },
+            { upsert: true, new: true }
+        );
 
         await Notification.create({
             recipient: studentId,
