@@ -105,6 +105,56 @@ exports.getStudents = async (req, res) => {
     }
 };
 
+// Get single student by ID (supports full _id or last 8 chars)
+exports.getStudent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        let student;
+
+        // Check if valid ObjectId
+        if (id.match(/^[0-9a-fA-F]{24}$/)) {
+            student = await User.findById(id).populate('createdBy', 'name');
+        } else {
+            // Try searching by last 8 characters
+            // Since we can't do a direct regex on ObjectId in simple find without aggregation or converting to string,
+            // efficiently we might need to fetch all and filter, OR use aggregation.
+            // For small scale, fetching all students then filtering is easiest but inefficient.
+            // Better: use aggregation to project _id to string and match.
+            const allStudents = await User.find({ role: 'student' }).populate('createdBy', 'name');
+            student = allStudents.find(s => s._id.toString().toUpperCase().endsWith(id.toUpperCase()));
+        }
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student not found'
+            });
+        }
+
+        // Get seat info
+        const seat = await Seat.findOne({ assignedTo: student._id }).populate('floor room');
+
+        res.status(200).json({
+            success: true,
+            student: {
+                ...student.toObject(),
+                seat: seat ? {
+                    number: seat.number,
+                    floor: seat.floor?.name,
+                    room: seat.room?.name,
+                    shift: seat.shift
+                } : null
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
 // Create student
 exports.createStudent = async (req, res) => {
     try {
@@ -346,6 +396,16 @@ exports.assignSeat = async (req, res) => {
                 success: false,
                 message: 'Seat is already occupied'
             });
+        }
+
+        // Check if student already has a seat and vacate it
+        const currentSeat = await Seat.findOne({ assignedTo: studentId });
+        if (currentSeat) {
+            currentSeat.isOccupied = false;
+            currentSeat.assignedTo = null;
+            currentSeat.negotiatedPrice = null;
+            currentSeat.shift = null;
+            await currentSeat.save();
         }
 
         // Check if student already has a seat assigned and free it

@@ -8,12 +8,14 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import {
     IoPersonOutline, IoBedOutline, IoCashOutline,
-    IoNotificationsOutline, IoLogOut, IoSettings
+    IoNotificationsOutline, IoLogOut, IoSettings, IoScanOutline
 } from 'react-icons/io5';
+import QRScannerModal from '../../components/admin/QRScannerModal';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showScanner, setShowScanner] = useState(false);
     const { logout } = useAuth();
     const navigate = useNavigate();
 
@@ -58,11 +60,26 @@ const AdminDashboard = () => {
                         </h1>
                         <p className="text-gray-400 mt-2">Hamara Lakshay Management System</p>
                     </div>
-                    <Button variant="danger" onClick={handleLogout}>
-                        <IoLogOut className="inline mr-2" size={20} />
-                        Logout
-                    </Button>
+                    <div className="flex gap-4">
+                        <Button
+                            variant="primary"
+                            onClick={() => setShowScanner(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <IoScanOutline size={20} />
+                            Scan ID
+                        </Button>
+                        <Button variant="danger" onClick={handleLogout}>
+                            <IoLogOut className="inline mr-2" size={20} />
+                            Logout
+                        </Button>
+                    </div>
                 </div>
+
+                {/* QR Scanner Modal */}
+                {showScanner && (
+                    <QRScannerModal onClose={() => setShowScanner(false)} />
+                )}
 
                 {/* Stats Cards */}
                 {loading ? (

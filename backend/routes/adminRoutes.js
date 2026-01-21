@@ -3,6 +3,7 @@ const router = express.Router();
 const {
     getDashboard,
     getStudents,
+    getStudent,
     createStudent,
     updateStudent,
     deleteStudent,
@@ -35,6 +36,7 @@ router.route('/students')
     .post(createStudent);
 
 router.route('/students/:id')
+    .get(getStudent)
     .put(updateStudent)
     .delete(deleteStudent);
 

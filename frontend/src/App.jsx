@@ -15,6 +15,7 @@ import FeeManagement from './pages/admin/FeeManagement';
 import NotificationManagement from './pages/admin/NotificationManagement';
 import RequestManagement from './pages/admin/RequestManagement';
 import ActionHistory from './pages/admin/ActionHistory';
+import VerifyStudent from './pages/admin/VerifyStudent';
 
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -52,6 +53,7 @@ function App() {
             <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><NotificationManagement /></ProtectedRoute>} />
             <Route path="/admin/requests" element={<ProtectedRoute adminOnly><RequestManagement /></ProtectedRoute>} />
             <Route path="/admin/history" element={<ProtectedRoute adminOnly><ActionHistory /></ProtectedRoute>} />
+            <Route path="/admin/verify/:id" element={<ProtectedRoute adminOnly><VerifyStudent /></ProtectedRoute>} />
 
             {/* Student Routes */}
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />

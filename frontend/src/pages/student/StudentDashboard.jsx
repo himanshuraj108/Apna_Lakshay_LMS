@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import IDCard from '../../components/dashboard/IDCard'; // Import IDCard
 import api from '../../utils/api';
 import {
     IoBedOutline, IoCalendarOutline, IoCashOutline,
-    IoBookOutline, IoNotificationsOutline, IoLogOut, IoPersonOutline
+    IoBookOutline, IoNotificationsOutline, IoLogOut, IoPersonOutline,
+    IoIdCardOutline // Import new icon
 } from 'react-icons/io5';
 
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showIDCard, setShowIDCard] = useState(false); // ID Card State
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
@@ -55,7 +58,16 @@ const StudentDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen p-6">
+        <div className="min-h-screen p-6 relative">
+            <AnimatePresence>
+                {showIDCard && (
+                    <IDCard
+                        student={{ ...user, ...dashboardData?.seat && { seatNumber: dashboardData.seat.number } }}
+                        onClose={() => setShowIDCard(false)}
+                    />
+                )}
+            </AnimatePresence>
+
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
@@ -155,7 +167,22 @@ const StudentDashboard = () => {
                 {/* Quick Actions */}
                 <Card>
                     <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div onClick={() => setShowIDCard(true)}>
+                            <motion.div
+                                whileHover={{ scale: 1.02 }}
+                                className="glass p-6 rounded-xl flex items-center gap-4 cursor-pointer"
+                            >
+                                <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-xl">
+                                    <IoIdCardOutline size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg">Virtual ID Card</h3>
+                                    <p className="text-sm text-gray-400">View & Download</p>
+                                </div>
+                            </motion.div>
+                        </div>
+
                         <Link to="/student/planner">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
