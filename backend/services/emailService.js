@@ -1,0 +1,295 @@
+const nodemailer = require('nodemailer');
+
+// Validate environment variables
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+  console.warn('⚠️ Email credentials not configured in .env file');
+}
+
+// Create transporter with error handling
+let transporter;
+try {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  });
+  console.log('✅ Email transporter created successfully');
+} catch (error) {
+  console.error('❌ Failed to create email transporter:', error.message);
+  // Create a dummy transporter to prevent crashes
+  transporter = {
+    sendMail: async () => {
+      console.log('Email service not available - transporter not created');
+      return { messageId: 'dummy' };
+    }
+  };
+}
+
+// Base email template
+const emailTemplate = (title, content) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 30px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .footer {
+      background: #f5f5f5;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+    .button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 30px;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    .highlight {
+      background: #f0f0f0;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📚 Hamara Lakshay</h1>
+      <p style="margin: 5px 0 0 0;">${title}</p>
+    </div>
+    <div class="content">
+      ${content}
+    </div>
+    <div class="footer">
+      <p>This is an automated email from Hamara Lakshay Library Management System.</p>
+      <p>For any queries, please contact the admin.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+// Send credentials email
+exports.sendCredentialsEmail = async (name, email, password) => {
+  const content = `
+    <h2>Welcome to Hamara Lakshay! 🎉</h2>
+    <p>Dear ${name},</p>
+    <p>Your student account has been created successfully. Below are your login credentials:</p>
+    <div class="highlight">
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Password:</strong> ${password}</p>
+    </div>
+    <p>Please login to access your dashboard and track your attendance, fees, and more.</p>
+    <p><strong>Important:</strong> We recommend changing your password after first login.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: 'Welcome to Hamara Lakshay - Your Account Credentials',
+    html: emailTemplate('Account Created', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Credentials email sent to ${email}`);
+  } catch (error) {
+    console.error(`❌ Error sending credentials email to ${email}:`, error.message);
+    throw error;
+  }
+};
+
+// Send seat assignment email
+exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
+  const shiftTimes = {
+    day: '9:00 AM - 3:00 PM',
+    night: '3:00 PM - 9:00 PM',
+    full: '9:00 AM - 9:00 PM'
+  };
+
+  const content = `
+    <h2>Seat Assigned Successfully! 🪑</h2>
+    <p>Dear ${student.name},</p>
+    <p>Congratulations! Your seat has been assigned. Here are the details:</p>
+    <div class="highlight">
+      <p><strong>Seat Number:</strong> ${seat.number}</p>
+      <p><strong>Shift:</strong> ${shift.toUpperCase()} (${shiftTimes[shift]})</p>
+      <p><strong>Monthly Fee:</strong> ₹${seat.currentPrice}</p>
+    </div>
+    <p>Please make sure to follow the library rules and maintain discipline.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Seat Assignment Confirmation - Hamara Lakshay',
+    html: emailTemplate('Seat Assignment', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Seat assignment email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending seat assignment email:`, error.message);
+    throw error;
+  }
+};
+
+// Send request response email
+exports.sendRequestResponseEmail = async (student, request, status, reason) => {
+  const statusText = status === 'approved' ? 'Approved ✅' : 'Rejected ❌';
+  const statusColor = status === 'approved' ? '#22c55e' : '#ef4444';
+
+  const content = `
+    <h2>Request Update</h2>
+    <p>Dear ${student.name},</p>
+    <p>Your request for <strong>${request.type}</strong> change has been <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>.</p>
+    ${reason ? `<div class="highlight"><p><strong>Admin Response:</strong> ${reason}</p></div>` : ''}
+    <p>You can view more details in your student dashboard.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: `Request ${status.charAt(0).toUpperCase() + status.slice(1)} - Hamara Lakshay`,
+    html: emailTemplate('Request Update', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Request response email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending request response email:`, error.message);
+  }
+};
+
+// Send fee confirmation email
+exports.sendFeeConfirmationEmail = async (student, amount, month, year) => {
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const content = `
+    <h2>Fee Payment Confirmed! 💰</h2>
+    <p>Dear ${student.name},</p>
+    <p>We have received your fee payment. Thank you!</p>
+    <div class="highlight">
+      <p><strong>Amount Paid:</strong> ₹${amount}</p>
+      <p><strong>For Month:</strong> ${monthNames[month - 1]} ${year}</p>
+      <p><strong>Payment Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
+    </div>
+    <p>Your payment has been recorded in our system.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Fee Payment Confirmation - Hamara Lakshay',
+    html: emailTemplate('Payment Received', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Fee confirmation email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending fee confirmation email:`, error.message);
+  }
+};
+
+// Send fee due reminder email
+exports.sendFeeDueReminderEmail = async (student, amount, dueDate) => {
+  const content = `
+    <h2>Fee Payment Reminder ⏰</h2>
+    <p>Dear ${student.name},</p>
+    <p>This is a friendly reminder that your monthly fee is due soon.</p>
+    <div class="highlight">
+      <p><strong>Amount Due:</strong> ₹${amount}</p>
+      <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString('en-IN')}</p>
+    </div>
+    <p>Please make the payment at the library office to avoid any inconvenience.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Fee Payment Reminder - Hamara Lakshay',
+    html: emailTemplate('Payment Reminder', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Fee reminder email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending fee reminder email:`, error.message);
+  }
+};
+
+// Send announcement email
+exports.sendAnnouncementEmail = async (recipients, title, message) => {
+  const content = `
+    <h2>📢 ${title}</h2>
+    <div class="highlight">
+      <p>${message}</p>
+    </div>
+    <p>Please check your dashboard for more updates.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const promises = recipients.map(async (recipient) => {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: recipient.email,
+      subject: `Announcement: ${title} - Hamara Lakshay`,
+      html: emailTemplate('New Announcement', content)
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Announcement email sent to ${recipient.email}`);
+    } catch (error) {
+      console.error(`❌ Error sending announcement to ${recipient.email}:`, error.message);
+    }
+  });
+
+  await Promise.all(promises);
+};
