@@ -130,6 +130,10 @@ const VerifyStudent = () => {
                             <span className="text-gray-400 text-sm">Membership ID</span>
                             <span className="text-white font-mono text-xs">{student?._id?.toUpperCase()}</span>
                         </div>
+                        <div className="flex justify-between items-center py-2 border-b border-white/10">
+                            <span className="text-gray-400 text-sm">Monthly Fee</span>
+                            <span className="text-white font-bold text-lg">₹{student?.seat?.price || 'N/A'}</span>
+                        </div>
                         <div className="flex justify-between items-center pt-2">
                             <span className="text-gray-400 text-sm">Joined</span>
                             <span className="text-white text-sm">{student?.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'}</span>

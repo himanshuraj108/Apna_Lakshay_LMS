@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { IoBedOutline } from 'react-icons/io5';
 
-const StudentRoomGrid = ({ room, onSeatClick }) => {
+const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
     const doorPosition = room.doorPosition || 'south';
 
     // Group seats by wall
@@ -13,24 +13,38 @@ const StudentRoomGrid = ({ room, onSeatClick }) => {
 
     const totalSeats = room.seats.length;
 
-    const SeatCard = ({ seat }) => (
-        <motion.div
-            whileHover={{ scale: 1.08 }}
-            onClick={() => onSeatClick(seat)}
-            className={`relative p-2 rounded-lg border-2 transition-all cursor-pointer min-w-[50px] ${seat.isOccupied
-                ? 'bg-red-500/30 border-red-500 hover:bg-red-500/40'
-                : 'bg-green-500/30 border-green-500 hover:bg-green-500/40'
-                }`}
-        >
-            <div className="flex items-center gap-1 justify-center">
-                <IoBedOutline size={14} />
-                <span className="font-bold text-xs">{seat.number}</span>
-            </div>
-            {seat.isOccupied && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-gray-900"></div>
-            )}
-        </motion.div>
-    );
+    const SeatCard = ({ seat }) => {
+        const isHighlighted = seat._id === highlightSeatId;
+
+        return (
+            <motion.div
+                whileHover={{ scale: 1.08 }}
+                onClick={() => onSeatClick && onSeatClick(seat)}
+                className={`relative p-2 rounded-lg border-2 transition-all cursor-pointer min-w-[50px] ${isHighlighted
+                    ? 'bg-blue-500/40 border-blue-400 shadow-lg shadow-blue-500/30 scale-110 z-10 ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900'
+                    : seat.isOccupied
+                        ? 'bg-red-500/30 border-red-500 hover:bg-red-500/40'
+                        : 'bg-green-500/30 border-green-500 hover:bg-green-500/40'
+                    }`}
+            >
+                <div className="flex items-center gap-1 justify-center">
+                    <IoBedOutline size={14} className={isHighlighted ? 'text-white' : ''} />
+                    <span className={`font-bold text-xs ${isHighlighted ? 'text-white' : ''}`}>{seat.number}</span>
+                </div>
+                {seat.isOccupied && !isHighlighted && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-gray-900"></div>
+                )}
+                {isHighlighted && (
+                    <div className="absolute -top-2 -right-2">
+                        <span className="relative flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500"></span>
+                        </span>
+                    </div>
+                )}
+            </motion.div>
+        );
+    };
 
     return (
         <div className="space-y-6">

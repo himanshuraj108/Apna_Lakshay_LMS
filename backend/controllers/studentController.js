@@ -52,7 +52,7 @@ exports.getDashboard = async (req, res) => {
                     floor: seat.floor?.name,
                     room: seat.room?.name,
                     shift: seat.shift,
-                    price: seat.currentPrice
+                    price: seat.basePrices[seat.shift] // Show original base price explicitly per user request
                 } : null,
                 attendance: {
                     present: presentCount,
@@ -82,7 +82,14 @@ exports.getDashboard = async (req, res) => {
 exports.getMySeat = async (req, res) => {
     try {
         const seat = await Seat.findOne({ assignedTo: req.user.id })
-            .populate('floor room');
+            .populate('floor')
+            .populate({
+                path: 'room',
+                populate: {
+                    path: 'seats',
+                    model: 'Seat'
+                }
+            });
 
         if (!seat) {
             return res.status(404).json({
@@ -99,7 +106,7 @@ exports.getMySeat = async (req, res) => {
                 floor: seat.floor,
                 room: seat.room,
                 shift: seat.shift,
-                price: seat.currentPrice
+                price: seat.basePrices[seat.shift] // Show original base price explicitly per user request
             }
         });
     } catch (error) {

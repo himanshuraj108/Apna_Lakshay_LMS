@@ -148,7 +148,11 @@ exports.getStudent = async (req, res) => {
                     number: seat.number,
                     floor: seat.floor?.name,
                     room: seat.room?.name,
-                    shift: seat.shift
+                    number: seat.number,
+                    floor: seat.floor?.name,
+                    room: seat.room?.name,
+                    shift: seat.shift,
+                    price: seat.currentPrice
                 } : null
             }
         });
