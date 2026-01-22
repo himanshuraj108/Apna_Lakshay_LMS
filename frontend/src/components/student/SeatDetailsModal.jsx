@@ -60,19 +60,19 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                         <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                             <div className="flex items-center gap-2 mb-3">
                                 <IoCashOutline size={20} className="text-green-400" />
-                                <h3 className="font-semibold text-gray-300">Base Prices</h3>
+                                <h3 className="font-semibold text-gray-300">Shift Prices</h3>
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-white/10 rounded p-3 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Morning Shift</p>
+                                    <p className="text-xs text-gray-400 mb-1">Day</p>
                                     <p className="text-lg font-bold text-green-400">₹{seat.basePrices?.day || 800}</p>
                                 </div>
                                 <div className="bg-white/10 rounded p-3 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Evening Shift</p>
+                                    <p className="text-xs text-gray-400 mb-1">Night</p>
                                     <p className="text-lg font-bold text-blue-400">₹{seat.basePrices?.night || 800}</p>
                                 </div>
                                 <div className="bg-white/10 rounded p-3 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Full Day</p>
+                                    <p className="text-xs text-gray-400 mb-1">Full</p>
                                     <p className="text-lg font-bold text-purple-400">₹{seat.basePrices?.full || 1200}</p>
                                 </div>
                             </div>

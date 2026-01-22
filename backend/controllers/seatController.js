@@ -61,6 +61,7 @@ exports.addSeat = async (req, res) => {
         const seat = await Seat.create({
             number: seatNumber,
             room: roomId,
+            floor: room.floor,
             position: {
                 wall: wall,
                 index: newIndex

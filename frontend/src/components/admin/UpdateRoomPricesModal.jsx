@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
+import api from '../../utils/api';
 
 const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
     const [formData, setFormData] = useState({
@@ -13,40 +14,27 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!window.confirm(`This will update prices for all ${room?.seats?.length || 0} seats in ${room?.name}. Continue?`)) {
-            return;
-        }
-
         setLoading(true);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/rooms/${room._id}/prices`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    basePrices: {
-                        day: formData.dayPrice,
-                        night: formData.nightPrice,
-                        full: formData.fullPrice
-                    }
-                })
+            const response = await api.put(`/admin/rooms/${room._id}/prices`, {
+                basePrices: {
+                    day: formData.dayPrice,
+                    night: formData.nightPrice,
+                    full: formData.fullPrice
+                }
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                alert(data.message);
+            if (response.data.success) {
+                alert(response.data.message);
                 onSuccess();
                 onClose();
             } else {
-                alert(data.message || 'Failed to update prices');
+                alert(response.data.message || 'Failed to update prices');
             }
         } catch (error) {
             console.error('Error updating prices:', error);
-            alert('Failed to update prices');
+            alert(error.response?.data?.message || 'Failed to update prices. Please check the console.');
         } finally {
             setLoading(false);
         }

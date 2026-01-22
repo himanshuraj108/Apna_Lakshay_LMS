@@ -53,7 +53,7 @@ const StudentIdCard = ({ student }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
-                            <p className="font-bold text-purple-600 text-lg">{student.seatNumber || 'N/A'}</p>
+                            <p className="font-bold text-purple-600 text-lg">{student.seat?.number || student.seatNumber || 'N/A'}</p>
                         </div>
                         <div className="text-left">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Joined Date</p>

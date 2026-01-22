@@ -171,11 +171,45 @@ const RequestManagement = () => {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                                                 <div className="bg-white/5 rounded-lg p-3">
                                                     <p className="text-xs text-gray-400 mb-1">Current Data</p>
-                                                    <p className="text-sm">{JSON.stringify(request.currentData)}</p>
+                                                    {request.type === 'seat_change' ? (
+                                                        <div>
+                                                            <p className="text-sm font-semibold">{request.currentData.seatNumber}</p>
+                                                            <p className="text-xs text-gray-400 mt-1">
+                                                                {request.currentData.floor} - {request.currentData.room}
+                                                            </p>
+                                                        </div>
+                                                    ) : request.type === 'shift' ? (
+                                                        <div>
+                                                            <p className="text-sm font-semibold">Seat: {request.currentData.seatNumber || 'N/A'}</p>
+                                                            <p className="text-sm text-gray-300">Shift: <span className="capitalize">{request.currentData.shift}</span></p>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm">{JSON.stringify(request.currentData)}</p>
+                                                    )}
                                                 </div>
                                                 <div className="bg-white/5 rounded-lg p-3">
                                                     <p className="text-xs text-gray-400 mb-1">Requested Data</p>
-                                                    <p className="text-sm">{JSON.stringify(request.requestedData)}</p>
+                                                    {request.type === 'seat_change' ? (
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-green-400">{request.requestedData.seatNumber}</p>
+                                                            <p className="text-xs text-gray-400 mt-1">
+                                                                {request.requestedData.floor} - {request.requestedData.room}
+                                                            </p>
+                                                            {request.requestedData.reason && (
+                                                                <p className="text-xs text-gray-500 mt-2 italic">
+                                                                    Reason: {request.requestedData.reason}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ) : request.type === 'shift' ? (
+                                                        <div>
+                                                            <p className="text-sm text-green-400 font-semibold">
+                                                                Target Shift: <span className="capitalize">{request.requestedData.shift}</span>
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-sm">{JSON.stringify(request.requestedData)}</p>
+                                                    )}
                                                 </div>
                                             </div>
 

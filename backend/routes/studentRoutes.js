@@ -10,7 +10,9 @@ const {
     submitRequest,
     updateProfile,
     uploadProfileImage,
-    deleteProfileImage
+    deleteProfileImage,
+    changePassword,
+    requestSeatChange
 } = require('../controllers/studentController');
 const { protect } = require('../middleware/auth');
 
@@ -35,9 +37,11 @@ router.put('/notifications/:id/read', markNotificationRead);
 
 // Requests
 router.post('/request', submitRequest);
+router.post('/request-seat-change', requestSeatChange);
 
 // Profile
 router.put('/profile', updateProfile);
+router.put('/password', changePassword);
 router.post('/profile/image', uploadProfileImage);
 router.delete('/profile/image', deleteProfileImage);
 

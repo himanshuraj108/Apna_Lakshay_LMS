@@ -39,6 +39,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    seat: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Seat',
+        default: null
+    },
     // For Forgot Password
     resetPasswordOTP: {
         type: String,

@@ -22,7 +22,10 @@ try {
         sendSeatAssignmentEmail: async () => console.log('Email service not available'),
         sendRequestResponseEmail: async () => console.log('Email service not available'),
         sendFeeConfirmationEmail: async () => console.log('Email service not available'),
-        sendAnnouncementEmail: async () => console.log('Email service not available')
+        sendAnnouncementEmail: async () => console.log('Email service not available'),
+        sendSeatChangeRequestEmail: async () => console.log('Email service not available'),
+        sendSeatChangeApprovedEmail: async () => console.log('Email service not available'),
+        sendSeatChangeRejectedEmail: async () => console.log('Email service not available')
     };
 }
 
@@ -90,6 +93,10 @@ exports.getStudents = async (req, res) => {
     try {
         const students = await User.find({ role: 'student' })
             .populate('createdBy', 'name')
+            .populate({
+                path: 'seat',
+                populate: { path: 'room floor' }
+            })
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -832,3 +839,294 @@ exports.getPasswordActivity = async (req, res) => {
         });
     }
 };
+
+// @desc    Reset Student Password (Admin)
+// @route   POST /api/admin/students/:id/reset-password
+exports.resetStudentPassword = async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+
+        if (!student || student.role !== 'student') {
+            return res.status(404).json({
+                success: false,
+                message: 'Student not found'
+            });
+        }
+
+        // Generate new random password
+        const newPassword = Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
+
+        // Update student password
+        student.password = newPassword;
+        await student.save();
+
+        // Log password change
+        const PasswordLog = require('../models/PasswordLog');
+        await PasswordLog.create({
+            user: student._id,
+            email: student.email,
+            newPassword: newPassword,
+            source: 'admin_reset'
+        });
+
+        // Send email with new credentials
+        try {
+            await emailService.sendCredentialsEmail(student.name, student.email, newPassword);
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError.message);
+        }
+
+        // Send notification to student
+        await Notification.create({
+            recipient: student._id,
+            title: 'Password Reset by Admin',
+            message: `Your password has been reset. Check your email (${student.email}) for new credentials.`,
+            type: 'general',
+            createdBy: req.user.id
+        });
+
+        // Log action
+        await logAction(req, 'password_reset', 'User', student._id, student.name, 'Admin reset student password');
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully. New credentials sent to student via email.',
+            newPassword: newPassword // Return for admin reference
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get all requests
+// @route   GET /api/admin/requests
+exports.getRequests = async (req, res) => {
+    try {
+        const requests = await Request.find()
+            .populate('student', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            requests
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Handle request (approve/reject)
+// @route   PUT /api/admin/requests/:id
+exports.handleRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, adminResponse } = req.body;
+
+        // Validation
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be "approved" or "rejected"'
+            });
+        }
+
+        const request = await Request.findById(id).populate('student', 'name email');
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Request not found'
+            });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'This request has already been processed'
+            });
+        }
+
+        // Handle seat change requests
+        if (request.type === 'seat_change') {
+            if (status === 'approved') {
+                // Get the seats
+                const currentSeat = await Seat.findById(request.currentData.seatId).populate('floor room');
+                const requestedSeat = await Seat.findById(request.requestedData.seatId).populate('floor room');
+
+                if (!currentSeat || !requestedSeat) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'One or more seats not found'
+                    });
+                }
+
+                // Check if requested seat is still vacant
+                if (requestedSeat.assignedTo) {
+                    // Automatically reject if seat became occupied
+                    request.status = 'rejected';
+                    request.adminResponse = 'The requested seat is no longer available';
+                    request.reviewedBy = req.user.id;
+                    request.reviewedAt = new Date();
+                    await request.save();
+
+                    // Notify student
+                    await Notification.create({
+                        recipient: request.student._id,
+                        title: 'Seat Change Request Rejected',
+                        message: `Your seat change request was rejected. The requested seat is no longer available.`,
+                        type: 'request',
+                        createdBy: req.user.id
+                    });
+
+                    // Send email
+                    const { sendSeatChangeRejectedEmail } = require('../services/emailService');
+                    try {
+                        await sendSeatChangeRejectedEmail(request.student, requestedSeat, 'The requested seat is no longer available');
+                    } catch (emailError) {
+                        console.error('Email error:', emailError);
+                    }
+
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Seat no longer available. Request automatically rejected.'
+                    });
+                }
+
+                // Store shift before clearing
+                const previousShift = currentSeat.shift || 'full';
+
+                // Release old seat
+                currentSeat.assignedTo = null;
+                currentSeat.shift = null;
+                currentSeat.isOccupied = false;
+                await currentSeat.save();
+
+                // Assign new seat
+                requestedSeat.assignedTo = request.student._id;
+                requestedSeat.shift = previousShift; // Keep same shift
+                requestedSeat.isOccupied = true;
+                await requestedSeat.save();
+
+                // Update student record
+                await User.findByIdAndUpdate(request.student._id, {
+                    seat: requestedSeat._id
+                });
+
+                // Send approval email
+                const { sendSeatChangeApprovedEmail } = require('../services/emailService');
+                try {
+                    await sendSeatChangeApprovedEmail(request.student, currentSeat, requestedSeat);
+                } catch (emailError) {
+                    console.error('Email error:', emailError);
+                }
+
+                // Create in-app notification
+                await Notification.create({
+                    recipient: request.student._id,
+                    title: 'Seat Change Approved!',
+                    message: `Your seat change request has been approved! You have been moved from seat ${currentSeat.number} to seat ${requestedSeat.number}.`,
+                    type: 'seat',
+                    createdBy: req.user.id
+                });
+
+                // Log action
+                await logAction(
+                    req,
+                    'seat_change_approved',
+                    'Request',
+                    request._id,
+                    `${request.student.name} - Seat Change`,
+                    `Approved seat change from ${currentSeat.number} to ${requestedSeat.number}`
+                );
+
+            } else {
+                // Rejection
+                const requestedSeat = await Seat.findById(request.requestedData.seatId);
+
+                // Send rejection email
+                const { sendSeatChangeRejectedEmail } = require('../services/emailService');
+                try {
+                    await sendSeatChangeRejectedEmail(request.student, requestedSeat, adminResponse || 'No reason provided');
+                } catch (emailError) {
+                    console.error('Email error:', emailError);
+                }
+
+                // Create in-app notification
+                await Notification.create({
+                    recipient: request.student._id,
+                    title: 'Seat Change Request Rejected',
+                    message: `Your seat change request was rejected. ${adminResponse ? `Reason: ${adminResponse}` : ''}`,
+                    type: 'request',
+                    createdBy: req.user.id
+                });
+
+                // Log action
+                await logAction(
+                    req,
+                    'seat_change_rejected',
+                    'Request',
+                    request._id,
+                    `${request.student.name} - Seat Change`,
+                    `Rejected seat change request. Reason: ${adminResponse || 'No reason provided'}`
+                );
+            }
+        } else {
+            // Handle other request types (existing logic for shift, profile, etc.)
+            // Send generic request response email
+            try {
+                await emailService.sendRequestResponseEmail(request.student, request, status, adminResponse);
+            } catch (emailError) {
+                console.error('Email error:', emailError);
+            }
+
+            // Create notification
+            await Notification.create({
+                recipient: request.student._id,
+                title: `Request ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+                message: `Your ${request.type} change request has been ${status}. ${adminResponse ? `Admin response: ${adminResponse}` : ''}`,
+                type: 'request',
+                createdBy: req.user.id
+            });
+
+            // Log action
+            await logAction(
+                req,
+                `request_${status}`,
+                'Request',
+                request._id,
+                `${request.student.name} - ${request.type}`,
+                `${status.charAt(0).toUpperCase() + status.slice(1)} ${request.type} request`
+            );
+        }
+
+        // Update request
+        request.status = status;
+        request.adminResponse = adminResponse || '';
+        request.reviewedBy = req.user.id;
+        request.reviewedAt = new Date();
+        await request.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Request ${status} successfully`,
+            request
+        });
+
+    } catch (error) {
+        console.error('Handle request error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+

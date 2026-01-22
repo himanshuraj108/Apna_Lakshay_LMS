@@ -12,12 +12,11 @@ const passwordLogSchema = new mongoose.Schema({
     },
     newPassword: {
         type: String, // Storing visible as requested for admin support
-        required: true,
-        select: false // Only select explicitly for admin view
+        required: true
     },
     source: {
         type: String,
-        enum: ['profile_change', 'forgot_reset'],
+        enum: ['profile_change', 'forgot_reset', 'admin_reset'],
         required: true
     },
     timestamp: {

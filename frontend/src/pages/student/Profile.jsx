@@ -8,6 +8,7 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import { IoArrowBack, IoPerson, IoCamera, IoTrash, IoSend, IoLockClosed } from 'react-icons/io5';
+import SeatChangeModal from '../../components/student/SeatChangeModal';
 
 const Profile = () => {
     const { user, updateUser } = useAuth();
@@ -18,6 +19,7 @@ const Profile = () => {
     const [requestData, setRequestData] = useState({});
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
+    const [showSeatChangeModal, setShowSeatChangeModal] = useState(false);
 
     useEffect(() => {
         fetchProfile();
@@ -212,10 +214,7 @@ const Profile = () => {
                         </Button>
                         <Button
                             variant="primary"
-                            onClick={() => {
-                                setRequestType('seat');
-                                setShowRequestModal(true);
-                            }}
+                            onClick={() => setShowSeatChangeModal(true)}
                         >
                             <IoSend className="inline mr-2" /> Request Seat Change
                         </Button>
@@ -331,6 +330,18 @@ const Profile = () => {
                         </div>
                     </div>
                 </Modal>
+
+                {/* Seat Change Modal */}
+                <SeatChangeModal
+                    isOpen={showSeatChangeModal}
+                    onClose={() => setShowSeatChangeModal(false)}
+                    currentSeat={profile?.seat}
+                    onSuccess={() => {
+                        setSuccess('Seat change request submitted successfully!');
+                        setTimeout(() => setSuccess(''), 3000);
+                        fetchProfile();
+                    }}
+                />
             </div>
         </div>
     );

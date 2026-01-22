@@ -31,6 +31,7 @@ const FloorManagement = () => {
     const [updating, setUpdating] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [showIdCardModal, setShowIdCardModal] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, floorName: '', seatCount: 0 });
 
     useEffect(() => {
         fetchFloors();
@@ -70,9 +71,22 @@ const FloorManagement = () => {
         }
     };
 
-    const handleBulkPriceUpdate = async () => {
-        if (!confirm('Update prices for ALL seats in this floor?')) return;
+    const handleBulkPriceUpdate = () => {
+        if (!floors[selectedFloor]) {
+            alert('Please select a valid floor first.');
+            return;
+        }
 
+        const seatCount = floors[selectedFloor].rooms.reduce((acc, room) => acc + room.seats.length, 0);
+
+        setConfirmModal({
+            isOpen: true,
+            floorName: floors[selectedFloor].name,
+            seatCount
+        });
+    };
+
+    const executeBulkUpdate = async () => {
         setUpdating(true);
         try {
             const floorId = floors[selectedFloor]._id;
@@ -86,11 +100,12 @@ const FloorManagement = () => {
 
             if (response.data.success) {
                 fetchFloors();
-                alert(`Updated ${response.data.count} seats`);
+                alert(`Updated ${response.data.updatedCount} seats successfully`);
+                setConfirmModal({ isOpen: false, floorName: '', seatCount: 0 });
             }
         } catch (error) {
             console.error('Error updating prices:', error);
-            alert('Failed to update prices');
+            alert(error.response?.data?.message || 'Failed to update prices. Please check the console.');
         } finally {
             setUpdating(false);
         }
@@ -311,6 +326,43 @@ const FloorManagement = () => {
                         )}
                     </>
                 )}
+
+                {/* Confirm Modal */}
+                <Modal
+                    isOpen={confirmModal.isOpen}
+                    onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                    title="Confirm Price Update"
+                >
+                    <div className="p-4">
+                        <p className="mb-4 text-gray-300">
+                            Are you sure you want to update prices for all <strong>{confirmModal.seatCount}</strong> seats in <strong>{confirmModal.floorName}</strong>?
+                        </p>
+                        <div className="bg-white/5 p-4 rounded-lg mb-6 text-sm">
+                            <p className="font-semibold mb-2">New Prices:</p>
+                            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-300">
+                                <li>Morning: ₹{bulkPrices.day}</li>
+                                <li>Evening: ₹{bulkPrices.night}</li>
+                                <li>Full Day: ₹{bulkPrices.full}</li>
+                            </ul>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                                disabled={updating}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={executeBulkUpdate}
+                                disabled={updating}
+                            >
+                                {updating ? 'Updating...' : 'Confirm Update'}
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
 
                 {/* Modals */}
                 <AddSeatModal

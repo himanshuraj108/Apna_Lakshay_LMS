@@ -7,11 +7,11 @@ import Button from '../../components/ui/Button';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import {
-    IoPersonOutline, IoBedOutline, IoCashOutline,
-    IoNotificationsOutline, IoLogOut, IoSettings, IoScanOutline
+    IoSchool, IoCalendarOutline, IoCashOutline, IoBedOutline, IoDocumentTextOutline,
+    IoNotificationsOutline, IoLogOut, IoSettings, IoScanOutline, IoTimeOutline, IoKey,
+    IoPersonOutline
 } from 'react-icons/io5';
 import QRScannerModal from '../../components/admin/QRScannerModal';
-import PasswordActivityLog from '../../components/admin/PasswordActivityLog';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
@@ -48,6 +48,7 @@ const AdminDashboard = () => {
         { title: 'Notifications', path: '/admin/notifications', icon: IoNotificationsOutline, color: 'from-pink-500 to-rose-500' },
         { title: 'Student Requests', path: '/admin/requests', icon: IoSettings, color: 'from-indigo-500 to-blue-500' },
         { title: 'Action History', path: '/admin/history', icon: IoPersonOutline, color: 'from-gray-500 to-slate-500' },
+        { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey, color: 'from-red-500 to-orange-500' }
     ];
 
     return (
@@ -136,13 +137,6 @@ const AdminDashboard = () => {
                         </Card>
                     </div>
                 )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Activity Log - Takes up 2 columns */}
-                    <div className="lg:col-span-2 h-[400px]">
-                        <PasswordActivityLog />
-                    </div>
-                </div>
 
                 {/* Menu Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

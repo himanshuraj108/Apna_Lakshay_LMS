@@ -40,10 +40,14 @@ const PublicSeatView = () => {
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-                        📚 Hamara Lakshay
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
+                        Hamara <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshya</span>
                     </h1>
-                    <p className="text-gray-400 text-lg">Library Seat Availability</p>
+                    <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Library Management System</p>
+
+                    <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-4"></div>
+
+                    <p className="text-gray-300 text-lg">Library Seat Availability</p>
                 </div>
 
                 {/* Login Floating Button - Prominent Call to Action */}

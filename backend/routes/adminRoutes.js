@@ -18,7 +18,8 @@ const {
     getRequests,
     handleRequest,
     getActionHistory,
-    getPasswordActivity
+    getPasswordActivity,
+    resetStudentPassword
 } = require('../controllers/adminController');
 const {
     addSeat,
@@ -50,6 +51,8 @@ router.route('/students/:id')
     .get(getStudent)
     .put(updateStudent)
     .delete(deleteStudent);
+
+router.post('/students/:id/reset-password', resetStudentPassword);
 
 // Floor/Room/Seat management
 router.get('/floors', getFloors);

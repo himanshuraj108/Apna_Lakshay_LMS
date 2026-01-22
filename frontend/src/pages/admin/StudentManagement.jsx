@@ -7,7 +7,7 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import Badge from '../../components/ui/Badge';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -33,6 +33,8 @@ const StudentManagement = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showIdCardModal, setShowIdCardModal] = useState(false);
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -149,6 +151,30 @@ const StudentManagement = () => {
         setSelectedStudent(null);
         setFormData({ name: '', email: '' });
         setShowModal(true);
+    };
+
+    const openResetPasswordModal = (student) => {
+        setSelectedStudent(student);
+        setError('');
+        setShowResetPasswordModal(true);
+    };
+
+    const handleResetPassword = async () => {
+        setError('');
+        setResetPasswordLoading(true);
+
+        try {
+            const response = await api.post(`/admin/students/${selectedStudent._id}/reset-password`);
+            setSuccess(response.data.message || 'Password reset successfully! New credentials sent to student.');
+            setShowResetPasswordModal(false);
+            setSelectedStudent(null);
+            await fetchStudents();
+            setTimeout(() => setSuccess(''), 5000);
+        } catch (error) {
+            setError(error.response?.data?.message || 'Failed to reset password');
+        } finally {
+            setResetPasswordLoading(false);
+        }
     };
 
     const openEditModal = (student) => {
@@ -436,6 +462,13 @@ const StudentManagement = () => {
                                                                         title="Assign Seat"
                                                                     >
                                                                         <IoBedOutline size={20} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => openResetPasswordModal(student)}
+                                                                        className="text-yellow-400 hover:text-yellow-300 transition-colors"
+                                                                        title="Reset Password"
+                                                                    >
+                                                                        <IoKey size={20} />
                                                                     </button>
                                                                     <button
                                                                         onClick={() => openEditModal(student)}
@@ -742,6 +775,59 @@ const StudentManagement = () => {
                             </Button>
                         </div>
                     </form>
+                </Modal>
+
+                {/* Reset Password Modal */}
+                <Modal
+                    isOpen={showResetPasswordModal}
+                    onClose={() => {
+                        setShowResetPasswordModal(false);
+                        setSelectedStudent(null);
+                        setError('');
+                    }}
+                    title="Reset Student Password"
+                >
+                    <div className="space-y-4">
+                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                            <p className="text-yellow-400 font-semibold mb-2">⚠️ Reset Password Confirmation</p>
+                            <p className="text-sm text-gray-300">
+                                This will generate a new random password for <strong>{selectedStudent?.name}</strong> and send it to their email:
+                                <br />
+                                <span className="text-blue-400">{selectedStudent?.email}</span>
+                            </p>
+                            <p className="text-xs text-gray-400 mt-2">
+                                The student will also receive an in-app notification.
+                            </p>
+                        </div>
+
+                        {error && (
+                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    setShowResetPasswordModal(false);
+                                    setSelectedStudent(null);
+                                    setError('');
+                                }}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleResetPassword}
+                                disabled={resetPasswordLoading}
+                                className="flex-1"
+                            >
+                                {resetPasswordLoading ? 'Resetting...' : 'Reset & Send Email'}
+                            </Button>
+                        </div>
+                    </div>
                 </Modal>
             </div>
         </div>

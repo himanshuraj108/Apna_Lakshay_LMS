@@ -293,3 +293,119 @@ exports.sendAnnouncementEmail = async (recipients, title, message) => {
 
   await Promise.all(promises);
 };
+
+// Send OTP email for password reset
+exports.sendOTPEmail = async (name, email, otp) => {
+  const content = `
+    <h2>Password Reset Request 🔐</h2>
+    <p>Dear ${name},</p>
+    <p>You have requested to reset your password. Please use the OTP below to verify your identity:</p>
+    <div class="highlight" style="text-align: center;">
+      <h1 style="font-size: 48px; letter-spacing: 8px; color: #667eea; margin: 20px 0;">${otp}</h1>
+    </div>
+    <p><strong>This OTP is valid for 10 minutes only.</strong></p>
+    <p>If you did not request a password reset, please ignore this email or contact the admin if you have concerns.</p>
+    <p>Best regards,<br>Hamara Lakshay Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: email,
+    subject: 'Password Reset OTP - Hamara Lakshay',
+    html: emailTemplate('Password Reset', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ OTP email sent to ${email}`);
+  } catch (error) {
+    console.error(`❌ Error sending OTP email to ${email}:`, error.message);
+    throw error;
+  }
+};
+
+// Send seat change request submitted email
+exports.sendSeatChangeRequestEmail = async (student, currentSeat, requestedSeat) => {
+  const content = `
+    <h2>Seat Change Request Submitted 🪑</h2>
+    <p>Dear ${student.name},</p>
+    <p>Your seat change request has been submitted successfully and is awaiting admin approval.</p>
+    <div class="highlight">
+      <p><strong>Current Seat:</strong> ${currentSeat.number}</p>
+      <p><strong>Requested Seat:</strong> ${requestedSeat.number}</p>
+    </div>
+    <p>You will receive a notification once the admin reviews your request.</p>
+    <p>Best regards,<br>Hamara Lakshya Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Seat Change Request Submitted - Hamara Lakshya',
+    html: emailTemplate('Request Submitted', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Seat change request email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending seat change request email:`, error.message);
+  }
+};
+
+// Send seat change approved email
+exports.sendSeatChangeApprovedEmail = async (student, oldSeat, newSeat) => {
+  const content = `
+    <h2>Seat Change Approved! ✅</h2>
+    <p>Dear ${student.name},</p>
+    <p>Great news! Your seat change request has been approved by the admin.</p>
+    <div class="highlight">
+      <p><strong>Previous Seat:</strong> ${oldSeat.number}</p>
+      <p><strong>New Seat:</strong> ${newSeat.number}</p>
+      <p><strong>Monthly Fee:</strong> ₹${newSeat.currentPrice}</p>
+    </div>
+    <p>Your new seat is now active. Please visit the library to settle in your new location.</p>
+    <p>Best regards,<br>Hamara Lakshya Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Seat Change Approved - Hamara Lakshya',
+    html: emailTemplate('Request Approved', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Seat change approved email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending seat change approved email:`, error.message);
+  }
+};
+
+// Send seat change rejected email
+exports.sendSeatChangeRejectedEmail = async (student, requestedSeat, reason) => {
+  const content = `
+    <h2>Seat Change Request Update ❌</h2>
+    <p>Dear ${student.name},</p>
+    <p>We regret to inform you that your request to change to seat <strong>${requestedSeat.number}</strong> has been rejected.</p>
+    ${reason ? `<div class="highlight"><p><strong>Admin's Response:</strong> ${reason}</p></div>` : ''}
+    <p>If you have any questions or would like to submit a new request, please contact the admin or visit the library office.</p>
+    <p>Best regards,<br>Hamara Lakshya Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Seat Change Request Update - Hamara Lakshya',
+    html: emailTemplate('Request Rejected', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Seat change rejected email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending seat change rejected email:`, error.message);
+  }
+};
+

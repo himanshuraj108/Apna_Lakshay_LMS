@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { sendOTPEmail } = require('../services/emailService');
 
 // @desc    Login user
 // @route   POST /api/auth/login
@@ -177,14 +178,26 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000;
         await user.save({ validateBeforeSave: false });
 
-        // In a real app, send email here. For demo/mvp, send in response or console.
-        console.log(`OTP for ${email}: ${otp}`);
+        // Send OTP via email
+        try {
+            await sendOTPEmail(user.name, email, otp);
+            console.log(`✅ OTP sent to ${email}: ${otp}`);
 
-        res.status(200).json({
-            success: true,
-            message: 'OTP sent to email (Check Console/Network for demo)',
-            debug_otp: otp // Included for ease of testing per user flow
-        });
+            res.status(200).json({
+                success: true,
+                message: 'OTP sent to your email address. Please check your inbox.',
+                // Include debug_otp only in development
+                ...(process.env.NODE_ENV !== 'production' && { debug_otp: otp })
+            });
+        } catch (emailError) {
+            console.error('Email send error:', emailError);
+            // Return OTP in response if email fails (for development/testing)
+            res.status(200).json({
+                success: true,
+                message: 'Email service unavailable. OTP displayed for testing.',
+                debug_otp: otp
+            });
+        }
     } catch (error) {
         res.status(500).json({
             success: false,

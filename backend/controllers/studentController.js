@@ -447,3 +447,169 @@ exports.deleteProfileImage = async (req, res) => {
         });
     }
 };
+
+// @desc    Change Password
+// @route   PUT /api/student/password
+exports.changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        const user = await User.findById(req.user.id).select('+password');
+
+        // Check current password
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Incorrect current password'
+            });
+        }
+
+        // Update password
+        user.password = newPassword;
+        await user.save();
+
+        // Log to PasswordLog for Admin
+        const PasswordLog = require('../models/PasswordLog');
+        await PasswordLog.create({
+            user: user._id,
+            email: user.email,
+            newPassword: newPassword, // Visible for admin per request
+            source: 'profile_change'
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Request seat change
+// @route   POST /api/student/request-seat-change
+exports.requestSeatChange = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const { requestedSeatId, reason } = req.body;
+
+        // Validation
+        if (!requestedSeatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please select a seat'
+            });
+        }
+
+        // Get student's current seat
+        const currentSeat = await Seat.findOne({ assignedTo: studentId }).populate('floor room');
+
+        if (!currentSeat) {
+            return res.status(400).json({
+                success: false,
+                message: 'You do not have an assigned seat. Please contact admin.'
+            });
+        }
+
+        // Get requested seat
+        const requestedSeat = await Seat.findById(requestedSeatId).populate('floor room');
+
+        if (!requestedSeat) {
+            return res.status(404).json({
+                success: false,
+                message: 'Requested seat not found'
+            });
+        }
+
+        // Check if requested seat is vacant
+        if (requestedSeat.assignedTo) {
+            return res.status(400).json({
+                success: false,
+                message: 'This seat is already occupied. Please select a vacant seat.'
+            });
+        }
+
+        // Check if requesting same seat
+        if (currentSeat._id.toString() === requestedSeatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'You cannot request your current seat'
+            });
+        }
+
+        // Check for existing pending seat change request
+        const existingRequest = await Request.findOne({
+            student: studentId,
+            type: 'seat_change',
+            status: 'pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: 'You already have a pending seat change request. Please wait for admin review.'
+            });
+        }
+
+        // Create seat change request
+        const request = await Request.create({
+            student: studentId,
+            type: 'seat_change',
+            currentData: {
+                seatId: currentSeat._id,
+                seatNumber: currentSeat.number,
+                floor: currentSeat.floor.name,
+                room: currentSeat.room.name
+            },
+            requestedData: {
+                seatId: requestedSeat._id,
+                seatNumber: requestedSeat.number,
+                floor: requestedSeat.floor.name,
+                room: requestedSeat.room.name,
+                reason: reason || 'No reason provided'
+            },
+            status: 'pending'
+        });
+
+        // Get student details
+        const student = await User.findById(studentId);
+
+        // Send email notification
+        const { sendSeatChangeRequestEmail } = require('../services/emailService');
+        try {
+            await sendSeatChangeRequestEmail(student, currentSeat, requestedSeat);
+        } catch (emailError) {
+            console.error('Email error:', emailError);
+            // Continue even if email fails
+        }
+
+        // Create in-app notification
+        await Notification.create({
+            recipient: studentId,
+            title: 'Seat Change Request Submitted',
+            message: `Your request to change from seat ${currentSeat.number} to seat ${requestedSeat.number} has been submitted and is awaiting admin approval.`,
+            type: 'request',
+            createdBy: studentId
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Seat change request submitted successfully',
+            data: request
+        });
+
+    } catch (error) {
+        console.error('Request seat change error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
