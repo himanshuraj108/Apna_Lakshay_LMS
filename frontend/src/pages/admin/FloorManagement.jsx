@@ -12,7 +12,7 @@ import RoomLayoutModal from '../../components/admin/RoomLayoutModal';
 import UpdateRoomPricesModal from '../../components/admin/UpdateRoomPricesModal';
 import UpdateFloorPricesModal from '../../components/admin/UpdateFloorPricesModal';
 import api from '../../utils/api';
-import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload } from 'react-icons/io5';
+import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoBedOutline } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -118,7 +118,8 @@ const FloorManagement = () => {
         // We also need to ensure we pass the seat number
         const student = {
             ...seat.assignedTo,
-            seatNumber: seat.number // Use the seat's number
+            seatNumber: seat.number, // Use the seat's number
+            shift: seat.shift
         };
         setSelectedStudent(student);
         setShowIdCardModal(true);
@@ -175,7 +176,7 @@ const FloorManagement = () => {
     };
 
     return (
-        <div className="min-h-screen p-6">
+        <div className="min-h-screen p-6 min-w-[1024px]">
             <div className="max-w-7xl mx-auto">
                 <Link to="/admin">
                     <Button variant="secondary" className="mb-6">
@@ -194,7 +195,7 @@ const FloorManagement = () => {
                         {/* Bulk Price Update */}
                         <Card className="mb-6">
                             <h3 className="text-xl font-bold mb-4">Bulk Price Update</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div className="grid grid-cols-4 gap-4 items-end">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-400 mb-2">
                                         Morning Shift (₹)
@@ -303,7 +304,7 @@ const FloorManagement = () => {
                                 {/* Summary */}
                                 <Card>
                                     <h3 className="text-xl font-bold mb-4">Floor Summary</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-3 gap-4">
                                         <div className="bg-white/5 rounded-lg p-4">
                                             <p className="text-gray-400 text-sm">Total Seats</p>
                                             <p className="text-3xl font-bold">{floors[selectedFloor].rooms.reduce((acc, room) => acc + room.seats.length, 0)}</p>

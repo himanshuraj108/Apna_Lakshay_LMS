@@ -31,7 +31,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-[#0f172a]">
+        <div className="min-h-screen relative flex items-center justify-center bg-[#0f172a] py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
             {/* Animated Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px]" />
@@ -40,7 +40,7 @@ const Login = () => {
             </div>
 
             {/* View Seats Floating Button - Prominent Call to Action */}
-            <Link to="/seats" className="fixed bottom-6 right-1/2 translate-x-1/2 sm:translate-x-0 sm:bottom-auto sm:top-8 sm:right-8 z-50 w-max">
+            <Link to="/seats" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
                 <motion.button
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{
@@ -59,11 +59,11 @@ const Login = () => {
                     }}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-3 px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-full text-white shadow-2xl border border-white/20 backdrop-blur-md group"
+                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-full text-white shadow-2xl border border-white/20 backdrop-blur-md group"
                 >
-                    <IoGridOutline size={20} className="animate-pulse sm:w-6 sm:h-6" />
-                    <span className="font-bold text-base sm:text-lg tracking-wide">VIEW SEATS</span>
-                    <IoArrowForward className="hidden sm:block group-hover:translate-x-1 transition-transform" size={20} />
+                    <IoGridOutline size={20} className="animate-pulse w-6 h-6" />
+                    <span className="font-bold text-lg tracking-wide">VIEW SEATS</span>
+                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={20} />
                 </motion.button>
             </Link>
 
@@ -83,6 +83,21 @@ const Login = () => {
                         <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Library Management System</p>
 
                         <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto"></div>
+                    </div>
+
+                    {/* Mobile View Seats Button - Inline */}
+                    <div className="lg:hidden mb-8 flex justify-center">
+                        <Link to="/seats" className="w-full">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 rounded-xl text-white shadow-lg border border-white/10 backdrop-blur-md group"
+                            >
+                                <IoGridOutline size={20} className="animate-pulse" />
+                                <span className="font-bold text-base tracking-wide">VIEW AVAILABLE SEATS</span>
+                                <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
+                            </motion.button>
+                        </Link>
                     </div>
 
                     <div className="mb-8 text-center">

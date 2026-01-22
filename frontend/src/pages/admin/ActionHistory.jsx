@@ -4,7 +4,10 @@ import api from '../../utils/api';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import { Link } from 'react-router-dom';
+import Button from '../../components/ui/Button';
 import { FaHistory, FaSearch, FaFilter, FaCalendarAlt, FaUser, FaInfoCircle } from 'react-icons/fa';
+import { IoArrowBack } from 'react-icons/io5';
 
 const ActionHistory = () => {
     const [logs, setLogs] = useState([]);
@@ -88,11 +91,18 @@ const ActionHistory = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-[1024px]">
             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-                    Action History
-                </h1>
+                <div>
+                    <Link to="/admin">
+                        <Button variant="secondary" className="mb-4">
+                            <IoArrowBack className="inline mr-2" /> Back to Dashboard
+                        </Button>
+                    </Link>
+                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
+                        Action History
+                    </h1>
+                </div>
                 <div className="text-gray-400 text-sm">
                     Showing last 100 actions
                 </div>
@@ -100,7 +110,7 @@ const ActionHistory = () => {
 
             {/* Filters */}
             <Card className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                     <div className="space-y-2">
                         <label className="text-sm text-gray-400 flex items-center gap-2">
                             <FaSearch /> Search

@@ -8,6 +8,8 @@ const Fee = require('../models/Fee');
 const Notification = require('../models/Notification');
 const Request = require('../models/Request');
 const ActionLog = require('../models/ActionLog');
+const PasswordLog = require('../models/PasswordLog');
+const ArchivedStudent = require('../models/ArchivedStudent');
 
 // Email service for notifications (with safe loading)
 let emailService;
@@ -175,12 +177,13 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email } = req.body;
+        const { name, email, mobile } = req.body;
         const password = generatePassword();
 
         const student = await User.create({
             name,
             email,
+            mobile,
             password,
             role: 'student',
             createdBy: req.user.id
@@ -219,10 +222,10 @@ exports.createStudent = async (req, res) => {
 // Update student
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, isActive } = req.body;
+        const { name, email, mobile, isActive } = req.body;
         const student = await User.findByIdAndUpdate(
             req.params.id,
-            { name, email, isActive },
+            { name, email, mobile, isActive },
             { new: true, runValidators: true }
         );
 
@@ -298,7 +301,9 @@ exports.deleteStudent = async (req, res) => {
             { $set: { isOccupied: false, assignedTo: null, shift: null, negotiatedPrice: null } }
         );
 
-        if (student.isActive) {
+        const { forceDelete } = req.body;
+
+        if (student.isActive && !forceDelete) {
             // Soft delete - Mark student as inactive
             student.isActive = false;
             await student.save();
@@ -311,7 +316,50 @@ exports.deleteStudent = async (req, res) => {
                 message: 'Student marked as inactive and seat freed'
             });
         } else {
-            // Hard delete - Permanently remove from database
+            // Hard delete - Archive then permanently remove
+
+            // 1. Gather all data for archive
+            const attendanceRecords = await Attendance.find({ student: req.params.id });
+            const feeRecords = await Fee.find({ student: req.params.id });
+            const requestRecords = await Request.find({ student: req.params.id });
+
+            // 2. Create Archive Record
+            await ArchivedStudent.create({
+                originalId: student._id,
+                name: student.name,
+                email: student.email,
+                phoneNumber: student.phoneNumber,
+                guardianName: student.guardianName,
+                guardianPhone: student.guardianPhone,
+                address: student.address,
+                profileImage: student.profileImage,
+                joinedAt: student.createdAt,
+                deletedBy: req.user.id,
+
+                // Snapshots
+                fees: feeRecords.map(f => ({
+                    amount: f.amount,
+                    month: f.month,
+                    year: f.year,
+                    status: f.status,
+                    paidDate: f.paidDate,
+                    dueDate: f.dueDate
+                })),
+
+                attendance: attendanceRecords.map(a => ({
+                    date: a.date,
+                    status: a.status
+                })),
+
+                requests: requestRecords.map(r => ({
+                    type: r.type,
+                    status: r.status,
+                    createdAt: r.createdAt,
+                    adminResponse: r.adminResponse
+                }))
+            });
+
+            // 3. Permanently remove from active tables
             await User.findByIdAndDelete(req.params.id);
 
             // Deleting related data
@@ -319,13 +367,14 @@ exports.deleteStudent = async (req, res) => {
             await Fee.deleteMany({ student: req.params.id });
             await Notification.deleteMany({ recipient: req.params.id });
             await Request.deleteMany({ student: req.params.id });
+            await PasswordLog.deleteMany({ user: req.params.id });
 
             // Log action
-            await logAction(req, 'student_deleted_hard', 'User', req.params.id, 'Unknown (Deleted)', 'Permanently deleted student and all related data');
+            await logAction(req, 'student_deleted_hard', 'User', req.params.id, student.name, 'Permanently deleted and archived student data');
 
             res.status(200).json({
                 success: true,
-                message: 'Student permanently deleted from database'
+                message: 'Student archived and permanently deleted from active records'
             });
         }
     } catch (error) {
@@ -547,9 +596,12 @@ exports.getAttendance = async (req, res) => {
             .populate('student', 'name email')
             .populate('markedBy', 'name');
 
+        // Filter out orphaned records
+        const filteredAttendance = attendance.filter(record => record.student);
+
         res.status(200).json({
             success: true,
-            attendance
+            attendance: filteredAttendance
         });
     } catch (error) {
         res.status(500).json({
@@ -567,9 +619,12 @@ exports.getFees = async (req, res) => {
             .populate('student', 'name email')
             .sort({ year: -1, month: -1 });
 
+        // Filter out fees where student has been deleted (null after populate)
+        const filteredFees = fees.filter(fee => fee.student);
+
         res.status(200).json({
             success: true,
-            fees
+            fees: filteredFees
         });
     } catch (error) {
         res.status(500).json({
@@ -704,9 +759,12 @@ exports.getRequests = async (req, res) => {
             .populate('reviewedBy', 'name')
             .sort({ createdAt: -1 });
 
+        // Filter out orphaned requests
+        const filteredRequests = requests.filter(req => req.student);
+
         res.status(200).json({
             success: true,
-            requests
+            requests: filteredRequests
         });
     } catch (error) {
         res.status(500).json({
@@ -827,9 +885,12 @@ exports.getPasswordActivity = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(50); // Last 50 changes
 
+        // Filter out logs where user has been deleted (null after populate)
+        const filteredLogs = logs.filter(log => log.user);
+
         res.status(200).json({
             success: true,
-            logs
+            logs: filteredLogs
         });
     } catch (error) {
         res.status(500).json({
@@ -910,9 +971,12 @@ exports.getRequests = async (req, res) => {
             .populate('student', 'name email')
             .sort({ createdAt: -1 });
 
+        // Filter out orphaned requests
+        const filteredRequests = requests.filter(req => req.student);
+
         res.status(200).json({
             success: true,
-            requests
+            requests: filteredRequests
         });
     } catch (error) {
         res.status(500).json({
@@ -1130,3 +1194,51 @@ exports.handleRequest = async (req, res) => {
     }
 };
 
+
+// @desc    Get all archived students
+// @route   GET /api/admin/archives
+exports.getArchivedStudents = async (req, res) => {
+    try {
+        const archives = await ArchivedStudent.find()
+            .select('name email deletedAt joinedAt profileImage')
+            .sort({ deletedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            archives
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get single archived student details
+// @route   GET /api/admin/archives/:id
+exports.getArchivedStudent = async (req, res) => {
+    try {
+        const archive = await ArchivedStudent.findById(req.params.id)
+            .populate('deletedBy', 'name');
+
+        if (!archive) {
+            return res.status(404).json({
+                success: false,
+                message: 'Archived record not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            archive
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};

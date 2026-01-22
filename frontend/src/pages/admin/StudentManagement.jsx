@@ -21,13 +21,14 @@ const StudentManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [formData, setFormData] = useState({ name: '', email: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', mobile: '' });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
         shift: 'full',
         negotiatedPrice: ''
     });
     const [deletePassword, setDeletePassword] = useState('');
+    const [hardDelete, setHardDelete] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'inactive'
     const [error, setError] = useState('');
@@ -35,6 +36,11 @@ const StudentManagement = () => {
     const [showIdCardModal, setShowIdCardModal] = useState(false);
     const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
     const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+
+    // Archive States
+    const [archivedStudents, setArchivedStudents] = useState([]);
+    const [showArchiveModal, setShowArchiveModal] = useState(false);
+    const [selectedArchive, setSelectedArchive] = useState(null);
 
     useEffect(() => {
         fetchStudents();
@@ -62,6 +68,23 @@ const StudentManagement = () => {
         }
     };
 
+
+    const fetchArchivedStudents = async () => {
+        try {
+            const response = await api.get('/admin/archives');
+            setArchivedStudents(response.data.archives);
+        } catch (error) {
+            console.error('Error fetching archives:', error);
+            setError('Failed to load archived students');
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'history') {
+            fetchArchivedStudents();
+        }
+    }, [activeTab]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -78,7 +101,7 @@ const StudentManagement = () => {
 
             fetchStudents();
             setShowModal(false);
-            setFormData({ name: '', email: '' });
+            setFormData({ name: '', email: '', mobile: '' });
             setTimeout(() => setSuccess(''), 5000);
         } catch (error) {
             setError(error.response?.data?.message || 'Operation failed');
@@ -112,6 +135,7 @@ const StudentManagement = () => {
     const openDeleteModal = (student) => {
         setSelectedStudent(student);
         setDeletePassword('');
+        setHardDelete(false);
         setError('');
         setShowDeleteModal(true);
     };
@@ -124,7 +148,10 @@ const StudentManagement = () => {
         try {
             // Call delete endpoint with password verification
             await api.delete(`/admin/students/${selectedStudent._id}`, {
-                data: { password: deletePassword }
+                data: {
+                    password: deletePassword,
+                    forceDelete: hardDelete
+                }
             });
 
             setSuccess(`Student ${selectedStudent.name} deleted successfully`);
@@ -149,7 +176,7 @@ const StudentManagement = () => {
     const openAddModal = () => {
         setEditMode(false);
         setSelectedStudent(null);
-        setFormData({ name: '', email: '' });
+        setFormData({ name: '', email: '', mobile: '' });
         setShowModal(true);
     };
 
@@ -180,7 +207,7 @@ const StudentManagement = () => {
     const openEditModal = (student) => {
         setEditMode(true);
         setSelectedStudent(student);
-        setFormData({ name: student.name, email: student.email });
+        setFormData({ name: student.name, email: student.email, mobile: student.mobile || '' });
         setShowModal(true);
     };
 
@@ -245,6 +272,17 @@ const StudentManagement = () => {
             pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.pdf`);
         } catch (err) {
             console.error('PDF Download failed', err);
+        }
+    };
+
+    const handleViewArchive = async (archiveId) => {
+        try {
+            const response = await api.get(`/admin/archives/${archiveId}`);
+            setSelectedArchive(response.data.archive);
+            setShowArchiveModal(true);
+        } catch (error) {
+            console.error('Error fetching archive details:', error);
+            setError('Failed to load archive details');
         }
     };
 
@@ -367,6 +405,16 @@ const StudentManagement = () => {
                         <IoIdCard className="inline mr-2" size={18} />
                         ID Cards
                     </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'history'
+                            ? 'bg-gradient-primary shadow-lg'
+                            : 'bg-white/10 hover:bg-white/20'
+                            }`}
+                    >
+                        <IoTrash className="inline mr-2" size={18} />
+                        Deleted History
+                    </button>
                 </div>
 
                 {success && (
@@ -411,6 +459,52 @@ const StudentManagement = () => {
                                     ))
                                 )}
                             </div>
+                        ) : activeTab === 'history' ? (
+                            <Card>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-white/10">
+                                                <th className="text-left p-4">Name</th>
+                                                <th className="text-left p-4">Email</th>
+                                                <th className="text-left p-4">Joined</th>
+                                                <th className="text-left p-4">Deleted At</th>
+                                                <th className="text-right p-4">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {archivedStudents.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="text-center p-8 text-gray-400">
+                                                        No deleted students found.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                archivedStudents.map((student) => (
+                                                    <tr key={student._id} className="border-b border-white/5 hover:bg-white/5">
+                                                        <td className="p-4">{student.name}</td>
+                                                        <td className="p-4">{student.email}</td>
+                                                        <td className="p-4">
+                                                            {new Date(student.joinedAt).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="p-4 text-red-400">
+                                                            {new Date(student.deletedAt).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <button
+                                                                onClick={() => handleViewArchive(student._id)}
+                                                                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition shadow-sm"
+                                                            >
+                                                                View Report
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
                         ) : (
                             <Card>
                                 <div className="overflow-x-auto">
@@ -572,6 +666,18 @@ const StudentManagement = () => {
                                 required
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Mobile Number</label>
+                            <input
+                                type="tel"
+                                value={formData.mobile}
+                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                className="input"
+                                placeholder="Enter 10-digit mobile number"
+                                pattern="[0-9]{10}"
+                                required
+                            />
+                        </div>
                         <div className="flex gap-4">
                             <Button type="submit" variant="primary" className="flex-1">
                                 {editMode ? 'Update Student' : 'Create Student'}
@@ -681,7 +787,7 @@ const StudentManagement = () => {
                 <Modal
                     isOpen={showDeleteModal}
                     onClose={() => setShowDeleteModal(false)}
-                    title={selectedStudent?.isActive ? "⚠️ Remove Student" : "🗑️ Delete Permanently"}
+                    title={selectedStudent?.isActive && !hardDelete ? "⚠️ Remove Student" : "🗑️ Delete Permanently"}
                 >
                     <form onSubmit={handleDelete} className="space-y-4">
                         {/* Student Details */}
@@ -712,19 +818,35 @@ const StudentManagement = () => {
                         </div>
 
                         {/* Warning Message */}
-                        <div className={`border rounded-lg p-3 ${selectedStudent?.isActive
+                        <div className={`border rounded-lg p-3 ${selectedStudent?.isActive && !hardDelete
                             ? 'bg-yellow-500/10 border-yellow-500/30'
                             : 'bg-red-500/10 border-red-500/30'
                             }`}>
-                            <p className={`text-sm ${selectedStudent?.isActive ? 'text-yellow-400' : 'text-red-400'
+                            <p className={`text-sm ${selectedStudent?.isActive && !hardDelete ? 'text-yellow-400' : 'text-red-400'
                                 }`}>
-                                {selectedStudent?.isActive ? (
+                                {selectedStudent?.isActive && !hardDelete ? (
                                     <>⚠️ This will mark the student as inactive and free up their assigned seat. They can be restored later.</>
                                 ) : (
                                     <>🗑️ This will PERMANENTLY delete this student from the database. This action CANNOT be undone!</>
                                 )}
                             </p>
                         </div>
+
+                        {/* Hard Delete Checkbox (Only for active students) */}
+                        {selectedStudent?.isActive && (
+                            <div className="flex items-center gap-2 px-1">
+                                <input
+                                    type="checkbox"
+                                    id="hardDelete"
+                                    checked={hardDelete}
+                                    onChange={(e) => setHardDelete(e.target.checked)}
+                                    className="w-4 h-4 text-red-600 rounded focus:ring-red-500 bg-gray-700 border-gray-600"
+                                />
+                                <label htmlFor="hardDelete" className="text-sm text-gray-300 select-none cursor-pointer">
+                                    Permanently delete from database (Skip inactive state)
+                                </label>
+                            </div>
+                        )}
 
                         {/* Error Display */}
                         {error && (
@@ -761,7 +883,7 @@ const StudentManagement = () => {
                                 disabled={deleteLoading || !deletePassword}
                             >
                                 {deleteLoading ? 'Processing...' : (
-                                    selectedStudent?.isActive ? 'Remove Student' : 'Delete Permanently'
+                                    selectedStudent?.isActive && !hardDelete ? 'Remove Student' : 'Delete Permanently'
                                 )}
                             </Button>
                             <Button
@@ -828,6 +950,95 @@ const StudentManagement = () => {
                             </Button>
                         </div>
                     </div>
+                </Modal>
+
+                {/* Archive View Modal */}
+                <Modal
+                    isOpen={showArchiveModal}
+                    onClose={() => setShowArchiveModal(false)}
+                    title={selectedArchive ? `Archive Report: ${selectedArchive.name}` : 'Archive Report'}
+                >
+                    {selectedArchive && (
+                        <div className="space-y-6">
+                            {/* Header Info */}
+                            <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg">
+                                {selectedArchive.profileImage ? (
+                                    <img
+                                        src={`http://localhost:5000${selectedArchive.profileImage}`}
+                                        alt={selectedArchive.name}
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center text-xl font-bold">
+                                        {selectedArchive.name.charAt(0)}
+                                    </div>
+                                )}
+                                <div>
+                                    <h3 className="text-xl font-bold">{selectedArchive.name}</h3>
+                                    <p className="text-gray-400">{selectedArchive.email}</p>
+                                    <div className="flex gap-4 text-xs text-gray-500 mt-1">
+                                        <span>Joined: {new Date(selectedArchive.joinedAt).toLocaleDateString()}</span>
+                                        <span className="text-red-400">Deleted: {new Date(selectedArchive.deletedAt).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
+                                    <h4 className="text-blue-400 text-sm font-semibold mb-2">Total Fees Recorded</h4>
+                                    <p className="text-2xl font-bold">₹{selectedArchive.fees.reduce((acc, f) => acc + f.amount, 0)}</p>
+                                    <p className="text-xs text-gray-400">{selectedArchive.fees.length} transactions</p>
+                                </div>
+                                <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
+                                    <h4 className="text-purple-400 text-sm font-semibold mb-2">Attendance Days</h4>
+                                    <p className="text-2xl font-bold">{selectedArchive.attendance.filter(a => a.status === 'present').length}</p>
+                                    <p className="text-xs text-gray-400">Out of {selectedArchive.attendance.length} recorded days</p>
+                                </div>
+                            </div>
+
+                            {/* Fee History */}
+                            <div>
+                                <h4 className="font-semibold mb-3 border-b border-white/10 pb-2">Fee History</h4>
+                                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+                                    {selectedArchive.fees.length === 0 ? (
+                                        <p className="text-sm text-gray-500">No fee records found.</p>
+                                    ) : (
+                                        selectedArchive.fees.map((fee, idx) => (
+                                            <div key={idx} className="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
+                                                <span>{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-mono">₹{fee.amount}</span>
+                                                    <Badge variant={fee.status === 'paid' ? 'green' : 'yellow'}>{fee.status}</Badge>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Attendance History */}
+                            <div>
+                                <h4 className="font-semibold mb-3 border-b border-white/10 pb-2">Recent Attendance</h4>
+                                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+                                    {selectedArchive.attendance.length === 0 ? (
+                                        <p className="text-sm text-gray-500">No attendance records found.</p>
+                                    ) : (
+                                        selectedArchive.attendance.slice(0, 20).map((att, idx) => (
+                                            <div key={idx} className="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
+                                                <span>{new Date(att.date).toLocaleDateString()}</span>
+                                                <Badge variant={att.status === 'present' ? 'green' : 'red'}>{att.status}</Badge>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <Button variant="secondary" onClick={() => setShowArchiveModal(false)}>Close Report</Button>
+                            </div>
+                        </div>
+                    )}
                 </Modal>
             </div>
         </div>

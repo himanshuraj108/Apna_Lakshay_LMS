@@ -19,7 +19,9 @@ const {
     handleRequest,
     getActionHistory,
     getPasswordActivity,
-    resetStudentPassword
+    resetStudentPassword,
+    getArchivedStudents,
+    getArchivedStudent
 } = require('../controllers/adminController');
 const {
     addSeat,
@@ -82,5 +84,9 @@ router.post('/notifications', sendNotification);
 // Requests
 router.get('/requests', getRequests);
 router.put('/requests/:id', handleRequest);
+
+// Archives
+router.get('/archives', getArchivedStudents);
+router.get('/archives/:id', getArchivedStudent);
 
 module.exports = router;

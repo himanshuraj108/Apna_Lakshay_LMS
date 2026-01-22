@@ -63,6 +63,21 @@ const StudentIdCard = ({ student }) => {
                                 })}
                             </p>
                         </div>
+                        <div className="text-right">
+                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
+                            <p className="font-medium text-purple-600 text-xs font-bold">
+                                {(() => {
+                                    const shift = student.shift || student.seat?.shift;
+                                    if (!shift) return 'N/A';
+                                    const map = {
+                                        'day': 'Morning',
+                                        'night': 'Evening',
+                                        'full': 'Full'
+                                    };
+                                    return map[shift] || shift.charAt(0).toUpperCase() + shift.slice(1);
+                                })()}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Footer / Barcode Area */}
