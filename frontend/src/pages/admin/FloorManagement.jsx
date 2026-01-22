@@ -12,7 +12,11 @@ import RoomLayoutModal from '../../components/admin/RoomLayoutModal';
 import UpdateRoomPricesModal from '../../components/admin/UpdateRoomPricesModal';
 import UpdateFloorPricesModal from '../../components/admin/UpdateFloorPricesModal';
 import api from '../../utils/api';
-import { IoArrowBack, IoSaveOutline, IoSettingsOutline } from 'react-icons/io5';
+import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload } from 'react-icons/io5';
+import StudentIdCard from '../../components/admin/StudentIdCard';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import Modal from '../../components/ui/Modal';
 
 const FloorManagement = () => {
     const [floors, setFloors] = useState([]);
@@ -25,6 +29,8 @@ const FloorManagement = () => {
     const [updateFloorPricesModal, setUpdateFloorPricesModal] = useState({ isOpen: false, floor: null });
     const [bulkPrices, setBulkPrices] = useState({ day: 800, night: 800, full: 1200 });
     const [updating, setUpdating] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [showIdCardModal, setShowIdCardModal] = useState(false);
 
     useEffect(() => {
         fetchFloors();
@@ -69,11 +75,13 @@ const FloorManagement = () => {
 
         setUpdating(true);
         try {
-            const response = await api.put('/admin/seats/bulk-price', {
-                dayPrice: bulkPrices.day,
-                nightPrice: bulkPrices.night,
-                fullPrice: bulkPrices.full,
-                floorId: floors[selectedFloor]._id
+            const floorId = floors[selectedFloor]._id;
+            const response = await api.put(`/admin/floors/${floorId}/prices`, {
+                basePrices: {
+                    day: bulkPrices.day,
+                    night: bulkPrices.night,
+                    full: bulkPrices.full
+                }
             });
 
             if (response.data.success) {
@@ -85,6 +93,69 @@ const FloorManagement = () => {
             alert('Failed to update prices');
         } finally {
             setUpdating(false);
+        }
+    };
+
+    const handleSeatClick = (seat) => {
+        if (!seat.assignedTo) return;
+
+        // Seat.assignedTo is now a populated object with name, email, profileImage etc.
+        // We also need to ensure we pass the seat number
+        const student = {
+            ...seat.assignedTo,
+            seatNumber: seat.number // Use the seat's number
+        };
+        setSelectedStudent(student);
+        setShowIdCardModal(true);
+    };
+
+    const handleDownloadPNG = async () => {
+        const element = document.getElementById('seat-id-card-preview');
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: null
+            });
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('PNG Download failed', err);
+        }
+    };
+
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('seat-id-card-preview');
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/png');
+
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const componentWidth = canvas.width;
+            const componentHeight = canvas.height;
+
+            const targetWidth = 80;
+            const targetHeight = (componentHeight * targetWidth) / componentWidth;
+
+            const x = (pdfWidth - targetWidth) / 2;
+            const y = 20;
+
+            pdf.addImage(imgData, 'PNG', x, y, targetWidth, targetHeight);
+            pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.pdf`);
+        } catch (err) {
+            console.error('PDF Download failed', err);
         }
     };
 
@@ -209,6 +280,7 @@ const FloorManagement = () => {
                                             onAddSeat={(wall) => handleAddSeat(wall, room._id, floors[selectedFloor]._id)}
                                             onEditSeat={handleEditSeat}
                                             onDeleteSeat={handleDeleteSeat}
+                                            onSeatClick={handleSeatClick}
                                         />
                                     </Card>
                                 ))}
@@ -277,6 +349,46 @@ const FloorManagement = () => {
                     floor={updateFloorPricesModal.floor}
                     onSuccess={fetchFloors}
                 />
+
+                {/* View ID Card Modal */}
+                <Modal
+                    isOpen={showIdCardModal}
+                    onClose={() => setShowIdCardModal(false)}
+                    title="Student ID Card"
+                >
+                    <div className="flex flex-col items-center justify-center p-4">
+                        {selectedStudent && (
+                            <>
+                                <div id="seat-id-card-preview" className="p-4 bg-white rounded-xl">
+                                    <StudentIdCard student={selectedStudent} />
+                                </div>
+                                <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full">
+                                    <Button
+                                        variant="secondary"
+                                        className="flex-1"
+                                        onClick={() => setShowIdCardModal(false)}
+                                    >
+                                        Close
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                        onClick={handleDownloadPNG}
+                                    >
+                                        <IoDownload className="inline mr-2" /> PNG
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        className="flex-1 bg-red-600 hover:bg-red-700"
+                                        onClick={handleDownloadPDF}
+                                    >
+                                        <IoDownload className="inline mr-2" /> PDF
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </Modal>
             </div>
         </div>
     );

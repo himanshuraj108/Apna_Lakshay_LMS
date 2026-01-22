@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { IoBedOutline, IoAddCircleOutline, IoTrashOutline, IoCreateOutline } from 'react-icons/io5';
 
-const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat }) => {
+const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) => {
     const doorPosition = room.doorPosition || 'south';
 
     // Group seats by wall
@@ -10,14 +10,16 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat }) => {
     const eastSeats = room.seats.filter(s => s.position?.wall === 'east').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
     const southSeats = room.seats.filter(s => s.position?.wall === 'south').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
     const westSeats = room.seats.filter(s => s.position?.wall === 'west').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
+    const unpositionedSeats = room.seats.filter(s => !s.position?.wall);
 
     const totalSeats = room.seats.length;
 
     const SeatCard = ({ seat }) => (
         <motion.div
             whileHover={{ scale: 1.08 }}
+            onClick={() => seat.isOccupied && onSeatClick && onSeatClick(seat)}
             className={`relative p-2 rounded-lg border-2 transition-all group min-w-[50px] ${seat.isOccupied
-                ? 'bg-red-500/30 border-red-500'
+                ? 'bg-red-500/30 border-red-500 cursor-pointer hover:bg-red-500/40' // Add cursor pointer if occupied
                 : 'bg-green-500/30 border-green-500'
                 }`}
         >
@@ -29,14 +31,20 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat }) => {
             {/* Action buttons on hover */}
             <div className="absolute -top-2 -right-2 hidden group-hover:flex gap-1 z-10">
                 <button
-                    onClick={() => onEditSeat(seat)}
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering card click
+                        onEditSeat(seat);
+                    }}
                     className="p-1 bg-blue-600 rounded-full hover:bg-blue-500 transition-colors shadow-lg"
                 >
                     <IoCreateOutline size={12} />
                 </button>
                 {!seat.isOccupied && (
                     <button
-                        onClick={() => onDeleteSeat(seat)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteSeat(seat);
+                        }}
                         className="p-1 bg-red-600 rounded-full hover:bg-red-500 transition-colors shadow-lg"
                     >
                         <IoTrashOutline size={12} />
@@ -203,14 +211,23 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat }) => {
                         )}
                     </div>
 
-                    {/* Room Interior - Smaller */}
-                    <div className="absolute top-[80px] left-[80px] right-[80px] bottom-[80px] bg-gradient-to-br from-gray-700/40 to-gray-800/40 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center">
-                        <div className="text-center">
-                            <p className="text-gray-400 text-sm font-semibold">Room Interior</p>
-                            <p className="text-gray-500 text-xs mt-1">
-                                {room.dimensions?.width || 4}m × {room.dimensions?.height || 4}m
-                            </p>
-                        </div>
+                    {/* Room Interior - Unpositioned Seats or Info */}
+                    <div className="absolute top-[80px] left-[80px] right-[80px] bottom-[80px] bg-gradient-to-br from-gray-700/40 to-gray-800/40 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center p-4 overflow-auto">
+                        {unpositionedSeats.length > 0 ? (
+                            <div className="w-full h-full">
+                                <p className="text-gray-400 text-xs font-semibold mb-2 text-center sticky top-0 bg-gray-800/80 backdrop-blur-sm p-1 rounded z-10">Unconfigured Seats ({unpositionedSeats.length})</p>
+                                <div className="flex flex-wrap gap-2 justify-center content-start">
+                                    {unpositionedSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center">
+                                <p className="text-gray-400 text-sm font-semibold">Room Interior</p>
+                                <p className="text-gray-500 text-xs mt-1">
+                                    {room.dimensions?.width || 4}m × {room.dimensions?.height || 4}m
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

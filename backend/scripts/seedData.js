@@ -19,13 +19,16 @@ const seedData = async () => {
         console.log('🗑️  Cleared existing data');
 
         // Create admin user
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@hamaralakshay.com';
+        const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
         const admin = await User.create({
             name: 'Admin',
-            email: 'admin',
-            password: 'admin123',
+            email: adminEmail,
+            password: adminPassword,
             role: 'admin'
         });
-        console.log('👤 Admin created (email: admin, password: admin123)');
+        console.log(`👤 Admin created (email: ${adminEmail})`);
 
         // Create floors
         const groundFloor = await Floor.create({ name: 'Ground Floor', level: 0, rooms: [] });
@@ -47,6 +50,10 @@ const seedData = async () => {
                 room: groundRoom._id,
                 floor: groundFloor._id,
                 isOccupied: false,
+                position: {
+                    wall: i <= 5 ? 'north' : i <= 10 ? 'east' : i <= 15 ? 'south' : 'west',
+                    index: (i - 1) % 5
+                },
                 basePrices: {
                     day: 800,
                     night: 800,
@@ -78,6 +85,10 @@ const seedData = async () => {
                 room: firstRoom1._id,
                 floor: firstFloor._id,
                 isOccupied: false,
+                position: {
+                    wall: i <= 4 ? 'north' : 'east',
+                    index: (i - 1) % 4
+                },
                 basePrices: {
                     day: 800,
                     night: 800,
@@ -103,6 +114,10 @@ const seedData = async () => {
                 room: firstRoom2._id,
                 floor: firstFloor._id,
                 isOccupied: false,
+                position: {
+                    wall: i <= 4 ? 'south' : i <= 8 ? 'west' : 'north',
+                    index: (i - 1) % 4
+                },
                 basePrices: {
                     day: 800,
                     night: 800,
@@ -134,6 +149,10 @@ const seedData = async () => {
                 room: secondRoom._id,
                 floor: secondFloor._id,
                 isOccupied: false,
+                position: {
+                    wall: 'north',
+                    index: i - 1
+                },
                 basePrices: {
                     day: 800,
                     night: 800,
@@ -158,8 +177,8 @@ const seedData = async () => {
         console.log('   - Second Floor: 1 Room, 5 Seats');
         console.log('   - Total: 44 Seats');
         console.log('\n👤 Admin Login:');
-        console.log('   Email: admin');
-        console.log('   Password: admin123');
+        console.log(`   Email: ${adminEmail}`);
+        console.log('   Password: [HIDDEN]');
 
         process.exit(0);
     } catch (error) {

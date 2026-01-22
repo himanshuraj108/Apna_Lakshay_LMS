@@ -7,7 +7,10 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import Badge from '../../components/ui/Badge';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload } from 'react-icons/io5';
+import StudentIdCard from '../../components/admin/StudentIdCard';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const StudentManagement = () => {
     const [students, setStudents] = useState([]);
@@ -29,6 +32,7 @@ const StudentManagement = () => {
     const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'inactive'
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [showIdCardModal, setShowIdCardModal] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -160,6 +164,64 @@ const StudentManagement = () => {
         setShowSeatModal(true);
     };
 
+    const openIdCardModal = (student) => {
+        setSelectedStudent(student);
+        setShowIdCardModal(true);
+    };
+
+    const handleDownloadPNG = async () => {
+        const element = document.getElementById('student-id-card-preview');
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 3, // Higher resolution
+                useCORS: true,
+                backgroundColor: null
+            });
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('PNG Download failed', err);
+        }
+    };
+
+    const handleDownloadPDF = async () => {
+        const element = document.getElementById('student-id-card-preview');
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+            const imgData = canvas.toDataURL('image/png');
+
+            // card dimensions (portrait)
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const componentWidth = canvas.width;
+            const componentHeight = canvas.height;
+
+            // Calculate width to fit PDF cleanly (e.g., 80mm wide card)
+            const targetWidth = 80;
+            const targetHeight = (componentHeight * targetWidth) / componentWidth;
+
+            // Center in A4
+            const x = (pdfWidth - targetWidth) / 2;
+            const y = 20;
+
+            pdf.addImage(imgData, 'PNG', x, y, targetWidth, targetHeight);
+            pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.pdf`);
+        } catch (err) {
+            console.error('PDF Download failed', err);
+        }
+    };
+
     // Get all available seats from floors
     const getAvailableSeats = () => {
         const seats = [];
@@ -181,6 +243,29 @@ const StudentManagement = () => {
     };
 
     const availableSeats = getAvailableSeats();
+
+    // Helper to get seat number for a student
+    const getStudentSeat = (studentId) => {
+        if (!floors || floors.length === 0) return null;
+
+        for (const floor of floors) {
+            if (!floor.rooms) continue;
+            for (const room of floor.rooms) {
+                if (!room.seats) continue;
+                for (const seat of room.seats) {
+                    // Check if assignedTo exists and matches studentId
+                    // assignedTo can be populated object or ID string
+                    if (seat.assignedTo) {
+                        const assignedId = typeof seat.assignedTo === 'object' ? seat.assignedTo._id : seat.assignedTo;
+                        if (assignedId === studentId) {
+                            return seat.number;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    };
 
     // Filter students based on active tab
     const getFilteredStudents = () => {
@@ -246,6 +331,16 @@ const StudentManagement = () => {
                     >
                         Inactive ({students.filter(s => !s.isActive).length})
                     </button>
+                    <button
+                        onClick={() => setActiveTab('id-cards')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'id-cards'
+                            ? 'bg-gradient-primary shadow-lg'
+                            : 'bg-white/10 hover:bg-white/20'
+                            }`}
+                    >
+                        <IoIdCard className="inline mr-2" size={18} />
+                        ID Cards
+                    </button>
                 </div>
 
                 {success && (
@@ -271,77 +366,151 @@ const StudentManagement = () => {
                 {loading ? (
                     <SkeletonLoader type="table" count={1} />
                 ) : (
-                    <Card>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-white/10">
-                                        <th className="text-left p-4">Name</th>
-                                        <th className="text-left p-4">Email</th>
-                                        <th className="text-left p-4">Status</th>
-                                        <th className="text-left p-4">Created</th>
-                                        <th className="text-right p-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredStudents.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="5" className="text-center p-8 text-gray-400">
-                                                {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
-                                                {activeTab === 'active' && 'No active students found.'}
-                                                {activeTab === 'inactive' && 'No inactive students found.'}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        filteredStudents.map((student) => (
-                                            <tr key={student._id} className="border-b border-white/5 hover:bg-white/5">
-                                                <td className="p-4">{student.name}</td>
-                                                <td className="p-4">{student.email}</td>
-                                                <td className="p-4">
-                                                    <Badge variant={student.isActive ? 'green' : 'red'}>
-                                                        {student.isActive ? 'Active' : 'Inactive'}
-                                                    </Badge>
-                                                </td>
-                                                <td className="p-4">
-                                                    {new Date(student.createdAt).toLocaleDateString()}
-                                                </td>
-                                                <td className="p-4 text-right space-x-2">
-                                                    {student.isActive ? (
-                                                        <>
-                                                            <button
-                                                                onClick={() => openSeatAssignModal(student)}
-                                                                className="text-green-400 hover:text-green-300 transition-colors"
-                                                                title="Assign Seat"
-                                                            >
-                                                                <IoBedOutline size={20} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => openEditModal(student)}
-                                                                className="text-blue-400 hover:text-blue-300 transition-colors"
-                                                                title="Edit"
-                                                            >
-                                                                <IoPencil size={20} />
-                                                            </button>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-gray-500 text-xs mr-2">Inactive</span>
-                                                    )}
-                                                    <button
-                                                        onClick={() => openDeleteModal(student)}
-                                                        className="text-red-400 hover:text-red-300 transition-colors"
-                                                        title={student.isActive ? "Remove Student" : "Delete Permanently"}
-                                                    >
-                                                        <IoTrash size={20} />
-                                                    </button>
-                                                </td>
+                    <>
+                        {activeTab === 'id-cards' ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {students.filter(s => s.isActive).length === 0 ? (
+                                    <div className="col-span-full text-center p-12 bg-white/5 rounded-xl border border-white/10">
+                                        <p className="text-gray-400 text-lg">No active students found to generate ID cards.</p>
+                                    </div>
+                                ) : (
+                                    students.filter(s => s.isActive).map(student => (
+                                        <StudentIdCard
+                                            key={student._id}
+                                            student={{
+                                                ...student,
+                                                seatNumber: getStudentSeat(student._id)
+                                            }}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        ) : (
+                            <Card>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-white/10">
+                                                <th className="text-left p-4">Name</th>
+                                                <th className="text-left p-4">Email</th>
+                                                <th className="text-left p-4">Status</th>
+                                                <th className="text-left p-4">Created</th>
+                                                <th className="text-right p-4">Actions</th>
                                             </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
+                                        </thead>
+                                        <tbody>
+                                            {filteredStudents.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="text-center p-8 text-gray-400">
+                                                        {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
+                                                        {activeTab === 'active' && 'No active students found.'}
+                                                        {activeTab === 'inactive' && 'No inactive students found.'}
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                filteredStudents.map((student) => (
+                                                    <tr key={student._id} className="border-b border-white/5 hover:bg-white/5">
+                                                        <td className="p-4">{student.name}</td>
+                                                        <td className="p-4">{student.email}</td>
+                                                        <td className="p-4">
+                                                            <Badge variant={student.isActive ? 'green' : 'red'}>
+                                                                {student.isActive ? 'Active' : 'Inactive'}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="p-4">
+                                                            {new Date(student.createdAt).toLocaleDateString()}
+                                                        </td>
+                                                        <td className="p-4 text-right space-x-2">
+                                                            {student.isActive ? (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => openIdCardModal(student)}
+                                                                        className="text-purple-400 hover:text-purple-300 transition-colors"
+                                                                        title="Show ID Card"
+                                                                    >
+                                                                        <IoIdCard size={20} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => openSeatAssignModal(student)}
+                                                                        className="text-green-400 hover:text-green-300 transition-colors"
+                                                                        title="Assign Seat"
+                                                                    >
+                                                                        <IoBedOutline size={20} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => openEditModal(student)}
+                                                                        className="text-blue-400 hover:text-blue-300 transition-colors"
+                                                                        title="Edit"
+                                                                    >
+                                                                        <IoPencil size={20} />
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-gray-500 text-xs mr-2">Inactive</span>
+                                                            )}
+                                                            <button
+                                                                onClick={() => openDeleteModal(student)}
+                                                                className="text-red-400 hover:text-red-300 transition-colors"
+                                                                title={student.isActive ? "Remove Student" : "Delete Permanently"}
+                                                            >
+                                                                <IoTrash size={20} />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
+                        )}
+                    </>
                 )}
+
+                {/* View ID Card Modal */}
+                <Modal
+                    isOpen={showIdCardModal}
+                    onClose={() => setShowIdCardModal(false)}
+                    title="Student ID Card"
+                >
+                    <div className="flex flex-col items-center justify-center p-4">
+                        {selectedStudent && (
+                            <>
+                                <div id="student-id-card-preview" className="p-4 bg-white rounded-xl">
+                                    <StudentIdCard
+                                        student={{
+                                            ...selectedStudent,
+                                            seatNumber: getStudentSeat(selectedStudent._id)
+                                        }}
+                                    />
+                                </div>
+                                <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full">
+                                    <Button
+                                        variant="secondary"
+                                        className="flex-1"
+                                        onClick={() => setShowIdCardModal(false)}
+                                    >
+                                        Close
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                        onClick={handleDownloadPNG}
+                                    >
+                                        <IoDownload className="inline mr-2" /> PNG
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        className="flex-1 bg-red-600 hover:bg-red-700"
+                                        onClick={handleDownloadPDF}
+                                    >
+                                        <IoDownload className="inline mr-2" /> PDF
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </Modal>
 
                 {/* Add/Edit Student Modal */}
                 <Modal

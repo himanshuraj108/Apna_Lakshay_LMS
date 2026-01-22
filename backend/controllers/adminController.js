@@ -108,7 +108,13 @@ exports.getStudents = async (req, res) => {
 // Get single student by ID (supports full _id or last 8 chars)
 exports.getStudent = async (req, res) => {
     try {
-        const { id } = req.params;
+        let { id } = req.params;
+
+        // Handle "HL-" prefix from ID card text
+        if (id && id.toUpperCase().startsWith('HL-')) {
+            id = id.substring(3);
+        }
+
         let student;
 
         // Check if valid ObjectId
@@ -331,7 +337,7 @@ exports.getFloors = async (req, res) => {
                     path: 'seats',
                     populate: {
                         path: 'assignedTo',
-                        select: 'name email'
+                        select: 'name email profileImage createdAt'
                     }
                 }
             })
@@ -461,13 +467,12 @@ exports.assignSeat = async (req, res) => {
             const floorName = seat.floor?.name || 'N/A';
             const roomName = seat.room?.name || 'N/A';
             await emailService.sendSeatAssignmentEmail(
-                student.name,
-                student.email,
-                seat.number,
-                floorName,
-                roomName,
-                shift,
-                seat.negotiatedPrice
+                student,
+                {
+                    ...seat.toObject(),
+                    currentPrice: seat.negotiatedPrice
+                },
+                shift
             );
         } catch (emailError) {
             console.error('Seat assignment email failed:', emailError.message);
