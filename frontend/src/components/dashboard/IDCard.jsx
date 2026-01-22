@@ -10,7 +10,11 @@ const IDCard = ({ student, onClose }) => {
 
     const downloadPNG = async () => {
         if (!cardRef.current) return;
-        const canvas = await html2canvas(cardRef.current, { scale: 4, backgroundColor: null });
+        const canvas = await html2canvas(cardRef.current, {
+            scale: 4,
+            backgroundColor: null,
+            useCORS: true
+        });
         const link = document.createElement('a');
         link.download = `${student.name.replace(/\s+/g, '_')}_ID_Card.png`;
         link.href = canvas.toDataURL('image/png');
@@ -19,7 +23,10 @@ const IDCard = ({ student, onClose }) => {
 
     const printPDF = async () => {
         if (!cardRef.current) return;
-        const canvas = await html2canvas(cardRef.current, { scale: 4 });
+        const canvas = await html2canvas(cardRef.current, {
+            scale: 4,
+            useCORS: true
+        });
         const imgData = canvas.toDataURL('image/png');
 
         const pdf = new jsPDF({

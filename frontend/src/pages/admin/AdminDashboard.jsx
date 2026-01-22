@@ -11,6 +11,7 @@ import {
     IoNotificationsOutline, IoLogOut, IoSettings, IoScanOutline
 } from 'react-icons/io5';
 import QRScannerModal from '../../components/admin/QRScannerModal';
+import PasswordActivityLog from '../../components/admin/PasswordActivityLog';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
@@ -135,6 +136,13 @@ const AdminDashboard = () => {
                         </Card>
                     </div>
                 )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    {/* Activity Log - Takes up 2 columns */}
+                    <div className="lg:col-span-2 h-[400px]">
+                        <PasswordActivityLog />
+                    </div>
+                </div>
 
                 {/* Menu Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

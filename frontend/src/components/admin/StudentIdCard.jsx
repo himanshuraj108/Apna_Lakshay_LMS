@@ -27,8 +27,9 @@ const StudentIdCard = ({ student }) => {
                     <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg -mt-16 bg-gray-100 flex items-center justify-center overflow-hidden z-10 relative">
                         {student.profileImage ? (
                             <img
-                                src={student.profileImage}
+                                src={`http://localhost:5000${student.profileImage}`}
                                 alt={student.name}
+                                crossOrigin="anonymous"
                                 className="w-full h-full object-cover"
                             />
                         ) : (

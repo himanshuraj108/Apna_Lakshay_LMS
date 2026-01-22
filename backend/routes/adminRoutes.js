@@ -17,7 +17,8 @@ const {
     sendNotification,
     getRequests,
     handleRequest,
-    getActionHistory
+    getActionHistory,
+    getPasswordActivity
 } = require('../controllers/adminController');
 const {
     addSeat,
@@ -35,6 +36,7 @@ router.use(protect, adminOnly);
 
 // Action History
 router.get('/action-history', getActionHistory);
+router.get('/password-activity', getPasswordActivity);
 
 // Dashboard
 router.get('/dashboard', getDashboard);

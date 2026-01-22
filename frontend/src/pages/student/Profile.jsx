@@ -7,10 +7,10 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
-import { IoArrowBack, IoPerson, IoCamera, IoTrash, IoSend } from 'react-icons/io5';
+import { IoArrowBack, IoPerson, IoCamera, IoTrash, IoSend, IoLockClosed } from 'react-icons/io5';
 
 const Profile = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showRequestModal, setShowRequestModal] = useState(false);
@@ -27,6 +27,7 @@ const Profile = () => {
         try {
             const response = await api.get('/auth/me');
             setProfile(response.data.user);
+            updateUser(response.data.user); // Sync with global context
         } catch (error) {
             console.error('Error fetching profile:', error);
         } finally {
@@ -39,7 +40,7 @@ const Profile = () => {
         if (!file) return;
 
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('profileImage', file);
 
         try {
             await api.post('/student/profile/image', formData);
@@ -56,7 +57,7 @@ const Profile = () => {
         try {
             await api.delete('/student/profile/image');
             setSuccess('Profile image removed successfully!');
-            fetchProfile();
+            fetchProfile(); // This now calls updateUser internally
             setTimeout(() => setSuccess(''), 3000);
         } catch (error) {
             setError('Failed to delete image');
@@ -66,17 +67,30 @@ const Profile = () => {
 
     const submitRequest = async () => {
         try {
-            await api.post('/student/request', {
-                type: requestType,
-                requestedData: requestData
-            });
+            if (requestType === 'password') {
+                if (requestData.newPassword !== requestData.confirmPassword) {
+                    setError('Passwords do not match');
+                    setTimeout(() => setError(''), 3000);
+                    return;
+                }
+                await api.put('/student/password', {
+                    currentPassword: requestData.currentPassword,
+                    newPassword: requestData.newPassword
+                });
+                setSuccess('Password changed successfully!');
+            } else {
+                await api.post('/student/request', {
+                    type: requestType,
+                    requestedData: requestData
+                });
+                setSuccess('Change request submitted successfully!');
+            }
 
-            setSuccess('Change request submitted successfully!');
             setShowRequestModal(false);
             setRequestData({});
             setTimeout(() => setSuccess(''), 3000);
         } catch (error) {
-            setError(error.response?.data?.message || 'Failed to submit request');
+            setError(error.response?.data?.message || 'Operation failed');
             setTimeout(() => setError(''), 3000);
         }
     };
@@ -147,10 +161,11 @@ const Profile = () => {
                                 onChange={handleImageUpload}
                                 className="hidden"
                             />
-                            <label htmlFor="image-upload">
-                                <Button variant="secondary" className="cursor-pointer mb-2">
-                                    <IoCamera className="inline mr-2" /> Upload Photo
-                                </Button>
+                            <label
+                                htmlFor="image-upload"
+                                className="cursor-pointer mb-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex items-center font-semibold text-sm"
+                            >
+                                <IoCamera className="mr-2" /> Upload Photo
                             </label>
                             {profile?.profileImage && (
                                 <Button variant="danger" onClick={handleImageDelete} className="text-sm">
@@ -213,11 +228,29 @@ const Profile = () => {
                     </div>
                 </Card>
 
-                {/* Request Modal */}
+                {/* Security Settings */}
+                <Card>
+                    <h3 className="text-2xl font-bold mb-6">Security Settings</h3>
+                    <Button
+                        variant="danger"
+                        onClick={() => {
+                            setRequestType('password');
+                            setShowRequestModal(true);
+                        }}
+                        className="w-full md:w-auto"
+                    >
+                        <IoLockClosed className="inline mr-2" /> Change Password
+                    </Button>
+                </Card>
+
+                {/* Request/Change Modal */}
                 <Modal
                     isOpen={showRequestModal}
                     onClose={() => setShowRequestModal(false)}
-                    title={`Request ${requestType === 'shift' ? 'Shift' : 'Seat'} Change`}
+                    title={
+                        requestType === 'password' ? 'Change Password' :
+                            `Request ${requestType === 'shift' ? 'Shift' : 'Seat'} Change`
+                    }
                 >
                     <div className="space-y-4">
                         <p className="text-gray-400">
@@ -245,10 +278,42 @@ const Profile = () => {
                                 <label className="block text-sm font-medium mb-2">Reason for Change</label>
                                 <textarea
                                     value={requestData.reason || ''}
-                                    onChange={(e) => setRequestData({ reason: e.target.value })}
+                                    onChange={(e) => setRequestData({ ...requestData, reason: e.target.value })}
                                     className="input min-h-[100px]"
                                     placeholder="Please explain why you need a seat change..."
                                 />
+                            </div>
+                        )}
+
+                        {requestType === 'password' && (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Current Password</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        placeholder="Enter current password"
+                                        onChange={(e) => setRequestData({ ...requestData, currentPassword: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        placeholder="Enter new password"
+                                        onChange={(e) => setRequestData({ ...requestData, newPassword: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input"
+                                        placeholder="Confirm new password"
+                                        onChange={(e) => setRequestData({ ...requestData, confirmPassword: e.target.value })}
+                                    />
+                                </div>
                             </div>
                         )}
 

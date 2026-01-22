@@ -138,6 +138,12 @@ const Login = () => {
                             </div>
                         </div>
 
+                        <div className="flex justify-end">
+                            <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                                Forgot password?
+                            </Link>
+                        </div>
+
                         <motion.button
                             whileHover={{ scale: 1.01 }}
                             whileTap={{ scale: 0.99 }}

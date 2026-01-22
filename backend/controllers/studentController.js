@@ -373,11 +373,15 @@ const upload = multer({
 exports.uploadProfileImage = (req, res) => {
     upload(req, res, async function (err) {
         if (err) {
+            console.error('Upload Error:', err);
             return res.status(400).json({
                 success: false,
                 message: err.message
             });
         }
+
+        console.log('Upload Request Body:', req.body);
+        console.log('Upload Request File:', req.file);
 
         if (!req.file) {
             return res.status(400).json({

@@ -38,6 +38,15 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    // For Forgot Password
+    resetPasswordOTP: {
+        type: String,
+        select: false
+    },
+    resetPasswordOTPExpire: {
+        type: Date,
+        select: false
     }
 }, {
     timestamps: true

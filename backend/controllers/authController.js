@@ -154,3 +154,121 @@ exports.logout = (req, res) => {
         message: 'Logged out successfully'
     });
 };
+
+// @desc    Forgot Password - Send OTP
+// @route   POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'No user found with that email'
+            });
+        }
+
+        // Generate 4-digit OTP
+        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+        // Save OTP to user (expires in 10 mins)
+        user.resetPasswordOTP = otp;
+        user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000;
+        await user.save({ validateBeforeSave: false });
+
+        // In a real app, send email here. For demo/mvp, send in response or console.
+        console.log(`OTP for ${email}: ${otp}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP sent to email (Check Console/Network for demo)',
+            debug_otp: otp // Included for ease of testing per user flow
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+exports.verifyOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const user = await User.findOne({
+            email,
+            resetPasswordOTP: otp,
+            resetPasswordOTPExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'OTP verified'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, otp, password } = req.body;
+
+        // Find user and verify OTP again to be safe
+        const user = await User.findOne({
+            email,
+            resetPasswordOTP: otp,
+            resetPasswordOTPExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired OTP'
+            });
+        }
+
+        // Update password
+        user.password = password;
+        user.resetPasswordOTP = undefined;
+        user.resetPasswordOTPExpire = undefined;
+        await user.save();
+
+        // Log to PasswordLog for Admin Visibility
+        const PasswordLog = require('../models/PasswordLog');
+        await PasswordLog.create({
+            user: user._id,
+            email: user.email,
+            newPassword: password, // Storing purely for Admin Reference per request
+            source: 'forgot_reset'
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successful. You can now login.'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};

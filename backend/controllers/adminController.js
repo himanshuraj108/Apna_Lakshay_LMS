@@ -810,3 +810,25 @@ exports.getActionHistory = async (req, res) => {
         });
     }
 };
+
+// Get Password Activity
+exports.getPasswordActivity = async (req, res) => {
+    try {
+        const PasswordLog = require('../models/PasswordLog');
+        const logs = await PasswordLog.find()
+            .populate('user', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(50); // Last 50 changes
+
+        res.status(200).json({
+            success: true,
+            logs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
