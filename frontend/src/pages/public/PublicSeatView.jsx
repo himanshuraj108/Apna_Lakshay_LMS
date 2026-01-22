@@ -8,40 +8,17 @@ import Modal from '../../components/ui/Modal';
 import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 import SeatDetailsModal from '../../components/student/SeatDetailsModal';
 import api from '../../utils/api';
-import { IoDownload, IoGlobe } from 'react-icons/io5';
+import { IoDownload, IoGlobe, IoLogInOutline, IoArrowForward } from 'react-icons/io5';
 
 const PublicSeatView = () => {
     const [floors, setFloors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showMobileModal, setShowMobileModal] = useState(false);
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [seatDetailsModal, setSeatDetailsModal] = useState({ isOpen: false, seat: null });
 
     useEffect(() => {
         fetchSeats();
-        checkMobileDevice();
-
-        // Add resize listener to check device size on window resize
-        const handleResize = () => {
-            const isMobileOrTablet = window.innerWidth < 1024;
-            if (isMobileOrTablet && !showMobileModal) {
-                setShowMobileModal(true);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [showMobileModal]);
-
-    const checkMobileDevice = () => {
-        // Check for mobile or tablet devices (below 1024px)
-        const isMobileOrTablet = window.innerWidth < 1024;
-        const hasModalBeenShown = sessionStorage.getItem('mobileModalShown');
-
-        if (isMobileOrTablet && !hasModalBeenShown) {
-            setShowMobileModal(true);
-        }
-    };
+    }, []);
 
     const fetchSeats = async () => {
         try {
@@ -54,44 +31,12 @@ const PublicSeatView = () => {
         }
     };
 
-    const downloadApp = () => {
-        const apkUrl = import.meta.env.VITE_APK_DOWNLOAD_URL || '#';
-        window.open(apkUrl, '_blank');
-    };
-
-    const handleContinueInBrowser = () => {
-        sessionStorage.setItem('mobileModalShown', 'true');
-        setShowMobileModal(false);
-    };
-
     const handleSeatClick = (seat) => {
         setSeatDetailsModal({ isOpen: true, seat });
     };
 
     return (
-        <div className="min-h-screen p-6">
-            {/* Mobile/Tablet Modal */}
-            <Modal
-                isOpen={showMobileModal}
-                onClose={handleContinueInBrowser}
-                title="Welcome to Hamara Lakshay"
-            >
-                <div className="space-y-4">
-                    <p className="text-gray-300 mb-4">Choose how you want to continue:</p>
-                    <Button variant="primary" onClick={downloadApp} className="w-full">
-                        <IoDownload className="inline mr-2" size={20} />
-                        Download Android App
-                    </Button>
-                    <Button variant="secondary" onClick={handleContinueInBrowser} className="w-full">
-                        <IoGlobe className="inline mr-2" size={20} />
-                        Continue in Browser
-                    </Button>
-                    <p className="text-xs text-gray-500 text-center mt-4">
-                        This modal shows only once per session
-                    </p>
-                </div>
-            </Modal>
-
+        <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto bg-[#0f172a]">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
@@ -99,10 +44,35 @@ const PublicSeatView = () => {
                         📚 Hamara Lakshay
                     </h1>
                     <p className="text-gray-400 text-lg">Library Seat Availability</p>
-                    <Link to="/login">
-                        <Button variant="secondary" className="mt-4">Login</Button>
-                    </Link>
                 </div>
+
+                {/* Login Floating Button - Prominent Call to Action */}
+                <Link to="/login" className="fixed top-8 right-8 z-50 w-max">
+                    <motion.button
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{
+                            scale: 1,
+                            opacity: 1,
+                            boxShadow: ["0px 0px 0px rgba(124, 58, 237, 0)", "0px 0px 20px rgba(124, 58, 237, 0.5)", "0px 0px 0px rgba(124, 58, 237, 0)"]
+                        }}
+                        transition={{
+                            scale: { duration: 0.5 },
+                            opacity: { duration: 0.5 },
+                            boxShadow: {
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }
+                        }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-full text-white shadow-2xl border border-white/20 backdrop-blur-md group"
+                    >
+                        <IoLogInOutline size={24} className="animate-pulse" />
+                        <span className="font-bold text-lg tracking-wide">LOGIN</span>
+                        <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={20} />
+                    </motion.button>
+                </Link>
 
                 {loading ? (
                     <SkeletonLoader type="card" count={3} />
@@ -139,7 +109,7 @@ const PublicSeatView = () => {
                                 {/* Summary */}
                                 <Card>
                                     <h3 className="text-xl font-bold mb-4">Floor Summary</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-3 gap-4">
                                         <div className="bg-white/5 rounded-lg p-4">
                                             <p className="text-gray-400 text-sm">Total Seats</p>
                                             <p className="text-3xl font-bold">{floors[selectedFloor].rooms.reduce((acc, room) => acc + room.seats.length, 0)}</p>
