@@ -4,8 +4,9 @@ import { QRCodeCanvas } from 'qrcode.react';
 
 const StudentIdCard = ({ student }) => {
     // Generate a pseudo-ID if not existent (using last 6 chars of MongoID)
-    const studentId = student._id.slice(-6).toUpperCase();
-    const verificationUrl = `${window.location.origin}/admin/verify/${student._id}`;
+    const id = student._id || student.id || '';
+    const studentId = id ? id.slice(-6).toUpperCase() : '------';
+    const verificationUrl = `${window.location.origin}/admin/verify/${id}`;
 
     return (
         <motion.div
