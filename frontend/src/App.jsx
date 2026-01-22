@@ -25,6 +25,7 @@ import StudyPlanner from './pages/student/StudyPlanner';
 import FeeStatus from './pages/student/FeeStatus';
 import Notifications from './pages/student/Notifications';
 import Profile from './pages/student/Profile';
+import ViewSeats from './pages/student/ViewSeats';
 
 function App() {
     const { user, loading } = useAuth();
@@ -57,6 +58,7 @@ function App() {
 
             {/* Student Routes */}
             <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+            <Route path="/student/view-seats" element={<ProtectedRoute><ViewSeats /></ProtectedRoute>} />
             <Route path="/student/seat" element={<ProtectedRoute><MySeat /></ProtectedRoute>} />
             <Route path="/student/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
             <Route path="/student/planner" element={<ProtectedRoute><StudyPlanner /></ProtectedRoute>} />

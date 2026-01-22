@@ -1,67 +1,32 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import Modal from '../../components/ui/Modal';
 import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 import SeatDetailsModal from '../../components/student/SeatDetailsModal';
 import api from '../../utils/api';
-import { IoDownload, IoGlobe } from 'react-icons/io5';
+import { IoArrowBack } from 'react-icons/io5';
 
-const PublicSeatView = () => {
+const ViewSeats = () => {
     const [floors, setFloors] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showMobileModal, setShowMobileModal] = useState(false);
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [seatDetailsModal, setSeatDetailsModal] = useState({ isOpen: false, seat: null });
 
     useEffect(() => {
-        fetchSeats();
-        checkMobileDevice();
+        fetchFloors();
+    }, []);
 
-        // Add resize listener to check device size on window resize
-        const handleResize = () => {
-            const isMobileOrTablet = window.innerWidth < 1024;
-            if (isMobileOrTablet && !showMobileModal) {
-                setShowMobileModal(true);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [showMobileModal]);
-
-    const checkMobileDevice = () => {
-        // Check for mobile or tablet devices (below 1024px)
-        const isMobileOrTablet = window.innerWidth < 1024;
-        const hasModalBeenShown = sessionStorage.getItem('mobileModalShown');
-
-        if (isMobileOrTablet && !hasModalBeenShown) {
-            setShowMobileModal(true);
-        }
-    };
-
-    const fetchSeats = async () => {
+    const fetchFloors = async () => {
         try {
-            const response = await api.get('/public/seats');
+            const response = await api.get('/admin/floors'); // Using admin endpoint for now
             setFloors(response.data.floors);
         } catch (error) {
-            console.error('Error fetching seats:', error);
+            console.error('Error fetching floors:', error);
         } finally {
             setLoading(false);
         }
-    };
-
-    const downloadApp = () => {
-        const apkUrl = import.meta.env.VITE_APK_DOWNLOAD_URL || '#';
-        window.open(apkUrl, '_blank');
-    };
-
-    const handleContinueInBrowser = () => {
-        sessionStorage.setItem('mobileModalShown', 'true');
-        setShowMobileModal(false);
     };
 
     const handleSeatClick = (seat) => {
@@ -70,39 +35,17 @@ const PublicSeatView = () => {
 
     return (
         <div className="min-h-screen p-6">
-            {/* Mobile/Tablet Modal */}
-            <Modal
-                isOpen={showMobileModal}
-                onClose={handleContinueInBrowser}
-                title="Welcome to Hamara Lakshay"
-            >
-                <div className="space-y-4">
-                    <p className="text-gray-300 mb-4">Choose how you want to continue:</p>
-                    <Button variant="primary" onClick={downloadApp} className="w-full">
-                        <IoDownload className="inline mr-2" size={20} />
-                        Download Android App
-                    </Button>
-                    <Button variant="secondary" onClick={handleContinueInBrowser} className="w-full">
-                        <IoGlobe className="inline mr-2" size={20} />
-                        Continue in Browser
-                    </Button>
-                    <p className="text-xs text-gray-500 text-center mt-4">
-                        This modal shows only once per session
-                    </p>
-                </div>
-            </Modal>
-
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-                        📚 Hamara Lakshay
-                    </h1>
-                    <p className="text-gray-400 text-lg">Library Seat Availability</p>
-                    <Link to="/login">
-                        <Button variant="secondary" className="mt-4">Login</Button>
-                    </Link>
-                </div>
+                <Link to="/student">
+                    <Button variant="secondary" className="mb-6">
+                        <IoArrowBack className="inline mr-2" /> Back to Dashboard
+                    </Button>
+                </Link>
+
+                <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+                    Available Seats
+                </h1>
+                <p className="text-gray-400 mb-8">Click on any seat to view details and availability</p>
 
                 {loading ? (
                     <SkeletonLoader type="card" count={3} />
@@ -124,7 +67,7 @@ const PublicSeatView = () => {
                             ))}
                         </div>
 
-                        {/* Rooms with New Box Layout */}
+                        {/* Floor Details */}
                         {floors[selectedFloor] && (
                             <div className="space-y-6">
                                 {floors[selectedFloor].rooms.map((room) => (
@@ -162,16 +105,16 @@ const PublicSeatView = () => {
                         )}
                     </>
                 )}
-            </div>
 
-            {/* Seat Details Modal */}
-            <SeatDetailsModal
-                isOpen={seatDetailsModal.isOpen}
-                onClose={() => setSeatDetailsModal({ isOpen: false, seat: null })}
-                seat={seatDetailsModal.seat}
-            />
+                {/* Seat Details Modal */}
+                <SeatDetailsModal
+                    isOpen={seatDetailsModal.isOpen}
+                    onClose={() => setSeatDetailsModal({ isOpen: false, seat: null })}
+                    seat={seatDetailsModal.seat}
+                />
+            </div>
         </div>
     );
 };
 
-export default PublicSeatView;
+export default ViewSeats;

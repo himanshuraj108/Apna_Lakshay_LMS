@@ -135,14 +135,14 @@ const MySeat = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className={`p-4 rounded-lg border-2 ${seat.shift === 'day' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'
                             }`}>
-                            <p className="text-sm text-gray-400 mb-1">Day Shift</p>
+                            <p className="text-sm text-gray-400 mb-1">Morning Shift</p>
                             <p className="text-2xl font-bold">₹{seat.basePrices?.day || 800}</p>
                             <p className="text-xs text-gray-400 mt-1">9:00 AM - 3:00 PM</p>
                         </div>
 
                         <div className={`p-4 rounded-lg border-2 ${seat.shift === 'night' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'
                             }`}>
-                            <p className="text-sm text-gray-400 mb-1">Night Shift</p>
+                            <p className="text-sm text-gray-400 mb-1">Evening Shift</p>
                             <p className="text-2xl font-bold">₹{seat.basePrices?.night || 800}</p>
                             <p className="text-xs text-gray-400 mt-1">3:00 PM - 9:00 PM</p>
                         </div>

@@ -13,13 +13,13 @@ exports.getSeats = async (req, res) => {
                     path: 'seats',
                     populate: {
                         path: 'assignedTo',
-                        select: 'name'
+                        select: 'name email'
                     }
                 }
             })
             .sort({ level: 1 });
 
-        // Format response - hide prices for occupied seats
+        // Format response with all needed fields for box layout
         const formattedFloors = floors.map(floor => ({
             _id: floor._id,
             name: floor.name,
@@ -27,23 +27,17 @@ exports.getSeats = async (req, res) => {
             rooms: floor.rooms.map(room => ({
                 _id: room._id,
                 name: room.name,
-                seats: room.seats.map(seat => {
-                    const seatData = {
-                        _id: seat._id,
-                        number: seat.number,
-                        isOccupied: seat.isOccupied,
-                        shift: seat.shift
-                    };
-
-                    // Only show prices for AVAILABLE seats
-                    if (!seat.isOccupied && seat.shift) {
-                        seatData.dayPrice = seat.basePrices.day;
-                        seatData.nightPrice = seat.basePrices.night;
-                        seatData.fullPrice = seat.basePrices.full;
-                    }
-
-                    return seatData;
-                })
+                dimensions: room.dimensions,
+                doorPosition: room.doorPosition,
+                seats: room.seats.map(seat => ({
+                    _id: seat._id,
+                    number: seat.number,
+                    isOccupied: seat.isOccupied,
+                    shift: seat.shift,
+                    position: seat.position,
+                    basePrices: seat.basePrices // Show original prices for all seats
+                    // assignedTo and negotiatedPrice hidden for privacy
+                }))
             }))
         }));
 

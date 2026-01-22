@@ -11,6 +11,20 @@ const roomSchema = new mongoose.Schema({
         ref: 'Floor',
         required: true
     },
+    layout: {
+        type: String,
+        enum: ['grid'],
+        default: 'grid'
+    },
+    dimensions: {
+        width: { type: Number, default: 4 },
+        height: { type: Number, default: 4 }
+    },
+    doorPosition: {
+        type: String,
+        enum: ['north', 'south', 'east', 'west'],
+        default: 'south'
+    },
     seats: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seat'

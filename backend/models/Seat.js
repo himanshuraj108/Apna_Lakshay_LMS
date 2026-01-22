@@ -30,6 +30,18 @@ const seatSchema = new mongoose.Schema({
         enum: ['day', 'night', 'full'],
         default: null
     },
+    // Position on room wall
+    position: {
+        wall: {
+            type: String,
+            enum: ['north', 'south', 'east', 'west'],
+            default: null
+        },
+        index: {
+            type: Number,
+            default: null
+        }
+    },
     // Base prices for each shift
     basePrices: {
         day: { type: Number, default: 800 },
