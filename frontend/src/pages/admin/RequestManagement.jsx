@@ -74,6 +74,15 @@ const RequestManagement = () => {
 
     const filteredRequests = getFilteredRequests();
 
+    const getShiftLabel = (shift) => {
+        const map = {
+            'day': 'Morning',
+            'night': 'Evening',
+            'full': 'Full'
+        };
+        return map[shift] || shift;
+    };
+
     return (
         <div className="min-h-screen p-6">
             <div className="max-w-7xl mx-auto">
@@ -181,7 +190,7 @@ const RequestManagement = () => {
                                                     ) : request.type === 'shift' ? (
                                                         <div>
                                                             <p className="text-sm font-semibold">Seat: {request.currentData.seatNumber || 'N/A'}</p>
-                                                            <p className="text-sm text-gray-300">Shift: <span className="capitalize">{request.currentData.shift}</span></p>
+                                                            <p className="text-sm text-gray-300">Shift: <span className="font-medium">{getShiftLabel(request.currentData.shift)}</span></p>
                                                         </div>
                                                     ) : (
                                                         <p className="text-sm">{JSON.stringify(request.currentData)}</p>
@@ -204,7 +213,7 @@ const RequestManagement = () => {
                                                     ) : request.type === 'shift' ? (
                                                         <div>
                                                             <p className="text-sm text-green-400 font-semibold">
-                                                                Target Shift: <span className="capitalize">{request.requestedData.shift}</span>
+                                                                Target Shift: <span>{getShiftLabel(request.requestedData.shift)}</span>
                                                             </p>
                                                         </div>
                                                     ) : (

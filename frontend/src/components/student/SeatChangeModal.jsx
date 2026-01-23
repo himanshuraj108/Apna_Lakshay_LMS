@@ -210,11 +210,11 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
                                         <p className="text-sm text-gray-400 mb-3">Shift Prices</p>
                                         <div className="grid grid-cols-3 gap-2">
                                             <div className="bg-white/10 rounded p-2 text-center">
-                                                <p className="text-xs text-gray-400 mb-1">Day</p>
+                                                <p className="text-xs text-gray-400 mb-1">Morning</p>
                                                 <p className="text-sm font-bold text-green-400">₹{selectedSeat.basePrices?.day || 800}</p>
                                             </div>
                                             <div className="bg-white/10 rounded p-2 text-center">
-                                                <p className="text-xs text-gray-400 mb-1">Night</p>
+                                                <p className="text-xs text-gray-400 mb-1">Evening</p>
                                                 <p className="text-sm font-bold text-blue-400">₹{selectedSeat.basePrices?.night || 800}</p>
                                             </div>
                                             <div className="bg-white/10 rounded p-2 text-center">

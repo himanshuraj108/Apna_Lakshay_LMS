@@ -64,11 +64,11 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-white/10 rounded p-3 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Day</p>
+                                    <p className="text-xs text-gray-400 mb-1">Morning</p>
                                     <p className="text-lg font-bold text-green-400">₹{seat.basePrices?.day || 800}</p>
                                 </div>
                                 <div className="bg-white/10 rounded p-3 text-center">
-                                    <p className="text-xs text-gray-400 mb-1">Night</p>
+                                    <p className="text-xs text-gray-400 mb-1">Evening</p>
                                     <p className="text-lg font-bold text-blue-400">₹{seat.basePrices?.night || 800}</p>
                                 </div>
                                 <div className="bg-white/10 rounded p-3 text-center">

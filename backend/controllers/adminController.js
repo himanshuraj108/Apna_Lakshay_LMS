@@ -403,6 +403,8 @@ exports.getFloors = async (req, res) => {
             })
             .sort({ level: 1 });
 
+
+
         res.status(200).json({
             success: true,
             floors
@@ -777,6 +779,7 @@ exports.getRequests = async (req, res) => {
 
 // Handle request
 exports.handleRequest = async (req, res) => {
+
     try {
         const { status, adminResponse } = req.body;
 
@@ -788,6 +791,8 @@ exports.handleRequest = async (req, res) => {
                 message: 'Request not found'
             });
         }
+
+
 
         request.status = status;
         request.adminResponse = adminResponse;
@@ -802,6 +807,30 @@ exports.handleRequest = async (req, res) => {
             type: 'request',
             createdBy: req.user.id
         });
+
+        // If shift change request is approved, update the actual seat shift
+        if (status === 'approved' && request.type === 'shift') {
+            console.log('🔄 Shift change request approved, attempting to update seat...');
+            console.log('Request data:', JSON.stringify(request.requestedData, null, 2));
+
+            try {
+                if (!request.requestedData?.shift) {
+                    console.error('❌ No shift found in requestedData');
+                } else {
+                    const seat = await Seat.findOne({ assignedTo: request.student._id });
+                    if (!seat) {
+                        console.error(`❌ No seat found for student ${request.student.name}`);
+                    } else {
+                        console.log(`📍 Found seat ${seat.number}, current shift: ${seat.shift}, new shift: ${request.requestedData.shift}`);
+                        seat.shift = request.requestedData.shift;
+                        await seat.save();
+                        console.log(`✅ Successfully updated seat ${seat.number} shift from ${seat.shift} to ${request.requestedData.shift} for student ${request.student.name}`);
+                    }
+                }
+            } catch (shiftError) {
+                console.error('❌ Error updating shift:', shiftError);
+            }
+        }
 
         // Send response email
         try {
@@ -1144,6 +1173,16 @@ exports.handleRequest = async (req, res) => {
             }
         } else {
             // Handle other request types (existing logic for shift, profile, etc.)
+
+            // Update shift in database if approved
+            if (status === 'approved' && request.type === 'shift') {
+                const seat = await Seat.findOne({ assignedTo: request.student._id });
+                if (seat) {
+                    seat.shift = request.requestedData.shift;
+                    await seat.save();
+                }
+            }
+
             // Send generic request response email
             try {
                 await emailService.sendRequestResponseEmail(request.student, request, status, adminResponse);

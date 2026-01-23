@@ -148,11 +148,11 @@ const MySeat = () => {
                             <h3 className="text-lg font-bold mb-4">Pricing Plan</h3>
                             <div className="space-y-3">
                                 <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'day' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
-                                    <span className="text-sm text-gray-400">Day</span>
+                                    <span className="text-sm text-gray-400">Morning</span>
                                     <span className="font-bold">₹{seat.basePrices?.day || 800}</span>
                                 </div>
                                 <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'night' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
-                                    <span className="text-sm text-gray-400">Night</span>
+                                    <span className="text-sm text-gray-400">Evening</span>
                                     <span className="font-bold">₹{seat.basePrices?.night || 800}</span>
                                 </div>
                                 <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'full' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>

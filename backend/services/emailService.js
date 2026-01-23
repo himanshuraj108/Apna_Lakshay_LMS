@@ -32,9 +32,11 @@ const emailTemplate = (title, content) => `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: 'Arial', sans-serif;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       margin: 0;
       padding: 20px;
@@ -43,55 +45,92 @@ const emailTemplate = (title, content) => `
       max-width: 600px;
       margin: 0 auto;
       background: white;
-      border-radius: 10px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     }
     .header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 30px;
+      padding: 40px 30px;
       text-align: center;
     }
     .header h1 {
-      margin: 0;
-      font-size: 28px;
+      margin: 0 0 8px 0;
+      font-size: 32px;
       font-weight: bold;
     }
+    .header .lakshay {
+      background: linear-gradient(to right, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header .subtitle {
+      margin: 0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      opacity: 0.9;
+    }
+    .header .page-title {
+      margin: 15px 0 0 0;
+      font-size: 18px;
+      font-weight: normal;
+    }
     .content {
-      padding: 30px;
+      padding: 40px 30px;
       color: #333;
-      line-height: 1.6;
+      line-height: 1.8;
+      font-size: 15px;
     }
-    .footer {
-      background: #f5f5f5;
-      padding: 20px;
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-    }
-    .button {
+    .login-button {
       display: inline-block;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 12px 30px;
+      color: white !important;
+      padding: 16px 40px;
       text-decoration: none;
-      border-radius: 5px;
-      margin: 10px 0;
+      border-radius: 8px;
+      margin: 25px 0;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      transition: transform 0.2s;
+    }
+    .login-button:hover {
+      transform: translateY(-2px);
+    }
+    .button-container {
+      text-align: center;
+      margin: 30px 0;
     }
     .highlight {
-      background: #f0f0f0;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 15px 0;
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #667eea;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 30px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>📚 Hamara Lakshay</h1>
-      <p style="margin: 5px 0 0 0;">${title}</p>
+      <h1>Hamara <span class="lakshay">Lakshay</span></h1>
+      <p class="subtitle">Library Management System</p>
+      <p class="page-title">${title}</p>
     </div>
     <div class="content">
       ${content}
@@ -99,6 +138,9 @@ const emailTemplate = (title, content) => `
     <div class="footer">
       <p>This is an automated email from Hamara Lakshay Library Management System.</p>
       <p>For any queries, please contact the admin.</p>
+      <p style="margin-top: 15px;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="color: #667eea;">Visit Website</a>
+      </p>
     </div>
   </div>
 </body>
@@ -108,14 +150,16 @@ const emailTemplate = (title, content) => `
 // Send credentials email
 exports.sendCredentialsEmail = async (name, email, password) => {
   const content = `
-    <h2>Welcome to Hamara Lakshay! 🎉</h2>
+    <h2>Welcome to Hamara Lakshay!</h2>
     <p>Dear ${name},</p>
     <p>Your student account has been created successfully. Below are your login credentials:</p>
     <div class="highlight">
       <p><strong>Email:</strong> ${email}</p>
       <p><strong>Password:</strong> ${password}</p>
     </div>
-    <p>Please login to access your dashboard and track your attendance, fees, and more.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p><strong>Important:</strong> We recommend changing your password after first login.</p>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
@@ -145,7 +189,7 @@ exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
   };
 
   const content = `
-    <h2>Seat Assigned Successfully! 🪑</h2>
+    <h2>Seat Assigned Successfully!</h2>
     <p>Dear ${student.name},</p>
     <p>Congratulations! Your seat has been assigned. Here are the details:</p>
     <div class="highlight">
@@ -154,6 +198,9 @@ exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
       <p><strong>Monthly Fee:</strong> ₹${seat.currentPrice}</p>
     </div>
     <p>Please make sure to follow the library rules and maintain discipline.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
 
@@ -175,7 +222,7 @@ exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
 
 // Send request response email
 exports.sendRequestResponseEmail = async (student, request, status, reason) => {
-  const statusText = status === 'approved' ? 'Approved ✅' : 'Rejected ❌';
+  const statusText = status === 'approved' ? 'Approved' : 'Rejected';
   const statusColor = status === 'approved' ? '#22c55e' : '#ef4444';
 
   const content = `
@@ -184,6 +231,9 @@ exports.sendRequestResponseEmail = async (student, request, status, reason) => {
     <p>Your request for <strong>${request.type}</strong> change has been <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>.</p>
     ${reason ? `<div class="highlight"><p><strong>Admin Response:</strong> ${reason}</p></div>` : ''}
     <p>You can view more details in your student dashboard.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
 
@@ -208,7 +258,7 @@ exports.sendFeeConfirmationEmail = async (student, amount, month, year) => {
     'July', 'August', 'September', 'October', 'November', 'December'];
 
   const content = `
-    <h2>Fee Payment Confirmed! 💰</h2>
+    <h2>Fee Payment Confirmed!</h2>
     <p>Dear ${student.name},</p>
     <p>We have received your fee payment. Thank you!</p>
     <div class="highlight">
@@ -217,6 +267,9 @@ exports.sendFeeConfirmationEmail = async (student, amount, month, year) => {
       <p><strong>Payment Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
     </div>
     <p>Your payment has been recorded in our system.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
 
@@ -238,7 +291,7 @@ exports.sendFeeConfirmationEmail = async (student, amount, month, year) => {
 // Send fee due reminder email
 exports.sendFeeDueReminderEmail = async (student, amount, dueDate) => {
   const content = `
-    <h2>Fee Payment Reminder ⏰</h2>
+    <h2>Fee Payment Reminder</h2>
     <p>Dear ${student.name},</p>
     <p>This is a friendly reminder that your monthly fee is due soon.</p>
     <div class="highlight">
@@ -246,6 +299,9 @@ exports.sendFeeDueReminderEmail = async (student, amount, dueDate) => {
       <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString('en-IN')}</p>
     </div>
     <p>Please make the payment at the library office to avoid any inconvenience.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
 
@@ -267,11 +323,15 @@ exports.sendFeeDueReminderEmail = async (student, amount, dueDate) => {
 // Send announcement email
 exports.sendAnnouncementEmail = async (recipients, title, message) => {
   const content = `
-    <h2>📢 ${title}</h2>
+    <h2>Announcement</h2>
     <div class="highlight">
+      <h3>${title}</h3>
       <p>${message}</p>
     </div>
     <p>Please check your dashboard for more updates.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
 
@@ -297,7 +357,7 @@ exports.sendAnnouncementEmail = async (recipients, title, message) => {
 // Send OTP email for password reset
 exports.sendOTPEmail = async (name, email, otp) => {
   const content = `
-    <h2>Password Reset Request 🔐</h2>
+    <h2>Password Reset Request</h2>
     <p>Dear ${name},</p>
     <p>You have requested to reset your password. Please use the OTP below to verify your identity:</p>
     <div class="highlight" style="text-align: center;">
@@ -305,6 +365,9 @@ exports.sendOTPEmail = async (name, email, otp) => {
     </div>
     <p><strong>This OTP is valid for 10 minutes only.</strong></p>
     <p>If you did not request a password reset, please ignore this email or contact the admin if you have concerns.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/forgot-password" class="login-button">Reset Password</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshay Team</p>
   `;
 
@@ -327,7 +390,7 @@ exports.sendOTPEmail = async (name, email, otp) => {
 // Send seat change request submitted email
 exports.sendSeatChangeRequestEmail = async (student, currentSeat, requestedSeat) => {
   const content = `
-    <h2>Seat Change Request Submitted 🪑</h2>
+    <h2>Seat Change Request Submitted</h2>
     <p>Dear ${student.name},</p>
     <p>Your seat change request has been submitted successfully and is awaiting admin approval.</p>
     <div class="highlight">
@@ -335,6 +398,9 @@ exports.sendSeatChangeRequestEmail = async (student, currentSeat, requestedSeat)
       <p><strong>Requested Seat:</strong> ${requestedSeat.number}</p>
     </div>
     <p>You will receive a notification once the admin reviews your request.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshya Team</p>
   `;
 
@@ -356,7 +422,7 @@ exports.sendSeatChangeRequestEmail = async (student, currentSeat, requestedSeat)
 // Send seat change approved email
 exports.sendSeatChangeApprovedEmail = async (student, oldSeat, newSeat) => {
   const content = `
-    <h2>Seat Change Approved! ✅</h2>
+    <h2>Seat Change Approved!</h2>
     <p>Dear ${student.name},</p>
     <p>Great news! Your seat change request has been approved by the admin.</p>
     <div class="highlight">
@@ -365,6 +431,9 @@ exports.sendSeatChangeApprovedEmail = async (student, oldSeat, newSeat) => {
       <p><strong>Monthly Fee:</strong> ₹${newSeat.currentPrice}</p>
     </div>
     <p>Your new seat is now active. Please visit the library to settle in your new location.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshya Team</p>
   `;
 
@@ -386,11 +455,14 @@ exports.sendSeatChangeApprovedEmail = async (student, oldSeat, newSeat) => {
 // Send seat change rejected email
 exports.sendSeatChangeRejectedEmail = async (student, requestedSeat, reason) => {
   const content = `
-    <h2>Seat Change Request Update ❌</h2>
+    <h2>Seat Change Request Update</h2>
     <p>Dear ${student.name},</p>
     <p>We regret to inform you that your request to change to seat <strong>${requestedSeat.number}</strong> has been rejected.</p>
     ${reason ? `<div class="highlight"><p><strong>Admin's Response:</strong> ${reason}</p></div>` : ''}
     <p>If you have any questions or would like to submit a new request, please contact the admin or visit the library office.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
     <p>Best regards,<br>Hamara Lakshya Team</p>
   `;
 

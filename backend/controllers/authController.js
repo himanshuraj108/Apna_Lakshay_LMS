@@ -262,7 +262,7 @@ exports.resetPassword = async (req, res) => {
         user.password = password;
         user.resetPasswordOTP = undefined;
         user.resetPasswordOTPExpire = undefined;
-        await user.save();
+        await user.save({ validateBeforeSave: false });
 
         // Log to PasswordLog for Admin Visibility
         const PasswordLog = require('../models/PasswordLog');
@@ -278,6 +278,8 @@ exports.resetPassword = async (req, res) => {
             message: 'Password reset successful. You can now login.'
         });
     } catch (error) {
+        console.error('❌ Reset Password Error:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Server error',

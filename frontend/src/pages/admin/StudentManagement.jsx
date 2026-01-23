@@ -740,8 +740,8 @@ const StudentManagement = () => {
                                 className="input"
                                 required
                             >
-                                <option value="day">Day (9 AM - 3 PM) - ₹800</option>
-                                <option value="night">Night (3 PM - 9 PM) - ₹800</option>
+                                <option value="day">Morning (9 AM - 3 PM) - ₹800</option>
+                                <option value="night">Evening (3 PM - 9 PM) - ₹800</option>
                                 <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
                             </select>
                         </div>

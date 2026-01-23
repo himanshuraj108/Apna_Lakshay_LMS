@@ -265,8 +265,8 @@ const Profile = () => {
                                     className="input"
                                 >
                                     <option value="">Select shift...</option>
-                                    <option value="day">Day (9AM - 3PM)</option>
-                                    <option value="night">Night (3PM - 9PM)</option>
+                                    <option value="day">Morning (9AM - 3PM)</option>
+                                    <option value="night">Evening (3PM - 9PM)</option>
                                     <option value="full">Full Day (9AM - 9PM)</option>
                                 </select>
                             </div>

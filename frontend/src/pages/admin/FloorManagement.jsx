@@ -12,7 +12,7 @@ import RoomLayoutModal from '../../components/admin/RoomLayoutModal';
 import UpdateRoomPricesModal from '../../components/admin/UpdateRoomPricesModal';
 import UpdateFloorPricesModal from '../../components/admin/UpdateFloorPricesModal';
 import api from '../../utils/api';
-import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoBedOutline } from 'react-icons/io5';
+import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoBedOutline, IoRefresh } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -184,9 +184,14 @@ const FloorManagement = () => {
                     </Button>
                 </Link>
 
-                <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-8">
-                    Floor & Seat Management
-                </h1>
+                <div className="flex items-center justify-between mb-8">
+                    <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        Floor & Seat Management
+                    </h1>
+                    <Button variant="secondary" onClick={fetchFloors}>
+                        <IoRefresh className="inline mr-2" /> Refresh Data
+                    </Button>
+                </div>
 
                 {loading ? (
                     <SkeletonLoader type="card" count={3} />

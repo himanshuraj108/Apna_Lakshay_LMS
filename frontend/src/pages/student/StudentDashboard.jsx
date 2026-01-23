@@ -23,6 +23,19 @@ const StudentDashboard = () => {
 
     useEffect(() => {
         fetchDashboardData();
+
+        // Refetch data when page becomes visible (e.g., after approving a request)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchDashboardData();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
     }, []);
 
     const fetchDashboardData = async () => {
@@ -62,7 +75,12 @@ const StudentDashboard = () => {
             <AnimatePresence>
                 {showIDCard && (
                     <IDCard
-                        student={{ ...user, ...dashboardData?.seat && { seatNumber: dashboardData.seat.number } }}
+                        student={{
+                            ...user,
+                            seat: dashboardData?.seat,
+                            shift: dashboardData?.seat?.shift,
+                            seatNumber: dashboardData?.seat?.number
+                        }}
                         onClose={() => setShowIDCard(false)}
                     />
                 )}
