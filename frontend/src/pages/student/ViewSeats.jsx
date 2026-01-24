@@ -20,7 +20,7 @@ const ViewSeats = () => {
 
     const fetchFloors = async () => {
         try {
-            const response = await api.get('/admin/floors'); // Using admin endpoint for now
+            const response = await api.get('/public/seats'); // Use public endpoint for students
             setFloors(response.data.floors);
         } catch (error) {
             console.error('Error fetching floors:', error);

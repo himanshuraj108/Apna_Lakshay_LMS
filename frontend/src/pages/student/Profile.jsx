@@ -9,9 +9,11 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import { IoArrowBack, IoPerson, IoCamera, IoTrash, IoSend, IoLockClosed } from 'react-icons/io5';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
+import useShifts from '../../hooks/useShifts';
 
 const Profile = () => {
     const { user, updateUser } = useAuth();
+    const { shifts, isCustom, getShiftTimeRange } = useShifts();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [showRequestModal, setShowRequestModal] = useState(false);
@@ -182,9 +184,9 @@ const Profile = () => {
                             <p className="text-gray-400 mb-6">{profile?.email}</p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white/5 rounded-lg p-4">
-                                    <p className="text-sm text-gray-400 mb-1">Status</p>
-                                    <p className="text-lg font-semibold">
+                                <div className={`rounded-lg p-4 border ${profile?.isActive ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}>
+                                    <p className={`text-sm mb-1 ${profile?.isActive ? 'text-green-300' : 'text-red-300'}`}>Status</p>
+                                    <p className={`text-lg font-bold ${profile?.isActive ? 'text-green-400' : 'text-red-400'}`}>
                                         {profile?.isActive ? '✓ Active' : '✗ Inactive'}
                                     </p>
                                 </div>
@@ -265,9 +267,14 @@ const Profile = () => {
                                     className="input"
                                 >
                                     <option value="">Select shift...</option>
-                                    <option value="day">Morning (9AM - 3PM)</option>
-                                    <option value="night">Evening (3PM - 9PM)</option>
-                                    <option value="full">Full Day (9AM - 9PM)</option>
+                                    {shifts.map(shift => (
+                                        <option key={shift.id} value={shift.id}>
+                                            {shift.name} ({getShiftTimeRange(shift)})
+                                        </option>
+                                    ))}
+                                    {!isCustom && !shifts.some(s => s.id === 'full') && (
+                                        <option value="full">Full Day (9 AM - 9 PM)</option>
+                                    )}
                                 </select>
                             </div>
                         )}

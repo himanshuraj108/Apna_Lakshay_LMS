@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import api from '../../utils/api';
 
+import useShifts from '../../hooks/useShifts';
+
 const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
+    const { shifts } = useShifts();
     const [formData, setFormData] = useState({
-        dayPrice: 800,
-        nightPrice: 800,
-        fullPrice: 1200
+        basePrices: { day: 800, night: 800, full: 1200 }
     });
     const [loading, setLoading] = useState(false);
 
@@ -25,11 +26,7 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
 
         try {
             const response = await api.put(`/admin/floors/${floor._id}/prices`, {
-                basePrices: {
-                    day: formData.dayPrice,
-                    night: formData.nightPrice,
-                    full: formData.fullPrice
-                }
+                basePrices: formData.basePrices
             });
 
             if (response.data.success) {
@@ -81,33 +78,27 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Morning Shift Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.dayPrice}
-                                onChange={(e) => setFormData({ ...formData, dayPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                                min="0"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Evening Shift Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.nightPrice}
-                                onChange={(e) => setFormData({ ...formData, nightPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                                min="0"
-                            />
-                        </div>
+                        {/* Dynamic Shift Prices */}
+                        {shifts.map(shift => (
+                            <div key={shift.id}>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">
+                                    {shift.name} Price (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={formData.basePrices?.[shift.id] || 800}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        basePrices: {
+                                            ...formData.basePrices,
+                                            [shift.id]: parseInt(e.target.value)
+                                        }
+                                    })}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    required
+                                />
+                            </div>
+                        ))}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -115,11 +106,16 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
                             </label>
                             <input
                                 type="number"
-                                value={formData.fullPrice}
-                                onChange={(e) => setFormData({ ...formData, fullPrice: parseInt(e.target.value) })}
+                                value={formData.basePrices?.full || 1200}
+                                onChange={(e) => setFormData({
+                                    ...formData,
+                                    basePrices: {
+                                        ...formData.basePrices,
+                                        full: parseInt(e.target.value)
+                                    }
+                                })}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 required
-                                min="0"
                             />
                         </div>
 

@@ -9,6 +9,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const publicRoutes = require('./routes/publicRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 // Import error handler
 const errorHandler = require('./middleware/errorHandler');
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handler
 app.use(errorHandler);

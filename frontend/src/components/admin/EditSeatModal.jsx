@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
+import useShifts from '../../hooks/useShifts';
 
 const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
+    const { shifts } = useShifts();
     const [formData, setFormData] = useState({
         seatNumber: seat?.number || '',
-        dayPrice: seat?.basePrices?.day || 800,
-        nightPrice: seat?.basePrices?.night || 800,
-        fullPrice: seat?.basePrices?.full || 1200,
+        basePrices: seat?.shiftPrices || seat?.basePrices || {}, // Use shiftPrices if available, fallback for legacy
         wall: seat?.position?.wall || 'north'
     });
     const [loading, setLoading] = useState(false);
@@ -25,11 +25,8 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                 },
                 body: JSON.stringify({
                     number: formData.seatNumber,
-                    basePrices: {
-                        day: formData.dayPrice,
-                        night: formData.nightPrice,
-                        full: formData.fullPrice
-                    }
+                    basePrices: formData.basePrices,
+                    shiftPrices: formData.basePrices // Ensure dynamic prices are saved
                 })
             });
 
@@ -87,48 +84,30 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                                 onChange={(e) => setFormData({ ...formData, seatNumber: e.target.value })}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 required
-                                placeholder="e.g., N1, S2, Custom-01"
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Morning Shift Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.dayPrice}
-                                onChange={(e) => setFormData({ ...formData, dayPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Evening Shift Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.nightPrice}
-                                onChange={(e) => setFormData({ ...formData, nightPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Full Day Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.fullPrice}
-                                onChange={(e) => setFormData({ ...formData, fullPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
+                        {/* Dynamic Shift Prices */}
+                        {shifts.map(shift => (
+                            <div key={shift.id}>
+                                <label className="block text-sm font-medium text-gray-400 mb-2">
+                                    {shift.name} Price (₹)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={formData.basePrices?.[shift.id] || ''}
+                                    onChange={(e) => setFormData({
+                                        ...formData,
+                                        basePrices: {
+                                            ...formData.basePrices,
+                                            [shift.id]: parseInt(e.target.value) || 0
+                                        }
+                                    })}
+                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    required
+                                />
+                            </div>
+                        ))}
 
                         <div className="flex gap-4 pt-4">
                             <button

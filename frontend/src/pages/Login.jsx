@@ -31,16 +31,10 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center bg-[#0f172a] py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
-            {/* Animated Background Elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px]" />
-                <div className="absolute top-[40%] -right-[10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px]" />
-                <div className="absolute -bottom-[20%] left-[20%] w-[30%] h-[30%] rounded-full bg-indigo-600/20 blur-[100px]" />
-            </div>
+        <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
 
             {/* View Seats Floating Button - Prominent Call to Action */}
-            <Link to="/seats" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
+            <Link to="/" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
                 <motion.button
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{
@@ -87,7 +81,7 @@ const Login = () => {
 
                     {/* Mobile View Seats Button - Inline */}
                     <div className="lg:hidden mb-8 flex justify-center">
-                        <Link to="/seats" className="w-full">
+                        <Link to="/" className="w-full">
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}

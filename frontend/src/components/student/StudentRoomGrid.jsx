@@ -16,23 +16,35 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
     const SeatCard = ({ seat }) => {
         const isHighlighted = seat._id === highlightSeatId;
 
+        // Determine styling based on status
+        let statusColor = 'green';
+        if (seat.status === 'occupied') statusColor = 'red';
+        else if (seat.status === 'partial') statusColor = 'orange';
+        // Fallback for legacy data
+        else if (seat.isOccupied && !seat.status) statusColor = 'red';
+
+        const colorClasses = {
+            green: 'bg-green-500/30 border-green-500 hover:bg-green-500/40',
+            red: 'bg-red-500/30 border-red-500 hover:bg-red-500/40',
+            orange: 'bg-orange-500/30 border-orange-500 hover:bg-orange-500/40' // Add orange style
+        };
+
         return (
             <motion.div
                 whileHover={{ scale: 1.08 }}
                 onClick={() => onSeatClick && onSeatClick(seat)}
                 className={`relative p-2 rounded-lg border-2 transition-all cursor-pointer min-w-[50px] ${isHighlighted
                     ? 'bg-blue-500/40 border-blue-400 shadow-lg shadow-blue-500/30 scale-110 z-10 ring-2 ring-blue-400 ring-offset-2 ring-offset-gray-900'
-                    : seat.isOccupied
-                        ? 'bg-red-500/30 border-red-500 hover:bg-red-500/40'
-                        : 'bg-green-500/30 border-green-500 hover:bg-green-500/40'
+                    : colorClasses[statusColor]
                     }`}
             >
                 <div className="flex items-center gap-1 justify-center">
                     <IoBedOutline size={14} className={isHighlighted ? 'text-white' : ''} />
                     <span className={`font-bold text-xs ${isHighlighted ? 'text-white' : ''}`}>{seat.number}</span>
                 </div>
-                {seat.isOccupied && !isHighlighted && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full border-2 border-gray-900"></div>
+                {/* Status Dot */}
+                {statusColor !== 'green' && !isHighlighted && (
+                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 ${statusColor === 'red' ? 'bg-red-600' : 'bg-orange-500'}`}></div>
                 )}
                 {isHighlighted && (
                     <div className="absolute -top-2 -right-2">

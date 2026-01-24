@@ -8,6 +8,7 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import { IoArrowBack, IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
+import useShifts from '../../hooks/useShifts';
 
 const RequestManagement = () => {
     const [requests, setRequests] = useState([]);
@@ -74,14 +75,7 @@ const RequestManagement = () => {
 
     const filteredRequests = getFilteredRequests();
 
-    const getShiftLabel = (shift) => {
-        const map = {
-            'day': 'Morning',
-            'night': 'Evening',
-            'full': 'Full'
-        };
-        return map[shift] || shift;
-    };
+    const { getShiftName } = useShifts();
 
     return (
         <div className="min-h-screen p-6">
@@ -182,15 +176,15 @@ const RequestManagement = () => {
                                                     <p className="text-xs text-gray-400 mb-1">Current Data</p>
                                                     {request.type === 'seat_change' ? (
                                                         <div>
-                                                            <p className="text-sm font-semibold">{request.currentData.seatNumber}</p>
+                                                            <p className="text-sm font-semibold">{request.currentData?.seatNumber || 'N/A'}</p>
                                                             <p className="text-xs text-gray-400 mt-1">
-                                                                {request.currentData.floor} - {request.currentData.room}
+                                                                {request.currentData?.floor || 'N/A'} - {request.currentData?.room || 'N/A'}
                                                             </p>
                                                         </div>
                                                     ) : request.type === 'shift' ? (
                                                         <div>
-                                                            <p className="text-sm font-semibold">Seat: {request.currentData.seatNumber || 'N/A'}</p>
-                                                            <p className="text-sm text-gray-300">Shift: <span className="font-medium">{getShiftLabel(request.currentData.shift)}</span></p>
+                                                            <p className="text-sm font-semibold">Seat: {request.currentData?.seatNumber || 'N/A'}</p>
+                                                            <p className="text-sm text-gray-300">Shift: <span className="font-medium">{getShiftName(request.currentData?.shift)}</span></p>
                                                         </div>
                                                     ) : (
                                                         <p className="text-sm">{JSON.stringify(request.currentData)}</p>
@@ -200,9 +194,9 @@ const RequestManagement = () => {
                                                     <p className="text-xs text-gray-400 mb-1">Requested Data</p>
                                                     {request.type === 'seat_change' ? (
                                                         <div>
-                                                            <p className="text-sm font-semibold text-green-400">{request.requestedData.seatNumber}</p>
+                                                            <p className="text-sm font-semibold text-green-400">{request.requestedData?.seatNumber || 'N/A'}</p>
                                                             <p className="text-xs text-gray-400 mt-1">
-                                                                {request.requestedData.floor} - {request.requestedData.room}
+                                                                {request.requestedData?.floor || 'N/A'} - {request.requestedData?.room || 'N/A'}
                                                             </p>
                                                             {request.requestedData.reason && (
                                                                 <p className="text-xs text-gray-500 mt-2 italic">
@@ -213,7 +207,7 @@ const RequestManagement = () => {
                                                     ) : request.type === 'shift' ? (
                                                         <div>
                                                             <p className="text-sm text-green-400 font-semibold">
-                                                                Target Shift: <span>{getShiftLabel(request.requestedData.shift)}</span>
+                                                                Target Shift: <span>{getShiftName(request.requestedData.shift)}</span>
                                                             </p>
                                                         </div>
                                                     ) : (

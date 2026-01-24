@@ -14,8 +14,40 @@ exports.getDashboard = async (req, res) => {
     try {
         const studentId = req.user.id;
 
-        // Get seat info
-        const seat = await Seat.findOne({ assignedTo: studentId }).populate('floor room');
+        // Get seat info (checking new assignments array structure)
+        const seat = await Seat.findOne({
+            'assignments.student': studentId,
+            'assignments.status': 'active'
+        })
+            .populate('floor room')
+            .populate('assignments.shift');
+
+        let assignedSeatData = null;
+        if (seat) {
+            // Find specific assignment
+            const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+
+            let shiftName = 'N/A';
+            if (assignment) {
+                if (assignment.shift && assignment.shift.name) {
+                    shiftName = assignment.shift.name;
+                } else if (assignment.legacyShift) {
+                    shiftName = assignment.legacyShift;
+                } else if (assignment.type === 'full_day') {
+                    shiftName = 'Full Day';
+                } else {
+                    shiftName = 'Assigned';
+                }
+            }
+
+            assignedSeatData = {
+                number: seat.number,
+                floor: seat.floor?.name,
+                room: seat.room?.name,
+                shift: shiftName,
+                price: assignment?.price || 0
+            };
+        }
 
         // Get current month attendance
         const now = new Date();
@@ -47,13 +79,7 @@ exports.getDashboard = async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                seat: seat ? {
-                    number: seat.number,
-                    floor: seat.floor?.name,
-                    room: seat.room?.name,
-                    shift: seat.shift,
-                    price: seat.basePrices[seat.shift] // Show original base price explicitly per user request
-                } : null,
+                seat: assignedSeatData,
                 attendance: {
                     present: presentCount,
                     total: totalDays,
@@ -81,8 +107,14 @@ exports.getDashboard = async (req, res) => {
 // @route   GET /api/student/seat
 exports.getMySeat = async (req, res) => {
     try {
-        const seat = await Seat.findOne({ assignedTo: req.user.id })
+        const studentId = req.user.id;
+        // Updated query for new assignments structure
+        const seat = await Seat.findOne({
+            'assignments.student': studentId,
+            'assignments.status': 'active'
+        })
             .populate('floor')
+            .populate('assignments.shift')
             .populate({
                 path: 'room',
                 populate: {
@@ -98,6 +130,29 @@ exports.getMySeat = async (req, res) => {
             });
         }
 
+        // Find specific assignment
+        const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+
+        let shiftName = 'N/A';
+        let shiftId = null;
+
+        if (assignment) {
+            if (assignment.shift) {
+                shiftId = assignment.shift._id || assignment.shift;
+                if (assignment.shift.name) {
+                    shiftName = assignment.shift.name;
+                } else {
+                    shiftName = assignment.legacyShift || 'Assigned';
+                }
+            } else if (assignment.legacyShift) {
+                shiftName = assignment.legacyShift;
+                shiftId = assignment.legacyShift;
+            } else if (assignment.type === 'full_day') {
+                shiftName = 'Full Day';
+                shiftId = 'full';
+            }
+        }
+
         res.status(200).json({
             success: true,
             seat: {
@@ -105,8 +160,11 @@ exports.getMySeat = async (req, res) => {
                 number: seat.number,
                 floor: seat.floor,
                 room: seat.room,
-                shift: seat.shift,
-                price: seat.basePrices[seat.shift] // Show original base price explicitly per user request
+                shift: shiftName,
+                shiftId: shiftId,
+                price: assignment?.price || 0,
+                basePrices: seat.basePrices,
+                shiftPrices: seat.shiftPrices
             }
         });
     } catch (error) {
@@ -275,11 +333,28 @@ exports.submitRequest = async (req, res) => {
         let currentData = {};
 
         if (type === 'seat' || type === 'shift') {
-            const seat = await Seat.findOne({ assignedTo: req.user.id });
+            const seat = await Seat.findOne({
+                'assignments.student': req.user.id,
+                'assignments.status': 'active'
+            }).populate('assignments.shift');
+
             if (seat) {
+                const assignment = seat.assignments.find(a => a.student.toString() === req.user.id && a.status === 'active');
+                let shiftId = null;
+
+                if (assignment) {
+                    if (assignment.shift) {
+                        shiftId = assignment.shift._id || assignment.shift;
+                    } else if (assignment.legacyShift) {
+                        shiftId = assignment.legacyShift;
+                    } else if (assignment.type === 'full_day') {
+                        shiftId = 'full';
+                    }
+                }
+
                 currentData = {
                     seatNumber: seat.number,
-                    shift: seat.shift
+                    shift: shiftId
                 };
             }
         } else if (type === 'profile') {
@@ -507,7 +582,10 @@ exports.requestSeatChange = async (req, res) => {
         }
 
         // Get student's current seat
-        const currentSeat = await Seat.findOne({ assignedTo: studentId }).populate('floor room');
+        const currentSeat = await Seat.findOne({
+            'assignments.student': studentId,
+            'assignments.status': 'active'
+        }).populate('floor room');
 
         if (!currentSeat) {
             return res.status(400).json({
@@ -526,8 +604,9 @@ exports.requestSeatChange = async (req, res) => {
             });
         }
 
-        // Check if requested seat is vacant
-        if (requestedSeat.assignedTo) {
+        // Check if requested seat is occupied (any active assignment)
+        const isOccupied = requestedSeat.assignments && requestedSeat.assignments.some(a => a.status === 'active');
+        if (isOccupied) {
             return res.status(400).json({
                 success: false,
                 message: 'This seat is already occupied. Please select a vacant seat.'

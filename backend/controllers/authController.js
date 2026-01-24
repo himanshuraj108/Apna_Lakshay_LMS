@@ -134,6 +134,7 @@ exports.getMe = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                isActive: user.isActive,
                 profileImage: user.profileImage,
                 createdAt: user.createdAt
             }

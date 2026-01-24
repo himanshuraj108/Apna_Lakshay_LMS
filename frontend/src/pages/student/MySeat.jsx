@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import useShifts from '../../hooks/useShifts';
 import api from '../../utils/api';
 import { IoArrowBack, IoBedOutline, IoCalendar, IoCash, IoTime } from 'react-icons/io5';
 import StudentRoomGrid from '../../components/student/StudentRoomGrid';
@@ -11,6 +13,7 @@ import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 const MySeat = () => {
     const [seatData, setSeatData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const { shifts, isCustom, getShiftTimeRange } = useShifts();
 
     useEffect(() => {
         fetchSeatData();
@@ -130,7 +133,9 @@ const MySeat = () => {
                                         </div>
                                         <div>
                                             <p className="text-xs text-gray-400">Monthly Fee</p>
-                                            <p className="font-bold text-lg">₹{seat.price || seat.currentPrice}</p>
+                                            <p className="font-bold text-lg">
+                                                ₹{seat.shiftPrices?.[seat.shiftId] || seat.basePrices?.[seat.shiftId] || seat.price || 800}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -147,18 +152,26 @@ const MySeat = () => {
                         <Card>
                             <h3 className="text-lg font-bold mb-4">Pricing Plan</h3>
                             <div className="space-y-3">
-                                <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'day' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
-                                    <span className="text-sm text-gray-400">Morning</span>
-                                    <span className="font-bold">₹{seat.basePrices?.day || 800}</span>
-                                </div>
-                                <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'night' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
-                                    <span className="text-sm text-gray-400">Evening</span>
-                                    <span className="font-bold">₹{seat.basePrices?.night || 800}</span>
-                                </div>
-                                <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'full' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
-                                    <span className="text-sm text-gray-400">Full</span>
-                                    <span className="font-bold">₹{seat.basePrices?.full || 1200}</span>
-                                </div>
+                                {shifts.map(shift => {
+                                    const isCurrentShift = (seat.shiftId && seat.shiftId.toString() === shift.id.toString()) || seat.shift === shift.name;
+                                    const price = seat.shiftPrices?.[shift.id] || seat.basePrices?.[shift.id] || 800;
+
+                                    return (
+                                        <div key={shift.id} className={`flex justify-between items-center p-3 rounded-lg border ${isCurrentShift ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
+                                            <div>
+                                                <span className="text-sm text-gray-400 block">{shift.name}</span>
+                                                <span className="text-xs text-gray-500">{getShiftTimeRange(shift)}</span>
+                                            </div>
+                                            <span className="font-bold">₹{price}</span>
+                                        </div>
+                                    );
+                                })}
+                                {!isCustom && !shifts.some(s => s.id === 'full') && (
+                                    <div className={`flex justify-between items-center p-3 rounded-lg border ${seat.shift === 'Full Day' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5'}`}>
+                                        <span className="text-sm text-gray-400">Full Day</span>
+                                        <span className="font-bold">₹{seat.basePrices?.full || 1200}</span>
+                                    </div>
+                                )}
                             </div>
                         </Card>
                     </div>
@@ -183,8 +196,8 @@ const MySeat = () => {
                         )}
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

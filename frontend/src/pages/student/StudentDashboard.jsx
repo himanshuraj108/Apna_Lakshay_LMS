@@ -11,7 +11,8 @@ import api from '../../utils/api';
 import {
     IoBedOutline, IoCalendarOutline, IoCashOutline,
     IoBookOutline, IoNotificationsOutline, IoLogOut, IoPersonOutline,
-    IoIdCardOutline // Import new icon
+    IoIdCardOutline, // Import new icon
+    IoArrowForward // Added IoArrowForward
 } from 'react-icons/io5';
 
 const StudentDashboard = () => {
@@ -112,13 +113,15 @@ const StudentDashboard = () => {
                 {/* Dashboard Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {/* My Seat */}
-                    <Link to="/student/seat">
-                        <Card delay={0}>
-                            <div className="flex items-center justify-between mb-4">
-                                <IoBedOutline size={32} className="text-blue-400" />
-                                <span className="text-xs text-gray-400">VIEW DETAILS</span>
+                    <Link to="/student/seat" className="h-full block">
+                        <Card delay={0} className="h-full flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <IoBedOutline size={32} className="text-blue-400" />
+                                    <span className="text-xs text-gray-400">VIEW DETAILS</span>
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">My Seat</h3>
                             </div>
-                            <h3 className="text-lg font-semibold mb-2">My Seat</h3>
                             {dashboardData?.seat ? (
                                 <div>
                                     <p className="text-2xl font-bold text-blue-400">{dashboardData.seat.number}</p>
@@ -131,13 +134,15 @@ const StudentDashboard = () => {
                     </Link>
 
                     {/* Attendance */}
-                    <Link to="/student/attendance">
-                        <Card delay={0.1}>
-                            <div className="flex items-center justify-between mb-4">
-                                <IoCalendarOutline size={32} className="text-green-400" />
-                                <span className="text-xs text-gray-400">VIEW DETAILS</span>
+                    <Link to="/student/attendance" className="h-full block">
+                        <Card delay={0.1} className="h-full flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <IoCalendarOutline size={32} className="text-green-400" />
+                                    <span className="text-xs text-gray-400">VIEW DETAILS</span>
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">Attendance</h3>
                             </div>
-                            <h3 className="text-lg font-semibold mb-2">Attendance</h3>
                             <div>
                                 <p className="text-2xl font-bold text-green-400">{dashboardData?.attendance?.percentage || 0}%</p>
                                 <p className="text-sm text-gray-400">
@@ -148,13 +153,15 @@ const StudentDashboard = () => {
                     </Link>
 
                     {/* Fee Status */}
-                    <Link to="/student/fees">
-                        <Card delay={0.2}>
-                            <div className="flex items-center justify-between mb-4">
-                                <IoCashOutline size={32} className="text-yellow-400" />
-                                <span className="text-xs text-gray-400">VIEW DETAILS</span>
+                    <Link to="/student/fees" className="h-full block">
+                        <Card delay={0.2} className="h-full flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <IoCashOutline size={32} className="text-yellow-400" />
+                                    <span className="text-xs text-gray-400">VIEW DETAILS</span>
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">Fee Status</h3>
                             </div>
-                            <h3 className="text-lg font-semibold mb-2">Fee Status</h3>
                             {dashboardData?.fee ? (
                                 <div>
                                     <p className="text-2xl font-bold">₹{dashboardData.fee.amount}</p>
@@ -167,13 +174,15 @@ const StudentDashboard = () => {
                     </Link>
 
                     {/* Notifications */}
-                    <Link to="/student/notifications">
-                        <Card delay={0.3}>
-                            <div className="flex items-center justify-between mb-4">
-                                <IoNotificationsOutline size={32} className="text-pink-400" />
-                                <span className="text-xs text-gray-400">VIEW ALL</span>
+                    <Link to="/student/notifications" className="h-full block">
+                        <Card delay={0.3} className="h-full flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <IoNotificationsOutline size={32} className="text-pink-400" />
+                                    <span className="text-xs text-gray-400">VIEW ALL</span>
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">Notifications</h3>
                             </div>
-                            <h3 className="text-lg font-semibold mb-2">Notifications</h3>
                             <div>
                                 <p className="text-2xl font-bold text-pink-400">{dashboardData?.unreadNotifications || 0}</p>
                                 <p className="text-sm text-gray-400">Unread Messages</p>
@@ -189,45 +198,51 @@ const StudentDashboard = () => {
                         <div onClick={() => setShowIDCard(true)}>
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
-                                className="glass p-6 rounded-xl flex items-center gap-4 cursor-pointer"
+                                whileTap={{ scale: 0.98 }}
+                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:shadow-xl transition-all duration-300"
                             >
-                                <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-xl">
+                                <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-xl shadow-lg group-hover:shadow-indigo-500/30 transition-shadow">
                                     <IoIdCardOutline size={24} className="text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-lg">Virtual ID Card</h3>
+                                    <h3 className="font-semibold text-lg group-hover:text-blue-200 transition-colors">Virtual ID Card</h3>
                                     <p className="text-sm text-gray-400">View & Download</p>
                                 </div>
+                                <IoArrowForward className="ml-auto text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
                             </motion.div>
                         </div>
 
                         <Link to="/student/planner">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
-                                className="glass p-6 rounded-xl flex items-center gap-4 cursor-pointer"
+                                whileTap={{ scale: 0.98 }}
+                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:shadow-xl transition-all duration-300"
                             >
-                                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-xl">
-                                    <IoBookOutline size={24} />
+                                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-xl shadow-lg group-hover:shadow-purple-500/30 transition-shadow">
+                                    <IoBookOutline size={24} className="text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-lg">Study Planner</h3>
+                                    <h3 className="font-semibold text-lg group-hover:text-purple-200 transition-colors">Study Planner</h3>
                                     <p className="text-sm text-gray-400">Plan your day</p>
                                 </div>
+                                <IoArrowForward className="ml-auto text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
                             </motion.div>
                         </Link>
 
                         <Link to="/student/seat">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
-                                className="glass p-6 rounded-xl flex items-center gap-4 cursor-pointer"
+                                whileTap={{ scale: 0.98 }}
+                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:shadow-xl transition-all duration-300"
                             >
-                                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-xl">
-                                    <IoBedOutline size={24} />
+                                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-xl shadow-lg group-hover:shadow-blue-500/30 transition-shadow">
+                                    <IoBedOutline size={24} className="text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-lg">View Seat on Map</h3>
+                                    <h3 className="font-semibold text-lg group-hover:text-cyan-200 transition-colors">View Seat on Map</h3>
                                     <p className="text-sm text-gray-400">See where you sit</p>
                                 </div>
+                                <IoArrowForward className="ml-auto text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
                             </motion.div>
                         </Link>
                     </div>

@@ -45,6 +45,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    systemMode: {
+        type: String,
+        enum: ['default', 'custom'],
+        default: 'default'
+    },
     seat: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seat',

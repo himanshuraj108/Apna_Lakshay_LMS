@@ -10,6 +10,78 @@ const Request = require('../models/Request');
 const ActionLog = require('../models/ActionLog');
 const PasswordLog = require('../models/PasswordLog');
 const ArchivedStudent = require('../models/ArchivedStudent');
+const Shift = require('../models/Shift');
+
+// ... (existing imports)
+
+// ==========================================
+// DYNAMIC SHIFT MANAGEMENT
+// ==========================================
+
+// @desc    Get all shifts
+// @route   GET /api/admin/shifts
+exports.getShifts = async (req, res) => {
+    try {
+        const shifts = await Shift.find({ isActive: true }).sort({ startTime: 1 });
+        res.status(200).json({ success: true, shifts });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Create a new shift
+// @route   POST /api/admin/shifts
+exports.createShift = async (req, res) => {
+    try {
+        const { name, startTime, endTime } = req.body;
+
+        const existingShift = await Shift.findOne({ name });
+        if (existingShift) {
+            return res.status(400).json({ success: false, message: 'Shift name already exists' });
+        }
+
+        const shift = await Shift.create({ name, startTime, endTime });
+
+        await logAction(req, 'create_shift', 'Shift', shift._id, shift.name, `Created shift ${shift.name} (${startTime}-${endTime})`);
+
+        res.status(201).json({ success: true, shift });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Delete a shift
+// @route   DELETE /api/admin/shifts/:id
+exports.deleteShift = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const shift = await Shift.findById(id);
+
+        if (!shift) {
+            return res.status(404).json({ success: false, message: 'Shift not found' });
+        }
+
+        // Check if any active assignments use this shift
+        const activeUsage = await Seat.countDocuments({
+            'assignments': {
+                $elemMatch: { shift: id, status: 'active' }
+            }
+        });
+
+        if (activeUsage > 0) {
+            return res.status(400).json({ success: false, message: 'Cannot delete shift. It is currently assigned to active students.' });
+        }
+
+        await Shift.findByIdAndDelete(id);
+
+        await logAction(req, 'delete_shift', 'Shift', id, shift.name, `Deleted shift ${shift.name}`);
+
+        res.status(200).json({ success: true, message: 'Shift deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+// ==========================================
 
 // Email service for notifications (with safe loading)
 let emailService;
@@ -55,20 +127,98 @@ const generatePassword = () => {
 };
 
 // Dashboard
+// Dashboard
 exports.getDashboard = async (req, res) => {
     try {
-        const totalStudents = await User.countDocuments({ role: 'student', isActive: true });
-        const totalSeats = await Seat.countDocuments();
-        const occupiedSeats = await Seat.countDocuments({ isOccupied: true });
+        const mode = req.query.mode || 'default';
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 
-        const feesCollected = await Fee.aggregate([
+        // 1. Total Students (Filtered by System Mode)
+        const totalStudents = await User.countDocuments({
+            role: 'student',
+            isActive: true,
+            $or: [
+                { systemMode: mode },
+                ...(mode === 'default' ? [{ systemMode: { $exists: false } }] : [])
+            ]
+        });
+
+        // 2. Total Seats 
+        const totalSeats = await Seat.countDocuments();
+
+        // 3. Occupied Seats
+        const occupiedSeatsAgg = await Seat.aggregate([
+            { $unwind: '$assignments' },
+            { $match: { 'assignments.status': 'active' } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'assignments.student',
+                    foreignField: '_id',
+                    as: 'studentInfo'
+                }
+            },
+            { $unwind: '$studentInfo' },
+            {
+                $match: {
+                    $or: [
+                        { 'studentInfo.systemMode': mode },
+                        ...(mode === 'default' ? [{ 'studentInfo.systemMode': { $exists: false } }] : [])
+                    ]
+                }
+            },
+            { $count: 'count' }
+        ]);
+        const occupiedSeats = occupiedSeatsAgg[0]?.count || 0;
+
+        // 4. Fees Collected
+        const feesCollectedAgg = await Fee.aggregate([
             { $match: { status: 'paid', month: currentMonth, year: currentYear } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'student',
+                    foreignField: '_id',
+                    as: 'studentInfo'
+                }
+            },
+            { $unwind: '$studentInfo' },
+            {
+                $match: {
+                    $or: [
+                        { 'studentInfo.systemMode': mode },
+                        ...(mode === 'default' ? [{ 'studentInfo.systemMode': { $exists: false } }] : [])
+                    ]
+                }
+            },
             { $group: { _id: null, total: { $sum: '$amount' } } }
         ]);
+        const feesCollected = feesCollectedAgg[0]?.total || 0;
 
-        const pendingRequests = await Request.countDocuments({ status: 'pending' });
+        // 5. Pending Requests
+        const pendingRequestsAgg = await Request.aggregate([
+            { $match: { status: 'pending' } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'student',
+                    foreignField: '_id',
+                    as: 'studentInfo'
+                }
+            },
+            { $unwind: '$studentInfo' },
+            {
+                $match: {
+                    $or: [
+                        { 'studentInfo.systemMode': mode },
+                        ...(mode === 'default' ? [{ 'studentInfo.systemMode': { $exists: false } }] : [])
+                    ]
+                }
+            },
+            { $count: 'count' }
+        ]);
+        const pendingRequests = pendingRequestsAgg[0]?.count || 0;
 
         res.status(200).json({
             success: true,
@@ -76,8 +226,8 @@ exports.getDashboard = async (req, res) => {
                 totalStudents,
                 totalSeats,
                 occupiedSeats,
-                availableSeats: totalSeats - occupiedSeats,
-                feesCollected: feesCollected[0]?.total || 0,
+                availableSeats: totalSeats - occupiedSeats, // Dynamic availability based on this mode's occupancy
+                feesCollected,
                 pendingRequests
             }
         });
@@ -93,17 +243,51 @@ exports.getDashboard = async (req, res) => {
 // Get all students
 exports.getStudents = async (req, res) => {
     try {
-        const students = await User.find({ role: 'student' })
+        const mode = req.query.mode || 'custom';
+        const query = {
+            role: 'student',
+            $or: [
+                { systemMode: mode },
+                ...(mode === 'default' ? [{ systemMode: { $exists: false } }, { systemMode: null }] : [])
+            ]
+        };
+
+        const students = await User.find(query)
             .populate('createdBy', 'name')
             .populate({
                 path: 'seat',
-                populate: { path: 'room floor' }
+                populate: {
+                    path: 'room floor assignments.shift'
+                }
             })
+            .lean() // Use lean for performance and easier modification
             .sort({ createdAt: -1 });
+
+        // Transform students to include resolved shift info
+        const studentsWithShift = students.map(student => {
+            let shiftInfo = null;
+            if (student.seat && student.seat.assignments) {
+                // Find active assignment for this student
+                const assignment = student.seat.assignments.find(a =>
+                    a.status === 'active' && a.student.toString() === student._id.toString()
+                );
+
+                if (assignment) {
+                    if (assignment.shift && assignment.shift.name) {
+                        shiftInfo = assignment.shift.name;
+                    } else if (assignment.legacyShift) {
+                        shiftInfo = assignment.legacyShift;
+                    } else if (assignment.type === 'full_day') {
+                        shiftInfo = 'Full Day';
+                    }
+                }
+            }
+            return { ...student, shift: shiftInfo };
+        });
 
         res.status(200).json({
             success: true,
-            students
+            students: studentsWithShift
         });
     } catch (error) {
         res.status(500).json({
@@ -128,15 +312,77 @@ exports.getStudent = async (req, res) => {
 
         // Check if valid ObjectId
         if (id.match(/^[0-9a-fA-F]{24}$/)) {
-            student = await User.findById(id).populate('createdBy', 'name');
+            student = await User.findById(id)
+                .populate('createdBy', 'name')
+                .populate({
+                    path: 'seat',
+                    populate: { path: 'room floor assignments.shift' }
+                })
+                .lean();
         } else {
             // Try searching by last 8 characters
-            // Since we can't do a direct regex on ObjectId in simple find without aggregation or converting to string,
-            // efficiently we might need to fetch all and filter, OR use aggregation.
-            // For small scale, fetching all students then filtering is easiest but inefficient.
-            // Better: use aggregation to project _id to string and match.
-            const allStudents = await User.find({ role: 'student' }).populate('createdBy', 'name');
+            const allStudents = await User.find({ role: 'student' })
+                .populate('createdBy', 'name')
+                .populate({
+                    path: 'seat',
+                    populate: { path: 'room floor assignments.shift' }
+                })
+                .lean();
             student = allStudents.find(s => s._id.toString().toUpperCase().endsWith(id.toUpperCase()));
+        }
+
+        if (student) {
+            let shiftInfo = null;
+            if (student.seat && student.seat.assignments) {
+                const assignment = student.seat.assignments.find(a =>
+                    a.status === 'active' && a.student.toString() === student._id.toString()
+                );
+
+                if (assignment) {
+                    if (assignment.shift && assignment.shift.name) {
+                        shiftInfo = assignment.shift.name;
+                    } else if (assignment.legacyShift) {
+                        shiftInfo = assignment.legacyShift;
+                    } else if (assignment.type === 'full_day') {
+                        shiftInfo = 'Full Day';
+                    }
+                    student.price = assignment.price; // Store price from assignment
+
+                    // Fallback for older assignments without price
+                    if (!student.price && student.seat) {
+                        try {
+                            const seat = student.seat;
+                            if (assignment.shift && seat.shiftPrices) {
+                                // Handle Map or Object structure of shiftPrices
+                                const shiftId = assignment.shift._id || assignment.shift;
+                                student.price = seat.shiftPrices[shiftId] || seat.shiftPrices[shiftId.toString()];
+                            }
+
+                            if (!student.price && assignment.legacyShift && seat.basePrices) {
+                                student.price = seat.basePrices[assignment.legacyShift];
+                            }
+
+                            if (!student.price && assignment.type === 'full_day' && seat.basePrices) {
+                                student.price = seat.basePrices.full;
+                            }
+
+                            // Ultimate Fallback for custom shifts with no price set: use Day price default
+                            if (!student.price) {
+                                console.log('Price calculation failed, applying safety fallback.');
+                                if (seat.basePrices) {
+                                    student.price = seat.basePrices.day || 800;
+                                } else {
+                                    student.price = 800; // Hard fallback
+                                }
+                            }
+                            console.log('Final Calculated Price:', student.price);
+                        } catch (err) {
+                            console.log('Error calculating fallback price:', err);
+                        }
+                    }
+                }
+            }
+            student.shift = shiftInfo;
         }
 
         if (!student) {
@@ -146,23 +392,48 @@ exports.getStudent = async (req, res) => {
             });
         }
 
-        // Get seat info
-        const seat = await Seat.findOne({ assignedTo: student._id }).populate('floor room');
+        // Get seat info (already populated but let's ensure we have the calculated one)
+        // If we want to rely on the populated seat from lines 315/324:
+        let seatData = null;
+        if (student.seat) {
+            // Check if this student is actually assigned (active) to this seat
+            // OR if we are just showing the seat linked in student profile
+            const seatObj = student.seat;
+
+            // Find specific assignment details if needed, but for verification just showing "Assigned Seat" is enough?
+            // Let's stick to what we have in the student object which we modified above with 'shift'
+
+            seatData = {
+                number: seatObj.number,
+                floor: seatObj.floor?.name,
+                room: seatObj.room?.name,
+                shift: student.shift || 'N/A', // Calculated above
+                price: student.price || seatObj.currentPrice || seatObj.price
+            };
+        } else {
+            // Fallback: try finding a seat where this student is assigned (legacy check)
+            const foundSeat = await Seat.findOne({
+                'assignments': {
+                    $elemMatch: { student: student._id, status: 'active' }
+                }
+            }).populate('floor room');
+
+            if (foundSeat) {
+                seatData = {
+                    number: foundSeat.number,
+                    floor: foundSeat.floor?.name,
+                    room: foundSeat.room?.name,
+                    shift: student.shift || 'Associated',
+                    price: foundSeat.currentPrice
+                };
+            }
+        }
 
         res.status(200).json({
             success: true,
             student: {
-                ...student.toObject(),
-                seat: seat ? {
-                    number: seat.number,
-                    floor: seat.floor?.name,
-                    room: seat.room?.name,
-                    number: seat.number,
-                    floor: seat.floor?.name,
-                    room: seat.room?.name,
-                    shift: seat.shift,
-                    price: seat.currentPrice
-                } : null
+                ...student, // It is already lean object
+                seat: seatData
             }
         });
     } catch (error) {
@@ -177,7 +448,7 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile } = req.body;
+        const { name, email, mobile, systemMode = 'custom' } = req.body;
         const password = generatePassword();
 
         const student = await User.create({
@@ -185,6 +456,7 @@ exports.createStudent = async (req, res) => {
             email,
             mobile,
             password,
+            systemMode,
             role: 'student',
             createdBy: req.user.id
         });
@@ -388,26 +660,103 @@ exports.deleteStudent = async (req, res) => {
 };
 
 // Get floors
+// @desc    Get all floors with rooms and seats (Dynamic Availability)
+// @route   GET /api/admin/floors
 exports.getFloors = async (req, res) => {
     try {
+        const { shiftId } = req.query; // Optional specific shift to view availability for
+
+        // Check if we are in "Custom Shift Mode" (any custom shifts exist)
+        const customShiftsCount = await Shift.countDocuments({ isActive: true });
+        const isCustomMode = customShiftsCount > 0;
+
         const floors = await Floor.find()
             .populate({
                 path: 'rooms',
                 populate: {
                     path: 'seats',
+                    model: 'Seat',
                     populate: {
-                        path: 'assignedTo',
+                        path: 'assignments.student', // Populate student in new struct
                         select: 'name email profileImage createdAt'
                     }
                 }
             })
             .sort({ level: 1 });
 
+        // Post-process seats to determine status based on requested view/mode
+        const processedFloors = floors.map(floor => ({
+            ...floor.toObject(),
+            rooms: floor.rooms.map(room => ({
+                ...room.toObject(),
+                seats: room.seats.map(seat => {
+                    const seatObj = seat.toObject();
+                    let isOccupied = false;
+                    let displayAssignment = null;
+                    let displayShift = null;
 
+                    // Get active assignments
+                    const assignments = seat.assignments ? seat.assignments.filter(a => a.status === 'active') : [];
+
+                    // 1. Check for Full Day Blockers (Always blocks everything)
+                    const fullDayBlocker = assignments.find(a => a.type === 'full_day' || a.legacyShift === 'full');
+
+                    if (fullDayBlocker) {
+                        isOccupied = true;
+                        displayAssignment = fullDayBlocker.student; // Show who booked full day
+                        displayShift = 'full';
+                    }
+                    // 2. Specific Shift Logic
+                    else if (shiftId) {
+                        // Admin wants to see availability for SPECIFIC shift ID
+                        if (shiftId === 'full') {
+                            isOccupied = assignments.length > 0;
+                            if (isOccupied) {
+                                displayAssignment = assignments[0].student;
+                                displayShift = assignments[0].shift;
+                            }
+                        } else if (shiftId === 'day' || shiftId === 'night') {
+                            // Legacy View specific
+                            const occupied = assignments.find(a => a.legacyShift === shiftId);
+                            if (occupied) {
+                                isOccupied = true;
+                                displayAssignment = occupied.student;
+                                displayShift = occupied.legacyShift;
+                            }
+                        } else {
+                            // Custom Shift ID View
+                            const shiftAssignment = assignments.find(a => a.shift && a.shift.toString() === shiftId);
+                            if (shiftAssignment) {
+                                isOccupied = true;
+                                displayAssignment = shiftAssignment.student;
+                                displayShift = shiftAssignment.shift;
+                            }
+                        }
+                    }
+                    // 3. General Overview (No shift selected)
+                    else {
+                        isOccupied = assignments.length > 0;
+                        if (isOccupied) {
+                            displayAssignment = assignments[0].student;
+                            displayShift = assignments[0].shift;
+                        }
+                    }
+
+                    return {
+                        ...seatObj,
+                        isOccupied, // Computed dynamic status
+                        assignedTo: displayAssignment, // Computed 'primary' user for this view
+                        shift: displayShift, // Computed active shift
+                        assignments: assignments // Pass full list for detailed tooltip
+                    };
+                })
+            }))
+        }));
 
         res.status(200).json({
             success: true,
-            floors
+            floors: processedFloors,
+            isCustomMode
         });
     } catch (error) {
         res.status(500).json({
@@ -459,44 +808,77 @@ exports.assignSeat = async (req, res) => {
             });
         }
 
-        if (seat.isOccupied) {
+        // Check availability logic for DYNAMIC SHIFTS
+        // 1. Is the seat blocked by a full-day assignment?
+        const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+        const isFullyBlocked = activeAssignments.some(a => a.type === 'full_day');
+
+        if (isFullyBlocked) {
             return res.status(400).json({
                 success: false,
-                message: 'Seat is already occupied'
+                message: 'Seat is fully occupied (Full Day)'
             });
         }
 
-        // Check if student already has a seat and vacate it
-        const currentSeat = await Seat.findOne({ assignedTo: studentId });
-        if (currentSeat) {
-            currentSeat.isOccupied = false;
-            currentSeat.assignedTo = null;
-            currentSeat.negotiatedPrice = null;
-            currentSeat.shift = null;
-            await currentSeat.save();
+        // 2. Is the specific shift already taken?
+        // Note: 'shift' body param should be the Shift ID
+        const isShiftTaken = activeAssignments.some(a => a.shift && a.shift.toString() === shift);
+
+        if (isShiftTaken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Seat is already occupied for this shift'
+            });
         }
 
-        // Check if student already has a seat assigned and free it
-        const existingSeat = await Seat.findOne({
-            assignedTo: studentId,
-            isOccupied: true
+        // 3. Remove student from any previous active seat assignments (Move student)
+        // First find old seats to update their isOccupied status later
+        const previousSeats = await Seat.find({
+            'assignments': { $elemMatch: { student: studentId, status: 'active' } }
         });
 
-        if (existingSeat) {
-            console.log(`Freeing previous seat ${existingSeat.number} for student ${student.name}`);
-            existingSeat.isOccupied = false;
-            existingSeat.assignedTo = null;
-            existingSeat.shift = null;
-            existingSeat.negotiatedPrice = null;
-            await existingSeat.save();
+        // Cancel previous assignments
+        await Seat.updateMany(
+            { 'assignments': { $elemMatch: { student: studentId, status: 'active' } } },
+            {
+                $set: {
+                    'assignments.$[elem].status': 'cancelled',
+                    'assignments.$[elem].endDate': new Date()
+                }
+            },
+            { arrayFilters: [{ 'elem.student': studentId, 'elem.status': 'active' }] }
+        );
+
+        // Update isOccupied flag for previous seats
+        for (const prevSeat of previousSeats) {
+            // Re-fetch to check remaining active assignments
+            const updatedSeat = await Seat.findById(prevSeat._id);
+            const hasActive = updatedSeat.assignments.some(a => a.status === 'active');
+            if (!hasActive) {
+                updatedSeat.isOccupied = false;
+                updatedSeat.assignedTo = null; // Clear legacy field
+                updatedSeat.shift = null;      // Clear legacy field
+                await updatedSeat.save();
+            }
         }
 
-        // Assign new seat
-        seat.isOccupied = true;
-        seat.assignedTo = studentId;
-        seat.shift = shift;
-        seat.negotiatedPrice = negotiatedPrice || seat.basePrices[shift];
+        // 4. Create new assignment object
+        const newAssignment = {
+            student: studentId,
+            shift: shift, // Shift ID
+            type: 'specific', // Assuming specific shift for now
+            status: 'active',
+            assignedAt: new Date(),
+            price: negotiatedPrice || seat.shiftPrices.get(shift) || seat.basePrices.day // Fallback
+        };
+
+        // 5. Add to seat
+        seat.assignments.push(newAssignment);
+        seat.isOccupied = true; // General flag
         await seat.save();
+
+        // Update student reference
+        await User.findByIdAndUpdate(studentId, { seat: seatId }); // Optional, for easy lookup
 
         const now = new Date();
         const dueDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -509,7 +891,7 @@ exports.assignSeat = async (req, res) => {
                 year: now.getFullYear()
             },
             {
-                amount: seat.negotiatedPrice,
+                amount: newAssignment.price,
                 dueDate,
                 status: 'pending'
             },
@@ -519,36 +901,43 @@ exports.assignSeat = async (req, res) => {
         await Notification.create({
             recipient: studentId,
             title: 'Seat Assigned',
-            message: `Your seat ${seat.number} has been assigned for ${shift} shift.`,
+            message: `Your seat ${seat.number} has been assigned.`,
             type: 'seat',
             createdBy: req.user.id
         });
 
         // Send seat assignment email
         try {
-            const floorName = seat.floor?.name || 'N/A';
-            const roomName = seat.room?.name || 'N/A';
+            // Resolve shift name
+            let shiftName = shift;
+            try {
+                const shiftObj = await Shift.findById(shift);
+                if (shiftObj) shiftName = shiftObj.name;
+            } catch (ignore) {
+                console.log('Could not resolve shift name');
+            }
+
             await emailService.sendSeatAssignmentEmail(
                 student,
                 {
                     ...seat.toObject(),
-                    currentPrice: seat.negotiatedPrice
+                    currentPrice: newAssignment.price
                 },
-                shift
+                shiftName
             );
         } catch (emailError) {
             console.error('Seat assignment email failed:', emailError.message);
-            // Continue even if email fails
         }
 
         // Log action
-        await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, `Assigned to ${student.name} (${shift} shift)`);
+        await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, `Assigned to ${student.name}`);
 
         res.status(200).json({
             success: true,
-            message: 'Seat assigned successfully and email notification sent'
+            message: 'Seat assigned successfully'
         });
     } catch (error) {
+        console.error('Assign seat error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',
@@ -1093,22 +1482,36 @@ exports.handleRequest = async (req, res) => {
                     });
                 }
 
-                // Store shift before clearing
-                const previousShift = currentSeat.shift || 'full';
+                // 1. Deactivate old assignment
+                const oldAssignment = currentSeat.assignments.find(a =>
+                    a.student.toString() === request.student._id.toString() && a.status === 'active'
+                );
 
-                // Release old seat
-                currentSeat.assignedTo = null;
-                currentSeat.shift = null;
-                currentSeat.isOccupied = false;
-                await currentSeat.save();
+                let shiftToMove = null;
+                let legacyShiftToMove = null;
+                let typeToMove = 'specific';
 
-                // Assign new seat
-                requestedSeat.assignedTo = request.student._id;
-                requestedSeat.shift = previousShift; // Keep same shift
-                requestedSeat.isOccupied = true;
+                if (oldAssignment) {
+                    oldAssignment.status = 'expired'; // Mark old as expired
+                    await currentSeat.save();
+
+                    shiftToMove = oldAssignment.shift;
+                    legacyShiftToMove = oldAssignment.legacyShift;
+                    typeToMove = oldAssignment.type;
+                }
+
+                // 2. Create new assignment
+                requestedSeat.assignments.push({
+                    student: request.student._id,
+                    shift: shiftToMove,
+                    legacyShift: legacyShiftToMove,
+                    type: typeToMove,
+                    status: 'active',
+                    assignedAt: new Date()
+                });
                 await requestedSeat.save();
 
-                // Update student record
+                // 3. Update User reference
                 await User.findByIdAndUpdate(request.student._id, {
                     seat: requestedSeat._id
                 });
@@ -1176,10 +1579,35 @@ exports.handleRequest = async (req, res) => {
 
             // Update shift in database if approved
             if (status === 'approved' && request.type === 'shift') {
-                const seat = await Seat.findOne({ assignedTo: request.student._id });
+                const seat = await Seat.findOne({
+                    'assignments.student': request.student._id,
+                    'assignments.status': 'active'
+                });
+
                 if (seat) {
-                    seat.shift = request.requestedData.shift;
-                    await seat.save();
+                    const assignment = seat.assignments.find(a =>
+                        a.student.toString() === request.student._id.toString() && a.status === 'active'
+                    );
+
+                    if (assignment) {
+                        // Update shift
+                        const newShiftId = request.requestedData.shift;
+                        if (newShiftId === 'full') {
+                            assignment.type = 'full_day';
+                            assignment.shift = null;
+                            assignment.legacyShift = 'full';
+                        } else if (['day', 'night'].includes(newShiftId)) {
+                            assignment.type = 'specific';
+                            assignment.shift = null;
+                            assignment.legacyShift = newShiftId;
+                        } else {
+                            // Dynamic shift
+                            assignment.type = 'specific';
+                            assignment.shift = newShiftId; // ObjectId
+                            assignment.legacyShift = null;
+                        }
+                        await seat.save();
+                    }
                 }
             }
 

@@ -21,7 +21,11 @@ const {
     getPasswordActivity,
     resetStudentPassword,
     getArchivedStudents,
-    getArchivedStudent
+    getArchivedStudent,
+    // Shift Management
+    getShifts,
+    createShift,
+    deleteShift
 } = require('../controllers/adminController');
 const {
     addSeat,
@@ -88,5 +92,12 @@ router.put('/requests/:id', handleRequest);
 // Archives
 router.get('/archives', getArchivedStudents);
 router.get('/archives/:id', getArchivedStudent);
+
+// Shift Management
+router.route('/shifts')
+    .get(getShifts)
+    .post(createShift);
+
+router.delete('/shifts/:id', deleteShift);
 
 module.exports = router;

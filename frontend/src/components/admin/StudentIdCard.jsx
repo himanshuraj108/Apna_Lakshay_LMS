@@ -1,12 +1,29 @@
 import { motion } from 'framer-motion';
 import { IoPersonCircleOutline } from 'react-icons/io5';
 import { QRCodeCanvas } from 'qrcode.react';
+import useShifts from '../../hooks/useShifts';
 
 const StudentIdCard = ({ student }) => {
+    const { getShiftName } = useShifts();
+
     // Generate a pseudo-ID if not existent (using last 6 chars of MongoID)
     const id = student._id || student.id || '';
     const studentId = id ? id.slice(-6).toUpperCase() : '------';
     const verificationUrl = `${window.location.origin}/admin/verify/${id}`;
+
+    // Helper to get formatted shift name
+    const getFormattedShift = () => {
+        // 1. Try direct shift property (might be populated name or ID)
+        const shiftVal = student.shift || student.seat?.shift;
+
+        if (!shiftVal) return 'N/A';
+
+        // If it's already a full readable name (e.g. from getStudents API)
+        if (shiftVal.length > 10 && shiftVal.includes(' ')) return shiftVal;
+
+        // Otherwise try to lookup ID or return standardized name
+        return getShiftName(shiftVal);
+    };
 
     return (
         <motion.div
@@ -66,16 +83,7 @@ const StudentIdCard = ({ student }) => {
                         <div className="text-right">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
                             <p className="font-medium text-purple-600 text-xs font-bold">
-                                {(() => {
-                                    const shift = student.shift || student.seat?.shift;
-                                    if (!shift) return 'N/A';
-                                    const map = {
-                                        'day': 'Morning',
-                                        'night': 'Evening',
-                                        'full': 'Full'
-                                    };
-                                    return map[shift] || shift.charAt(0).toUpperCase() + shift.slice(1);
-                                })()}
+                                {getFormattedShift()}
                             </p>
                         </div>
                     </div>

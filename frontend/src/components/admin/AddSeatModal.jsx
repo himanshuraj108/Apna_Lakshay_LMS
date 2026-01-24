@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
+import useShifts from '../../hooks/useShifts';
 
 const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => {
+    const { shifts } = useShifts();
     const [formData, setFormData] = useState({
-        dayPrice: 800,
-        nightPrice: 800,
-        fullPrice: 1200
+        basePrices: {}
     });
     const [loading, setLoading] = useState(false);
 
@@ -25,18 +25,15 @@ const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => 
                     roomId,
                     floorId,
                     wall,
-                    basePrices: {
-                        day: formData.dayPrice,
-                        night: formData.nightPrice,
-                        full: formData.fullPrice
-                    }
+                    basePrices: formData.basePrices,
+                    shiftPrices: formData.basePrices // Using shiftPrices for dynamic shifts
                 })
             });
 
             if (response.ok) {
                 onSuccess();
                 onClose();
-                setFormData({ dayPrice: 800, nightPrice: 800, fullPrice: 1200 });
+                setFormData({ basePrices: {} });
             } else {
                 const data = await response.json();
                 alert(data.message || 'Failed to add seat');
@@ -78,44 +75,33 @@ const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => 
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Morning Shift Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.dayPrice}
-                                onChange={(e) => setFormData({ ...formData, dayPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Evening Shift Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.nightPrice}
-                                onChange={(e) => setFormData({ ...formData, nightPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Full Day Price (₹)
-                            </label>
-                            <input
-                                type="number"
-                                value={formData.fullPrice}
-                                onChange={(e) => setFormData({ ...formData, fullPrice: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
+                        {shifts.length === 0 ? (
+                            <div className="text-center text-red-400 p-4 bg-red-400/10 rounded-lg">
+                                No shifts found. Please create shifts in Shift Management first.
+                            </div>
+                        ) : (
+                            shifts.map(shift => (
+                                <div key={shift.id}>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                                        {shift.name} Price (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={formData.basePrices?.[shift.id] || ''}
+                                        onChange={(e) => setFormData({
+                                            ...formData,
+                                            basePrices: {
+                                                ...formData.basePrices,
+                                                [shift.id]: parseInt(e.target.value) || 0
+                                            }
+                                        })}
+                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        placeholder="e.g. 800"
+                                        required
+                                    />
+                                </div>
+                            ))
+                        )}
 
                         <div className="flex gap-4 pt-4">
                             <button
@@ -127,7 +113,7 @@ const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => 
                             </button>
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={loading || shifts.length === 0}
                                 className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 {loading ? 'Adding...' : 'Add Seat'}

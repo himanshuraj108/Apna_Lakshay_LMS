@@ -7,6 +7,7 @@ import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import Modal from '../../components/ui/Modal';
 import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 import SeatDetailsModal from '../../components/student/SeatDetailsModal';
+import MaintenancePage from './MaintenancePage'; // Import maintenance page
 import api from '../../utils/api';
 import { IoDownload, IoGlobe, IoLogInOutline, IoArrowForward } from 'react-icons/io5';
 
@@ -15,6 +16,7 @@ const PublicSeatView = () => {
     const [loading, setLoading] = useState(true);
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [seatDetailsModal, setSeatDetailsModal] = useState({ isOpen: false, seat: null });
+    const [isMaintenance, setIsMaintenance] = useState(false);
 
     useEffect(() => {
         fetchSeats();
@@ -23,6 +25,14 @@ const PublicSeatView = () => {
     const fetchSeats = async () => {
         try {
             const response = await api.get('/public/seats');
+
+            // Handle Maintenance Mode
+            if (response.data.maintenance) {
+                setIsMaintenance(true);
+                setLoading(false);
+                return;
+            }
+
             setFloors(response.data.floors);
         } catch (error) {
             console.error('Error fetching seats:', error);
@@ -35,8 +45,14 @@ const PublicSeatView = () => {
         setSeatDetailsModal({ isOpen: true, seat });
     };
 
+    if (isMaintenance) {
+        return <MaintenancePage />;
+    }
+
     return (
         <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto bg-[#0f172a]">
+            {/* Same login button for public view if needed, but maintenance page handles it too */}
+
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
@@ -147,5 +163,6 @@ const PublicSeatView = () => {
         </div>
     );
 };
+
 
 export default PublicSeatView;

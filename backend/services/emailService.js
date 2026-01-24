@@ -182,19 +182,13 @@ exports.sendCredentialsEmail = async (name, email, password) => {
 
 // Send seat assignment email
 exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
-  const shiftTimes = {
-    day: '9:00 AM - 3:00 PM',
-    night: '3:00 PM - 9:00 PM',
-    full: '9:00 AM - 9:00 PM'
-  };
-
   const content = `
     <h2>Seat Assigned Successfully!</h2>
     <p>Dear ${student.name},</p>
     <p>Congratulations! Your seat has been assigned. Here are the details:</p>
     <div class="highlight">
       <p><strong>Seat Number:</strong> ${seat.number}</p>
-      <p><strong>Shift:</strong> ${shift.toUpperCase()} (${shiftTimes[shift]})</p>
+      <p><strong>Shift:</strong> ${shift}</p>
       <p><strong>Monthly Fee:</strong> ₹${seat.currentPrice}</p>
     </div>
     <p>Please make sure to follow the library rules and maintain discipline.</p>

@@ -5,8 +5,10 @@ import Button from '../ui/Button';
 import Card from '../ui/Card';
 import StudentRoomGrid from './StudentRoomGrid';
 import { IoClose, IoAlertCircle } from 'react-icons/io5';
+import useShifts from '../../hooks/useShifts';
 
 const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
+    const { shifts, isCustom } = useShifts();
     const [floors, setFloors] = useState([]);
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [selectedSeat, setSelectedSeat] = useState(null);
@@ -42,7 +44,7 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
         if (!selectedSeat) return;
 
         // Validate
-        if (selectedSeat.assignedTo) {
+        if (selectedSeat.isOccupied) {
             setError('This seat is already occupied');
             return;
         }
@@ -201,26 +203,26 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
 
                                     <div className="bg-white/5 rounded-lg p-4">
                                         <p className="text-sm text-gray-400">Status</p>
-                                        <p className={`text-lg font-semibold ${selectedSeat.assignedTo ? 'text-red-400' : 'text-green-400'}`}>
-                                            {selectedSeat.assignedTo ? 'Occupied' : 'Available'}
+                                        <p className={`text-lg font-semibold ${selectedSeat.isOccupied ? 'text-red-400' : 'text-green-400'}`}>
+                                            {selectedSeat.isOccupied ? 'Occupied' : 'Available'}
                                         </p>
                                     </div>
 
                                     <div className="bg-white/5 rounded-lg p-4">
                                         <p className="text-sm text-gray-400 mb-3">Shift Prices</p>
                                         <div className="grid grid-cols-3 gap-2">
-                                            <div className="bg-white/10 rounded p-2 text-center">
-                                                <p className="text-xs text-gray-400 mb-1">Morning</p>
-                                                <p className="text-sm font-bold text-green-400">₹{selectedSeat.basePrices?.day || 800}</p>
-                                            </div>
-                                            <div className="bg-white/10 rounded p-2 text-center">
-                                                <p className="text-xs text-gray-400 mb-1">Evening</p>
-                                                <p className="text-sm font-bold text-blue-400">₹{selectedSeat.basePrices?.night || 800}</p>
-                                            </div>
-                                            <div className="bg-white/10 rounded p-2 text-center">
-                                                <p className="text-xs text-gray-400 mb-1">Full</p>
-                                                <p className="text-sm font-bold text-purple-400">₹{selectedSeat.basePrices?.full || 1200}</p>
-                                            </div>
+                                            {shifts.map(shift => (
+                                                <div key={shift.id} className="bg-white/10 rounded p-2 text-center">
+                                                    <p className="text-xs text-gray-400 mb-1">{shift.name}</p>
+                                                    <p className="text-sm font-bold text-green-400">₹{selectedSeat.basePrices?.[shift.id] || 800}</p>
+                                                </div>
+                                            ))}
+                                            {!isCustom && !shifts.some(s => s.id === 'full') && (
+                                                <div className="bg-white/10 rounded p-2 text-center">
+                                                    <p className="text-xs text-gray-400 mb-1">Full Day</p>
+                                                    <p className="text-sm font-bold text-purple-400">₹{selectedSeat.basePrices?.full || 1200}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -233,7 +235,7 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-4">
-                                    {!selectedSeat.assignedTo && currentSeat?._id !== selectedSeat._id ? (
+                                    {!selectedSeat.isOccupied && currentSeat?._id !== selectedSeat._id ? (
                                         <Button
                                             onClick={handleRequestSeat}
                                             disabled={submitting}

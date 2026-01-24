@@ -20,16 +20,42 @@ const seatSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    },
-    shift: {
-        type: String,
-        enum: ['day', 'night', 'full'],
-        default: null
-    },
+    // New structure for dynamic assignments
+    assignments: [{
+        student: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        shift: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Shift',
+            default: null // null implies legacy 'day'/'night' or special handling
+        },
+        legacyShift: { // For backward compatibility or 'full' override
+            type: String,
+            enum: ['day', 'night', 'full', null],
+            default: null
+        },
+        type: {
+            type: String,
+            enum: ['specific', 'full_day'],
+            default: 'specific'
+        },
+        status: {
+            type: String,
+            enum: ['active', 'expired', 'cancelled'],
+            default: 'active'
+        },
+        assignedAt: {
+            type: Date,
+            default: Date.now
+        },
+        price: {
+            type: Number,
+            default: 0
+        }
+    }],
     // Position on room wall
     position: {
         wall: {
@@ -48,24 +74,25 @@ const seatSchema = new mongoose.Schema({
         night: { type: Number, default: 800 },
         full: { type: Number, default: 1200 }
     },
-    // Negotiated price for the assigned student
-    negotiatedPrice: {
-        type: Number,
-        default: null
+    // Dynamic pricing override for new shifts (Map of ShiftID -> Price)
+    shiftPrices: {
+        type: Map,
+        of: Number,
+        default: {}
     }
 }, {
     timestamps: true
 });
 
-// Virtual to get the current price based on shift
-seatSchema.virtual('currentPrice').get(function () {
-    if (this.negotiatedPrice !== null && this.negotiatedPrice !== undefined) {
-        return this.negotiatedPrice;
-    }
-    if (this.shift) {
-        return this.basePrices[this.shift];
-    }
-    return null;
+// Virtual to populate assignments
+seatSchema.virtual('activeAssignments').get(function () {
+    return this.assignments ? this.assignments.filter(a => a.status === 'active') : [];
+});
+
+// Virtual to check if fully occupied (blocked for everyone)
+seatSchema.virtual('isFullyBlocked').get(function () {
+    const active = this.assignments ? this.assignments.filter(a => a.status === 'active') : [];
+    return active.some(a => a.type === 'full_day' || a.legacyShift === 'full');
 });
 
 seatSchema.set('toJSON', { virtuals: true });

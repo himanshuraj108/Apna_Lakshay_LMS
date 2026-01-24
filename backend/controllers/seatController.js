@@ -198,19 +198,23 @@ exports.updateSeat = async (req, res) => {
 // @route   PUT /api/admin/seats/bulk-price
 exports.bulkUpdatePrices = async (req, res) => {
     try {
-        const { basePrices } = req.body;
+        const { basePrices, shiftPrices } = req.body;
 
-        if (!basePrices) {
+        if (!basePrices && !shiftPrices) {
             return res.status(400).json({
                 success: false,
-                message: 'Base prices are required'
+                message: 'Prices (base or shift) are required'
             });
         }
+
+        const updateData = {};
+        if (basePrices) updateData.basePrices = basePrices;
+        if (shiftPrices) updateData.shiftPrices = shiftPrices;
 
         // Update all seats
         const result = await Seat.updateMany(
             {},
-            { $set: { basePrices } }
+            { $set: updateData }
         );
 
         res.status(200).json({
@@ -231,13 +235,13 @@ exports.bulkUpdatePrices = async (req, res) => {
 // @route   PUT /api/admin/rooms/:roomId/prices
 exports.updateRoomPrices = async (req, res) => {
     try {
-        const { basePrices } = req.body;
+        const { basePrices, shiftPrices } = req.body;
         const { roomId } = req.params;
 
-        if (!basePrices) {
+        if (!basePrices && !shiftPrices) {
             return res.status(400).json({
                 success: false,
-                message: 'Base prices are required'
+                message: 'Prices (base or shift) are required'
             });
         }
 
@@ -250,10 +254,14 @@ exports.updateRoomPrices = async (req, res) => {
             });
         }
 
+        const updateData = {};
+        if (basePrices) updateData.basePrices = basePrices;
+        if (shiftPrices) updateData.shiftPrices = shiftPrices;
+
         // Update all seats in this room
         const result = await Seat.updateMany(
             { room: roomId },
-            { $set: { basePrices } }
+            { $set: updateData }
         );
 
         res.status(200).json({
@@ -274,13 +282,13 @@ exports.updateRoomPrices = async (req, res) => {
 // @route   PUT /api/admin/floors/:floorId/prices
 exports.updateFloorPrices = async (req, res) => {
     try {
-        const { basePrices } = req.body;
+        const { basePrices, shiftPrices } = req.body;
         const { floorId } = req.params;
 
-        if (!basePrices) {
+        if (!basePrices && !shiftPrices) {
             return res.status(400).json({
                 success: false,
-                message: 'Base prices are required'
+                message: 'Prices (base or shift) are required'
             });
         }
 
@@ -296,10 +304,14 @@ exports.updateFloorPrices = async (req, res) => {
         // Get all room IDs on this floor
         const roomIds = floor.rooms.map(room => room._id);
 
+        const updateData = {};
+        if (basePrices) updateData.basePrices = basePrices;
+        if (shiftPrices) updateData.shiftPrices = shiftPrices;
+
         // Update all seats in rooms on this floor
         const result = await Seat.updateMany(
             { room: { $in: roomIds } },
-            { $set: { basePrices } }
+            { $set: updateData }
         );
 
         res.status(200).json({

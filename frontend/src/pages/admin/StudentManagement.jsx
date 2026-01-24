@@ -11,8 +11,15 @@ import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownlo
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import useShifts from '../../hooks/useShifts';
+
+import { useSearchParams } from 'react-router-dom';
 
 const StudentManagement = () => {
+    const { shifts, isCustom, getShiftTimeRange } = useShifts();
+    const [searchParams] = useSearchParams();
+    const mode = searchParams.get('mode') || 'custom';
+
     const [students, setStudents] = useState([]);
     const [floors, setFloors] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,7 +28,7 @@ const StudentManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [formData, setFormData] = useState({ name: '', email: '', mobile: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', mobile: '', systemMode: mode });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
         shift: 'full',
@@ -45,11 +52,16 @@ const StudentManagement = () => {
     useEffect(() => {
         fetchStudents();
         fetchFloors();
-    }, []);
+    }, [mode]); // Refetch when mode changes
+
+    useEffect(() => {
+        // Update form data default if mode changes
+        setFormData(prev => ({ ...prev, systemMode: mode }));
+    }, [mode]);
 
     const fetchStudents = async () => {
         try {
-            const response = await api.get('/admin/students');
+            const response = await api.get(`/admin/students?mode=${mode}`);
             setStudents(response.data.students);
         } catch (error) {
             console.error('Error fetching students:', error);
@@ -513,6 +525,7 @@ const StudentManagement = () => {
                                             <tr className="border-b border-white/10">
                                                 <th className="text-left p-4">Name</th>
                                                 <th className="text-left p-4">Email</th>
+                                                <th className="text-left p-4">Shift</th>
                                                 <th className="text-left p-4">Status</th>
                                                 <th className="text-left p-4">Created</th>
                                                 <th className="text-right p-4">Actions</th>
@@ -740,9 +753,15 @@ const StudentManagement = () => {
                                 className="input"
                                 required
                             >
-                                <option value="day">Morning (9 AM - 3 PM) - ₹800</option>
-                                <option value="night">Evening (3 PM - 9 PM) - ₹800</option>
-                                <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
+                                <option value="">Select shift...</option>
+                                {shifts.map(shift => (
+                                    <option key={shift.id} value={shift.id}>
+                                        {shift.name} ({getShiftTimeRange(shift)}) - ₹{shift.id === 'full' ? '1200' : '800'}
+                                    </option>
+                                ))}
+                                {!isCustom && !shifts.some(s => s.id === 'full') && (
+                                    <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
+                                )}
                             </select>
                         </div>
 

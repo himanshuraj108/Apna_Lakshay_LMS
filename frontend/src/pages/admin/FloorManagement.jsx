@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import useShifts from '../../hooks/useShifts'; // New hook
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -19,6 +20,8 @@ import jsPDF from 'jspdf';
 import Modal from '../../components/ui/Modal';
 
 const FloorManagement = () => {
+    const { shifts, isCustom, getShiftTimeRange } = useShifts();
+    const [selectedShiftFilter, setSelectedShiftFilter] = useState(''); // '' means no filter (overview)
     const [floors, setFloors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedFloor, setSelectedFloor] = useState(0);
@@ -35,11 +38,13 @@ const FloorManagement = () => {
 
     useEffect(() => {
         fetchFloors();
-    }, []);
+    }, [selectedShiftFilter]); // Refetch when shift filter changes
 
     const fetchFloors = async () => {
+        setLoading(true);
         try {
-            const response = await api.get('/admin/floors');
+            // Pass shiftId to backend
+            const response = await api.get(`/admin/floors${selectedShiftFilter ? `?shiftId=${selectedShiftFilter}` : ''}`);
             setFloors(response.data.floors);
         } catch (error) {
             console.error('Error fetching floors:', error);
@@ -47,6 +52,8 @@ const FloorManagement = () => {
             setLoading(false);
         }
     };
+
+
 
     const handleAddSeat = (wall, roomId, floorId) => {
         setAddSeatModal({ isOpen: true, wall, roomId, floorId });
@@ -90,12 +97,25 @@ const FloorManagement = () => {
         setUpdating(true);
         try {
             const floorId = floors[selectedFloor]._id;
-            const response = await api.put(`/admin/floors/${floorId}/prices`, {
-                basePrices: {
-                    day: bulkPrices.day,
-                    night: bulkPrices.night,
-                    full: bulkPrices.full
+
+            // Separate legacy and dynamic prices
+            const shiftPrices = {};
+            const legacyBasePrices = {
+                day: bulkPrices.day || 0,
+                night: bulkPrices.night || 0,
+                full: bulkPrices.full || 0
+            };
+
+            // Collect dynamic shift prices
+            shifts.forEach(shift => {
+                if (bulkPrices[shift.id]) {
+                    shiftPrices[shift.id] = bulkPrices[shift.id];
                 }
+            });
+
+            const response = await api.put(`/admin/floors/${floorId}/prices`, {
+                basePrices: legacyBasePrices, // Send legacy structure for backward compat
+                shiftPrices: shiftPrices     // Send dynamic map
             });
 
             if (response.data.success) {
@@ -200,59 +220,68 @@ const FloorManagement = () => {
                         {/* Bulk Price Update */}
                         <Card className="mb-6">
                             <h3 className="text-xl font-bold mb-4">Bulk Price Update</h3>
-                            <div className="grid grid-cols-4 gap-4 items-end">
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                                {shifts.map(shift => (
+                                    <div key={shift.id}>
+                                        <label className="block text-sm font-medium text-gray-400 mb-2">{shift.name} (₹)</label>
+                                        <input
+                                            type="number"
+                                            value={bulkPrices[shift.id] || ''}
+                                            onChange={(e) => setBulkPrices({ ...bulkPrices, [shift.id]: parseInt(e.target.value) || 0 })}
+                                            className="input w-full"
+                                            placeholder="Price"
+                                        />
+                                    </div>
+                                ))}
+
+                                {/* Always allow Full Day update if needed, or maybe treat it as a shift? 
+                                    If 'full' is not in shifts list, we might want to keep it optionally. 
+                                    But for strict consistency, let's keep it if logic demands, otherwise assume shifts cover it. 
+                                    Let's keep 'Full Day' distinct if it's not a shift, ensuring backward compat.
+                                */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                                        Morning Shift (₹)
-                                    </label>
+                                    <label className="block text-sm font-medium text-gray-400 mb-2">Full Day (₹)</label>
                                     <input
                                         type="number"
-                                        value={bulkPrices.day}
-                                        onChange={(e) => setBulkPrices({ ...bulkPrices, day: parseInt(e.target.value) })}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        value={bulkPrices.full || ''}
+                                        onChange={(e) => setBulkPrices({ ...bulkPrices, full: parseInt(e.target.value) || 0 })}
+                                        className="input w-full"
+                                        placeholder="Price"
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                                        Evening Shift (₹)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={bulkPrices.night}
-                                        onChange={(e) => setBulkPrices({ ...bulkPrices, night: parseInt(e.target.value) })}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">
-                                        Full Day (₹)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        value={bulkPrices.full}
-                                        onChange={(e) => setBulkPrices({ ...bulkPrices, full: parseInt(e.target.value) })}
-                                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                </div>
-                                <Button
-                                    onClick={handleBulkPriceUpdate}
-                                    disabled={updating}
-                                    className="w-full"
-                                >
-                                    <IoSaveOutline className="inline mr-2" />
-                                    {updating ? 'Updating...' : 'Update All Seats'}
+
+                                <Button onClick={handleBulkPriceUpdate} disabled={updating || shifts.length === 0} className="w-full">
+                                    <IoSaveOutline className="inline mr-2" /> Update All
                                 </Button>
                             </div>
                         </Card>
 
-                        {/* Floor Selector with Update Button */}
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex gap-4 overflow-x-auto pb-2">
+                        {/* Shift Filter & Floor Selector */}
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                            {/* Shift Filter */}
+                            <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10">
+                                <span className="text-sm font-medium text-gray-400 whitespace-nowrap px-2">View Shift:</span>
+                                <select
+                                    value={selectedShiftFilter}
+                                    onChange={(e) => setSelectedShiftFilter(e.target.value)}
+                                    className="bg-gray-900 border border-white/20 rounded px-3 py-1 text-sm outline-none focus:border-blue-500"
+                                >
+                                    <option value="">All / Overview</option>
+                                    {shifts.map(shift => (
+                                        <option key={shift.id} value={shift.id}>{shift.name} ({getShiftTimeRange(shift)})</option>
+                                    ))}
+                                    <option value="full">Full Day Only</option>
+                                </select>
+                            </div>
+
+                            {/* Floor Tabs */}
+                            <div className="flex gap-2 overflow-x-auto pb-2 flex-1 justify-end">
                                 {floors.map((floor, index) => (
                                     <button
                                         key={floor._id}
                                         onClick={() => setSelectedFloor(index)}
-                                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${selectedFloor === index
+                                        className={`px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap text-sm ${selectedFloor === index
                                             ? 'bg-gradient-primary shadow-lg'
                                             : 'bg-white/10 hover:bg-white/20'
                                             }`}
@@ -261,14 +290,6 @@ const FloorManagement = () => {
                                     </button>
                                 ))}
                             </div>
-                            {floors[selectedFloor] && (
-                                <button
-                                    onClick={() => setUpdateFloorPricesModal({ isOpen: true, floor: floors[selectedFloor] })}
-                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors text-sm font-semibold whitespace-nowrap"
-                                >
-                                    Update Floor Prices
-                                </button>
-                            )}
                         </div>
 
                         {/* Floor Details */}
@@ -296,6 +317,7 @@ const FloorManagement = () => {
                                             </div>
                                         </div>
 
+                                        <div className="text-xs text-gray-500 mb-2">DEBUG: {room.seats?.length || 0} seats</div>
                                         <RoomGrid
                                             room={room}
                                             onAddSeat={(wall) => handleAddSeat(wall, room._id, floors[selectedFloor]._id)}
@@ -346,9 +368,12 @@ const FloorManagement = () => {
                         <div className="bg-white/5 p-4 rounded-lg mb-6 text-sm">
                             <p className="font-semibold mb-2">New Prices:</p>
                             <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-300">
-                                <li>Morning: ₹{bulkPrices.day}</li>
-                                <li>Evening: ₹{bulkPrices.night}</li>
-                                <li>Full Day: ₹{bulkPrices.full}</li>
+                                {shifts.map(shift => (
+                                    bulkPrices[shift.id] ? (
+                                        <li key={shift.id}>{shift.name}: ₹{bulkPrices[shift.id]}</li>
+                                    ) : null
+                                ))}
+                                {bulkPrices.full ? <li>Full Day: ₹{bulkPrices.full}</li> : null}
                             </ul>
                         </div>
                         <div className="flex justify-end gap-3">
