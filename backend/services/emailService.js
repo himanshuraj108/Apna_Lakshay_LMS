@@ -61,7 +61,7 @@ const emailTemplate = (title, content) => `
       font-weight: bold;
     }
     .header .lakshay {
-      background: linear-gradient(to right, #fbbf24, #f59e0b);
+      background: linear-gradient(to right, #facc15, #d97706);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -419,10 +419,17 @@ exports.sendSeatChangeApprovedEmail = async (student, oldSeat, newSeat) => {
     <h2>Seat Change Approved!</h2>
     <p>Dear ${student.name},</p>
     <p>Great news! Your seat change request has been approved by the admin.</p>
-    <div class="highlight">
-      <p><strong>Previous Seat:</strong> ${oldSeat.number}</p>
-      <p><strong>New Seat:</strong> ${newSeat.number}</p>
-      <p><strong>Monthly Fee:</strong> ₹${newSeat.currentPrice}</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+      <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+        <p style="margin: 0; font-size: 12px; color: #991b1b; font-weight: bold;">PREVIOUS SEAT</p>
+        <p style="margin: 8px 0 0 0; font-size: 18px; color: #dc2626; font-weight: bold;">${oldSeat.number}</p>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #991b1b;">₹${oldSeat.currentPrice || 0}/month</p>
+      </div>
+      <div style="background: #dcfce7; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
+        <p style="margin: 0; font-size: 12px; color: #166534; font-weight: bold;">NEW SEAT</p>
+        <p style="margin: 8px 0 0 0; font-size: 18px; color: #16a34a; font-weight: bold;">${newSeat.number}</p>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #166534;">₹${newSeat.currentPrice || 0}/month</p>
+      </div>
     </div>
     <p>Your new seat is now active. Please visit the library to settle in your new location.</p>
     <div class="button-container">
@@ -475,3 +482,72 @@ exports.sendSeatChangeRejectedEmail = async (student, requestedSeat, reason) => 
   }
 };
 
+// Send shift change approved email
+exports.sendShiftChangeApprovedEmail = async (student, oldShiftName, newShiftName, monthlyFee) => {
+  const content = `
+    <h2>Shift Change Approved!</h2>
+    <p>Dear ${student.name},</p>
+    <p>Great news! Your shift change request has been approved by the admin.</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+      <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+        <p style="margin: 0; font-size: 12px; color: #991b1b; font-weight: bold;">PREVIOUS SHIFT</p>
+        <p style="margin: 8px 0 0 0; font-size: 18px; color: #dc2626; font-weight: bold;">${oldShiftName}</p>
+      </div>
+      <div style="background: #dcfce7; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e;">
+        <p style="margin: 0; font-size: 12px; color: #166534; font-weight: bold;">NEW SHIFT</p>
+        <p style="margin: 8px 0 0 0; font-size: 18px; color: #16a34a; font-weight: bold;">${newShiftName}</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p><strong>Monthly Fee:</strong> ₹${monthlyFee}</p>
+    </div>
+    <p>Your new shift is now active. Please adhere to the new timings from your next visit.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
+    <p>Best regards,<br>Hamara Lakshya Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Shift Change Approved - Hamara Lakshya',
+    html: emailTemplate('Request Approved', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Shift change approved email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending shift change approved email:`, error.message);
+  }
+};
+
+// Send shift change rejected email
+exports.sendShiftChangeRejectedEmail = async (student, requestedShiftName, reason) => {
+  const content = `
+    <h2>Shift Change Request Update</h2>
+    <p>Dear ${student.name},</p>
+    <p>We regret to inform you that your request to change to shift <strong>${requestedShiftName}</strong> has been rejected.</p>
+    ${reason ? `<div class="highlight"><p><strong>Admin's Response:</strong> ${reason}</p></div>` : ''}
+    <p>If you have any questions or would like to submit a new request, please contact the admin or visit the library office.</p>
+    <div class="button-container">
+      <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
+    </div>
+    <p>Best regards,<br>Hamara Lakshya Team</p>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to: student.email,
+    subject: 'Shift Change Request Update - Hamara Lakshya',
+    html: emailTemplate('Request Rejected', content)
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Shift change rejected email sent to ${student.email}`);
+  } catch (error) {
+    console.error(`❌ Error sending shift change rejected email:`, error.message);
+  }
+};

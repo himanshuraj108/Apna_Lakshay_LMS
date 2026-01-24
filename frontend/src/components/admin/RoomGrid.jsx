@@ -94,7 +94,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 {/* Door */}
                                 <div className="absolute top-0 left-[40%] w-[20%] h-full flex items-start justify-center pt-2">
                                     <div className="bg-yellow-500 px-4 py-1 rounded-full shadow-lg">
-                                        <span className="text-xs text-gray-900 font-bold">🚪 DOOR</span>
+                                        <span className="text-xs text-gray-900 font-bold">DOOR</span>
                                     </div>
                                 </div>
                                 {/* Right side of door */}
@@ -127,7 +127,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 {/* Door */}
                                 <div className="absolute left-0 top-[40%] w-full h-[20%] flex items-center justify-center">
                                     <div className="bg-yellow-500 px-1 py-4 rounded-full shadow-lg">
-                                        <span className="text-xs text-gray-900 font-bold -rotate-90 inline-block whitespace-nowrap">🚪 DOOR</span>
+                                        <span className="text-xs text-gray-900 font-bold -rotate-90 inline-block whitespace-nowrap">DOOR</span>
                                     </div>
                                 </div>
                                 {/* Bottom of door */}
@@ -159,7 +159,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 {/* Door */}
                                 <div className="absolute right-0 top-[40%] w-full h-[20%] flex items-center justify-center">
                                     <div className="bg-yellow-500 px-1 py-4 rounded-full shadow-lg">
-                                        <span className="text-xs text-gray-900 font-bold rotate-90 inline-block whitespace-nowrap">🚪 DOOR</span>
+                                        <span className="text-xs text-gray-900 font-bold rotate-90 inline-block whitespace-nowrap">DOOR</span>
                                     </div>
                                 </div>
                                 {/* Bottom of door */}
@@ -191,7 +191,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 {/* Door */}
                                 <div className="absolute bottom-0 left-[40%] w-[20%] h-full flex items-end justify-center pb-2">
                                     <div className="bg-yellow-500 px-4 py-1 rounded-full shadow-lg">
-                                        <span className="text-xs text-gray-900 font-bold">🚪 DOOR</span>
+                                        <span className="text-xs text-gray-900 font-bold">DOOR</span>
                                     </div>
                                 </div>
                                 {/* Right side of door */}
@@ -242,7 +242,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                         <span className="text-gray-400">Occupied</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-yellow-500 font-semibold">🚪 DOOR</span>
+                        <span className="text-yellow-500 font-semibold">DOOR</span>
                         <span className="text-gray-400">Entry/Exit</span>
                     </div>
                 </div>

@@ -1582,7 +1582,7 @@ exports.handleRequest = async (req, res) => {
                 const seat = await Seat.findOne({
                     'assignments.student': request.student._id,
                     'assignments.status': 'active'
-                });
+                }).populate('assignments.shift');
 
                 if (seat) {
                     const assignment = seat.assignments.find(a =>
@@ -1590,32 +1590,105 @@ exports.handleRequest = async (req, res) => {
                     );
 
                     if (assignment) {
+                        // Store old shift info before updating
+                        let oldShiftName = 'N/A';
+                        if (assignment.shift && assignment.shift.name) {
+                            oldShiftName = assignment.shift.name;
+                        } else if (assignment.legacyShift) {
+                            const legacyMap = { 'day': 'Morning', 'night': 'Evening', 'full': 'Full Day' };
+                            oldShiftName = legacyMap[assignment.legacyShift] || assignment.legacyShift;
+                        } else if (assignment.type === 'full_day') {
+                            oldShiftName = 'Full Day';
+                        }
+
                         // Update shift
                         const newShiftId = request.requestedData.shift;
+                        let newShiftName = 'N/A';
+
                         if (newShiftId === 'full') {
                             assignment.type = 'full_day';
                             assignment.shift = null;
                             assignment.legacyShift = 'full';
+                            newShiftName = 'Full Day';
                         } else if (['day', 'night'].includes(newShiftId)) {
                             assignment.type = 'specific';
                             assignment.shift = null;
                             assignment.legacyShift = newShiftId;
+                            const legacyMap = { 'day': 'Morning', 'night': 'Evening' };
+                            newShiftName = legacyMap[newShiftId] || newShiftId;
                         } else {
-                            // Dynamic shift
-                            assignment.type = 'specific';
-                            assignment.shift = newShiftId; // ObjectId
-                            assignment.legacyShift = null;
+                            // Dynamic shift - fetch shift name
+                            const shiftDoc = await Shift.findById(newShiftId);
+                            if (shiftDoc) {
+                                newShiftName = shiftDoc.name;
+                                assignment.shift = newShiftId;
+                                assignment.legacyShift = null;
+                                assignment.type = 'specific';
+                            }
                         }
+
+                        // Calculate monthly fee (use assignment.price or seat pricing)
+                        let monthlyFee = assignment.price || 0;
+                        if (!monthlyFee) {
+                            // Fallback to seat pricing
+                            if (assignment.shift) {
+                                const shiftId = assignment.shift._id || assignment.shift;
+                                monthlyFee = seat.shiftPrices?.get(shiftId.toString()) || seat.basePrices?.day || 800;
+                            } else if (assignment.legacyShift && seat.basePrices) {
+                                monthlyFee = seat.basePrices[assignment.legacyShift] || 800;
+                            } else if (assignment.type === 'full_day' && seat.basePrices) {
+                                monthlyFee = seat.basePrices.full || 1200;
+                            }
+                        }
+
                         await seat.save();
+
+                        // Send shift change approved email
+                        try {
+                            await emailService.sendShiftChangeApprovedEmail(
+                                request.student,
+                                oldShiftName,
+                                newShiftName,
+                                monthlyFee
+                            );
+                        } catch (emailError) {
+                            console.error('Shift change email error:', emailError);
+                        }
                     }
                 }
-            }
+            } else if (request.type === 'shift' && status === 'rejected') {
+                // Send shift change rejected email
+                const newShiftId = request.requestedData.shift;
+                let requestedShiftName = 'N/A';
 
-            // Send generic request response email
-            try {
-                await emailService.sendRequestResponseEmail(request.student, request, status, adminResponse);
-            } catch (emailError) {
-                console.error('Email error:', emailError);
+                if (newShiftId === 'full') {
+                    requestedShiftName = 'Full Day';
+                } else if (['day', 'night'].includes(newShiftId)) {
+                    const legacyMap = { 'day': 'Morning', 'night': 'Evening' };
+                    requestedShiftName = legacyMap[newShiftId] || newShiftId;
+                } else {
+                    const shiftDoc = await Shift.findById(newShiftId);
+                    if (shiftDoc) {
+                        requestedShiftName = shiftDoc.name;
+                    }
+                }
+
+                try {
+                    await emailService.sendShiftChangeRejectedEmail(
+                        request.student,
+                        requestedShiftName,
+                        adminResponse
+                    );
+                } catch (emailError) {
+                    console.error('Shift change rejection email error:', emailError);
+                }
+            } else {
+                // Send generic request response email for non-shift requests
+                try {
+                    await emailService.sendRequestResponseEmail(request.student, request, status, adminResponse);
+                } catch (emailError) {
+                    console.error('Email error:', emailError);
+                }
             }
 
             // Create notification

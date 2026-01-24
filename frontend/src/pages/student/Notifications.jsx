@@ -144,7 +144,7 @@ const Notifications = () => {
                                     onClick={() => !notification.isRead && markAsRead(notification._id)}
                                 >
                                     <div className="flex gap-4">
-                                        <div className="text-3xl">{getNotificationIcon(notification.type)}</div>
+                                        {/* Removed emoji icon */}
                                         <div className="flex-1">
                                             <div className="flex items-start justify-between gap-4 mb-2">
                                                 <div>
