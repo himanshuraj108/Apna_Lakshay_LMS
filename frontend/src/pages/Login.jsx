@@ -106,7 +106,7 @@ const Login = () => {
                     {/* Brand Header Inside Card */}
                     <div className="text-center mb-8">
                         <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
-                            Hamara <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshay</span>
+                            Apna <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshay</span>
                         </h1>
                         <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Library Management System</p>
 
@@ -251,7 +251,7 @@ const Login = () => {
                                     <IoGridOutline className="text-[#4f46e5] text-3xl" />
                                 </div>
                                 <div className="pt-1">
-                                    <h3 className="text-xl font-bold text-white leading-tight mb-1">Install Hamara Lakshya</h3>
+                                    <h3 className="text-xl font-bold text-white leading-tight mb-1">Install Apna Lakshya</h3>
                                     <p className="text-indigo-100 text-xs leading-relaxed">
                                         Get the full app experience with offline access and faster loading.
                                     </p>
