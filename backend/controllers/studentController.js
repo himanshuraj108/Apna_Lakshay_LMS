@@ -5,8 +5,7 @@ const Fee = require('../models/Fee');
 const Notification = require('../models/Notification');
 const Request = require('../models/Request');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { storage } = require('../config/cloudinary'); // Import Cloudinary storage
 
 // @desc    Get student dashboard data
 // @route   GET /api/student/dashboard
@@ -499,26 +498,13 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../uploads/profiles');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
-    }
-});
-
+// Configure multer for file upload with Cloudinary
 const upload = multer({
-    storage: storage,
+    storage: storage, // Use Cloudinary storage from config
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     fileFilter: function (req, file, cb) {
         const filetypes = /jpeg|jpg|png/;
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        const extname = filetypes.test(file.originalname.split('.').pop().toLowerCase());
         const mimetype = filetypes.test(file.mimetype);
 
         if (mimetype && extname) {
@@ -552,24 +538,19 @@ exports.uploadProfileImage = (req, res) => {
         }
 
         try {
-            // Delete old image if exists
-            const user = await User.findById(req.user.id);
-            if (user.profileImage) {
-                const oldImagePath = path.join(__dirname, '..', user.profileImage);
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                }
-            }
+            // Cloudinary automatically handles file storage
+            // File URL is available in req.file.path
+            const imageUrl = req.file.path; // Cloudinary URL
 
-            // Update user with new image path
-            const imagePath = `/uploads/profiles/${req.file.filename}`;
-            user.profileImage = imagePath;
+            // Update user with new image URL
+            const user = await User.findById(req.user.id);
+            user.profileImage = imageUrl;
             await user.save();
 
             res.status(200).json({
                 success: true,
                 message: 'Profile image uploaded successfully',
-                imagePath
+                imagePath: imageUrl
             });
         } catch (error) {
             res.status(500).json({
@@ -587,14 +568,11 @@ exports.deleteProfileImage = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
 
-        if (user.profileImage) {
-            const imagePath = path.join(__dirname, '..', user.profileImage);
-            if (fs.existsSync(imagePath)) {
-                fs.unlinkSync(imagePath);
-            }
-            user.profileImage = null;
-            await user.save();
-        }
+        // Cloudinary images persist even after removing from DB
+        // If you want to delete from Cloudinary too, you'll need the publicId
+        // For now, just remove the reference from the database
+        user.profileImage = null;
+        await user.save();
 
         res.status(200).json({
             success: true,
