@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hamara-lakshya-v1';
+const CACHE_NAME = 'hamara-lakshya-v2';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -17,6 +17,12 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
     // Bypass API requests - let them go straight to network
     if (event.request.url.includes('/api/')) {
+        return;
+    }
+
+    // Bypass external URLs (Cloudinary, CDNs, etc.)
+    const url = new URL(event.request.url);
+    if (url.origin !== location.origin) {
         return;
     }
 
