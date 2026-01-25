@@ -53,13 +53,13 @@ const emailTemplate = (title, content) => `
     .highlight { background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #e5e7eb; }
   </style>
 </head>
-<body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px;">
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; min-width: 600px;">
   <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);">
     
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
       <h1 style="margin: 0 0 8px 0; font-size: 32px; font-weight: bold; color: white;">
-        Hamara <span style="color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Lakshay</span>
+        Apna <span style="color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Lakshay</span>
       </h1>
       <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; color: #e0e7ff;">
         Library Management System
@@ -74,7 +74,7 @@ const emailTemplate = (title, content) => `
 
     <!-- Footer -->
     <div style="background: #f8f9fa; padding: 30px; text-align: center; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb;">
-      <p style="margin: 5px 0;">This is an automated email from Hamara Lakshay Library Management System.</p>
+      <p style="margin: 5px 0;">This is an automated email from Apna Lakshay Library Management System.</p>
       <p style="margin: 5px 0;">For any queries, please contact the admin.</p>
       <p style="margin: 15px 0 0 0;">
         <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="color: #667eea; text-decoration: none; font-weight: bold;">Visit Website</a>
@@ -88,7 +88,7 @@ const emailTemplate = (title, content) => `
 // Send credentials email
 exports.sendCredentialsEmail = async (name, email, password) => {
   const content = `
-    <h2>Welcome to Hamara Lakshay!</h2>
+    <h2>Welcome to Apna Lakshay!</h2>
     <p>Dear ${name},</p>
     <p>Your student account has been created successfully. Below are your login credentials:</p>
     <div class="highlight">
@@ -99,13 +99,13 @@ exports.sendCredentialsEmail = async (name, email, password) => {
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
     </div>
     <p><strong>Important:</strong> We recommend changing your password after first login.</p>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: email,
-    subject: 'Welcome to Hamara Lakshay - Your Account Credentials',
+    subject: 'Welcome to Apna Lakshay - Your Account Credentials',
     html: emailTemplate('Account Created', content)
   };
 
@@ -133,13 +133,13 @@ exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
     <div class="button-container">
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
     </div>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: student.email,
-    subject: 'Seat Assignment Confirmation - Hamara Lakshay',
+    subject: 'Seat Assignment Confirmation - Apna Lakshay',
     html: emailTemplate('Seat Assignment', content)
   };
 
@@ -166,13 +166,13 @@ exports.sendRequestResponseEmail = async (student, request, status, reason) => {
     <div class="button-container">
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
     </div>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: student.email,
-    subject: `Request ${status.charAt(0).toUpperCase() + status.slice(1)} - Hamara Lakshay`,
+    subject: `Request ${status.charAt(0).toUpperCase() + status.slice(1)} - Apna Lakshay`,
     html: emailTemplate('Request Update', content)
   };
 
@@ -202,13 +202,13 @@ exports.sendFeeConfirmationEmail = async (student, amount, month, year) => {
     <div class="button-container">
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
     </div>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: student.email,
-    subject: 'Fee Payment Confirmation - Hamara Lakshay',
+    subject: 'Fee Payment Confirmation - Apna Lakshay',
     html: emailTemplate('Payment Received', content)
   };
 
@@ -234,13 +234,13 @@ exports.sendFeeDueReminderEmail = async (student, amount, dueDate) => {
     <div class="button-container">
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
     </div>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: student.email,
-    subject: 'Fee Payment Reminder - Hamara Lakshay',
+    subject: 'Fee Payment Reminder - Apna Lakshay',
     html: emailTemplate('Payment Reminder', content)
   };
 
@@ -264,14 +264,14 @@ exports.sendAnnouncementEmail = async (recipients, title, message) => {
     <div class="button-container">
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" class="login-button">Click Here To Login</a>
     </div>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const promises = recipients.map(async (recipient) => {
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: recipient.email,
-      subject: `Announcement: ${title} - Hamara Lakshay`,
+      subject: `Announcement: ${title} - Apna Lakshay`,
       html: emailTemplate('New Announcement', content)
     };
 
@@ -300,13 +300,13 @@ exports.sendOTPEmail = async (name, email, otp) => {
     <div class="button-container">
       <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/forgot-password" class="login-button">Reset Password</a>
     </div>
-    <p>Best regards,<br>Hamara Lakshay Team</p>
+    <p>Best regards,<br>Apna Lakshay Team</p>
   `;
 
   const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: email,
-    subject: 'Password Reset OTP - Hamara Lakshay',
+    subject: 'Password Reset OTP - Apna Lakshay',
     html: emailTemplate('Password Reset', content)
   };
 

@@ -77,7 +77,7 @@ const StudentIdCard = ({ student }) => {
             {/* Header / Brand */}
             <div className={`bg-gradient-to-r ${theme.gradient} pt-6 pb-20 text-center relative overflow-hidden transition-colors duration-300`}>
                 <div className="absolute top-0 left-0 w-full h-full bg-white/10 opacity-30 pattern-grid-lg"></div>
-                <h3 className="text-white font-bold text-xl relative z-10 tracking-widest uppercase">Hamara Lakshay</h3>
+                <h3 className="text-white font-bold text-xl relative z-10 tracking-widest uppercase">Apna Lakshay</h3>
                 <p className="text-blue-100 text-xs tracking-wider uppercase relative z-10 mt-1">Library Management System</p>
             </div>
 

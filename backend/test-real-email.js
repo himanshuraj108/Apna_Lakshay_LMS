@@ -25,7 +25,7 @@ async function testEmail() {
         const mailOptions = {
             from: process.env.EMAIL_FROM,
             to: process.env.EMAIL_USER, // Send to self
-            subject: 'Test Email from Hamara Lakshay Debugger',
+            subject: 'Test Email from Apna Lakshay Debugger',
             text: 'If you receive this, the email credentials and nodemailer configuration are CORRECT.'
         };
 

@@ -100,7 +100,7 @@ const VerifyStudent = () => {
             shadow: 'shadow-green-500/30',
             icon: <FaCheckCircle className="text-5xl text-white" />,
             title: 'Verified Student',
-            subtitle: 'Official Hamara Lakshay Member',
+            subtitle: 'Official Apna Lakshay Member',
             badge: 'bg-green-500/20 text-green-400 border border-green-500/30'
         };
     };
