@@ -150,7 +150,7 @@ const Profile = () => {
                             <div className="w-32 h-32 rounded-full bg-gradient-primary flex items-center justify-center mb-4 overflow-hidden">
                                 {profile?.profileImage ? (
                                     <img
-                                        src={`${BASE_URL}${profile.profileImage}`}
+                                        src={profile.profileImage.startsWith('http') ? profile.profileImage : `${BASE_URL}${profile.profileImage}`}
                                         alt={profile.name}
                                         className="w-full h-full object-cover"
                                         crossOrigin="anonymous"

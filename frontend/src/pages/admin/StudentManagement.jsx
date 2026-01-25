@@ -1081,7 +1081,7 @@ const StudentManagement = () => {
                             <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg">
                                 {selectedArchive.profileImage ? (
                                     <img
-                                        src={`${BASE_URL}${selectedArchive.profileImage}`}
+                                        src={selectedArchive.profileImage.startsWith('http') ? selectedArchive.profileImage : `${BASE_URL}${selectedArchive.profileImage}`}
                                         alt={selectedArchive.name}
                                         className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
                                     />
