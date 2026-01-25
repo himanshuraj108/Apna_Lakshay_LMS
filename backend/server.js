@@ -38,19 +38,31 @@ app.use('/api/settings', settingsRoutes);
 app.use(errorHandler);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ MongoDB connected successfully');
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  }
+};
 
-    // Start server
+// Connect to DB immediately if not in production (local dev)
+// In production (Vercel), connections are handled differently if using cold starts,
+// but for simple Mongoose usage, connecting at top level is okay IF we don't block export.
+// Better pattern for serverless:
+if (process.env.NODE_ENV !== 'production') {
+  connectDB().then(() => {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
   });
+} else {
+  // For Vercel, we just connect. The function execution will await this if we put it in the handler,
+  // but putting it here means it runs on container start.
+  connectDB();
+}
 
 module.exports = app;
