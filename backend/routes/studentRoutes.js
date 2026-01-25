@@ -42,12 +42,6 @@ router.post('/request-seat-change', requestSeatChange);
 // Profile
 router.put('/profile', updateProfile);
 router.put('/password', changePassword);
-
-// Handle CORS preflight for image upload
-router.options('/profile/image', (req, res) => {
-    res.status(200).end();
-});
-
 router.post('/profile/image', uploadProfileImage);
 router.delete('/profile/image', deleteProfileImage);
 
