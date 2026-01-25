@@ -501,7 +501,7 @@ exports.updateProfile = async (req, res) => {
 // Configure multer for file upload with Cloudinary
 const upload = multer({
     storage: storage, // Use Cloudinary storage from config
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    limits: { fileSize: 4 * 1024 * 1024 }, // 4MB (Vercel limit is 4.5MB)
     fileFilter: function (req, file, cb) {
         const filetypes = /jpeg|jpg|png/;
         const extname = filetypes.test(file.originalname.split('.').pop().toLowerCase());
