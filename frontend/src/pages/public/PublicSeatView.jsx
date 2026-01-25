@@ -17,6 +17,7 @@ const PublicSeatView = () => {
     const [selectedFloor, setSelectedFloor] = useState(0);
     const [seatDetailsModal, setSeatDetailsModal] = useState({ isOpen: false, seat: null });
     const [isMaintenance, setIsMaintenance] = useState(false);
+    const [showMobileOverlay, setShowMobileOverlay] = useState(true);
 
     useEffect(() => {
         fetchSeats();
@@ -51,6 +52,48 @@ const PublicSeatView = () => {
 
     return (
         <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto bg-[#0f172a]">
+
+            {/* Mobile/Tablet Overlay */}
+            {showMobileOverlay && (
+                <div className="fixed inset-0 z-[60] bg-[#0f172a] flex flex-col items-center justify-center p-6 xl:hidden text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-md w-full"
+                    >
+                        <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <IoGlobe className="text-4xl text-white" />
+                        </div>
+
+                        <h2 className="text-3xl font-bold text-white mb-2">Better Experience</h2>
+                        <p className="text-gray-400 mb-8">
+                            For the best specific view and smoother experience, we recommend using our mobile app.
+                        </p>
+
+                        <div className="space-y-4">
+                            <a
+                                href={import.meta.env.VITE_APK_DOWNLOAD_URL || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full"
+                            >
+                                <Button className="w-full py-4 text-lg font-bold flex items-center justify-center gap-2 shadow-indigo-500/20">
+                                    <IoDownload className="text-xl" />
+                                    Download App
+                                </Button>
+                            </a>
+
+                            <button
+                                onClick={() => setShowMobileOverlay(false)}
+                                className="w-full py-4 text-gray-400 font-semibold hover:text-white transition-colors"
+                            >
+                                Continue in Browser
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
             {/* Same login button for public view if needed, but maintenance page handles it too */}
 
             <div className="max-w-7xl mx-auto">
