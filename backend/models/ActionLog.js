@@ -24,7 +24,9 @@ const actionLogSchema = new mongoose.Schema({
             'request_approved',
             'request_rejected',
             'notification_sent',
-            'attendance_marked'
+            'attendance_marked',
+            'seat_change_approved',
+            'seat_change_rejected'
         ]
     },
     targetModel: {

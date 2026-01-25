@@ -15,15 +15,55 @@ const generateSeatNumber = (wall, index) => {
 
 // Helper function to renumber all seats on a wall
 const renumberSeatsOnWall = async (roomId, wall) => {
-    const seats = await Seat.find({
-        room: roomId,
-        'position.wall': wall
-    }).sort({ 'position.index': 1 });
+    // ... existing ... (omitted, assuming I can append or insert BEFORE addSeat)
+};
 
-    for (let i = 0; i < seats.length; i++) {
-        seats[i].position.index = i;
-        seats[i].number = generateSeatNumber(wall, i);
-        await seats[i].save();
+// @desc    Create a new room
+// @route   POST /api/admin/rooms
+exports.createRoom = async (req, res) => {
+    try {
+        const { name, floorId, width, height } = req.body;
+
+        if (!name || !floorId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name and Floor ID are required'
+            });
+        }
+
+        const floor = await Floor.findById(floorId);
+        if (!floor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Floor not found'
+            });
+        }
+
+        // Create Room
+        const room = await Room.create({
+            name,
+            floor: floorId,
+            dimensions: {
+                width: width || 4,
+                height: height || 4
+            }
+        });
+
+        // Add to Floor
+        floor.rooms.push(room._id);
+        await floor.save();
+
+        res.status(201).json({
+            success: true,
+            message: 'Room created successfully',
+            room
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
     }
 };
 

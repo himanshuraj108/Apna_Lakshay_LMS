@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
-
+import api from '../../utils/api';
 const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => {
     const { shifts } = useShifts();
     const [formData, setFormData] = useState({
@@ -15,32 +15,20 @@ const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => 
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/admin/seats', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    roomId,
-                    floorId,
-                    wall,
-                    basePrices: formData.basePrices,
-                    shiftPrices: formData.basePrices // Using shiftPrices for dynamic shifts
-                })
+            const response = await api.post('/admin/seats', {
+                roomId,
+                floorId,
+                wall,
+                basePrices: formData.basePrices,
+                shiftPrices: formData.basePrices // Using shiftPrices for dynamic shifts
             });
 
-            if (response.ok) {
-                onSuccess();
-                onClose();
-                setFormData({ basePrices: {} });
-            } else {
-                const data = await response.json();
-                alert(data.message || 'Failed to add seat');
-            }
+            onSuccess();
+            onClose();
+            setFormData({ basePrices: {} });
         } catch (error) {
             console.error('Error adding seat:', error);
-            alert('Failed to add seat');
+            alert(error.response?.data?.message || 'Failed to add seat');
         } finally {
             setLoading(false);
         }

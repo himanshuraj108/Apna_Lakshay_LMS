@@ -11,6 +11,7 @@ const ActionLog = require('../models/ActionLog');
 const PasswordLog = require('../models/PasswordLog');
 const ArchivedStudent = require('../models/ArchivedStudent');
 const Shift = require('../models/Shift');
+const Settings = require('../models/Settings');
 
 // ... (existing imports)
 
@@ -46,6 +47,45 @@ exports.createShift = async (req, res) => {
 
         res.status(201).json({ success: true, shift });
     } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Update a shift
+// @route   PUT /api/admin/shifts/:id
+exports.updateShift = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, startTime, endTime } = req.body;
+
+        const shift = await Shift.findById(id);
+        if (!shift) {
+            return res.status(404).json({ success: false, message: 'Shift not found' });
+        }
+
+        // Check for duplicate name if name is being changed
+        if (name && name !== shift.name) {
+            const duplicate = await Shift.findOne({ name });
+            if (duplicate) {
+                return res.status(400).json({ success: false, message: 'Shift name already exists' });
+            }
+            shift.name = name;
+        }
+
+        shift.startTime = startTime || shift.startTime;
+        shift.endTime = endTime || shift.endTime;
+
+        await shift.save();
+
+        await logAction(req, 'update_shift', 'Shift', id, shift.name, `Updated shift ${shift.name}`);
+
+        res.status(200).json({ success: true, message: 'Shift updated successfully', shift });
+    } catch (error) {
+        console.error('Update Shift Error:', error);
+        // Handle MongoDB duplicate key error fallback
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, message: 'Shift name already exists' });
+        }
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
@@ -243,14 +283,8 @@ exports.getDashboard = async (req, res) => {
 // Get all students
 exports.getStudents = async (req, res) => {
     try {
-        const mode = req.query.mode || 'custom';
-        const query = {
-            role: 'student',
-            $or: [
-                { systemMode: mode },
-                ...(mode === 'default' ? [{ systemMode: { $exists: false } }, { systemMode: null }] : [])
-            ]
-        };
+        // Simplified query - no mode filtering, just get all students
+        const query = { role: 'student' };
 
         const students = await User.find(query)
             .populate('createdBy', 'name')
@@ -263,9 +297,10 @@ exports.getStudents = async (req, res) => {
             .lean() // Use lean for performance and easier modification
             .sort({ createdAt: -1 });
 
-        // Transform students to include resolved shift info
+        // Transform students to include resolved shift info and ensure registrationSource
         const studentsWithShift = students.map(student => {
             let shiftInfo = null;
+            let shiftDetails = null;
             if (student.seat && student.seat.assignments) {
                 // Find active assignment for this student
                 const assignment = student.seat.assignments.find(a =>
@@ -275,6 +310,10 @@ exports.getStudents = async (req, res) => {
                 if (assignment) {
                     if (assignment.shift && assignment.shift.name) {
                         shiftInfo = assignment.shift.name;
+                        shiftDetails = {
+                            startTime: assignment.shift.startTime,
+                            endTime: assignment.shift.endTime
+                        };
                     } else if (assignment.legacyShift) {
                         shiftInfo = assignment.legacyShift;
                     } else if (assignment.type === 'full_day') {
@@ -282,7 +321,12 @@ exports.getStudents = async (req, res) => {
                     }
                 }
             }
-            return { ...student, shift: shiftInfo };
+            return {
+                ...student,
+                shift: shiftInfo,
+                shiftDetails, // New field containing time info
+                registrationSource: student.registrationSource || 'admin' // Default for existing students
+            };
         });
 
         res.status(200).json({
@@ -448,13 +492,14 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile, systemMode = 'custom' } = req.body;
+        const { name, email, mobile, address, systemMode = 'custom' } = req.body;
         const password = generatePassword();
 
         const student = await User.create({
             name,
             email,
             mobile,
+            address,
             password,
             systemMode,
             role: 'student',
@@ -494,10 +539,10 @@ exports.createStudent = async (req, res) => {
 // Update student
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, mobile, isActive } = req.body;
+        const { name, email, mobile, address, isActive } = req.body;
         const student = await User.findByIdAndUpdate(
             req.params.id,
-            { name, email, mobile, isActive },
+            { name, email, mobile, address, isActive },
             { new: true, runValidators: true }
         );
 
@@ -568,10 +613,18 @@ exports.deleteStudent = async (req, res) => {
         }
 
         // Free up student's seat if assigned
-        await Seat.updateOne(
-            { assignedTo: student._id },
-            { $set: { isOccupied: false, assignedTo: null, shift: null, negotiatedPrice: null } }
-        );
+        const assignedSeats = await Seat.find({ 'assignments.student': student._id });
+
+        for (const seat of assignedSeats) {
+            // Remove the student's assignment
+            seat.assignments = seat.assignments.filter(a => a.student.toString() !== student._id.toString());
+
+            // Check if occupied
+            const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+            seat.isOccupied = activeAssignments.length > 0;
+
+            await seat.save();
+        }
 
         const { forceDelete } = req.body;
 
@@ -662,6 +715,71 @@ exports.deleteStudent = async (req, res) => {
 // Get floors
 // @desc    Get all floors with rooms and seats (Dynamic Availability)
 // @route   GET /api/admin/floors
+// Create new floor
+exports.createFloor = async (req, res) => {
+    try {
+        console.log('Creating floor, User:', req.user ? req.user.id : 'UNDEFINED');
+        const { name, level } = req.body;
+
+        const floor = await Floor.create({
+            name,
+            level,
+            rooms: []
+        });
+        console.log('Floor created:', floor._id);
+
+        if (req.user) {
+            await logAction(req, 'create_floor', 'Floor', floor._id, floor.name, `Created floor ${floor.name}`);
+        } else {
+            console.log('Skipping logAction because req.user is missing');
+        }
+
+        res.status(201).json({
+            success: true,
+            floor
+        });
+    } catch (error) {
+        console.error('Create Floor Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Create new room
+exports.createRoom = async (req, res) => {
+    try {
+        const { name, floorId, width, height } = req.body;
+
+        const room = await Room.create({
+            name,
+            floor: floorId,
+            grid: { width, height },
+            seats: []
+        });
+
+        // Add room to floor
+        await Floor.findByIdAndUpdate(floorId, {
+            $push: { rooms: room._id }
+        });
+
+        await logAction(req, 'create_room', 'Room', room._id, room.name, `Created room ${room.name}`);
+
+        res.status(201).json({
+            success: true,
+            room
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
 exports.getFloors = async (req, res) => {
     try {
         const { shiftId } = req.query; // Optional specific shift to view availability for
@@ -676,15 +794,42 @@ exports.getFloors = async (req, res) => {
                 populate: {
                     path: 'seats',
                     model: 'Seat',
-                    populate: {
-                        path: 'assignments.student', // Populate student in new struct
-                        select: 'name email profileImage createdAt'
-                    }
+                    populate: [
+                        {
+                            path: 'assignments.student',
+                            select: 'name email profileImage createdAt isActive registrationSource seatAssignedAt address'
+                        },
+                        {
+                            path: 'assignments.shift',
+                            select: 'name startTime endTime'
+                        }
+                    ]
                 }
             })
             .sort({ level: 1 });
 
-        // Post-process seats to determine status based on requested view/mode
+        // Self-Healing: Check for and remove orphaned assignments (deleted students)
+        for (const floor of floors) {
+            for (const room of floor.rooms) {
+                for (const seat of room.seats) {
+                    let changed = false;
+                    // assignments is populated, so a.student will be null if user doesn't exist
+                    const originalLength = seat.assignments.length;
+                    const validAssignments = seat.assignments.filter(a => a.student !== null);
+
+                    if (validAssignments.length !== originalLength) {
+                        seat.assignments = validAssignments;
+                        // Recalculate isOccupied flag for DB consistency
+                        const active = seat.assignments.filter(a => a.status === 'active');
+                        seat.isOccupied = active.length > 0;
+                        await seat.save();
+                        console.log(`Fixed zombie seat ${seat.number}`);
+                    }
+                }
+            }
+        }
+
+
         const processedFloors = floors.map(floor => ({
             ...floor.toObject(),
             rooms: floor.rooms.map(room => ({
@@ -694,6 +839,7 @@ exports.getFloors = async (req, res) => {
                     let isOccupied = false;
                     let displayAssignment = null;
                     let displayShift = null;
+                    let shiftDetails = null;
 
                     // Get active assignments
                     const assignments = seat.assignments ? seat.assignments.filter(a => a.status === 'active') : [];
@@ -705,6 +851,7 @@ exports.getFloors = async (req, res) => {
                         isOccupied = true;
                         displayAssignment = fullDayBlocker.student; // Show who booked full day
                         displayShift = 'full';
+                        shiftDetails = { startTime: '00:00', endTime: '23:59' }; // Full day
                     }
                     // 2. Specific Shift Logic
                     else if (shiftId) {
@@ -713,7 +860,13 @@ exports.getFloors = async (req, res) => {
                             isOccupied = assignments.length > 0;
                             if (isOccupied) {
                                 displayAssignment = assignments[0].student;
-                                displayShift = assignments[0].shift;
+                                displayShift = assignments[0].shift?.name || assignments[0].shift;
+                                if (assignments[0].shift && assignments[0].shift.startTime) {
+                                    shiftDetails = {
+                                        startTime: assignments[0].shift.startTime,
+                                        endTime: assignments[0].shift.endTime
+                                    };
+                                }
                             }
                         } else if (shiftId === 'day' || shiftId === 'night') {
                             // Legacy View specific
@@ -725,11 +878,17 @@ exports.getFloors = async (req, res) => {
                             }
                         } else {
                             // Custom Shift ID View
-                            const shiftAssignment = assignments.find(a => a.shift && a.shift.toString() === shiftId);
+                            const shiftAssignment = assignments.find(a => a.shift && a.shift._id.toString() === shiftId);
                             if (shiftAssignment) {
                                 isOccupied = true;
                                 displayAssignment = shiftAssignment.student;
-                                displayShift = shiftAssignment.shift;
+                                displayShift = shiftAssignment.shift?.name || shiftAssignment.shift;
+                                if (shiftAssignment.shift && shiftAssignment.shift.startTime) {
+                                    shiftDetails = {
+                                        startTime: shiftAssignment.shift.startTime,
+                                        endTime: shiftAssignment.shift.endTime
+                                    };
+                                }
                             }
                         }
                     }
@@ -738,15 +897,27 @@ exports.getFloors = async (req, res) => {
                         isOccupied = assignments.length > 0;
                         if (isOccupied) {
                             displayAssignment = assignments[0].student;
-                            displayShift = assignments[0].shift;
+                            displayShift = assignments[0].shift?.name || assignments[0].shift;
+                            if (assignments[0].shift && assignments[0].shift.startTime) {
+                                shiftDetails = {
+                                    startTime: assignments[0].shift.startTime,
+                                    endTime: assignments[0].shift.endTime
+                                };
+                            }
                         }
                     }
 
                     return {
                         ...seatObj,
                         isOccupied, // Computed dynamic status
-                        assignedTo: displayAssignment, // Computed 'primary' user for this view
+                        assignedTo: displayAssignment ? {
+                            ...displayAssignment.toObject(),
+                            shift: displayShift,
+                            shiftId: displayShift === 'full' ? 'full' : (shiftDetails ? displayShift : null),
+                            shiftDetails
+                        } : null, // Computed 'primary' user for this view
                         shift: displayShift, // Computed active shift
+                        shiftDetails, // Computed shift times
                         assignments: assignments // Pass full list for detailed tooltip
                     };
                 })
@@ -783,6 +954,105 @@ exports.updatePrices = async (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Prices updated successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Delete floor
+exports.deleteFloor = async (req, res) => {
+    try {
+        const floor = await Floor.findById(req.params.id).populate({
+            path: 'rooms',
+            populate: { path: 'seats' }
+        });
+
+        if (!floor) {
+            return res.status(404).json({ success: false, message: 'Floor not found' });
+        }
+
+        // Check for occupied seats
+        let isOccupied = false;
+        floor.rooms.forEach(room => {
+            room.seats.forEach(seat => {
+                const active = seat.assignments.filter(a => a.status === 'active');
+                if (active.length > 0) isOccupied = true;
+            });
+        });
+
+        if (isOccupied) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete floor: Contains active students'
+            });
+        }
+
+        // Delete all seats and rooms
+        for (const room of floor.rooms) {
+            await Seat.deleteMany({ _id: { $in: room.seats.map(s => s._id) } });
+            await Room.findByIdAndDelete(room._id);
+        }
+
+        await Floor.findByIdAndDelete(req.params.id);
+
+        await logAction(req, 'delete_floor', 'Floor', floor._id, floor.name, `Deleted floor ${floor.name}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Floor deleted successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Delete room
+exports.deleteRoom = async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.id).populate('seats');
+
+        if (!room) {
+            return res.status(404).json({ success: false, message: 'Room not found' });
+        }
+
+        // Check for occupied seats
+        let isOccupied = false;
+        room.seats.forEach(seat => {
+            const active = seat.assignments.filter(a => a.status === 'active');
+            if (active.length > 0) isOccupied = true;
+        });
+
+        if (isOccupied) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot delete room: Contains active students'
+            });
+        }
+
+        // Delete seats
+        await Seat.deleteMany({ _id: { $in: room.seats.map(s => s._id) } });
+
+        // Remove room from floor
+        await Floor.findByIdAndUpdate(room.floor, {
+            $pull: { rooms: room._id }
+        });
+
+        await Room.findByIdAndDelete(req.params.id);
+
+        await logAction(req, 'delete_room', 'Room', room._id, room.name, `Deleted room ${room.name}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Room deleted successfully'
         });
     } catch (error) {
         res.status(500).json({
@@ -877,11 +1147,23 @@ exports.assignSeat = async (req, res) => {
         seat.isOccupied = true; // General flag
         await seat.save();
 
-        // Update student reference
-        await User.findByIdAndUpdate(studentId, { seat: seatId }); // Optional, for easy lookup
+        // Update student reference (Only set seatAssignedAt if not already set)
+        const userUpdateUpdates = { seat: seatId };
+        if (!student.seatAssignedAt) {
+            userUpdateUpdates.seatAssignedAt = new Date();
+        }
+        await User.findByIdAndUpdate(studentId, userUpdateUpdates);
 
         const now = new Date();
-        const dueDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        // Calculate due date based on student's joined date (Billing Cycle)
+        // reusing 'student' variable fetched at start of function
+        const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
+        const joinedDay = joinedDate.getDate();
+
+        // Due date is the start of the current billing cycle (Prepaid model)
+        // e.g. Joined 15th Jan -> Due 15th Jan
+        const dueDate = new Date(now.getFullYear(), now.getMonth(), joinedDay);
 
         // Create or update fee record
         await Fee.findOneAndUpdate(
@@ -1007,15 +1289,44 @@ exports.getAttendance = async (req, res) => {
 exports.getFees = async (req, res) => {
     try {
         const fees = await Fee.find()
-            .populate('student', 'name email')
+            .populate('student', 'name email createdAt')
             .sort({ year: -1, month: -1 });
 
         // Filter out fees where student has been deleted (null after populate)
+        // Filter out fees where student has been deleted (null after populate)
         const filteredFees = fees.filter(fee => fee.student);
+
+        // Calculate Billing Cycles
+        const processedFees = filteredFees.map(fee => {
+            const student = fee.student;
+            const feeObj = fee.toObject();
+
+            if (!student.createdAt) return feeObj;
+
+            const joinedDate = new Date(student.createdAt);
+            const billingDay = joinedDate.getDate();
+
+            // Month is 1-indexed in DB, 0-indexed in JS Date
+            // Cycle Start: The 'billingDay' of the fee month
+            const cycleStart = new Date(fee.year, fee.month - 1, billingDay);
+
+            // Cycle End: One day before the 'billingDay' of the NEXT month
+            const cycleEnd = new Date(fee.year, fee.month, billingDay - 1);
+
+            // Due Date: Same as Cycle End
+            const dueDate = new Date(cycleEnd);
+
+            return {
+                ...feeObj,
+                cycleStart,
+                cycleEnd,
+                dueDate
+            };
+        });
 
         res.status(200).json({
             success: true,
-            fees: filteredFees
+            fees: processedFees
         });
     } catch (error) {
         res.status(500).json({
@@ -1491,13 +1802,34 @@ exports.handleRequest = async (req, res) => {
                 let legacyShiftToMove = null;
                 let typeToMove = 'specific';
 
-                if (oldAssignment) {
-                    oldAssignment.status = 'expired'; // Mark old as expired
-                    await currentSeat.save();
+                // Find ALL active assignments for this student on the seat (handle duplicates)
+                const studentAssignments = currentSeat.assignments.filter(
+                    a => a.student.toString() === request.student._id.toString() && a.status === 'active'
+                );
 
+                if (studentAssignments.length > 0) {
+                    studentAssignments.forEach(a => {
+                        a.status = 'expired';
+                        a.endDate = new Date();
+                    });
+
+                    // Capture old details from the first one usually
+                    const oldAssignment = studentAssignments[0];
                     shiftToMove = oldAssignment.shift;
                     legacyShiftToMove = oldAssignment.legacyShift;
                     typeToMove = oldAssignment.type;
+
+                    // Recalculate occupancy
+                    // Note: assignments are modified in memory
+                    // Filter again because we just modified status in memory!
+                    const hasActive = currentSeat.assignments.some(a => a.status === 'active');
+                    currentSeat.isOccupied = hasActive;
+
+                    await currentSeat.save();
+                } else if (oldAssignment) {
+                    // Fallback if find() found one but filter didn't? Should be impossible, but keep safe
+                    oldAssignment.status = 'expired';
+                    await currentSeat.save();
                 }
 
                 // 2. Create new assignment
@@ -1775,6 +2107,122 @@ exports.getArchivedStudent = async (req, res) => {
             archive
         });
     } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get system settings
+// @route   GET /api/admin/settings
+exports.getSettings = async (req, res) => {
+    try {
+        let settings = await Settings.findOne();
+
+        // Create default settings if none exist
+        if (!settings) {
+            settings = await Settings.create({
+                libraryName: 'Library Management System',
+                address: 'Main St',
+                contactNumber: '1234567890',
+                email: 'admin@library.com',
+                termsAndConditions: 'Default terms',
+                systemStatus: 'active'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            settings
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Update system settings
+// @route   PUT /api/admin/settings
+exports.updateSettings = async (req, res) => {
+    try {
+        const { libraryName, address, contactNumber, email, termsAndConditions, systemStatus } = req.body;
+
+        let settings = await Settings.findOne();
+
+        if (!settings) {
+            settings = new Settings({});
+        }
+
+        settings.libraryName = libraryName || settings.libraryName;
+        settings.address = address || settings.address;
+        settings.contactNumber = contactNumber || settings.contactNumber;
+        settings.email = email || settings.email;
+        settings.termsAndConditions = termsAndConditions || settings.termsAndConditions;
+        if (systemStatus) settings.systemStatus = systemStatus;
+
+        settings.updatedBy = req.user.id;
+        await settings.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Settings updated successfully',
+            settings
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Fix seat occupancy consistency
+// @route   POST /api/admin/fix-seats
+exports.fixSeatOccupancy = async (req, res) => {
+    try {
+        const seats = await Seat.find({});
+        let updatedCount = 0;
+
+        for (const seat of seats) {
+            let changed = false;
+            const newAssignments = [];
+
+            for (const assignment of seat.assignments) {
+                // Check if student exists
+                if (assignment.student) {
+                    const student = await User.findById(assignment.student);
+                    if (student) {
+                        newAssignments.push(assignment);
+                    } else {
+                        changed = true; // Student not found
+                    }
+                } else {
+                    changed = true; // No student ID
+                }
+            }
+
+            if (changed) {
+                seat.assignments = newAssignments;
+                const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+                seat.isOccupied = activeAssignments.length > 0;
+                await seat.save();
+                updatedCount++;
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Fixed ${updatedCount} seats`,
+            updatedCount
+        });
+    } catch (error) {
+        console.error('Fix Seats Error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',

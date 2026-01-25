@@ -174,6 +174,16 @@ const Login = () => {
                         </motion.button>
                     </form>
 
+                    {/* Registration Link */}
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-gray-400">
+                            Don't have an account?{' '}
+                            <Link to="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+                                Register here
+                            </Link>
+                        </p>
+                    </div>
+
                     <div className="mt-8 pt-6 border-t border-white/5 text-center">
                         <p className="text-xs text-slate-500">
                             Protected by secure encryption • Ver 1.0.0

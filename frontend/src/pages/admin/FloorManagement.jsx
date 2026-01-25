@@ -13,11 +13,131 @@ import RoomLayoutModal from '../../components/admin/RoomLayoutModal';
 import UpdateRoomPricesModal from '../../components/admin/UpdateRoomPricesModal';
 import UpdateFloorPricesModal from '../../components/admin/UpdateFloorPricesModal';
 import api from '../../utils/api';
-import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoBedOutline, IoRefresh } from 'react-icons/io5';
+import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoBedOutline, IoRefresh, IoAdd, IoTrash } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Modal from '../../components/ui/Modal';
+
+// Add Room Modal Component
+const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
+    const [name, setName] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await api.post('/admin/rooms', {
+                name,
+                floorId,
+                width: 4,
+                height: 4
+            });
+            onAdd();
+            onClose();
+            setName('');
+        } catch (error) {
+            console.error('Failed to create room:', error);
+            alert('Failed to create room');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-gray-900 border border-white/10 rounded-xl p-6 w-full max-w-md">
+                <h3 className="text-xl font-bold mb-4">Add New Room</h3>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-sm text-gray-400 mb-1">Room Name</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="input w-full"
+                            placeholder="e.g. Study Hall A"
+                            required
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">
+                            {loading ? 'Creating...' : 'Create Room'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+// Add Floor Modal
+const AddFloorModal = ({ isOpen, onClose, onAdd }) => {
+    const [name, setName] = useState('');
+    const [level, setLevel] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await api.post('/admin/floors', { name, level: parseInt(level) });
+            onAdd();
+            onClose();
+            setName('');
+            setLevel('');
+        } catch (error) {
+            console.error('Failed to create floor:', error);
+            alert('Failed to create floor');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="bg-gray-900 border border-white/10 rounded-xl p-6 w-full max-w-md">
+                <h3 className="text-xl font-bold mb-4">Add New Floor</h3>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-sm text-gray-400 mb-1">Floor Name</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="input w-full"
+                            placeholder="e.g. Ground Floor"
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm text-gray-400 mb-1">Floor Level (Number)</label>
+                        <input
+                            type="number"
+                            value={level}
+                            onChange={(e) => setLevel(e.target.value)}
+                            className="input w-full"
+                            placeholder="e.g. 0 for Ground, 1 for First"
+                            required
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">
+                            {loading ? 'Creating...' : 'Create Floor'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
 
 const FloorManagement = () => {
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
@@ -25,6 +145,8 @@ const FloorManagement = () => {
     const [floors, setFloors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedFloor, setSelectedFloor] = useState(0);
+    const [addFloorModal, setAddFloorModal] = useState(false);
+    const [addRoomModal, setAddRoomModal] = useState({ isOpen: false, floorId: null });
     const [addSeatModal, setAddSeatModal] = useState({ isOpen: false, wall: '', roomId: '', floorId: '' });
     const [editSeatModal, setEditSeatModal] = useState({ isOpen: false, seat: null });
     const [roomLayoutModal, setRoomLayoutModal] = useState({ isOpen: false, room: null });
@@ -75,6 +197,29 @@ const FloorManagement = () => {
         } catch (error) {
             console.error('Error deleting seat:', error);
             alert(error.response?.data?.message || 'Failed to delete seat');
+        }
+    };
+
+    const handleDeleteFloor = async (floorId) => {
+        if (!confirm('Are you sure you want to delete this floor? DO NOT DO THIS unless you are sure. It will delete all rooms and seats inside it!')) return;
+        try {
+            await api.delete(`/admin/floors/${floorId}`);
+            fetchFloors();
+            setSelectedFloor(0);
+        } catch (error) {
+            console.error('Failed to delete floor:', error);
+            alert(error.response?.data?.message || 'Failed to delete floor');
+        }
+    };
+
+    const handleDeleteRoom = async (roomId) => {
+        if (!confirm('Are you sure you want to delete this room? It will delete all seats inside it!')) return;
+        try {
+            await api.delete(`/admin/rooms/${roomId}`);
+            fetchFloors();
+        } catch (error) {
+            console.error('Failed to delete room:', error);
+            alert(error.response?.data?.message || 'Failed to delete room');
         }
     };
 
@@ -139,7 +284,8 @@ const FloorManagement = () => {
         const student = {
             ...seat.assignedTo,
             seatNumber: seat.number, // Use the seat's number
-            shift: seat.shift
+            shift: seat.shift,
+            shiftDetails: seat.shiftDetails // Pass shift time details
         };
         setSelectedStudent(student);
         setShowIdCardModal(true);
@@ -290,16 +436,43 @@ const FloorManagement = () => {
                                     </button>
                                 ))}
                             </div>
+                            <Button variant="primary" onClick={() => setAddFloorModal(true)} className="ml-2 whitespace-nowrap">
+                                <IoAdd className="inline" /> Floor
+                            </Button>
+                            <button
+                                onClick={() => handleDeleteFloor(floors[selectedFloor]._id)}
+                                className="ml-2 p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                                title="Delete Floor"
+                            >
+                                <IoTrash size={20} />
+                            </button>
                         </div>
 
                         {/* Floor Details */}
                         {floors[selectedFloor] && (
                             <div className="space-y-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold">Rooms</h3>
+                                    <button
+                                        onClick={() => setAddRoomModal({ isOpen: true, floorId: floors[selectedFloor]._id })}
+                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center gap-2"
+                                    >
+                                        <IoAdd size={20} /> Add Room
+                                    </button>
+                                </div>
+
                                 {floors[selectedFloor].rooms.map((room) => (
                                     <Card key={room._id}>
                                         <div className="flex justify-between items-center mb-6">
                                             <h2 className="text-2xl font-bold">{room.name}</h2>
                                             <div className="flex gap-2 items-center">
+                                                <button
+                                                    onClick={() => handleDeleteRoom(room._id)}
+                                                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
+                                                    title="Delete Room"
+                                                >
+                                                    <IoTrash size={16} />
+                                                </button>
                                                 <button
                                                     onClick={() => setUpdateRoomPricesModal({ isOpen: true, room })}
                                                     className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded-lg transition-colors text-sm font-semibold"
@@ -396,6 +569,20 @@ const FloorManagement = () => {
                 </Modal>
 
                 {/* Modals */}
+                {/* Modals */}
+                <AddRoomModal
+                    isOpen={addRoomModal.isOpen}
+                    onClose={() => setAddRoomModal({ isOpen: false, floorId: null })}
+                    floorId={addRoomModal.floorId}
+                    onAdd={fetchFloors}
+                />
+
+                <AddFloorModal
+                    isOpen={addFloorModal}
+                    onClose={() => setAddFloorModal(false)}
+                    onAdd={fetchFloors}
+                />
+
                 <AddSeatModal
                     isOpen={addSeatModal.isOpen}
                     onClose={() => setAddSeatModal({ isOpen: false, wall: '', roomId: '', floorId: '' })}

@@ -15,6 +15,11 @@ const settingsSchema = new mongoose.Schema({
         enum: ['active', 'maintenance'],
         default: 'active'
     },
+    libraryName: { type: String, default: 'Library Management System' },
+    address: { type: String, default: '' },
+    contactNumber: { type: String, default: '' },
+    email: { type: String, default: '' },
+    termsAndConditions: { type: String, default: '' },
     updatedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

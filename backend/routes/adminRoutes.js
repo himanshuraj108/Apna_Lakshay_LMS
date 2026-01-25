@@ -7,6 +7,10 @@ const {
     createStudent,
     updateStudent,
     deleteStudent,
+    createFloor,
+    deleteFloor,
+    createRoom,
+    deleteRoom,
     getFloors,
     updatePrices,
     assignSeat,
@@ -25,8 +29,27 @@ const {
     // Shift Management
     getShifts,
     createShift,
-    deleteShift
+    updateShift,
+    deleteShift,
+    getSettings,
+    updateSettings
 } = require('../controllers/adminController');
+
+// ... existing routes ...
+
+// Shift Management
+router.route('/shifts')
+    .get(getShifts)
+    .post(createShift); // Kept original structure for post
+router.put('/shifts/:id', updateShift); // Added PUT route
+router.delete('/shifts/:id', deleteShift);
+
+// System Settings
+router.route('/settings')
+    .get(getSettings)
+    .put(updateSettings);
+
+module.exports = router;
 const {
     addSeat,
     deleteSeat,
@@ -62,6 +85,10 @@ router.post('/students/:id/reset-password', resetStudentPassword);
 
 // Floor/Room/Seat management
 router.get('/floors', getFloors);
+router.post('/floors', createFloor);
+router.delete('/floors/:id', deleteFloor);
+router.post('/rooms', createRoom);
+router.delete('/rooms/:id', deleteRoom);
 router.put('/prices', updatePrices);
 router.post('/seats/assign', assignSeat);
 
@@ -96,8 +123,8 @@ router.get('/archives/:id', getArchivedStudent);
 // Shift Management
 router.route('/shifts')
     .get(getShifts)
-    .post(createShift);
-
+    .post(createShift); // Kept original structure for post
+router.put('/shifts/:id', updateShift); // Added PUT route
 router.delete('/shifts/:id', deleteShift);
 
 module.exports = router;

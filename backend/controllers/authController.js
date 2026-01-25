@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Seat = require('../models/Seat');
 const { sendOTPEmail } = require('../services/emailService');
 
 // @desc    Login user
@@ -59,7 +60,8 @@ exports.login = async (req, res) => {
                 email: process.env.ADMIN_EMAIL,
                 password: process.env.ADMIN_PASSWORD, // This will be hashed by pre-save hook
                 role: 'admin',
-                isActive: true
+                isActive: true,
+                mobile: '0000000000' // Dummy 10-digit number for validation
             });
             // Re-fetch to be sure we have what we need, though create returns it.
         }
@@ -71,13 +73,7 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Check if user is active
-        if (!user.isActive) {
-            return res.status(401).json({
-                success: false,
-                message: 'Account is inactive. Please contact admin.'
-            });
-        }
+
 
         // Check password
         // If it matches ENV admin, we allow it regardless of DB password (feature: easy reset via env)
@@ -127,25 +123,70 @@ exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
 
+        let userData = {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isActive: user.isActive,
+            profileImage: user.profileImage,
+            createdAt: user.createdAt,
+            createdAt: user.createdAt,
+            registrationSource: user.registrationSource, // Required for status logic
+            address: user.address,
+            seat: user.seat,
+            seatAssignedAt: user.seatAssignedAt // Use persistent date from User model
+        };
+
+        try {
+            // Find active seat assignment to get updated details
+            const seat = await Seat.findOne({
+                'assignments.student': user._id,
+                'assignments.status': 'active'
+            }).populate('assignments.shift');
+
+            if (seat) {
+                const assignment = seat.assignments.find(a => a.student.toString() === user._id.toString() && a.status === 'active');
+                if (assignment) {
+
+                    // Self-healing: If user.seatAssignedAt is missing, update it from assignment
+                    if (!user.seatAssignedAt) {
+                        userData.seatAssignedAt = assignment.assignedAt;
+                        try {
+                            await User.findByIdAndUpdate(user._id, { seatAssignedAt: assignment.assignedAt });
+                        } catch (err) { console.error('Failed to update seatAssignedAt:', err); }
+                    }
+
+                    userData.currentShift = assignment.shift ? assignment.shift._id.toString() : (assignment.legacyShift || 'full');
+
+                    // Add populated shift details for ID Card
+                    userData.shift = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'full');
+                    userData.shiftDetails = assignment.shift ? {
+                        startTime: assignment.shift.startTime,
+                        endTime: assignment.shift.endTime
+                    } : null;
+                    userData.seatNumber = seat.number; // Explicitly add seat number
+                }
+            }
+        } catch (seatError) {
+            console.error('Error fetching seat for profile:', seatError);
+            // Continue without seat date if error
+        }
+
         res.status(200).json({
             success: true,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                isActive: user.isActive,
-                profileImage: user.profileImage,
-                createdAt: user.createdAt
-            }
+            user: userData
         });
-    } catch (error) {
+
+    } catch (err) {
+        console.error(err);
         res.status(500).json({
             success: false,
             message: 'Server error',
-            error: error.message
+            error: err.message
         });
     }
+
 };
 
 // @desc    Logout user

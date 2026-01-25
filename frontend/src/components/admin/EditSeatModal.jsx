@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
+import api from '../../utils/api';
 
 const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
     const { shifts } = useShifts();
@@ -17,26 +18,14 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
         setLoading(true);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/seats/${seat._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    number: formData.seatNumber,
-                    basePrices: formData.basePrices,
-                    shiftPrices: formData.basePrices // Ensure dynamic prices are saved
-                })
+            const response = await api.put(`/admin/seats/${seat._id}`, {
+                number: formData.seatNumber,
+                basePrices: formData.basePrices,
+                shiftPrices: formData.basePrices // Ensure dynamic prices are saved
             });
 
-            if (response.ok) {
-                onSuccess();
-                onClose();
-            } else {
-                const data = await response.json();
-                alert(data.message || 'Failed to update seat');
-            }
+            onSuccess();
+            onClose();
         } catch (error) {
             console.error('Error updating seat:', error);
             alert('Failed to update seat');

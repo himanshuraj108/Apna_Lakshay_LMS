@@ -115,3 +115,113 @@ exports.getShifts = async (req, res) => {
         });
     }
 };
+
+// @desc    Check if email is available
+// @route   GET /api/public/check-email
+exports.checkEmailAvailability = async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required'
+            });
+        }
+
+        const User = require('../models/User');
+        const existingUser = await User.findOne({ email });
+
+        res.json({
+            success: true,
+            available: !existingUser
+        });
+
+    } catch (error) {
+        console.error('Email check error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error checking email availability'
+        });
+    }
+};
+
+// @desc    Student self-registration
+// @route   POST /api/public/register
+exports.registerStudent = async (req, res) => {
+    try {
+        const { name, email, mobile, address } = req.body;
+
+        // Validation
+        if (!name || !email || !mobile || !address) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide all required fields: name, email, mobile, address'
+            });
+        }
+
+        // Check if user already exists
+        const User = require('../models/User');
+        const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: existingUser.email === email
+                    ? 'Email already registered'
+                    : 'Mobile number already registered'
+            });
+        }
+
+        // Generate random password
+        const generatePassword = () => {
+            const length = 8;
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let password = '';
+            for (let i = 0; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+            return password;
+        };
+
+        const plainPassword = generatePassword();
+
+        // Create student user
+        const student = await User.create({
+            name,
+            email,
+            mobile,
+            address,
+            password: plainPassword,
+            role: 'student',
+            registrationSource: 'self',
+            isActive: true
+        });
+
+        // Send credentials email
+        const emailService = require('../services/emailService');
+        try {
+            await emailService.sendCredentialsEmail(name, email, plainPassword);
+        } catch (emailError) {
+            console.error('Failed to send credentials email:', emailError);
+            // Continue even if email fails
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful! Login credentials have been sent to your email.',
+            student: {
+                name: student.name,
+                email: student.email
+            }
+        });
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during registration',
+            error: error.message
+        });
+    }
+};

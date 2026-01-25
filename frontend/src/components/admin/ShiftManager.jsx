@@ -5,11 +5,12 @@ import api from '../../utils/api';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Modal from '../ui/Modal';
-import { IoAdd, IoTrash, IoTimeOutline, IoAlertCircle } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoPencil, IoTimeOutline, IoAlertCircle } from 'react-icons/io5';
 
-const ShiftManager = () => {
+const ShiftManager = ({ allowDelete = true }) => {
     const { shifts, isCustom, loading, refreshShifts } = useShifts();
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({ name: '', startTime: '', endTime: '' });
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState('');
@@ -52,29 +53,51 @@ const ShiftManager = () => {
         setError('');
 
         try {
-            await api.post('/admin/shifts', formData);
+            if (editingId) {
+                await api.put(`/admin/shifts/${editingId}`, formData);
+            } else {
+                await api.post('/admin/shifts', formData);
+            }
             await fetchDbShifts(); // Refresh local list
             refreshShifts(); // Refresh global hook
             setShowAddModal(false);
+            setEditingId(null);
             setFormData({ name: '', startTime: '', endTime: '' });
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create shift');
+            setError(err.response?.data?.message || `Failed to ${editingId ? 'update' : 'create'} shift`);
         } finally {
             setProcessing(false);
         }
     };
 
-    const handleDeleteShift = async (id) => {
-        if (!confirm('Are you sure you want to delete this shift? Seats assigned to this shift might become invalid.')) return;
+    const handleEditShift = (shift) => {
+        setEditingId(shift._id);
+        setFormData({
+            name: shift.name,
+            startTime: shift.startTime,
+            endTime: shift.endTime
+        });
+        setShowAddModal(true);
+    };
+
+    const handleDeleteShift = async (shiftId) => {
+        if (!window.confirm('Are you sure you want to delete this shift?')) {
+            return;
+        }
+        setProcessing(true);
+        setError('');
 
         try {
-            await api.delete(`/admin/shifts/${id}`);
-            await fetchDbShifts();
-            refreshShifts();
+            await api.delete(`/admin/shifts/${shiftId}`);
+            await fetchDbShifts(); // Refresh local list
+            refreshShifts(); // Refresh global hook
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to delete shift');
+            setError(err.response?.data?.message || 'Failed to delete shift');
+        } finally {
+            setProcessing(false);
         }
     };
+
 
     return (
         <div className="space-y-6">
@@ -109,13 +132,26 @@ const ShiftManager = () => {
                                     </div>
                                 </div>
 
-                                <Button
-                                    variant="danger"
-                                    className="bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white"
-                                    onClick={() => handleDeleteShift(shift._id)}
-                                >
-                                    <IoTrash size={20} />
-                                </Button>
+                                <div className="flex gap-2">
+                                    {allowDelete && (
+                                        <>
+                                            <Button
+                                                variant="secondary"
+                                                className="bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white"
+                                                onClick={() => handleEditShift(shift)}
+                                            >
+                                                <IoPencil size={20} />
+                                            </Button>
+                                            <Button
+                                                variant="danger"
+                                                className="bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white"
+                                                onClick={() => handleDeleteShift(shift._id)}
+                                            >
+                                                <IoTrash size={20} />
+                                            </Button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </Card>
                     ))}
@@ -132,8 +168,12 @@ const ShiftManager = () => {
 
             <Modal
                 isOpen={showAddModal}
-                onClose={() => setShowAddModal(false)}
-                title="Create New Shift"
+                onClose={() => {
+                    setShowAddModal(false);
+                    setEditingId(null);
+                    setFormData({ name: '', startTime: '', endTime: '' });
+                }}
+                title={editingId ? "Edit Shift" : "Create New Shift"}
             >
                 <form onSubmit={handleCreateShift} className="space-y-4">
                     {error && (
@@ -175,11 +215,15 @@ const ShiftManager = () => {
                         </div>
                     </div>
                     <div className="pt-4 flex gap-3">
-                        <Button type="button" variant="secondary" onClick={() => setShowAddModal(false)} className="flex-1">
+                        <Button type="button" variant="secondary" onClick={() => {
+                            setShowAddModal(false);
+                            setEditingId(null);
+                            setFormData({ name: '', startTime: '', endTime: '' });
+                        }} className="flex-1">
                             Cancel
                         </Button>
                         <Button type="submit" variant="primary" disabled={processing} className="flex-1">
-                            {processing ? 'Creating...' : 'Create Shift'}
+                            {processing ? (editingId ? 'Updating...' : 'Creating...') : (editingId ? 'Update Shift' : 'Create Shift')}
                         </Button>
                     </div>
                 </form>

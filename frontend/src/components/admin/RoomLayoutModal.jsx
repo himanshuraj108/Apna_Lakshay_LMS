@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
+import api from '../../utils/api';
 
 const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
     const [formData, setFormData] = useState({
@@ -25,22 +26,10 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
         setLoading(true);
 
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/rooms/${room._id}/layout`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(formData)
-            });
+            const response = await api.put(`/admin/rooms/${room._id}/layout`, formData);
 
-            if (response.ok) {
-                onSuccess();
-                onClose();
-            } else {
-                const data = await response.json();
-                alert(data.message || 'Failed to update room layout');
-            }
+            onSuccess();
+            onClose();
         } catch (error) {
             console.error('Error updating room layout:', error);
             alert('Failed to update room layout');

@@ -19,7 +19,18 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Mobile number is required'],
         unique: true,
-        trim: true
+        trim: true,
+        minlength: [10, 'Mobile number must be 10 digits'],
+        minlength: [10, 'Mobile number must be 10 digits'],
+        maxlength: [10, 'Mobile number must be 10 digits']
+    },
+    address: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    seatAssignedAt: {
+        type: Date
     },
     password: {
         type: String,
@@ -31,6 +42,15 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['admin', 'student'],
         default: 'student'
+    },
+    guardianPhone: {
+        type: String,
+        trim: true
+    },
+    registrationSource: {
+        type: String,
+        enum: ['admin', 'self'],
+        default: 'admin'
     },
     profileImage: {
         type: String,
@@ -47,8 +67,8 @@ const userSchema = new mongoose.Schema({
     },
     systemMode: {
         type: String,
-        enum: ['default', 'custom'],
-        default: 'default'
+        enum: ['custom', 'default'],
+        default: 'custom' // Always use custom mode
     },
     seat: {
         type: mongoose.Schema.Types.ObjectId,

@@ -150,9 +150,10 @@ const Profile = () => {
                             <div className="w-32 h-32 rounded-full bg-gradient-primary flex items-center justify-center mb-4 overflow-hidden">
                                 {profile?.profileImage ? (
                                     <img
-                                        src={`http://localhost:5000${profile.profileImage}`}
+                                        src={`${BASE_URL}${profile.profileImage}`}
                                         alt={profile.name}
                                         className="w-full h-full object-cover"
+                                        crossOrigin="anonymous"
                                     />
                                 ) : (
                                     <IoPerson size={64} />
@@ -184,16 +185,39 @@ const Profile = () => {
                             <p className="text-gray-400 mb-6">{profile?.email}</p>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className={`rounded-lg p-4 border ${profile?.isActive ? 'bg-green-500/20 border-green-500/30' : 'bg-red-500/20 border-red-500/30'}`}>
-                                    <p className={`text-sm mb-1 ${profile?.isActive ? 'text-green-300' : 'text-red-300'}`}>Status</p>
-                                    <p className={`text-lg font-bold ${profile?.isActive ? 'text-green-400' : 'text-red-400'}`}>
-                                        {profile?.isActive ? '✓ Active' : '✗ Inactive'}
+                                <div className={`rounded-lg p-4 border ${profile.registrationSource === 'self' && !profile.seat
+                                    ? 'bg-yellow-500/20 border-yellow-500/30'
+                                    : profile?.isActive
+                                        ? 'bg-green-500/20 border-green-500/30'
+                                        : 'bg-red-500/20 border-red-500/30'
+                                    }`}>
+                                    <p className={`text-sm mb-1 ${profile.registrationSource === 'self' && !profile.seat
+                                        ? 'text-yellow-300'
+                                        : profile?.isActive
+                                            ? 'text-green-300'
+                                            : 'text-red-300'
+                                        }`}>Status</p>
+                                    <p className={`text-lg font-bold ${profile.registrationSource === 'self' && !profile.seat
+                                        ? 'text-yellow-400'
+                                        : profile?.isActive
+                                            ? 'text-green-400'
+                                            : 'text-red-400'
+                                        }`}>
+                                        {profile.registrationSource === 'self' && !profile.seat
+                                            ? '⚠ Pending Allocation'
+                                            : profile?.isActive
+                                                ? '✓ Active'
+                                                : '✗ Inactive'
+                                        }
                                     </p>
                                 </div>
                                 <div className="bg-white/5 rounded-lg p-4">
                                     <p className="text-sm text-gray-400 mb-1">Member Since</p>
                                     <p className="text-lg font-semibold">
-                                        {new Date(profile?.createdAt).toLocaleDateString('en-IN')}
+                                        {profile?.seatAssignedAt
+                                            ? new Date(profile.seatAssignedAt).toLocaleDateString('en-IN')
+                                            : 'N/A'
+                                        }
                                     </p>
                                 </div>
                             </div>
@@ -201,32 +225,47 @@ const Profile = () => {
                     </div>
                 </Card>
 
-                {/* Change Requests */}
+                {/* Change Requests - Only for Active Students */}
                 <Card>
                     <h3 className="text-2xl font-bold mb-6">Request Changes</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                setRequestType('shift');
-                                setShowRequestModal(true);
-                            }}
-                        >
-                            <IoSend className="inline mr-2" /> Request Shift Change
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowSeatChangeModal(true)}
-                        >
-                            <IoSend className="inline mr-2" /> Request Seat Change
-                        </Button>
-                    </div>
 
-                    <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                        <p className="text-sm">
-                            💡 <strong>Note:</strong> Change requests need to be approved by admin. You'll be notified once reviewed.
-                        </p>
-                    </div>
+                    {profile?.isActive && !(profile.registrationSource === 'self' && !profile.seat) ? (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Button
+                                    variant="primary"
+                                    onClick={() => {
+                                        setRequestType('shift');
+                                        setShowRequestModal(true);
+                                    }}
+                                >
+                                    <IoSend className="inline mr-2" /> Request Shift Change
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    onClick={() => setShowSeatChangeModal(true)}
+                                >
+                                    <IoSend className="inline mr-2" /> Request Seat Change
+                                </Button>
+                            </div>
+
+                            <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                                <p className="text-sm">
+                                    💡 <strong>Note:</strong> Change requests need to be approved by admin. You'll be notified once reviewed.
+                                </p>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="p-6 bg-gray-800/50 rounded-lg text-center border border-gray-700">
+                            <IoLockClosed className="mx-auto text-gray-500 mb-3" size={32} />
+                            <h4 className="text-lg font-semibold text-gray-300 mb-2">Requests Unavailable</h4>
+                            <p className="text-gray-400 text-sm max-w-md mx-auto">
+                                {!profile?.isActive
+                                    ? "Your account is currently inactive. Please reactivate your membership to make requests."
+                                    : "You are pending seat allocation. You can make requests once a seat is assigned."}
+                            </p>
+                        </div>
+                    )}
                 </Card>
 
                 {/* Security Settings */}
@@ -263,7 +302,16 @@ const Profile = () => {
                                 <label className="block text-sm font-medium mb-2">New Shift</label>
                                 <select
                                     value={requestData.shift || ''}
-                                    onChange={(e) => setRequestData({ shift: e.target.value })}
+                                    onChange={(e) => {
+                                        const selected = e.target.value;
+                                        if (profile.currentShift === selected) {
+                                            setError("You are already in this shift!");
+                                            setShowRequestModal(false);
+                                            setTimeout(() => setError(''), 3000);
+                                            return;
+                                        }
+                                        setRequestData({ shift: selected });
+                                    }}
                                     className="input"
                                 >
                                     <option value="">Select shift...</option>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { motion } from 'framer-motion';
-import { FaCheckCircle, FaTimesCircle, FaSpinner } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 
 const VerifyStudent = () => {
     const { id } = useParams();
@@ -71,12 +71,48 @@ const VerifyStudent = () => {
         );
     }
 
+    // Determine valid status
+    const isPending = student?.registrationSource === 'self' && !student?.seat;
+    const isInactive = !student?.isActive;
+
+    const getStatusTheme = () => {
+        if (isInactive) return {
+            color: 'red',
+            bgColor: 'bg-red-500',
+            shadow: 'shadow-red-500/30',
+            icon: <FaTimesCircle className="text-5xl text-white" />,
+            title: 'Inactive Member',
+            subtitle: 'Membership Expired or Disabled',
+            badge: 'bg-red-500/20 text-red-400 border border-red-500/30'
+        };
+        if (isPending) return {
+            color: 'yellow',
+            bgColor: 'bg-yellow-500',
+            shadow: 'shadow-yellow-500/30',
+            icon: <FaExclamationTriangle className="text-5xl text-white" />,
+            title: 'Pending Allocation',
+            subtitle: 'Waiting for Seat Assignment',
+            badge: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+        };
+        return {
+            color: 'green',
+            bgColor: 'bg-green-500',
+            shadow: 'shadow-green-500/30',
+            icon: <FaCheckCircle className="text-5xl text-white" />,
+            title: 'Verified Student',
+            subtitle: 'Official Hamara Lakshay Member',
+            badge: 'bg-green-500/20 text-green-400 border border-green-500/30'
+        };
+    };
+
+    const theme = getStatusTheme();
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4 relative overflow-hidden">
             {/* Background Effects */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-[20%] -left-[20%] w-[50%] h-[50%] bg-blue-500/20 rounded-full blur-[100px]"></div>
-                <div className="absolute -bottom-[20%] -right-[20%] w-[50%] h-[50%] bg-purple-500/20 rounded-full blur-[100px]"></div>
+                <div className={`absolute -top-[20%] -left-[20%] w-[50%] h-[50%] ${isInactive ? 'bg-red-500/20' : isPending ? 'bg-yellow-500/20' : 'bg-blue-500/20'} rounded-full blur-[100px]`}></div>
+                <div className={`absolute -bottom-[20%] -right-[20%] w-[50%] h-[50%] ${isInactive ? 'bg-orange-500/20' : isPending ? 'bg-orange-500/20' : 'bg-purple-500/20'} rounded-full blur-[100px]`}></div>
             </div>
 
             <motion.div
@@ -90,12 +126,14 @@ const VerifyStudent = () => {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
-                        className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/30"
+                        className={`w-24 h-24 ${theme.bgColor} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${theme.shadow}`}
                     >
-                        <FaCheckCircle className="text-5xl text-white" />
+                        {theme.icon}
                     </motion.div>
-                    <h1 className="text-3xl font-bold text-white mb-1">Verified Student</h1>
-                    <p className="text-green-400 font-medium tracking-wider uppercase text-sm">Official Hamara Lakshay Member</p>
+                    <h1 className="text-3xl font-bold text-white mb-1">{theme.title}</h1>
+                    <p className={`font-medium tracking-wider uppercase text-sm opacity-80`} style={{ color: theme.color === 'yellow' ? '#facc15' : theme.color === 'red' ? '#f87171' : '#4ade80' }}>
+                        {theme.subtitle}
+                    </p>
                 </div>
 
                 <div className="bg-black/20 rounded-xl p-6 mb-8 border border-white/5">
@@ -118,8 +156,8 @@ const VerifyStudent = () => {
                     <div className="space-y-3">
                         <div className="flex justify-between items-center py-2 border-b border-white/10">
                             <span className="text-gray-400 text-sm">Status</span>
-                            <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold border border-green-500/30">
-                                {student?.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${theme.badge}`}>
+                                {isInactive ? 'INACTIVE' : isPending ? 'PENDING' : 'ACTIVE'}
                             </span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-white/10">

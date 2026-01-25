@@ -28,9 +28,15 @@ exports.getDashboard = async (req, res) => {
             const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
 
             let shiftName = 'N/A';
+            let shiftDetails = null;
+
             if (assignment) {
                 if (assignment.shift && assignment.shift.name) {
                     shiftName = assignment.shift.name;
+                    shiftDetails = {
+                        startTime: assignment.shift.startTime,
+                        endTime: assignment.shift.endTime
+                    };
                 } else if (assignment.legacyShift) {
                     shiftName = assignment.legacyShift;
                 } else if (assignment.type === 'full_day') {
@@ -45,7 +51,9 @@ exports.getDashboard = async (req, res) => {
                 floor: seat.floor?.name,
                 room: seat.room?.name,
                 shift: shiftName,
-                price: assignment?.price || 0
+                shiftDetails, // Added details
+                price: assignment?.price || 0,
+                assignedAt: assignment?.assignedAt // Add assignment date
             };
         }
 
@@ -63,12 +71,71 @@ exports.getDashboard = async (req, res) => {
         const totalDays = attendanceRecords.length;
         const attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
-        // Get current fee status
-        const currentFee = await Fee.findOne({
-            student: studentId,
-            month: now.getMonth() + 1,
-            year: now.getFullYear()
-        });
+        // Get student details first (needed for rolling cycle calculation)
+        const student = await User.findById(studentId).select('registrationSource createdAt name isActive');
+
+        // Calculate Target Fee Month based on Rolling Cycle
+        let currentFee = null;
+        let feeReminder = null;
+
+        if (student && student.createdAt) {
+            const joinedDate = new Date(student.createdAt);
+            const cycleDay = joinedDate.getDate();
+            const today = new Date();
+
+            let targetMonth = today.getMonth() + 1; // 1-12
+            let targetYear = today.getFullYear();
+
+            // If today is 'before' the cycle start day, we are in the cycle started last month
+            if (today.getDate() < cycleDay) {
+                targetMonth -= 1;
+                if (targetMonth === 0) {
+                    targetMonth = 12;
+                    targetYear -= 1;
+                }
+            }
+
+            // Fetch fee for the calculated cycle start month
+            currentFee = await Fee.findOne({
+                student: studentId,
+                month: targetMonth,
+                year: targetYear
+            });
+
+            // Calculate Dates and Reminder
+            if (currentFee && currentFee.status !== 'paid') {
+                // Cycle Start: targetMonth/targetYear/cycleDay
+                // Cycle End/Due Date: One day before same day next month
+                const cycleStartDate = new Date(targetYear, targetMonth - 1, cycleDay);
+                const dueDate = new Date(targetYear, targetMonth, cycleDay - 1);
+
+                // Reminder starts 5 days before due date
+                const reminderDate = new Date(dueDate);
+                reminderDate.setDate(reminderDate.getDate() - 5);
+
+                // Show reminder if today >= reminderDate (and not paid)
+                // Also show if overdue (today > dueDate)
+                if (today >= reminderDate) {
+                    feeReminder = {
+                        show: true,
+                        amount: currentFee.amount,
+                        dueDate: dueDate,
+                        status: currentFee.status,
+                        message: `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString()}. Please pay to avoid late fees.`
+                    };
+                }
+
+                // Inject calculated dueDate into currentFee object for display
+                currentFee.dueDate = dueDate;
+            }
+        } else {
+            // Fallback for missing createdAt (legacy)
+            currentFee = await Fee.findOne({
+                student: studentId,
+                month: now.getMonth() + 1,
+                year: now.getFullYear()
+            });
+        }
 
         // Get unread notifications count
         const unreadCount = await Notification.countDocuments({
@@ -79,6 +146,9 @@ exports.getDashboard = async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
+                registrationSource: student?.registrationSource || 'admin',
+                studentName: student?.name,
+                isActive: student?.isActive, // Fresh status from DB
                 seat: assignedSeatData,
                 attendance: {
                     present: presentCount,
@@ -88,9 +158,10 @@ exports.getDashboard = async (req, res) => {
                 fee: currentFee ? {
                     amount: currentFee.amount,
                     status: currentFee.status,
-                    dueDate: currentFee.dueDate,
+                    dueDate: currentFee.dueDate, // Now dynamic
                     paidDate: currentFee.paidDate
                 } : null,
+                feeReminder, // Add reminder data
                 unreadNotifications: unreadCount
             }
         });
@@ -329,6 +400,21 @@ exports.markNotificationRead = async (req, res) => {
 exports.submitRequest = async (req, res) => {
     try {
         const { type, requestedData } = req.body;
+
+        // Restriction: Only Active Members
+        if (!req.user.isActive) {
+            return res.status(403).json({ success: false, message: 'Inactive members cannot submit requests' });
+        }
+
+        // Restriction: Only Allocated Members (Not Pending)
+        const hasSeat = await Seat.exists({
+            'assignments.student': req.user.id,
+            'assignments.status': 'active'
+        });
+
+        if (req.user.registrationSource === 'self' && !hasSeat) {
+            return res.status(403).json({ success: false, message: 'Pending allocation members cannot submit requests' });
+        }
 
         let currentData = {};
 

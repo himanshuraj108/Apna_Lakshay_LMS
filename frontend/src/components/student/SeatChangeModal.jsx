@@ -101,20 +101,8 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
                         </button>
                     </div>
 
-                    {/* Mobile Warning */}
-                    <div className="block sm:hidden p-6 text-center">
-                        <IoAlertCircle className="mx-auto mb-4 text-yellow-500" size={64} />
-                        <h3 className="text-xl font-bold mb-2">Desktop Required</h3>
-                        <p className="text-gray-400">
-                            Please use a desktop device to select seats. The seat matrix requires a larger screen for proper viewing and selection.
-                        </p>
-                        <Button onClick={onClose} variant="secondary" className="mt-6">
-                            Close
-                        </Button>
-                    </div>
-
-                    {/* Desktop Content */}
-                    <div className="hidden sm:flex flex-col flex-1 overflow-hidden">
+                    {/* Main Content (Responsive) */}
+                    <div className="flex flex-col flex-1 overflow-hidden">
                         {error && (
                             <div className="mx-6 mt-4 p-4 bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg">
                                 {error}
@@ -152,11 +140,15 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
                                         <div className="space-y-6">
                                             {floors[selectedFloor].rooms.map((room) => (
                                                 <Card key={room._id}>
-                                                    <StudentRoomGrid
-                                                        room={room}
-                                                        onSeatClick={handleSeatClick}
-                                                        currentSeatId={currentSeat?._id}
-                                                    />
+                                                    <div className="overflow-x-auto pb-4">
+                                                        <div className="min-w-[800px]">
+                                                            <StudentRoomGrid
+                                                                room={room}
+                                                                onSeatClick={handleSeatClick}
+                                                                currentSeatId={currentSeat?._id}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </Card>
                                             ))}
                                         </div>

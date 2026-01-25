@@ -207,7 +207,7 @@ const RequestManagement = () => {
                                                     ) : request.type === 'shift' ? (
                                                         <div>
                                                             <p className="text-sm text-green-400 font-semibold">
-                                                                Target Shift: <span>{getShiftName(request.requestedData.shift)}</span>
+                                                                Target Shift: <span>{getShiftName(request.requestedData?.shift)}</span>
                                                             </p>
                                                         </div>
                                                     ) : (

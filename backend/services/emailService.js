@@ -28,6 +28,7 @@ try {
 }
 
 // Base email template
+// Base email template with inline CSS for better compatibility
 const emailTemplate = (title, content) => `
 <!DOCTYPE html>
 <html>
@@ -35,111 +36,48 @@ const emailTemplate = (title, content) => `
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    }
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 40px 30px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0 0 8px 0;
-      font-size: 32px;
-      font-weight: bold;
-    }
-    .header .lakshay {
-      background: linear-gradient(to right, #facc15, #d97706);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .header .subtitle {
-      margin: 0;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      opacity: 0.9;
-    }
-    .header .page-title {
-      margin: 15px 0 0 0;
-      font-size: 18px;
-      font-weight: normal;
-    }
-    .content {
-      padding: 40px 30px;
-      color: #333;
-      line-height: 1.8;
-      font-size: 15px;
-    }
+    .button-container { text-align: center; margin: 25px 0; }
     .login-button {
       display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white !important;
-      padding: 16px 40px;
+      background-color: #667eea;
+      color: #ffffff !important;
+      padding: 14px 28px;
       text-decoration: none;
       border-radius: 8px;
-      margin: 25px 0;
       font-weight: bold;
       font-size: 16px;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-      transition: transform 0.2s;
+      box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+      transition: background-color 0.3s ease;
     }
-    .login-button:hover {
-      transform: translateY(-2px);
-    }
-    .button-container {
-      text-align: center;
-      margin: 30px 0;
-    }
-    .highlight {
-      background: #f8f9fa;
-      padding: 20px;
-      border-radius: 8px;
-      margin: 20px 0;
-      border-left: 4px solid #667eea;
-    }
-    .footer {
-      background: #f8f9fa;
-      padding: 30px;
-      text-align: center;
-      color: #6b7280;
-      font-size: 13px;
-      border-top: 1px solid #e5e7eb;
-    }
-    .footer a {
-      color: #667eea;
-      text-decoration: none;
-    }
+    .login-button:hover { background-color: #5a67d8; }
+    .highlight { background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #e5e7eb; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Hamara <span class="lakshay">Lakshay</span></h1>
-      <p class="subtitle">Library Management System</p>
-      <p class="page-title">${title}</p>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px;">
+  <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center;">
+      <h1 style="margin: 0 0 8px 0; font-size: 32px; font-weight: bold; color: white;">
+        Hamara <span style="color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">Lakshay</span>
+      </h1>
+      <p style="margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; color: #e0e7ff;">
+        Library Management System
+      </p>
+      <p style="margin: 15px 0 0 0; font-size: 18px; font-weight: normal; color: white;">${title}</p>
     </div>
-    <div class="content">
+
+    <!-- Content -->
+    <div style="padding: 40px 30px; color: #333; line-height: 1.8; font-size: 15px;">
       ${content}
     </div>
-    <div class="footer">
-      <p>This is an automated email from Hamara Lakshay Library Management System.</p>
-      <p>For any queries, please contact the admin.</p>
-      <p style="margin-top: 15px;">
-        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="color: #667eea;">Visit Website</a>
+
+    <!-- Footer -->
+    <div style="background: #f8f9fa; padding: 30px; text-align: center; color: #6b7280; font-size: 13px; border-top: 1px solid #e5e7eb;">
+      <p style="margin: 5px 0;">This is an automated email from Hamara Lakshay Library Management System.</p>
+      <p style="margin: 5px 0;">For any queries, please contact the admin.</p>
+      <p style="margin: 15px 0 0 0;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="color: #667eea; text-decoration: none; font-weight: bold;">Visit Website</a>
       </p>
     </div>
   </div>
@@ -419,7 +357,7 @@ exports.sendSeatChangeApprovedEmail = async (student, oldSeat, newSeat) => {
     <h2>Seat Change Approved!</h2>
     <p>Dear ${student.name},</p>
     <p>Great news! Your seat change request has been approved by the admin.</p>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 30px 0;">
       <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
         <p style="margin: 0; font-size: 12px; color: #991b1b; font-weight: bold;">PREVIOUS SEAT</p>
         <p style="margin: 8px 0 0 0; font-size: 18px; color: #dc2626; font-weight: bold;">${oldSeat.number}</p>

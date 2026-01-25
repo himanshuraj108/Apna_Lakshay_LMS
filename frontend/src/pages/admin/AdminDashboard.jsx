@@ -211,7 +211,7 @@ const AdminDashboard = () => {
                         </div>
                     )}
 
-                    <ShiftManager />
+                    <ShiftManager allowDelete={false} />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {menuItems.map((item, index) => (

@@ -167,7 +167,7 @@ const FeeManagement = () => {
                                 <thead>
                                     <tr className="border-b border-white/10">
                                         <th className="text-left p-4">Student</th>
-                                        <th className="text-left p-4">Month/Year</th>
+                                        <th className="text-left p-4">Billing Cycle</th>
                                         <th className="text-right p-4">Amount</th>
                                         <th className="text-left p-4">Due Date</th>
                                         <th className="text-left p-4">Status</th>
@@ -191,7 +191,11 @@ const FeeManagement = () => {
                                                     </div>
                                                 </td>
                                                 <td className="p-4">
-                                                    {monthNames[fee.month - 1]} {fee.year}
+                                                    <div>
+                                                        <span className="font-medium text-gray-200">
+                                                            {new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - {new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
+                                                        </span>
+                                                    </div>
                                                 </td>
                                                 <td className="p-4 text-right font-bold">₹{fee.amount}</td>
                                                 <td className="p-4">

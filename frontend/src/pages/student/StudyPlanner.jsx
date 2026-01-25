@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext'; // Import useAuth
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -8,6 +9,7 @@ import Modal from '../../components/ui/Modal';
 import { IoArrowBack, IoAdd, IoCheckmark, IoTrash, IoCreateOutline } from 'react-icons/io5';
 
 const StudyPlanner = () => {
+    const { user } = useAuth(); // Get user status
     const [tasks, setTasks] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
@@ -55,6 +57,10 @@ const StudyPlanner = () => {
     };
 
     const toggleComplete = (id) => {
+        // Allow toggling completion even if inactive? Maybe not? 
+        // User said "not able to add". Usually read-only means NO changes.
+        if (!user?.isActive) return;
+
         const updatedTasks = tasks.map(t =>
             t.id === id ? { ...t, completed: !t.completed } : t
         );
@@ -104,6 +110,9 @@ const StudyPlanner = () => {
         return priorityOrder[a.priority] - priorityOrder[b.priority];
     });
 
+    const isPendingAllocation = user?.registrationSource === 'self' && !user.seat;
+    const canEdit = user?.isActive && !isPendingAllocation;
+
     return (
         <div className="min-h-screen p-6">
             <div className="max-w-6xl mx-auto">
@@ -113,14 +122,26 @@ const StudyPlanner = () => {
                             <IoArrowBack className="inline mr-2" /> Back to Dashboard
                         </Button>
                     </Link>
-                    <Button variant="primary" onClick={openAddModal}>
-                        <IoAdd className="inline mr-2" size={20} /> Add Task
-                    </Button>
+                    {canEdit && (
+                        <Button variant="primary" onClick={openAddModal}>
+                            <IoAdd className="inline mr-2" size={20} /> Add Task
+                        </Button>
+                    )}
                 </div>
 
                 <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-8">
                     Study Planner
                 </h1>
+
+                {!canEdit && (
+                    <div className="mb-8 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-center">
+                        <p className="text-yellow-400">
+                            {isPendingAllocation
+                                ? 'Study Planner is read-only until seat allocation.'
+                                : 'Study Planner is read-only for inactive members.'}
+                        </p>
+                    </div>
+                )}
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -159,9 +180,11 @@ const StudyPlanner = () => {
                     <Card>
                         <div className="text-center py-12">
                             <p className="text-gray-400 mb-4">No tasks yet. Add your first study task!</p>
-                            <Button variant="primary" onClick={openAddModal}>
-                                <IoAdd className="inline mr-2" /> Add Task
-                            </Button>
+                            {canEdit && (
+                                <Button variant="primary" onClick={openAddModal}>
+                                    <IoAdd className="inline mr-2" /> Add Task
+                                </Button>
+                            )}
                         </div>
                     </Card>
                 ) : (
@@ -178,9 +201,10 @@ const StudyPlanner = () => {
                                         <button
                                             onClick={() => toggleComplete(task.id)}
                                             className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${task.completed
-                                                    ? 'bg-green-500 border-green-500'
-                                                    : 'border-white/30 hover:border-white/50'
-                                                }`}
+                                                ? 'bg-green-500 border-green-500'
+                                                : 'border-white/30 hover:border-white/50'
+                                                } ${!canEdit ? 'cursor-not-allowed opacity-50' : ''}`}
+                                            disabled={!canEdit}
                                         >
                                             {task.completed && <IoCheckmark size={16} />}
                                         </button>
@@ -212,7 +236,7 @@ const StudyPlanner = () => {
                                                     )}
                                                 </div>
 
-                                                {!task.completed && (
+                                                {!task.completed && canEdit && (
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => openEditModal(task)}

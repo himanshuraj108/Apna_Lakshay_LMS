@@ -18,26 +18,24 @@ import {
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showIDCard, setShowIDCard] = useState(false); // ID Card State
+    const [showIDCard, setShowIDCard] = useState(false);
+    const [showFeeReminder, setShowFeeReminder] = useState(false);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchDashboardData();
-
-        // Refetch data when page becomes visible (e.g., after approving a request)
-        const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                fetchDashboardData();
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
+        // ... visibility change logic ...
     }, []);
+
+    // Show reminder when data is loaded
+    useEffect(() => {
+        if (dashboardData?.feeReminder?.show) {
+            setShowFeeReminder(true);
+        }
+    }, [dashboardData]);
+
+    // ... fetchDashboardData ... (omitted)
 
     const fetchDashboardData = async () => {
         try {
@@ -49,6 +47,52 @@ const StudentDashboard = () => {
             setLoading(false);
         }
     };
+    // ... existing ...
+
+    // Fee Reminder Component
+    const FeeReminderModal = () => (
+        <AnimatePresence>
+            {showFeeReminder && dashboardData?.feeReminder && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="bg-gray-900 border border-red-500/50 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-orange-500" />
+
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                                <IoNotificationsOutline className="text-red-500 text-3xl" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Attention Needed</h3>
+                            <p className="text-gray-300 text-sm leading-relaxed">
+                                {dashboardData.feeReminder.message}
+                            </p>
+                        </div>
+
+                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl mb-6 border border-white/10">
+                            <span className="text-gray-400 text-xs uppercase tracking-wider">Amount Due</span>
+                            <span className="text-2xl font-bold text-white">₹{dashboardData.feeReminder.amount}</span>
+                        </div>
+
+                        <Button
+                            className="w-full justify-center py-3 text-lg"
+                            onClick={() => setShowFeeReminder(false)}
+                        >
+                            I Understand
+                        </Button>
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>
+    );
+
+    // ... existing render ...
+
+    // Insert <FeeReminderModal /> inside return
+
 
     const handleLogout = () => {
         logout();
@@ -71,6 +115,8 @@ const StudentDashboard = () => {
         );
     }
 
+    const isActive = dashboardData ? dashboardData.isActive : user?.isActive;
+
     return (
         <div className="min-h-screen p-6 relative">
             <AnimatePresence>
@@ -78,21 +124,31 @@ const StudentDashboard = () => {
                     <IDCard
                         student={{
                             ...user,
+                            isActive: isActive, // Use fresh status
+                            registrationSource: dashboardData?.registrationSource,
                             seat: dashboardData?.seat,
                             shift: dashboardData?.seat?.shift,
-                            seatNumber: dashboardData?.seat?.number
+                            seatNumber: dashboardData?.seat?.number,
+                            shiftDetails: dashboardData?.seat?.shiftDetails // Pass shift time details
                         }}
                         onClose={() => setShowIDCard(false)}
                     />
                 )}
             </AnimatePresence>
 
+            <FeeReminderModal />
+
             <div className="max-w-6xl mx-auto">
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-3">
                             Welcome, {user?.name}!
+                            {!isActive && (
+                                <span className="text-sm bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-1 rounded-full font-medium">
+                                    Inactive
+                                </span>
+                            )}
                         </h1>
                         <p className="text-gray-400 mt-2">Your daily dashboard</p>
                     </div>

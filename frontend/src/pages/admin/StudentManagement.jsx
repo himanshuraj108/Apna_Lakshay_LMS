@@ -7,7 +7,7 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import Badge from '../../components/ui/Badge';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -28,7 +28,7 @@ const StudentManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [formData, setFormData] = useState({ name: '', email: '', mobile: '', systemMode: mode });
+    const [formData, setFormData] = useState({ name: '', email: '', mobile: '', address: '', systemMode: mode });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
         shift: 'full',
@@ -61,8 +61,22 @@ const StudentManagement = () => {
 
     const fetchStudents = async () => {
         try {
-            const response = await api.get(`/admin/students?mode=${mode}`);
+            const response = await api.get('/admin/students');
             setStudents(response.data.students);
+
+            // Debug: Log all students and their registration sources
+            console.log('=== STUDENT FETCH DEBUG ===');
+            console.log('Total students:', response.data.students.length);
+            response.data.students.forEach((s, i) => {
+                console.log(`Student ${i + 1}:`, {
+                    name: s.name,
+                    email: s.email,
+                    registrationSource: s.registrationSource,
+                    hasSeat: !!(s.seat?.number || s.seatNumber)
+                });
+            });
+            console.log('Self-registered count:', response.data.students.filter(s => s.registrationSource === 'self').length);
+            console.log('=========================');
         } catch (error) {
             console.error('Error fetching students:', error);
             setError('Failed to load students');
@@ -81,6 +95,7 @@ const StudentManagement = () => {
     };
 
 
+
     const fetchArchivedStudents = async () => {
         try {
             const response = await api.get('/admin/archives');
@@ -88,6 +103,18 @@ const StudentManagement = () => {
         } catch (error) {
             console.error('Error fetching archives:', error);
             setError('Failed to load archived students');
+        }
+    };
+
+    const handleReactivate = async (student) => {
+        if (window.confirm(`Are you sure you want to reactivate ${student.name}?`)) {
+            try {
+                await api.put(`/admin/students/${student._id}`, { isActive: true });
+                setSuccess('Student reactivated successfully');
+                fetchStudents();
+            } catch (err) {
+                setError('Failed to reactivate student');
+            }
         }
     };
 
@@ -188,7 +215,7 @@ const StudentManagement = () => {
     const openAddModal = () => {
         setEditMode(false);
         setSelectedStudent(null);
-        setFormData({ name: '', email: '', mobile: '' });
+        setFormData({ name: '', email: '', mobile: '', address: '' });
         setShowModal(true);
     };
 
@@ -219,7 +246,7 @@ const StudentManagement = () => {
     const openEditModal = (student) => {
         setEditMode(true);
         setSelectedStudent(student);
-        setFormData({ name: student.name, email: student.email, mobile: student.mobile || '' });
+        setFormData({ name: student.name, email: student.email, mobile: student.mobile || '', address: student.address || '' });
         setShowModal(true);
     };
 
@@ -350,6 +377,16 @@ const StudentManagement = () => {
                 return students.filter(student => student.isActive);
             case 'inactive':
                 return students.filter(student => !student.isActive);
+            case 'admin':
+                return students.filter(student => (student.registrationSource === 'admin' || !student.registrationSource) && student.isActive);
+            case 'self':
+                return students.filter(student => student.registrationSource === 'self' && student.isActive);
+            case 'pending':
+                return students.filter(student =>
+                    student.registrationSource === 'self' &&
+                    !getStudentSeat(student._id) &&
+                    student.isActive
+                );
             case 'all':
             default:
                 return students;
@@ -390,6 +427,24 @@ const StudentManagement = () => {
                         All Students ({students.length})
                     </button>
                     <button
+                        onClick={() => setActiveTab('admin')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'admin'
+                            ? 'bg-gradient-primary shadow-lg'
+                            : 'bg-white/10 hover:bg-white/20'
+                            }`}
+                    >
+                        Admin Registered ({students.filter(s => ((s.registrationSource === 'admin' || !s.registrationSource) && s.isActive)).length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('self')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'self'
+                            ? 'bg-gradient-primary shadow-lg'
+                            : 'bg-white/10 hover:bg-white/20'
+                            }`}
+                    >
+                        Self Registered ({students.filter(s => (s.registrationSource === 'self' && s.isActive)).length})
+                    </button>
+                    <button
                         onClick={() => setActiveTab('active')}
                         className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'active'
                             ? 'bg-gradient-primary shadow-lg'
@@ -397,6 +452,15 @@ const StudentManagement = () => {
                             }`}
                     >
                         Active ({students.filter(s => s.isActive).length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('pending')}
+                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'pending'
+                            ? 'bg-gradient-primary shadow-lg'
+                            : 'bg-white/10 hover:bg-white/20'
+                            }`}
+                    >
+                        Pending Allocation ({students.filter(s => (s.registrationSource === 'self' && !getStudentSeat(s._id) && s.isActive)).length})
                     </button>
                     <button
                         onClick={() => setActiveTab('inactive')}
@@ -454,20 +518,21 @@ const StudentManagement = () => {
                 ) : (
                     <>
                         {activeTab === 'id-cards' ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] gap-8">
                                 {students.filter(s => s.isActive).length === 0 ? (
                                     <div className="col-span-full text-center p-12 bg-white/5 rounded-xl border border-white/10">
                                         <p className="text-gray-400 text-lg">No active students found to generate ID cards.</p>
                                     </div>
                                 ) : (
                                     students.filter(s => s.isActive).map(student => (
-                                        <StudentIdCard
-                                            key={student._id}
-                                            student={{
-                                                ...student,
-                                                seatNumber: getStudentSeat(student._id)
-                                            }}
-                                        />
+                                        <div key={student._id} className="flex justify-center p-4">
+                                            <StudentIdCard
+                                                student={{
+                                                    ...student,
+                                                    seatNumber: getStudentSeat(student._id)
+                                                }}
+                                            />
+                                        </div>
                                     ))
                                 )}
                             </div>
@@ -546,9 +611,20 @@ const StudentManagement = () => {
                                                         <td className="p-4">{student.name}</td>
                                                         <td className="p-4">{student.email}</td>
                                                         <td className="p-4">
-                                                            <Badge variant={student.isActive ? 'green' : 'red'}>
-                                                                {student.isActive ? 'Active' : 'Inactive'}
-                                                            </Badge>
+                                                            {student.registrationSource === 'self' && !getStudentSeat(student._id) ? (
+                                                                <Badge variant="yellow">Pending Allocation</Badge>
+                                                            ) : (
+                                                                student.shift || 'N/A'
+                                                            )}
+                                                        </td>
+                                                        <td className="p-4">
+                                                            {student.registrationSource === 'self' && !getStudentSeat(student._id) ? (
+                                                                <Badge variant="yellow">Pending Allocation</Badge>
+                                                            ) : (
+                                                                <Badge variant={student.isActive ? 'green' : 'red'}>
+                                                                    {student.isActive ? 'Active' : 'Inactive'}
+                                                                </Badge>
+                                                            )}
                                                         </td>
                                                         <td className="p-4">
                                                             {new Date(student.createdAt).toLocaleDateString()}
@@ -586,7 +662,13 @@ const StudentManagement = () => {
                                                                     </button>
                                                                 </>
                                                             ) : (
-                                                                <span className="text-gray-500 text-xs mr-2">Inactive</span>
+                                                                <button
+                                                                    onClick={() => handleReactivate(student)}
+                                                                    className="text-green-400 hover:text-green-300 transition-colors mr-2"
+                                                                    title="Reactivate Student"
+                                                                >
+                                                                    <IoRefresh size={20} />
+                                                                </button>
                                                             )}
                                                             <button
                                                                 onClick={() => openDeleteModal(student)}
@@ -684,11 +766,23 @@ const StudentManagement = () => {
                             <input
                                 type="tel"
                                 value={formData.mobile}
-                                onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    if (val.length <= 10) setFormData({ ...formData, mobile: val });
+                                }}
                                 className="input"
                                 placeholder="Enter 10-digit mobile number"
                                 pattern="[0-9]{10}"
                                 required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Address</label>
+                            <textarea
+                                value={formData.address}
+                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                className="input min-h-[80px]"
+                                placeholder="Enter student address"
                             />
                         </div>
                         <div className="flex gap-4">
@@ -821,11 +915,15 @@ const StudentManagement = () => {
                                     <span className="text-gray-400">Email:</span>
                                     <span className="font-medium">{selectedStudent?.email}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Status:</span>
-                                    <Badge variant={selectedStudent?.isActive ? 'green' : 'red'}>
-                                        {selectedStudent?.isActive ? 'Active' : 'Inactive'}
-                                    </Badge>
+                                <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <span className="text-gray-400">Status</span>
+                                    {selectedStudent?.registrationSource === 'self' && !selectedStudent?.seat ? (
+                                        <span className="text-yellow-400 font-medium">Pending Allocation</span>
+                                    ) : (
+                                        <span className={selectedStudent?.isActive ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
+                                            {selectedStudent?.isActive ? 'Active' : 'Inactive'}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Joined:</span>
@@ -983,7 +1081,7 @@ const StudentManagement = () => {
                             <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg">
                                 {selectedArchive.profileImage ? (
                                     <img
-                                        src={`http://localhost:5000${selectedArchive.profileImage}`}
+                                        src={`${BASE_URL}${selectedArchive.profileImage}`}
                                         alt={selectedArchive.name}
                                         className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
                                     />
@@ -1060,7 +1158,7 @@ const StudentManagement = () => {
                     )}
                 </Modal>
             </div>
-        </div>
+        </div >
     );
 };
 
