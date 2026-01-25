@@ -1,7 +1,7 @@
 {
     "name": "hamara-lakshay-backend",
     "version": "1.0.0",
-    "description": "Backend for Hamara Lakshay Library Management System",
+    "description": "Backend for Apna Lakshay Library Management System",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",

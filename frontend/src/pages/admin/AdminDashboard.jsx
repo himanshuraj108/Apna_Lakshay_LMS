@@ -108,7 +108,7 @@ const AdminDashboard = () => {
                         <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                             Admin Dashboard
                         </h1>
-                        <p className="text-gray-400 mt-2">Hamara Lakshay Management System</p>
+                        <p className="text-gray-400 mt-2">Apna Lakshay Management System</p>
                     </div>
                     <div className="flex gap-4">
                         <Button
