@@ -26,7 +26,8 @@ const seedData = async () => {
             name: 'Admin',
             email: adminEmail,
             password: adminPassword,
-            role: 'admin'
+            role: 'admin',
+            mobile: '0000000000'
         });
         console.log(`👤 Admin created (email: ${adminEmail})`);
 

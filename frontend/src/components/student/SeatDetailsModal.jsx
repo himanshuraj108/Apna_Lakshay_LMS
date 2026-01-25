@@ -31,7 +31,7 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full"
+                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
@@ -73,7 +73,7 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                                 <IoTimeOutline size={20} className="text-blue-400" />
                                 <h3 className="font-semibold text-gray-300">Shift Availability</h3>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                 {shifts.map(shift => {
                                     const isOccupied = seat.isFullyBlocked || (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
 

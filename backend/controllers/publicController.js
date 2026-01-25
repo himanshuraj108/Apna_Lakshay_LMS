@@ -27,7 +27,11 @@ exports.getSeats = async (req, res) => {
             .populate({
                 path: 'rooms',
                 populate: {
-                    path: 'seats'
+                    path: 'seats',
+                    populate: {
+                        path: 'assignments.shift',
+                        model: 'Shift'
+                    }
                 }
             })
             .sort({ level: 1 });
@@ -47,22 +51,40 @@ exports.getSeats = async (req, res) => {
                     const activeAssignments = seat.assignments?.filter(a => a.status === 'active') || [];
 
                     // Determine occupancy and active shift
-                    // 1. Full Day Check
-                    const fullDay = activeAssignments.find(a => a.type === 'full_day' || a.legacyShift === 'full');
+                    // 1. Check for legacy 'Full Day' or explicit type
+                    let fullDayObj = activeAssignments.find(a => a.type === 'full_day' || a.legacyShift === 'full');
+
+                    // 2. Check for Dynamic 'Full Shift' (Shift Object with name containing 'Full' or 'Full Day')
+                    if (!fullDayObj) {
+                        const dynamicFullShift = activeAssignments.find(a => {
+                            if (a.shift && a.shift.name) {
+                                return a.shift.name.toLowerCase().includes('full');
+                            }
+                            return false;
+                        });
+                        if (dynamicFullShift) {
+                            fullDayObj = dynamicFullShift;
+                        }
+                    }
 
                     // Determine occupancy status
                     let occupancyStatus = 'vacant'; // vacant, partial, occupied
                     let displayShift = null;
 
-                    if (fullDay) {
+                    if (fullDayObj) {
                         occupancyStatus = 'occupied';
-                        displayShift = 'Full Day';
+                        // Display correct shift name
+                        if (fullDayObj.shift && fullDayObj.shift.name) {
+                            displayShift = fullDayObj.shift.name;
+                        } else {
+                            displayShift = 'Full Day';
+                        }
                     } else if (activeAssignments.length > 0) {
                         occupancyStatus = 'partial';
                         // Show first active shift as primary display, but frontend should show all
                         const active = activeAssignments[0];
                         if (active.shift) {
-                            displayShift = active.shift;
+                            displayShift = active.shift.name || active.shift;
                         } else if (active.legacyShift) {
                             displayShift = active.legacyShift;
                         }
@@ -74,8 +96,8 @@ exports.getSeats = async (req, res) => {
                         // Legacy field for backward compatibility (true if ANY occupancy)
                         isOccupied: occupancyStatus !== 'vacant',
                         status: occupancyStatus, // New field for partial support
-                        isFullyBlocked: !!fullDay,
-                        activeShifts: activeAssignments.map(a => a.shift || a.legacyShift),
+                        isFullyBlocked: !!fullDayObj,
+                        activeShifts: activeAssignments.map(a => (a.shift && a.shift._id) ? a.shift._id : a.legacyShift),
                         shift: displayShift,
                         position: seat.position,
                         basePrices: seat.basePrices,

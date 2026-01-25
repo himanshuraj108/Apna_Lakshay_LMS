@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../utils/api';
+import api, { BASE_URL } from '../../utils/api';
 import { IoArrowBack, IoPerson, IoCamera, IoTrash, IoSend, IoLockClosed } from 'react-icons/io5';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import useShifts from '../../hooks/useShifts';
