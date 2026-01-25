@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward } from 'react-icons/io5';
+import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose } from 'react-icons/io5';
 import Button from '../components/ui/Button';
 
 const Login = () => {
@@ -12,6 +12,40 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+
+    // PWA Install State
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstallBanner(true);
+        };
+
+        const handleAppInstalled = () => {
+            setShowInstallBanner(false);
+            setDeferredPrompt(null);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.addEventListener('appinstalled', handleAppInstalled);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
+        };
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        setDeferredPrompt(null);
+        setShowInstallBanner(false);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,7 +68,7 @@ const Login = () => {
         <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
 
             {/* View Seats Floating Button - Prominent Call to Action */}
-            <Link to="/" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
+            <Link to="/public-seats" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
                 <motion.button
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{
@@ -81,7 +115,7 @@ const Login = () => {
 
                     {/* Mobile View Seats Button - Inline */}
                     <div className="lg:hidden mb-8 flex justify-center">
-                        <Link to="/" className="w-full">
+                        <Link to="/public-seats" className="w-full">
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -191,6 +225,75 @@ const Login = () => {
                     </div>
                 </div>
             </motion.div>
+
+            {/* PWA Install Banner - Blue Card Design */}
+            <AnimatePresence>
+                {showInstallBanner && (
+                    <motion.div
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="fixed bottom-0 sm:bottom-6 left-0 sm:left-auto sm:right-6 w-full sm:w-[400px] z-[60] p-4 sm:p-0 flex items-end justify-center sm:block"
+                    >
+                        <div className="bg-[#4f46e5] rounded-3xl p-6 shadow-2xl relative overflow-hidden w-full max-w-sm mx-auto">
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setShowInstallBanner(false)}
+                                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+                            >
+                                <IoClose size={20} />
+                            </button>
+
+                            {/* Header Section */}
+                            <div className="flex gap-4 mb-6">
+                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
+                                    <IoGridOutline className="text-[#4f46e5] text-3xl" />
+                                </div>
+                                <div className="pt-1">
+                                    <h3 className="text-xl font-bold text-white leading-tight mb-1">Install Hamara Lakshya</h3>
+                                    <p className="text-indigo-100 text-xs leading-relaxed">
+                                        Get the full app experience with offline access and faster loading.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Features Grid */}
+                            <div className="grid grid-cols-3 gap-2 mb-6">
+                                <div className="bg-white/10 rounded-xl p-3 flex flex-col items-center gap-2 text-center">
+                                    <IoArrowForward className="text-white -rotate-45" />
+                                    <span className="text-[10px] font-medium text-white uppercase tracking-wider">Fast</span>
+                                </div>
+                                <div className="bg-white/10 rounded-xl p-3 flex flex-col items-center gap-2 text-center">
+                                    <IoDownload className="text-white" />
+                                    <span className="text-[10px] font-medium text-white uppercase tracking-wider">Offline</span>
+                                </div>
+                                <div className="bg-white/10 rounded-xl p-3 flex flex-col items-center gap-2 text-center">
+                                    <IoGridOutline className="text-white" />
+                                    <span className="text-[10px] font-medium text-white uppercase tracking-wider">Native</span>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={handleInstallClick}
+                                    className="flex-1 bg-white text-[#4f46e5] py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
+                                >
+                                    <IoDownload className="text-lg" />
+                                    Install App
+                                </button>
+                                <button
+                                    onClick={() => setShowInstallBanner(false)}
+                                    className="px-4 py-3.5 text-white font-semibold hover:bg-white/10 rounded-xl transition-colors"
+                                >
+                                    Later
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

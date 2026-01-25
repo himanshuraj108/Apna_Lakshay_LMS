@@ -47,7 +47,8 @@ function App() {
     return (
         <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<PublicSeatView />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/public-seats" element={<PublicSeatView />} />
             <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/student'} /> : <Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/register" element={<Register />} />
