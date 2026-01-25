@@ -44,9 +44,14 @@ const connectDB = async () => {
     console.log('✅ MongoDB connected successfully');
   } catch (err) {
     console.error('❌ MongoDB connection error:', err);
-    process.exit(1);
+    // process.exit(1); // REMOVED: Do not exit in serverless environment
   }
 };
+
+// Root Route for Health Check
+app.get('/', (req, res) => {
+  res.send('API is running...');
+});
 
 // Connect to DB immediately if not in production (local dev)
 // In production (Vercel), connections are handled differently if using cold starts,
