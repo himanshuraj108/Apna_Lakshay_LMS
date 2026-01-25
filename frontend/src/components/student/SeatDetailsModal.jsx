@@ -49,8 +49,11 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
 
                     {/* Status Badge */}
                     <div className="mb-6 flex justify-center">
-                        <Badge variant={seat.isOccupied ? 'red' : 'green'} className="text-lg px-6 py-2">
-                            {seat.isOccupied ? '🔴 Occupied' : '🟢 Available'}
+                        <Badge
+                            variant={seat.status === 'occupied' ? 'red' : seat.status === 'partial' ? 'yellow' : 'green'}
+                            className="text-lg px-6 py-2"
+                        >
+                            {seat.status === 'occupied' ? '🔴 Fully Occupied' : seat.status === 'partial' ? '🟠 Partially Occupied' : '🟢 Available'}
                         </Badge>
                     </div>
 

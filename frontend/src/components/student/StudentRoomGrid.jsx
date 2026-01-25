@@ -67,8 +67,14 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
                     <p className="text-sm font-medium text-gray-400">{room.name} ({totalSeats} Seats)</p>
                 </div>
 
+                {/* Click Instruction Banner - Highlighted */}
+                <div className="absolute top-24 left-1/2 transform -translate-x-1/2 bg-blue-500/20 border border-blue-500/40 px-4 py-2 rounded-lg z-20 flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-blue-400 font-semibold text-lg">💡</span>
+                    <p className="text-sm font-semibold text-blue-300">Click any seat to view full details & pricing</p>
+                </div>
+
                 {/* Fitted Box Room Container */}
-                <div className="relative w-full max-w-3xl mx-auto mt-12" style={{ aspectRatio: '3/2' }}>
+                <div className="relative w-full max-w-3xl mx-auto mt-28" style={{ aspectRatio: '3/2' }}>
                     {/* North Wall */}
                     <div className="absolute top-0 left-0 right-0 h-[80px]">
                         {doorPosition === 'north' ? (
@@ -197,22 +203,22 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
                 </div>
 
                 {/* Legend */}
-                <div className="mt-6 flex gap-4 justify-center text-xs">
+                <div className="mt-6 flex gap-4 justify-center text-xs flex-wrap">
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-green-500/30 border-2 border-green-500 rounded"></div>
                         <span className="text-gray-400">Available</span>
                     </div>
                     <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-orange-500/30 border-2 border-orange-500 rounded"></div>
+                        <span className="text-gray-400">Partially Occupied</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-red-500/30 border-2 border-red-500 rounded"></div>
-                        <span className="text-gray-400">Occupied</span>
+                        <span className="text-gray-400">Fully Occupied</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-yellow-500 font-semibold">DOOR</span>
                         <span className="text-gray-400">Entry/Exit</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-blue-400 font-semibold">💡</span>
-                        <span className="text-gray-400">Click seat for details</span>
                     </div>
                 </div>
             </div>
