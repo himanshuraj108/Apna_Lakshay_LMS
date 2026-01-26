@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff } from 'react-icons/io5';
 import Button from '../components/ui/Button';
+import useMobileViewport from '../hooks/useMobileViewport';
 
 const Login = () => {
+    useMobileViewport();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);

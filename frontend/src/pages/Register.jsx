@@ -5,8 +5,10 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import api from '../utils/api';
 import { IoArrowBack, IoPersonAdd } from 'react-icons/io5';
+import useMobileViewport from '../hooks/useMobileViewport';
 
 const Register = () => {
+    useMobileViewport();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
