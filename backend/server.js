@@ -1,26 +1,49 @@
+const safeRequire = (modulePath) => {
+  try {
+    console.log(`[DEBUG] Loading: ${modulePath}`);
+    return require(modulePath);
+  } catch (e) {
+    console.error(`[CRITICAL] FAILED to load: ${modulePath}`);
+    console.error(e);
+    throw e;
+  }
+};
+
 require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-const hpp = require('hpp');
-const path = require('path');
+const express = safeRequire('express');
+const mongoose = safeRequire('mongoose');
+const cors = safeRequire('cors');
+const helmet = safeRequire('helmet');
+const rateLimit = safeRequire('express-rate-limit');
+const mongoSanitize = safeRequire('express-mongo-sanitize');
+const xss = safeRequire('xss-clean');
+const hpp = safeRequire('hpp');
+const path = safeRequire('path');
 
 // Import routes
-const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const studentRoutes = require('./routes/studentRoutes');
-const publicRoutes = require('./routes/publicRoutes');
-const settingsRoutes = require('./routes/settingsRoutes');
-const chatRoutes = require('./routes/chatRoutes');
+const authRoutes = safeRequire('./routes/authRoutes');
+const adminRoutes = safeRequire('./routes/adminRoutes');
+const studentRoutes = safeRequire('./routes/studentRoutes');
+const publicRoutes = safeRequire('./routes/publicRoutes');
+const settingsRoutes = safeRequire('./routes/settingsRoutes');
+const chatRoutes = safeRequire('./routes/chatRoutes');
+const studyPlannerRoutes = safeRequire('./routes/studyPlannerRoutes');
 
 // Import error handler
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = safeRequire('./middleware/errorHandler');
 
 const app = express();
+
+// Global Exception Handlers
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.error(err.name, err.message, err.stack);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥');
+  console.error(err);
+});
 
 // Middleware
 const allowedOrigins = [
@@ -76,7 +99,7 @@ app.use('/api/student', studentRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/chat', chatRoutes);
-app.use('/api/study', require('./routes/studyPlannerRoutes'));
+app.use('/api/study', studyPlannerRoutes);
 
 // Error handler
 app.use(errorHandler);
@@ -84,12 +107,19 @@ app.use(errorHandler);
 // MongoDB Connection
 const connectDB = async () => {
   try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is undefined in .env');
+    }
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ MongoDB connected successfully');
 
     // Initialize public chat room
-    const { initializePublicRoom } = require('./controllers/chatInitializer');
-    await initializePublicRoom();
+    try {
+      const { initializePublicRoom } = require('./controllers/chatInitializer');
+      await initializePublicRoom();
+    } catch (chatError) {
+      console.error('Chat Init Warning:', chatError.message);
+    }
   } catch (err) {
     console.error('❌ MongoDB connection error:', err);
     // process.exit(1); // REMOVED: Do not exit in serverless environment
