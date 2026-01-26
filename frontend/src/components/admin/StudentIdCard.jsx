@@ -14,17 +14,16 @@ const StudentIdCard = ({ student }) => {
 
     // Check if student is self-registered without seat
     // Treat undefined/null registrationSource as 'admin' (existing students)
+    // Check if student has no seat assigned
+    // Treat undefined/null registrationSource as 'admin' (existing students)
+    // Treat undefined/null registrationSource as 'admin' (existing students)
     const registrationSource = student.registrationSource || 'admin';
-    const isPending = registrationSource === 'self' && !student.seat?.number && !student.seatNumber;
 
-    // Debug log
-    console.log('Student ID Card:', {
-        name: student.name,
-        registrationSource_raw: student.registrationSource,
-        registrationSource_normalized: registrationSource,
-        hasSeat: !!(student.seat?.number || student.seatNumber),
-        isPending
-    });
+    // Strict Active Check: Must have a verified Seat AND a Shift assigned.
+    // getStudents populates 'shift' field if a valid active assignment exists.
+    const isPending = !student.seat?.number && !student.seatNumber || !student.shift;
+
+
 
     // Helper to get formatted shift name
     const getFormattedShift = () => {
@@ -120,8 +119,8 @@ const StudentIdCard = ({ student }) => {
                         <div className="text-left">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Joined Date</p>
                             <p className="font-medium text-gray-700 text-xs">
-                                {student.seatAssignedAt || (student.seat?.assignedAt)
-                                    ? new Date(student.seatAssignedAt || student.seat?.assignedAt).toLocaleDateString('en-GB', {
+                                {student.seatAssignedAt || student.seat?.assignedAt || student.createdAt
+                                    ? new Date(student.seatAssignedAt || student.seat?.assignedAt || student.createdAt).toLocaleDateString('en-GB', {
                                         day: '2-digit', month: 'short', year: '2-digit'
                                     })
                                     : 'N/A'

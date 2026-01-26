@@ -32,6 +32,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Handle Simulated System Crash
+        if (error.response?.status === 500 && error.response?.data?.maintenanceMode) {
+            window.location.href = '/server-crash';
+            return Promise.reject(error);
+        }
+
         // Only redirect to login if 401 comes from a non-public endpoint
         if (error.response?.status === 401 && !error.config.url.includes('public')) {
             localStorage.removeItem('token');

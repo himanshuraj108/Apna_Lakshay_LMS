@@ -1,18 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { QRCodeCanvas } from 'qrcode.react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api, { BASE_URL } from '../../utils/api';
-import { IoArrowBack, IoPerson, IoCamera, IoTrash, IoSend, IoLockClosed } from 'react-icons/io5';
+import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoSunny, IoMoon, IoDesktopOutline } from 'react-icons/io5';
+import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import useShifts from '../../hooks/useShifts';
+import { useTheme } from '../../context/ThemeContext';
 
 const Profile = () => {
-    const { user, updateUser } = useAuth();
+    const { user, updateUser, logout } = useAuth();
+    const navigate = useNavigate();
+    const { theme, toggleTheme, setTheme } = useTheme();
+    // ... existing hooks ...
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -43,6 +49,18 @@ const Profile = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Validation - max 4MB, images only
+        if (file.size > 4 * 1024 * 1024) {
+            setError('File size must be less than 4MB');
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            setError('Only image files are allowed');
+            setTimeout(() => setError(''), 3000);
+            return;
+        }
+
         const formData = new FormData();
         formData.append('profileImage', file);
 
@@ -67,6 +85,11 @@ const Profile = () => {
             setError('Failed to delete image');
             setTimeout(() => setError(''), 3000);
         }
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
     };
 
     const submitRequest = async () => {
@@ -109,14 +132,52 @@ const Profile = () => {
         );
     }
 
+    // Scroll down to return JSX
     return (
         <div className="min-h-screen p-6">
             <div className="max-w-4xl mx-auto">
-                <Link to="/student">
-                    <Button variant="secondary" className="mb-6">
-                        <IoArrowBack className="inline mr-2" /> Back to Dashboard
-                    </Button>
-                </Link>
+                <div className="flex justify-between items-center mb-6">
+                    <Link to="/student">
+                        <Button variant="secondary">
+                            <IoArrowBack className="inline mr-2" /> Back
+                        </Button>
+                    </Link>
+                    <div className="flex gap-4 items-center">
+                        {/* Theme Toggle - Segmented Control */}
+                        <div className="flex items-center gap-1 bg-gray-200 dark:bg-gray-800 p-1 rounded-full border border-gray-300 dark:border-gray-700">
+                            <button
+                                onClick={() => setTheme('system')}
+                                className={`p-2 rounded-full transition-all ${theme === 'system'
+                                    ? 'bg-blue-600 text-white shadow-lg'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="System Theme"
+                            >
+                                <IoDesktopOutline size={18} />
+                            </button>
+                            <button
+                                onClick={() => setTheme('light')}
+                                className={`p-2 rounded-full transition-all ${theme === 'light'
+                                    ? 'bg-yellow-500 text-white shadow-lg'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Light Mode"
+                            >
+                                <IoSunny size={18} />
+                            </button>
+                            <button
+                                onClick={() => setTheme('dark')}
+                                className={`p-2 rounded-full transition-all ${theme === 'dark'
+                                    ? 'bg-purple-600 text-white shadow-lg'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Dark Mode"
+                            >
+                                <IoMoon size={18} />
+                            </button>
+                        </div>
+                        <Button variant="danger" onClick={handleLogout}>
+                            <IoLogOut className="inline mr-2" /> Logout
+                        </Button>
+                    </div>
+                </div>
 
                 <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-8">
                     My Profile
@@ -142,94 +203,154 @@ const Profile = () => {
                     </motion.div>
                 )}
 
-                {/* Profile Card */}
-                <Card className="mb-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                        {/* Profile Image */}
-                        <div className="flex flex-col items-center">
-                            <div className="w-32 h-32 rounded-full bg-gradient-primary flex items-center justify-center mb-4 overflow-hidden">
-                                {profile?.profileImage ? (
-                                    <img
-                                        src={profile.profileImage.startsWith('http') ? profile.profileImage : `${BASE_URL}${profile.profileImage}`}
-                                        alt={profile.name}
-                                        className="w-full h-full object-cover"
-                                        crossOrigin="anonymous"
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    {/* Digital ID Card */}
+                    <div className="md:col-span-1">
+                        {profile?.isActive && profile?.seat ? (
+                            /* QR Code ID Card - Active & Seated */
+                            <div className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden group shadow-lg dark:shadow-none">
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                <h3 className="text-gray-500 dark:text-gray-400 text-sm font-bold mb-4 flex items-center gap-2 relative z-10">
+                                    <IoQrCode className="text-blue-500 dark:text-blue-400" /> DIGITAL ID
+                                </h3>
+
+                                <div className="bg-white p-2 rounded-xl shadow-2xl relative z-10">
+                                    <QRCodeSVG
+                                        value={JSON.stringify({
+                                            token: user.qrToken,
+                                            id: user.id
+                                        })}
+                                        size={160}
+                                        level="H"
+                                        includeMargin={false}
                                     />
-                                ) : (
-                                    <IoPerson size={64} />
-                                )}
-                            </div>
-                            <input
-                                type="file"
-                                id="image-upload"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                            />
-                            <label
-                                htmlFor="image-upload"
-                                className="cursor-pointer mb-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex items-center font-semibold text-sm"
-                            >
-                                <IoCamera className="mr-2" /> Upload Photo
-                            </label>
-                            {profile?.profileImage && (
-                                <Button variant="danger" onClick={handleImageDelete} className="text-sm">
-                                    <IoTrash className="inline mr-2" /> Remove
-                                </Button>
-                            )}
-                        </div>
+                                </div>
 
-                        {/* Profile Info */}
-                        <div className="flex-1">
-                            <h2 className="text-3xl font-bold mb-2">{profile?.name}</h2>
-                            <p className="text-gray-400 mb-6">{profile?.email}</p>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className={`rounded-lg p-4 border ${profile.registrationSource === 'self' && !profile.seat
-                                    ? 'bg-yellow-500/20 border-yellow-500/30'
-                                    : profile?.isActive
-                                        ? 'bg-green-500/20 border-green-500/30'
-                                        : 'bg-red-500/20 border-red-500/30'
-                                    }`}>
-                                    <p className={`text-sm mb-1 ${profile.registrationSource === 'self' && !profile.seat
-                                        ? 'text-yellow-300'
-                                        : profile?.isActive
-                                            ? 'text-green-300'
-                                            : 'text-red-300'
-                                        }`}>Status</p>
-                                    <p className={`text-lg font-bold ${profile.registrationSource === 'self' && !profile.seat
-                                        ? 'text-yellow-400'
-                                        : profile?.isActive
-                                            ? 'text-green-400'
-                                            : 'text-red-400'
-                                        }`}>
-                                        {profile.registrationSource === 'self' && !profile.seat
-                                            ? '⚠ Pending Allocation'
-                                            : profile?.isActive
-                                                ? '✓ Active'
-                                                : '✗ Inactive'
-                                        }
+                                <div className="mt-4 relative z-10">
+                                    <p className="text-gray-900 dark:text-white font-bold text-lg tracking-wide">{user.name}</p>
+                                    <p className="text-blue-600 dark:text-blue-400 text-sm mt-1 font-mono">
+                                        {user.qrToken ? 'Secure Token Active' : 'Legacy ID Mode'}
                                     </p>
                                 </div>
-                                <div className="bg-white/5 rounded-lg p-4">
-                                    <p className="text-sm text-gray-400 mb-1">Member Since</p>
-                                    <p className="text-lg font-semibold">
-                                        {profile?.seatAssignedAt
-                                            ? new Date(profile.seatAssignedAt).toLocaleDateString('en-IN')
-                                            : 'N/A'
-                                        }
-                                    </p>
-                                </div>
+
+                                <p className="text-xs text-gray-500 mt-4 relative z-10">
+                                    Scan for Entry/Exit by Admin
+                                </p>
                             </div>
-                        </div>
+                        ) : (
+                            /* Locked State - Inactive or Pending */
+                            <div className="bg-white dark:bg-white/5 border border-red-200 dark:border-red-500/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center h-full relative overflow-hidden shadow-sm dark:shadow-none">
+                                <div className="absolute inset-0 bg-red-500/5" />
+                                <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 relative z-10">
+                                    <IoLockClosed size={32} className="text-gray-400 dark:text-gray-500" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-300 relative z-10">ID Unavailable</h3>
+                                <p className="text-gray-600 dark:text-gray-500 text-sm mt-2 relative z-10">
+                                    {!profile?.isActive ? 'Membership Inactive' : 'Pending Seat Allocation'}
+                                </p>
+                            </div>
+                        )}
                     </div>
-                </Card>
+
+                    {/* Profile Card */}
+                    <div className="md:col-span-2">
+                        <Card className="h-full">
+                            <div className="flex flex-col md:flex-row gap-6">
+                                {/* Profile Image */}
+                                <div className="flex flex-col items-center">
+                                    <div className="w-32 h-32 rounded-full bg-gradient-primary flex items-center justify-center mb-4 overflow-hidden border-4 border-white dark:border-white/10 shadow-lg">
+                                        {profile?.profileImage ? (
+                                            <img
+                                                src={profile.profileImage.startsWith('http') ? profile.profileImage : `${BASE_URL}${profile.profileImage}`}
+                                                alt={profile.name}
+                                                className="w-full h-full object-cover"
+                                                crossOrigin="anonymous"
+                                            />
+                                        ) : (
+                                            <IoPerson size={64} className="text-white/80" />
+                                        )}
+                                    </div>
+                                    <input
+                                        type="file"
+                                        id="image-upload"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        className="hidden"
+                                    />
+                                    <label
+                                        htmlFor="image-upload"
+                                        className="cursor-pointer mb-2 px-4 py-2 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 text-gray-800 dark:text-white rounded-lg transition-colors flex items-center font-semibold text-sm"
+                                    >
+                                        <IoCamera className="mr-2" /> Upload Photo
+                                    </label>
+                                    {profile?.profileImage && (
+                                        <Button variant="danger" onClick={handleImageDelete} className="text-sm">
+                                            <IoTrash className="inline mr-2" /> Remove
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {/* Profile Info */}
+                                <div className="flex-1">
+                                    <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">{profile?.name}</h2>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-6 flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"></span>
+                                        {profile?.email}
+                                    </p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className={`rounded-lg p-4 border ${!profile?.isActive
+                                            ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30'
+                                            : !profile?.seat
+                                                ? 'bg-yellow-50 dark:bg-yellow-500/10 border-yellow-200 dark:border-yellow-500/30'
+                                                : 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'
+                                            }`}>
+                                            <p className={`text-sm mb-1 ${!profile?.isActive
+                                                ? 'text-red-600 dark:text-red-300'
+                                                : !profile?.seat
+                                                    ? 'text-yellow-600 dark:text-yellow-300'
+                                                    : 'text-green-600 dark:text-green-300'
+                                                }`}>Membership Status</p>
+                                            <p className={`text-lg font-bold ${!profile?.isActive
+                                                ? 'text-red-700 dark:text-red-400'
+                                                : !profile?.seat
+                                                    ? 'text-yellow-700 dark:text-yellow-400'
+                                                    : 'text-green-700 dark:text-green-400'
+                                                }`}>
+                                                {!profile?.isActive
+                                                    ? 'Inactive'
+                                                    : !profile?.seat
+                                                        ? 'Pending Allocation'
+                                                        : 'Active Member'
+                                                }
+                                            </p>
+                                        </div>
+                                        <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-4 border border-gray-200 dark:border-white/5">
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Member Since</p>
+                                            <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                                                {profile?.seatAssignedAt
+                                                    ? new Date(profile.seatAssignedAt).toLocaleDateString('en-IN', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
+                                                    })
+                                                    : 'Not assigned yet'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
 
                 {/* Change Requests - Only for Active Students */}
                 <Card>
                     <h3 className="text-2xl font-bold mb-6">Request Changes</h3>
 
-                    {profile?.isActive && !(profile.registrationSource === 'self' && !profile.seat) ? (
+                    {profile?.isActive && profile?.seat ? (
                         <>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <Button
@@ -269,7 +390,7 @@ const Profile = () => {
                 </Card>
 
                 {/* Security Settings */}
-                <Card>
+                <Card className="mt-6">
                     <h3 className="text-2xl font-bold mb-6">Security Settings</h3>
                     <Button
                         variant="danger"

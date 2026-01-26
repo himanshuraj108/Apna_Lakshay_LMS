@@ -5,7 +5,8 @@ const Fee = require('../models/Fee');
 const Notification = require('../models/Notification');
 const Request = require('../models/Request');
 const multer = require('multer');
-const { storage } = require('../config/cloudinary'); // Import Cloudinary storage
+const { storage } = require('../config/cloudinary');
+const SystemSetting = require('../models/SystemSetting');
 
 // @desc    Get student dashboard data
 // @route   GET /api/student/dashboard
@@ -142,6 +143,24 @@ exports.getDashboard = async (req, res) => {
             isRead: false
         });
 
+        // Get active requests count
+        const activeRequestsCount = await Request.countDocuments({
+            student: studentId,
+            status: { $in: ['pending', 'approved', 'rejected'] } // Show status for all non-archived? Or just active? User said "case count > 0", usually implies pending + recently closed?
+            // Actually, "View Status" implies seeing history. If count > 0 (even past), they might want to see history.
+            // But user said "when case count > 0". Usually means "active" cases. 
+            // Let's assume "pending" requests are the vital ones. 
+            // The user said "view status always show ... when case count > 0".
+            // If I have 0 pending but 10 approved, should I see "View Status"? Probably yes, to see history.
+            // Let's count *all* requests for now, or maybe just "pending"?
+            // "Retrieve own ticket" implies pending ones.
+            // Let's count ALL requests so they can access history if they have ever made a request.
+        });
+
+        // Re-reading: "view status always show ... when case count > 0"
+        // If I withdraw a ticket, case count might go down?
+        // Let's stick to ALL requests for "history" access.
+
         res.status(200).json({
             success: true,
             data: {
@@ -161,7 +180,8 @@ exports.getDashboard = async (req, res) => {
                     paidDate: currentFee.paidDate
                 } : null,
                 feeReminder, // Add reminder data
-                unreadNotifications: unreadCount
+                unreadNotifications: unreadCount,
+                requestsCount: activeRequestsCount
             }
         });
     } catch (error) {
@@ -448,9 +468,18 @@ exports.submitRequest = async (req, res) => {
                 name: user.name,
                 email: user.email
             };
+        } else if (type === 'support') {
+            // Support Ticket Logic
+            currentData = {}; // No current data needed
+            // requestedData contains { category, message } passed from frontend
         }
+        // requestedData contains { category, message } passed from frontend
+
+        // Generate 6-digit Ticket ID
+        const ticketId = Math.floor(100000 + Math.random() * 900000).toString();
 
         const request = await Request.create({
+            ticketId,
             student: req.user.id,
             type,
             currentData,
@@ -461,6 +490,68 @@ exports.submitRequest = async (req, res) => {
         res.status(201).json({
             success: true,
             message: 'Request submitted successfully',
+            request
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get my requests
+// @route   GET /api/student/request
+exports.getMyRequests = async (req, res) => {
+    try {
+        const requests = await Request.find({ student: req.user.id })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            requests
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Withdraw/Close a request
+// @route   PUT /api/student/request/:id/withdraw
+exports.withdrawRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const request = await Request.findOne({
+            _id: id,
+            student: req.user.id
+        });
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Request not found'
+            });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot withdraw a request that is already processed'
+            });
+        }
+
+        request.status = 'withdrawn';
+        await request.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Request withdrawn successfully',
             request
         });
     } catch (error) {
@@ -700,7 +791,10 @@ exports.requestSeatChange = async (req, res) => {
         }
 
         // Create seat change request
+        const ticketId = Math.floor(100000 + Math.random() * 900000).toString();
+
         const request = await Request.create({
+            ticketId,
             student: studentId,
             type: 'seat_change',
             currentData: {
@@ -753,6 +847,164 @@ exports.requestSeatChange = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// @desc    Mark Attendance via Kiosk QR Scan
+// @route   POST /api/student/attendance/qr-scan
+exports.markAttendanceByQr = async (req, res) => {
+    try {
+        const { qrToken } = req.body;
+
+        if (!qrToken) {
+            return res.status(400).json({ success: false, message: 'Invalid QR Code' });
+        }
+
+        // Verify Token
+        const setting = await SystemSetting.findOne({ key: 'attendance_qr_token' });
+        if (!setting || setting.value !== qrToken) {
+            return res.status(400).json({ success: false, message: 'Invalid or Expired QR Code' });
+        }
+
+        const studentId = req.user.id;
+
+        // Check if student has an active seat assignment
+        // (Optional: depending on rules, inactive students might not be allowed?)
+        // Let's assume only active students
+        const user = await User.findById(studentId);
+        if (!user.isActive) {
+            return res.status(403).json({ success: false, message: 'Your account is inactive.' });
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Find existing attendance for today
+        let attendance = await Attendance.findOne({
+            student: studentId,
+            date: today
+        });
+
+        let message = '';
+        let type = '';
+
+        if (!attendance || attendance.status === 'absent' || attendance.status === 'on_leave' || !attendance.entryTime) {
+            // MARK ENTRY
+            const now = new Date();
+            const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            if (attendance) {
+                // Update existing record (overwrite absent/corrupt)
+                attendance.status = 'present';
+                attendance.entryTime = entryTime;
+                attendance.exitTime = null; // Reset exit
+                attendance.duration = 0;
+                attendance.notes = `Marked via Kiosk QR (was ${attendance.status})`;
+                await attendance.save();
+
+                message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
+            } else {
+                // Create new
+                // Updated to check Shift Timing
+                const seat = await Seat.findOne({
+                    'assignments.student': studentId,
+                    'assignments.status': 'active'
+                }).populate('assignments.shift');
+
+                let shiftLabel = 'N/A';
+
+                if (seat) {
+                    const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+                    if (assignment) {
+                        shiftLabel = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'Assigned');
+
+                        // Check Shift Timing
+                        if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
+                            const now = new Date();
+                            const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
+                            const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
+
+                            // Allowed Start: 30 mins before shift
+                            const allowedStart = new Date();
+                            allowedStart.setHours(sH, sM - 30, 0, 0);
+
+                            // Allowed End: Exact shift end
+                            const allowedEnd = new Date();
+                            allowedEnd.setHours(eH, eM, 0, 0);
+
+                            // Handle overnight shifts (e.g. 22:00 to 06:00)
+                            if (allowedEnd < allowedStart) {
+                                // If now is past midnight (morning), shift back allowedStart to yesterday
+                                // If now is before midnight (night), shift forward allowedEnd to tomorrow
+                                // Simple check:
+                                if (now.getHours() < 12) {
+                                    allowedStart.setDate(allowedStart.getDate() - 1);
+                                } else {
+                                    allowedEnd.setDate(allowedEnd.getDate() + 1);
+                                }
+                            }
+
+                            if (now < allowedStart || now > allowedEnd) {
+                                return res.status(403).json({
+                                    success: false,
+                                    message: `Entry allowed only 30 mins before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
+                                });
+                            }
+                        }
+                    }
+                }
+
+                attendance = await Attendance.create({
+                    student: studentId,
+                    date: today,
+                    status: 'present',
+                    entryTime: entryTime,
+                    // shift not in schema but note handles it
+                    notes: `Marked via Kiosk QR (${shiftLabel})`,
+                    markedBy: studentId
+                });
+                message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
+            }
+            type = 'entry';
+        } else {
+            // MARK EXIT
+            if (attendance.exitTime) {
+                return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
+            }
+
+            // Calculate duration
+            const entryParts = attendance.entryTime.split(':');
+            const entryDate = new Date();
+            entryDate.setHours(parseInt(entryParts[0]), parseInt(entryParts[1]), 0);
+
+            const exitDate = new Date();
+            const diffMs = exitDate - entryDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 1) {
+                // Prevent accidental double scan (1 min cooldown)
+                return res.status(400).json({ success: false, message: 'Already checked in just now! Wait 1 min.' });
+            }
+
+            const now = new Date();
+            attendance.exitTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            attendance.duration = diffMins;
+            await attendance.save();
+
+            message = `Goodbye, ${user.name}! Exit marked. Duration: ${Math.floor(diffMins / 60)}h ${diffMins % 60}m`;
+            type = 'exit';
+        }
+
+        res.status(200).json({
+            success: true,
+            message,
+            type,
+            attendance
+        });
+
+    } catch (error) {
+        console.error('QR Scan Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 

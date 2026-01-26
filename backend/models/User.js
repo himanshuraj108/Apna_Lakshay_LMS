@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         trim: true
     },
+    studentId: {
+        type: String,
+        unique: true,
+        trim: true,
+        sparse: true // Allows null/undefined values to exist without uniqueness errors
+    },
     mobile: {
         type: String,
         required: [true, 'Mobile number is required'],
@@ -43,14 +49,9 @@ const userSchema = new mongoose.Schema({
         enum: ['admin', 'student'],
         default: 'student'
     },
-    guardianPhone: {
-        type: String,
-        trim: true
-    },
-    registrationSource: {
-        type: String,
-        enum: ['admin', 'self'],
-        default: 'admin'
+    isChatBlocked: {
+        type: Boolean,
+        default: false
     },
     profileImage: {
         type: String,
@@ -63,17 +64,35 @@ const userSchema = new mongoose.Schema({
     },
     isActive: {
         type: Boolean,
-        default: true
+        default: false
+    },
+    isDisabled: {
+        type: Boolean,
+        default: false
     },
     systemMode: {
         type: String,
         enum: ['custom', 'default'],
         default: 'custom' // Always use custom mode
     },
+    registrationSource: {
+        type: String,
+        enum: ['self', 'admin'],
+        default: 'admin'
+    },
     seat: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seat',
         default: null
+    },
+    qrToken: {
+        type: String,
+        default: () => require('crypto').randomBytes(16).toString('hex'),
+        select: false // Keep secret by default
+    },
+    isChatBlocked: {
+        type: Boolean,
+        default: false
     },
     // For Forgot Password
     resetPasswordOTP: {

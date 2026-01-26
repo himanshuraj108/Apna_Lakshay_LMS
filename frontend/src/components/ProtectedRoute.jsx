@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, requireSeat = false }) => {
     const { user, loading, isAdmin } = useAuth();
 
     if (loading) {
@@ -18,6 +18,18 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
     if (adminOnly && !isAdmin) {
         return <Navigate to="/" replace />;
+    }
+
+    if (requireSeat && user.role !== 'admin') {
+        const hasSeat = user.seat || user.seatNumber;
+        if (user.isActive && !hasSeat) {
+            return <Navigate to="/pending-allocation" replace />;
+        }
+        // Also block inactive users if seat is required (redundant if backend blocks, but good for UI)
+        if (!user.isActive) {
+            // Maybe redirect to profile or show toast?
+            // For now, let's focus on Pending Allocation as requested.
+        }
     }
 
     return children;

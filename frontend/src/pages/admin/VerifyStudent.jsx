@@ -72,7 +72,7 @@ const VerifyStudent = () => {
     }
 
     // Determine valid status
-    const isPending = student?.registrationSource === 'self' && !student?.seat;
+    const isPending = !student?.seat;
     const isInactive = !student?.isActive;
 
     const getStatusTheme = () => {

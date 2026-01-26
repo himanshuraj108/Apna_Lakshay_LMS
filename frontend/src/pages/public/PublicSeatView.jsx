@@ -51,7 +51,7 @@ const PublicSeatView = () => {
     }
 
     return (
-        <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto bg-[#0f172a]">
+        <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto bg-[#0f172a] dark">
 
 
 

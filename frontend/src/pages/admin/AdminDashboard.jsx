@@ -9,11 +9,12 @@ import api from '../../utils/api';
 import {
     IoSchool, IoCalendarOutline, IoCashOutline, IoBedOutline, IoDocumentTextOutline,
     IoNotificationsOutline, IoLogOut, IoSettings, IoScanOutline, IoTimeOutline, IoKey,
-    IoPersonOutline
+    IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline, IoSunny, IoMoon, IoDesktopOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
 import { IoPower } from 'react-icons/io5';
+import { useTheme } from '../../context/ThemeContext';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
@@ -96,8 +97,15 @@ const AdminDashboard = () => {
         { title: 'Student Requests', path: '/admin/requests', icon: IoSettings, color: 'from-indigo-500 to-blue-500' },
         { title: 'Shift Management', path: '/admin/shifts', icon: IoTimeOutline, color: 'from-cyan-500 to-blue-500' },
         { title: 'Action History', path: '/admin/history', icon: IoPersonOutline, color: 'from-gray-500 to-slate-500' },
-        { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey, color: 'from-red-500 to-orange-500' }
+        { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey, color: 'from-red-500 to-orange-500' },
+        { title: 'Analytics & Reports', path: '/admin/analytics', icon: IoBarChartOutline, color: 'from-blue-500 to-cyan-500' },
+        { title: 'Discussion Management', path: '/admin/chat', icon: IoChatbubblesOutline, color: 'from-violet-500 to-fuchsia-500' },
+        { title: 'Kiosk Mode', path: '/admin/kiosk', icon: IoScanOutline, color: 'from-purple-500 to-pink-500' }
     ];
+
+    const { theme, toggleTheme, setTheme } = useTheme();
+
+    // ... (rest of code) ...
 
     return (
         <div className="min-h-screen p-6 pb-24">
@@ -108,9 +116,40 @@ const AdminDashboard = () => {
                         <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                             Admin Dashboard
                         </h1>
-                        <p className="text-gray-400 mt-2">Apna Lakshay Management System</p>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">Apna Lakshay Management System</p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 items-center">
+                        {/* Theme Toggle - Segmented Control */}
+                        <div className="flex items-center gap-1 bg-gray-200 dark:bg-gray-800 p-1 rounded-full border border-gray-300 dark:border-gray-700">
+                            <button
+                                onClick={() => setTheme('system')}
+                                className={`p-2 rounded-full transition-all ${theme === 'system'
+                                    ? 'bg-blue-600 text-white shadow-lg'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="System Theme"
+                            >
+                                <IoDesktopOutline size={18} />
+                            </button>
+                            <button
+                                onClick={() => setTheme('light')}
+                                className={`p-2 rounded-full transition-all ${theme === 'light'
+                                    ? 'bg-yellow-500 text-white shadow-lg'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Light Mode"
+                            >
+                                <IoSunny size={18} />
+                            </button>
+                            <button
+                                onClick={() => setTheme('dark')}
+                                className={`p-2 rounded-full transition-all ${theme === 'dark'
+                                    ? 'bg-purple-600 text-white shadow-lg'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                                title="Dark Mode"
+                            >
+                                <IoMoon size={18} />
+                            </button>
+                        </div>
+
                         <Button
                             variant="primary"
                             onClick={() => setShowScanner(true)}
@@ -135,15 +174,15 @@ const AdminDashboard = () => {
                 <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-300">
 
                     {/* Status Toggle Header */}
-                    <div className="bg-[#1e1e1e] border border-white/10 rounded-xl p-6 flex justify-between items-center">
+                    <div className="bg-white dark:bg-[#1e1e1e] border border-gray-200 dark:border-white/10 rounded-xl p-6 flex justify-between items-center shadow-sm dark:shadow-none">
                         <div>
-                            <h2 className="text-2xl font-bold text-green-400 mb-1">Custom Shift System</h2>
-                            <p className="text-gray-400">
-                                Manage dynamic shifts and system configuration.
+                            <h2 className="text-2xl font-bold text-green-400 mb-1">Server Maintenance Mode</h2>
+                            <p className="text-gray-600 dark:text-gray-400">
+                                Enable to test system crash scenarios. Students will see maintenance page when enabled.
                             </p>
                         </div>
-                        <div className="flex items-center gap-3 bg-black/20 p-2 rounded-full border border-white/5">
-                            <span className="text-sm font-bold text-gray-400 px-2">STATUS:</span>
+                        <div className="flex items-center gap-3 bg-gray-100 dark:bg-black/20 p-2 rounded-full border border-gray-200 dark:border-white/5">
+                            <span className="text-sm font-bold text-gray-500 dark:text-gray-400 px-2">STATUS:</span>
                             <button
                                 className={`px-4 py-1.5 rounded-full font-bold text-sm shadow-lg transition-all ${settings?.activeModes?.custom
                                     ? 'bg-green-500 text-white shadow-green-500/30 hover:bg-green-600'
@@ -164,7 +203,7 @@ const AdminDashboard = () => {
                             <Card delay={0}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Total Students</p>
+                                        <p className="text-gray-600 dark:text-gray-400 text-sm">Total Students</p>
                                         <p className="text-3xl font-bold mt-2">{stats?.totalStudents || 0}</p>
                                     </div>
                                     <div className="bg-gradient-to-br from-blue-500 to-purple-500 p-4 rounded-xl">
@@ -176,7 +215,7 @@ const AdminDashboard = () => {
                             <Card delay={0.1}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Occupied Seats</p>
+                                        <p className="text-gray-600 dark:text-gray-400 text-sm">Occupied Seats</p>
                                         <p className="text-3xl font-bold mt-2">{stats?.occupiedSeats || 0} / {stats?.totalSeats || 0}</p>
                                     </div>
                                     <div className="bg-gradient-to-br from-green-500 to-teal-500 p-4 rounded-xl">
@@ -188,7 +227,7 @@ const AdminDashboard = () => {
                             <Card delay={0.2}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Fees Collected</p>
+                                        <p className="text-gray-600 dark:text-gray-400 text-sm">Fees Collected</p>
                                         <p className="text-3xl font-bold mt-2">₹{stats?.feesCollected || 0}</p>
                                     </div>
                                     <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-4 rounded-xl">
@@ -200,7 +239,7 @@ const AdminDashboard = () => {
                             <Card delay={0.3}>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm">Pending Requests</p>
+                                        <p className="text-gray-600 dark:text-gray-400 text-sm">Pending Requests</p>
                                         <p className="text-3xl font-bold mt-2">{stats?.pendingRequests || 0}</p>
                                     </div>
                                     <div className="bg-gradient-to-br from-pink-500 to-rose-500 p-4 rounded-xl">
@@ -223,10 +262,10 @@ const AdminDashboard = () => {
                                     whileHover={{ scale: 1.05, y: -5 }}
                                     className="glass rounded-xl p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 border border-green-500/20 bg-green-900/10"
                                 >
-                                    <div className={`bg-gradient-to-br ${item.color} p-4 rounded-xl w-fit mb-4`}>
+                                    <div className={`bg-gradient-to-br ${item.color} p-4 rounded-xl w-fit mb-4 text-white`}>
                                         <item.icon size={32} />
                                     </div>
-                                    <h3 className="text-xl font-semibold text-gray-200">{item.title}</h3>
+                                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">{item.title}</h3>
                                 </motion.div>
                             </Link>
                         ))}
