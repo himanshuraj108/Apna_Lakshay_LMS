@@ -14,6 +14,7 @@ const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
 const { randomUUID } = require('crypto');
+const emailService = require('../services/emailService');
 
 // ... (existing imports)
 
@@ -292,25 +293,7 @@ exports.deleteShift = async (req, res) => {
 };
 // ==========================================
 
-// Email service for notifications (with safe loading)
-let emailService;
-try {
-    emailService = require('../services/emailService');
-    console.log('✅ Email service loaded successfully');
-} catch (error) {
-    console.error('⚠️ Email service failed to load:', error.message);
-    // Fallback: Create a mock emailService to prevent crashes
-    emailService = {
-        sendCredentialsEmail: async () => console.log('Email service not available'),
-        sendSeatAssignmentEmail: async () => console.log('Email service not available'),
-        sendRequestResponseEmail: async () => console.log('Email service not available'),
-        sendFeeConfirmationEmail: async () => console.log('Email service not available'),
-        sendAnnouncementEmail: async () => console.log('Email service not available'),
-        sendSeatChangeRequestEmail: async () => console.log('Email service not available'),
-        sendSeatChangeApprovedEmail: async () => console.log('Email service not available'),
-        sendSeatChangeRejectedEmail: async () => console.log('Email service not available')
-    };
-}
+// Email service import moved to top-level
 
 // Helper functions moved to bottom for clean hoisting
 
