@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const requestSchema = new mongoose.Schema({
+    ticketId: {
+        type: String,
+        unique: true
+    },
     student: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -8,12 +12,13 @@ const requestSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['seat', 'shift', 'profile', 'seat_change'],
+        enum: ['seat', 'shift', 'profile', 'seat_change', 'support'],
         required: true
     },
     currentData: {
         type: mongoose.Schema.Types.Mixed,
-        required: true
+        required: false,
+        default: {}
     },
     requestedData: {
         type: mongoose.Schema.Types.Mixed,
@@ -21,7 +26,7 @@ const requestSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['pending', 'approved', 'rejected', 'withdrawn'],
         default: 'pending'
     },
     adminResponse: {

@@ -6,7 +6,7 @@ import Badge from '../../components/ui/Badge';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Link } from 'react-router-dom';
 import Button from '../../components/ui/Button';
-import { FaHistory, FaSearch, FaFilter, FaCalendarAlt, FaUser, FaInfoCircle } from 'react-icons/fa';
+import { FaHistory, FaSearch, FaFilter, FaCalendarAlt, FaUser, FaInfoCircle, FaTrash, FaEraser } from 'react-icons/fa';
 import { IoArrowBack } from 'react-icons/io5';
 
 const ActionHistory = () => {
@@ -42,6 +42,36 @@ const ActionHistory = () => {
             setLoading(false);
         }
     };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to permanently delete this log entry?')) {
+            try {
+                const response = await api.delete(`/admin/action-history/${id}`);
+                if (response.data.success) {
+                    setLogs(prev => prev.filter(log => log._id !== id));
+                }
+            } catch (error) {
+                console.error('Error deleting log:', error);
+                alert('Failed to delete log entry');
+            }
+        }
+    };
+
+    const handleClearHistory = async () => {
+        if (window.confirm('WARNING: Are you sure you want to DELETE ALL action history logs? This cannot be undone.')) {
+            try {
+                const response = await api.delete('/admin/action-history/clear');
+                if (response.data.success) {
+                    setLogs([]);
+                    alert('All history cleared successfully');
+                }
+            } catch (error) {
+                console.error('Error clearing history:', error);
+                alert('Failed to clear history');
+            }
+        }
+    };
+
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -103,8 +133,18 @@ const ActionHistory = () => {
                         Action History
                     </h1>
                 </div>
-                <div className="text-gray-400 text-sm">
-                    Showing last 100 actions
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="danger"
+                        onClick={handleClearHistory}
+                        className="flex items-center gap-2 bg-red-600/80 hover:bg-red-600 text-sm py-2"
+                        disabled={loading || logs.length === 0}
+                    >
+                        <FaTrash size={16} /> Clear All History
+                    </Button>
+                    <div className="text-gray-400 text-sm">
+                        Showing last 100 actions
+                    </div>
                 </div>
             </div>
 
@@ -220,11 +260,21 @@ const ActionHistory = () => {
                                             )}
                                         </td>
                                         <td className="p-4 text-gray-400 text-sm">
-                                            <div className="flex items-start gap-2 max-w-xs">
-                                                <FaInfoCircle className="mt-1 flex-shrink-0 text-gray-500" />
-                                                <span className="truncate hover:whitespace-normal transition-all duration-300">
-                                                    {log.details}
-                                                </span>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-start gap-2 max-w-xs">
+                                                    <FaInfoCircle className="mt-1 flex-shrink-0 text-gray-500" />
+                                                    <span className="truncate hover:whitespace-normal transition-all duration-300">
+                                                        {log.details}
+                                                    </span>
+                                                </div>
+                                                <Button
+                                                    variant="danger"
+                                                    onClick={() => handleDelete(log._id)}
+                                                    className="!p-2 flex-shrink-0"
+                                                    title="Delete Log"
+                                                >
+                                                    <FaTrash size={14} />
+                                                </Button>
                                             </div>
                                         </td>
                                     </motion.tr>

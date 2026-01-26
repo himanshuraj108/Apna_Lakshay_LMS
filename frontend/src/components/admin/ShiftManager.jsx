@@ -1,19 +1,25 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import useShifts from '../../hooks/useShifts';
 import api from '../../utils/api';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Modal from '../ui/Modal';
-import { IoAdd, IoTrash, IoPencil, IoTimeOutline, IoAlertCircle } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoPencil, IoTimeOutline, IoAlertCircle, IoIdCard } from 'react-icons/io5';
 
 const ShiftManager = ({ allowDelete = true }) => {
+    const navigate = useNavigate();
     const { shifts, isCustom, loading, refreshShifts } = useShifts();
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({ name: '', startTime: '', endTime: '' });
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState('');
+
+    const handleViewStudents = (shiftId) => {
+        navigate(`/admin/students?tab=id-cards&shift=${shiftId}`);
+    };
 
     // Filter to only show REAL custom shifts (from DB) for management
     // useShifts might return default shifts if isCustom is false, but for the Manager, 
@@ -133,6 +139,14 @@ const ShiftManager = ({ allowDelete = true }) => {
                                 </div>
 
                                 <div className="flex gap-2">
+                                    <Button
+                                        variant="primary"
+                                        className="bg-purple-500/10 text-purple-400 hover:bg-purple-500 hover:text-white"
+                                        onClick={() => handleViewStudents(shift._id)}
+                                    >
+                                        <IoIdCard size={20} className="mr-2" />
+                                        View Students
+                                    </Button>
                                     {allowDelete && (
                                         <>
                                             <Button

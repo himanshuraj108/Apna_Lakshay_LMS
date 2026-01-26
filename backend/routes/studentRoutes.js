@@ -8,16 +8,19 @@ const {
     getNotifications,
     markNotificationRead,
     submitRequest,
+    getMyRequests,
+    withdrawRequest,
     updateProfile,
     uploadProfileImage,
     deleteProfileImage,
     changePassword,
-    requestSeatChange
+    requestSeatChange,
+    markAttendanceByQr
 } = require('../controllers/studentController');
-const { protect } = require('../middleware/auth');
+const { protect, checkCrashMode, authorizeActive } = require('../middleware/auth');
 
-// All routes are protected (student only)
-router.use(protect);
+// All routes are protected and crash-checked
+router.use(protect, checkCrashMode);
 
 // Dashboard
 router.get('/dashboard', getDashboard);
@@ -26,7 +29,8 @@ router.get('/dashboard', getDashboard);
 router.get('/seat', getMySeat);
 
 // Attendance
-router.get('/attendance', getAttendance);
+router.get('/attendance', authorizeActive, getAttendance);
+router.post('/attendance/qr-scan', authorizeActive, markAttendanceByQr);
 
 // Fees
 router.get('/fees', getFees);
@@ -35,9 +39,11 @@ router.get('/fees', getFees);
 router.get('/notifications', getNotifications);
 router.put('/notifications/:id/read', markNotificationRead);
 
-// Requests
-router.post('/request', submitRequest);
-router.post('/request-seat-change', requestSeatChange);
+// Requests (Require Active Membership for new requests)
+router.post('/request', authorizeActive, submitRequest);
+router.get('/request', getMyRequests);
+router.put('/request/:id/withdraw', withdrawRequest);
+router.post('/request-seat-change', authorizeActive, requestSeatChange);
 
 // Profile
 router.put('/profile', updateProfile);

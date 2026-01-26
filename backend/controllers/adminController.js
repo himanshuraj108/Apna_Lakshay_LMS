@@ -1,4 +1,4 @@
-// Simplified adminController - just basic exports
+﻿// Simplified adminController - just basic exports
 const User = require('../models/User');
 const Floor = require('../models/Floor');
 const Room = require('../models/Room');
@@ -12,6 +12,8 @@ const PasswordLog = require('../models/PasswordLog');
 const ArchivedStudent = require('../models/ArchivedStudent');
 const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
+const SystemSetting = require('../models/SystemSetting');
+const { randomUUID } = require('crypto');
 
 // ... (existing imports)
 
@@ -21,6 +23,173 @@ const Settings = require('../models/Settings');
 
 // @desc    Get all shifts
 // @route   GET /api/admin/shifts
+// Get analytics data
+exports.getAnalytics = async (req, res) => {
+    try {
+        const { period = 'week' } = req.query; // week, month
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let startDate = new Date();
+        if (period === 'month') {
+            startDate.setDate(startDate.getDate() - 30);
+        } else {
+            startDate.setDate(startDate.getDate() - 7);
+        }
+        startDate.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date();
+        endOfDay.setHours(23, 59, 59, 999);
+
+        // 1. Current Occupancy (Exact date match for today's attendance document)
+        const activeCount = await Attendance.countDocuments({
+            date: today,
+            isActive: true
+        });
+
+        // 2. Daily Attendance Trends (Last X days)
+        const dailyTrendsPromise = Attendance.aggregate([
+            {
+                $match: {
+                    date: { $gte: startDate, $lte: endOfDay }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } },
+                    presentCount: { $sum: 1 },
+                    avgDuration: { $avg: "$duration" },
+                    totalDuration: { $sum: "$duration" }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        // 3. Peak Hours Analysis (Based on entry times)
+        // We only look at recent data (last 30 days) for relevant patterns
+        const peakMonthStart = new Date();
+        peakMonthStart.setDate(peakMonthStart.getDate() - 30);
+
+        const peakHoursPromise = Attendance.aggregate([
+            {
+                $match: {
+                    date: { $gte: peakMonthStart },
+                    entryTime: { $exists: true, $ne: null }
+                }
+            },
+            {
+                $project: {
+                    hour: { $substr: ["$entryTime", 0, 2] }
+                }
+            },
+            {
+                $group: {
+                    _id: "$hour",
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        // 4. Student Performance (Top 5 by duration)
+        const topStudentsPromise = Attendance.aggregate([
+            {
+                $match: {
+                    date: { $gte: startDate }
+                }
+            },
+            {
+                $group: {
+                    _id: "$student",
+                    totalDuration: { $sum: "$duration" },
+                    daysPresent: { $sum: 1 }
+                }
+            },
+            { $sort: { totalDuration: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "studentInfo"
+                }
+            },
+            { $unwind: "$studentInfo" },
+            {
+                $project: {
+                    name: "$studentInfo.name",
+                    email: "$studentInfo.email",
+                    totalDuration: 1,
+                    daysPresent: 1
+                }
+            }
+        ]);
+
+        const [dailyTrends, peakHours, topStudents] = await Promise.all([
+            dailyTrendsPromise,
+            peakHoursPromise,
+            topStudentsPromise
+        ]);
+
+        res.status(200).json({
+            success: true,
+            analytics: {
+                activeCount,
+                period,
+                dailyTrends,
+                peakHours,
+                topStudents
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Analytics error',
+            error: error.message
+        });
+    }
+};
+
+// Export attendance data
+exports.exportAttendance = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        console.log('TEST MODE Params:', { startDate, endDate });
+
+        if (!startDate || !endDate) {
+            return res.json({ success: true, data: [], message: "No dates provided (Test)" });
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({ success: false, message: 'Invalid Date (Test Mode)' });
+        }
+
+        // Return dummy data to prove route works
+        return res.json({
+            success: true,
+            data: [{
+                Date: start.toLocaleDateString(),
+                Student: 'Test User',
+                Status: 'present',
+                Notes: 'Database Bypassed for Debugging'
+            }]
+        });
+
+        /*
+        // ORIGINAL LOGIC COMMENTED OUT
+        // ... (Query logic is temporarily disabled)
+        */
+    } catch (error) {
+        console.error('Test Mode Error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.getShifts = async (req, res) => {
     try {
         const shifts = await Shift.find({ isActive: true }).sort({ startTime: 1 });
@@ -492,7 +661,7 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, systemMode = 'custom' } = req.body;
+        const { name, email, mobile, address, systemMode = 'custom', studentId } = req.body;
         const password = generatePassword();
 
         const student = await User.create({
@@ -503,6 +672,9 @@ exports.createStudent = async (req, res) => {
             password,
             systemMode,
             role: 'student',
+            isActive: true, // Admin created students are active by default
+            registrationSource: 'admin',
+            studentId: studentId || undefined, // Allow empty/null
             createdBy: req.user.id
         });
 
@@ -539,10 +711,33 @@ exports.createStudent = async (req, res) => {
 // Update student
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, isActive } = req.body;
+        const { name, email, mobile, address, isActive, studentId } = req.body;
+
+        const updateData = { name, email, mobile, address, isActive, studentId };
+
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+        // If reactivating (explicitly setting isActive to true), reset seat/shift
+        // We verify current state first to ensure we don't wipe active students' seats on profile edits
+        if (isActive === true) {
+            const currentStudent = await User.findById(req.params.id);
+            if (currentStudent && !currentStudent.isActive) {
+                // Was inactive, now activating -> RESET SEAT logic
+                updateData.seat = null;
+                updateData.seatAssignedAt = null;
+
+                // Note: We don't have a direct 'shift' field on User (it's in seat assignments), 
+                // but clearing the seat link effectively removes the shift association for the student.
+
+                // Optionally: Log this reset
+                console.log(`Resetting seat for reactivated student: ${currentStudent.name}`);
+            }
+        }
+
         const student = await User.findByIdAndUpdate(
             req.params.id,
-            { name, email, mobile, address, isActive },
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -1134,7 +1329,7 @@ exports.assignSeat = async (req, res) => {
 
         // 4. Create new assignment object
         const newAssignment = {
-            student: studentId,
+            student: student._id, // Explicitly use ObjectId from fetched student
             shift: shift, // Shift ID
             type: 'specific', // Assuming specific shift for now
             status: 'active',
@@ -1236,10 +1431,26 @@ exports.markAttendance = async (req, res) => {
         const attendanceDate = new Date(date);
         attendanceDate.setHours(0, 0, 0, 0);
 
-        const promises = attendanceData.map(async ({ studentId, status }) => {
+        const promises = attendanceData.map(async ({ studentId, status, entryTime, exitTime, notes }) => {
+            const updateData = {
+                status,
+                markedBy: req.user.id
+            };
+
+            if (status === 'absent' || status === 'on_leave') {
+                updateData.entryTime = null;
+                updateData.exitTime = null;
+                updateData.duration = 0;
+            }
+
+            // Add optional fields if provided
+            if (entryTime !== undefined) updateData.entryTime = entryTime;
+            if (exitTime !== undefined) updateData.exitTime = exitTime;
+            if (notes !== undefined) updateData.notes = notes;
+
             return await Attendance.findOneAndUpdate(
                 { student: studentId, date: attendanceDate },
-                { status, markedBy: req.user.id },
+                updateData,
                 { upsert: true, new: true }
             );
         });
@@ -1265,7 +1476,13 @@ exports.getAttendance = async (req, res) => {
         const date = new Date(req.params.date);
         date.setHours(0, 0, 0, 0);
 
-        const attendance = await Attendance.find({ date })
+        const nextDay = new Date(date);
+        nextDay.setDate(date.getDate() + 1);
+
+        // Use range query for robustness
+        const attendance = await Attendance.find({
+            date: { $gte: date, $lt: nextDay }
+        })
             .populate('student', 'name email')
             .populate('markedBy', 'name');
 
@@ -1280,6 +1497,200 @@ exports.getAttendance = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Quick check-in (mark entry with current time)
+exports.quickCheckIn = async (req, res) => {
+    try {
+        const { studentId } = req.body;
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const attendanceDate = new Date();
+        attendanceDate.setHours(0, 0, 0, 0);
+
+        const student = await User.findById(studentId);
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        if (!student.isActive) {
+            return res.status(403).json({ success: false, message: 'Access Denied: Inactive Membership' });
+        }
+
+        if (!student.seat) {
+            return res.status(403).json({ success: false, message: 'Access Denied: Pending seat allocation' });
+        }
+
+        const attendance = await Attendance.findOneAndUpdate(
+            { student: studentId, date: attendanceDate },
+            {
+                status: 'present',
+                entryTime: currentTime,
+                markedBy: req.user.id,
+                isActive: true
+            },
+            { upsert: true, new: true }
+        ).populate('student', 'name email');
+
+        res.status(200).json({
+            success: true,
+            message: `${attendance.student.name} checked in at ${currentTime}`,
+            attendance
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Check-in failed',
+            error: error.message
+        });
+    }
+};
+
+// Quick check-out (mark exit with current time)
+exports.quickCheckOut = async (req, res) => {
+    try {
+        const { studentId } = req.body;
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // Find the latest active session (handles overnight or today)
+        const attendance = await Attendance.findOne({
+            student: studentId,
+            isActive: true
+        }).sort({ createdAt: -1 }).populate('student', 'name email');
+
+        if (!attendance) {
+            return res.status(404).json({
+                success: false,
+                message: 'No active session found for this student'
+            });
+        }
+
+        // Update exit time
+        attendance.exitTime = currentTime;
+        await attendance.save(); // Triggers duration calculation
+
+        res.status(200).json({
+            success: true,
+            message: `${attendance.student.name} checked out at ${currentTime}`,
+            attendance
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Check-out failed',
+            error: error.message
+        });
+    }
+};
+
+// Get currently active students (checked in but not checked out)
+exports.getActiveStudents = async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const activeAttendance = await Attendance.find({
+            date: today,
+            isActive: true
+        })
+            .populate('student', 'name email seat')
+            .populate({
+                path: 'student',
+                populate: {
+                    path: 'seat',
+                    select: 'number'
+                }
+            })
+            .sort({ entryTime: 1 });
+
+        res.status(200).json({
+            success: true,
+            count: activeAttendance.length,
+            activeStudents: activeAttendance
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Bulk check-in
+exports.bulkCheckIn = async (req, res) => {
+    try {
+        const { studentIds } = req.body;
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const attendanceDate = new Date();
+        attendanceDate.setHours(0, 0, 0, 0);
+
+        const promises = studentIds.map(studentId =>
+            Attendance.findOneAndUpdate(
+                { student: studentId, date: attendanceDate },
+                {
+                    status: 'present',
+                    entryTime: currentTime,
+                    markedBy: req.user.id,
+                    isActive: true
+                },
+                { upsert: true, new: true }
+            )
+        );
+
+        await Promise.all(promises);
+
+        res.status(200).json({
+            success: true,
+            message: `${studentIds.length} students checked in at ${currentTime}`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Bulk check-in failed',
+            error: error.message
+        });
+    }
+};
+
+// Bulk check-out
+exports.bulkCheckOut = async (req, res) => {
+    try {
+        const { studentIds } = req.body;
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const attendanceDate = new Date();
+        attendanceDate.setHours(0, 0, 0, 0);
+
+        const promises = studentIds.map(studentId =>
+            Attendance.findOneAndUpdate(
+                { student: studentId, date: attendanceDate },
+                {
+                    exitTime: currentTime,
+                    isActive: false
+                },
+                { new: true }
+            )
+        );
+
+        await Promise.all(promises);
+
+        res.status(200).json({
+            success: true,
+            message: `${studentIds.length} students checked out at ${currentTime}`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Bulk check-out failed',
             error: error.message
         });
     }
@@ -2066,6 +2477,35 @@ exports.handleRequest = async (req, res) => {
     }
 };
 
+// @desc    Delete an action log
+// @route   DELETE /api/admin/action-history/:id
+exports.deleteActionLog = async (req, res) => {
+    try {
+        const log = await ActionLog.findById(req.params.id);
+
+        if (!log) {
+            return res.status(404).json({
+                success: false,
+                message: 'Log entry not found'
+            });
+        }
+
+        await ActionLog.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Log deleted successfully',
+            id: req.params.id
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
 
 // @desc    Get all archived students
 // @route   GET /api/admin/archives
@@ -2115,6 +2555,77 @@ exports.getArchivedStudent = async (req, res) => {
     }
 };
 
+// @desc    Permanently delete archived student
+// @route   DELETE /api/admin/archives/:id
+exports.deleteArchivedStudent = async (req, res) => {
+    try {
+        const archive = await ArchivedStudent.findById(req.params.id);
+
+        if (!archive) {
+            return res.status(404).json({
+                success: false,
+                message: 'Archived record not found'
+            });
+        }
+
+        await ArchivedStudent.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({
+            success: true,
+            message: 'Archived record deleted permanently',
+            id: req.params.id
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Clear all action history
+// @route   DELETE /api/admin/action-history/clear
+exports.clearActionHistory = async (req, res) => {
+    try {
+        await ActionLog.deleteMany({});
+
+        await logAction(req, 'clear_history', 'System', null, 'Action Logs', 'Cleared all action history logs');
+
+        res.status(200).json({
+            success: true,
+            message: 'All action history cleared successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Clear all archived students
+// @route   DELETE /api/admin/archives/clear
+exports.clearArchives = async (req, res) => {
+    try {
+        await ArchivedStudent.deleteMany({});
+
+        await logAction(req, 'clear_archives', 'System', null, 'Archives', 'Cleared all archived student records');
+
+        res.status(200).json({
+            success: true,
+            message: 'All archived records cleared successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
 // @desc    Get system settings
 // @route   GET /api/admin/settings
 exports.getSettings = async (req, res) => {
@@ -2150,7 +2661,7 @@ exports.getSettings = async (req, res) => {
 // @route   PUT /api/admin/settings
 exports.updateSettings = async (req, res) => {
     try {
-        const { libraryName, address, contactNumber, email, termsAndConditions, systemStatus } = req.body;
+        const { libraryName, address, contactNumber, email, termsAndConditions, systemStatus, activeModes } = req.body;
 
         let settings = await Settings.findOne();
 
@@ -2158,6 +2669,7 @@ exports.updateSettings = async (req, res) => {
             settings = new Settings({});
         }
 
+        if (activeModes) settings.activeModes = activeModes; // Update activeModes
         settings.libraryName = libraryName || settings.libraryName;
         settings.address = address || settings.address;
         settings.contactNumber = contactNumber || settings.contactNumber;
@@ -2228,5 +2740,205 @@ exports.fixSeatOccupancy = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// ==========================================
+// QR KIOSK MANAGEMENT
+// ==========================================
+
+// @desc    Generate/Reset QR Token
+// @route   POST /api/admin/qr/generate
+exports.generateQrToken = async (req, res) => {
+    try {
+        const token = randomUUID();
+
+        await SystemSetting.findOneAndUpdate(
+            { key: 'attendance_qr_token' },
+            { value: token },
+            { upsert: true, new: true }
+        );
+
+        await logAction(req, 'generate_qr', 'System', null, 'QR Token', 'Regenerated Kiosk QR Token');
+
+        res.status(200).json({ success: true, token });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Get Current QR Token
+// @route   GET /api/admin/qr/token
+exports.getQrToken = async (req, res) => {
+    try {
+        const setting = await SystemSetting.findOne({ key: 'attendance_qr_token' });
+
+        // If no token exists, generate one automatically
+        if (!setting) {
+            const token = randomUUID();
+            await SystemSetting.create({ key: 'attendance_qr_token', value: token });
+            return res.status(200).json({ success: true, token });
+        }
+
+        res.status(200).json({ success: true, token: setting.value });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Reset All Student QR Tokens (Invalidate old ID Cards)
+// @route   POST /api/admin/reset-student-qrs
+exports.resetAllQrTokens = async (req, res) => {
+    try {
+        const User = require('../models/User');
+        const crypto = require('crypto');
+
+        const users = await User.find({ role: 'student' });
+        let count = 0;
+
+        // Parallelize updates
+        for (const user of users) {
+            user.qrToken = crypto.randomBytes(16).toString('hex');
+            await user.save({ validateBeforeSave: false });
+            count++;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully reset QR Tokens for ${count} students. Old QRs are now invalid.`
+        });
+    } catch (error) {
+        console.error('Reset QR Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error resetting tokens',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Mark attendance via QR Kiosk (Admin/Device)
+// @route   POST /api/admin/attendance/mark
+exports.markAttendanceByQrAdmin = async (req, res) => {
+    try {
+        const { qrCode, kioskToken } = req.body; // qrCode is the Student ID (or encrypted string)
+
+        // 1. Validate Kiosk Token
+        const setting = await SystemSetting.findOne({ key: 'attendance_qr_token' });
+        if (!setting || setting.value !== kioskToken) {
+            return res.status(401).json({ success: false, message: 'Invalid Kiosk Token' });
+        }
+
+        // 2. Find Student
+        // Handle "HL-" prefix or raw ID
+        let studentId = qrCode;
+        if (studentId.toUpperCase().startsWith('HL-')) {
+            studentId = studentId.substring(3);
+        }
+
+        const student = await User.findById(studentId)
+            .populate('seat')
+            .populate({
+                path: 'seat',
+                populate: { path: 'room floor assignments.shift' }
+            });
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        // Prepare student details for UI (Avatar, Name, Seat, etc.)
+        let seatInfo = 'No Seat';
+        let shiftInfo = 'N/A';
+
+        if (student.seat && student.seat.assignments) {
+            const assignment = student.seat.assignments.find(a =>
+                a.student.toString() === student._id.toString() &&
+                a.status === 'active'
+            );
+
+            if (assignment) {
+                seatInfo = `${student.seat.number} (${student.seat.room?.name || 'Room'})`;
+                if (assignment.shift?.name) shiftInfo = assignment.shift.name;
+                else if (assignment.legacyShift) shiftInfo = assignment.legacyShift;
+                else if (assignment.type === 'full_day') shiftInfo = 'Full Day';
+            }
+        }
+
+        const studentData = {
+            _id: student._id,
+            name: student.name,
+            studentId: student.studentId || 'N/A',
+            profileImage: student.profileImage,
+            seat: seatInfo,
+            shift: shiftInfo,
+            isActive: student.isActive
+        };
+
+        // 3. Check Membership Status (Red Card)
+        if (!student.isActive) {
+            return res.status(403).json({
+                success: false,
+                message: 'Membership Expired',
+                student: studentData // Return data for Red Card
+            });
+        }
+
+        // 4. Mark Attendance (Toggle)
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        // Find existing active session for today
+        const existingSession = await Attendance.findOne({
+            student: student._id,
+            date: today,
+            isActive: true
+        });
+
+        let type = 'check-in';
+        let attendanceRecord;
+
+        if (existingSession) {
+            // Check Out
+            existingSession.exitTime = currentTime;
+            existingSession.isActive = false;
+            // Calculate duration (simple diff in minutes)
+            const [h1, m1] = existingSession.entryTime.split(':').map(Number);
+            const [h2, m2] = currentTime.split(':').map(Number);
+            const minutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+            existingSession.duration = minutes > 0 ? minutes : 0;
+
+            await existingSession.save();
+            type = 'check-out';
+            attendanceRecord = existingSession;
+        } else {
+            // Check In
+            // Check if already checked out today? Allow multiple entries? 
+            // For Kiosk mode, usually we allow re-entry.
+            attendanceRecord = await Attendance.create({
+                student: student._id,
+                date: today,
+                entryTime: currentTime,
+                status: 'present',
+                isActive: true,
+                markedBy: req.user ? req.user.id : undefined // Might be null if pure kiosk auth
+            });
+            type = 'check-in';
+        }
+
+        // 5. Success Response (Green Card)
+        res.status(200).json({
+            success: true,
+            type, // 'check-in' or 'check-out'
+            message: type === 'check-in' ? `Welcome, ${student.name}` : `Goodbye, ${student.name}`,
+            time: currentTime,
+            student: studentData
+        });
+
+    } catch (error) {
+        console.error('Kiosk Scan Error:', error);
+        res.status(500).json({ success: false, message: 'Scan failed', error: error.message });
     }
 };

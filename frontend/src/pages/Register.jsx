@@ -102,7 +102,7 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark">
             {/* Animated Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -inset-[10px] opacity-50">
@@ -131,7 +131,7 @@ const Register = () => {
                             <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
                                 Apna <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshay</span>
                             </h1>
-                            <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Library Management System</p>
+                            <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Apna Lakshay Library Management System</p>
 
                             <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-6"></div>
 

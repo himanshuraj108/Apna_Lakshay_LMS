@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose } from 'react-icons/io5';
+import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff } from 'react-icons/io5';
 import Button from '../components/ui/Button';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
@@ -65,7 +66,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+        <div className="min-h-screen relative flex items-center justify-center py-6 md:py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-gray-900 dark">
 
             {/* View Seats Floating Button - Prominent Call to Action */}
             <Link to="/public-seats" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
@@ -100,17 +101,17 @@ const Login = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
-                className="w-full max-w-md relative z-10 p-6"
+                className="w-full max-w-md relative z-10 p-0 md:p-6"
             >
-                <div className="relative bg-[#1e293b]/70 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                <div className="relative bg-[#1e293b]/70 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl">
                     {/* Brand Header Inside Card */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
+                    <div className="text-center mb-6 md:mb-8">
+                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
                             Apna <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshay</span>
                         </h1>
-                        <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Library Management System</p>
+                        <p className="text-gray-400 text-xs md:text-sm tracking-widest uppercase mb-4 md:mb-6">Apna Lakshay Library Management System</p>
 
-                        <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto"></div>
+                        <div className="h-px w-16 md:w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto"></div>
                     </div>
 
                     {/* Mobile View Seats Button - Inline */}
@@ -122,7 +123,7 @@ const Login = () => {
                                 className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 rounded-xl text-white shadow-lg border border-white/10 backdrop-blur-md group"
                             >
                                 <IoGridOutline size={20} className="animate-pulse" />
-                                <span className="font-bold text-base tracking-wide">VIEW AVAILABLE SEATS</span>
+                                <span className="font-bold text-sm md:text-base tracking-wide">VIEW AVAILABLE SEATS</span>
                                 <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
                             </motion.button>
                         </Link>
@@ -170,13 +171,20 @@ const Login = () => {
                                         <IoLockClosed className="text-gray-500 group-focus-within:text-blue-400 transition-colors" size={20} />
                                     </div>
                                     <input
-                                        type="password"
+                                        type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-3.5 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white placeholder-gray-600 outline-none"
+                                        className="w-full pl-11 pr-12 py-3.5 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white placeholder-gray-600 outline-none"
                                         placeholder="••••••••"
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-blue-400 transition-colors cursor-pointer focus:outline-none"
+                                    >
+                                        {showPassword ? <IoEyeOff size={20} /> : <IoEye size={20} />}
+                                    </button>
                                 </div>
                             </div>
                         </div>

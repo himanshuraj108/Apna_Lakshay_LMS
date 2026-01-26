@@ -19,6 +19,8 @@ const StudentManagement = () => {
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'custom';
+    const shiftFilter = searchParams.get('shift'); // Shift ID from URL
+    const tabParam = searchParams.get('tab'); // Tab from URL
 
     const [students, setStudents] = useState([]);
     const [floors, setFloors] = useState([]);
@@ -37,7 +39,7 @@ const StudentManagement = () => {
     const [deletePassword, setDeletePassword] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('all'); // 'all', 'active', 'inactive'
+    const [activeTab, setActiveTab] = useState(tabParam || 'all'); // Initialize from URL or default
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showIdCardModal, setShowIdCardModal] = useState(false);
@@ -64,19 +66,7 @@ const StudentManagement = () => {
             const response = await api.get('/admin/students');
             setStudents(response.data.students);
 
-            // Debug: Log all students and their registration sources
-            console.log('=== STUDENT FETCH DEBUG ===');
-            console.log('Total students:', response.data.students.length);
-            response.data.students.forEach((s, i) => {
-                console.log(`Student ${i + 1}:`, {
-                    name: s.name,
-                    email: s.email,
-                    registrationSource: s.registrationSource,
-                    hasSeat: !!(s.seat?.number || s.seatNumber)
-                });
-            });
-            console.log('Self-registered count:', response.data.students.filter(s => s.registrationSource === 'self').length);
-            console.log('=========================');
+
         } catch (error) {
             console.error('Error fetching students:', error);
             setError('Failed to load students');
@@ -115,6 +105,22 @@ const StudentManagement = () => {
             } catch (err) {
                 setError('Failed to reactivate student');
             }
+        }
+    };
+
+    const handleResetAllQrs = async () => {
+        if (!window.confirm('⚠️ CRITICAL WARNING ⚠️\n\nThis will INVALIDATE all existing Student QR Codes/Digital IDs immediately.\n\nStudents will need to refresh their profile to get new codes.\n\nAre you sure you want to RESET ALL QR TOKENS?')) {
+            return;
+        }
+        setLoading(true);
+        try {
+            const response = await api.post('/admin/reset-student-qrs');
+            setSuccess(response.data.message);
+            fetchStudents();
+        } catch (error) {
+            setError(error.response?.data?.message || 'Failed to reset QRs');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -325,6 +331,38 @@ const StudentManagement = () => {
         }
     };
 
+    const handleDeleteArchive = async (archiveId) => {
+        if (window.confirm('Are you sure you want to permanently delete this archived record? This cannot be undone.')) {
+            try {
+                const response = await api.delete(`/admin/archives/${archiveId}`);
+                if (response.data.success) {
+                    setArchivedStudents(prev => prev.filter(student => student._id !== archiveId));
+                    setSuccess('Archived record deleted permanently');
+                    setTimeout(() => setSuccess(''), 3000);
+                }
+            } catch (error) {
+                console.error('Error deleting archive:', error);
+                setError('Failed to delete archived record');
+            }
+        }
+    };
+
+    const handleClearArchives = async () => {
+        if (window.confirm('WARNING: Are you sure you want to PERMANENTLY DELETE ALL archived students? This action cannot be undone and all records will be lost.')) {
+            try {
+                const response = await api.delete('/admin/archives/clear');
+                if (response.data.success) {
+                    setArchivedStudents([]);
+                    setSuccess('All archives cleared successfully');
+                    setTimeout(() => setSuccess(''), 3000);
+                }
+            } catch (error) {
+                console.error('Error clearing archives:', error);
+                setError('Failed to clear archives');
+            }
+        }
+    };
+
     // Get all available seats from floors
     const getAvailableSeats = () => {
         const seats = [];
@@ -370,6 +408,42 @@ const StudentManagement = () => {
         return null;
     };
 
+    // Helper to check if student has a seat with the given shift
+    const hasShiftAssignment = (studentId, shiftId) => {
+        if (!floors || floors.length === 0) return false;
+
+        for (const floor of floors) {
+            if (!floor.rooms) continue;
+            for (const room of floor.rooms) {
+                if (!room.seats) continue;
+                for (const seat of room.seats) {
+                    if (!seat.assignments) continue;
+
+                    // Check active assignments
+                    const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+                    for (const assignment of activeAssignments) {
+                        // Check if this assignment belongs to our student
+                        const assignedStudentId = typeof assignment.student === 'object'
+                            ? assignment.student._id
+                            : assignment.student;
+
+                        if (assignedStudentId === studentId) {
+                            // Check if assignment has the matching shift
+                            const assignmentShiftId = typeof assignment.shift === 'object'
+                                ? assignment.shift._id
+                                : assignment.shift;
+
+                            if (assignmentShiftId === shiftId) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    };
+
     // Filter students based on active tab
     const getFilteredStudents = () => {
         switch (activeTab) {
@@ -383,7 +457,6 @@ const StudentManagement = () => {
                 return students.filter(student => student.registrationSource === 'self' && student.isActive);
             case 'pending':
                 return students.filter(student =>
-                    student.registrationSource === 'self' &&
                     !getStudentSeat(student._id) &&
                     student.isActive
                 );
@@ -406,9 +479,18 @@ const StudentManagement = () => {
                             </Button>
                         </Link>
                     </div>
-                    <Button variant="primary" onClick={openAddModal}>
-                        <IoAdd className="inline mr-2" size={20} /> Add Student
-                    </Button>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="danger"
+                            onClick={handleResetAllQrs}
+                            className="flex items-center gap-2 bg-red-600/80 hover:bg-red-600 text-sm"
+                        >
+                            <IoRefresh size={18} /> Reset All QRs
+                        </Button>
+                        <Button variant="primary" onClick={openAddModal}>
+                            <IoAdd className="inline mr-2" size={20} /> Add Student
+                        </Button>
+                    </div>
                 </div>
 
                 <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-8">
@@ -460,7 +542,7 @@ const StudentManagement = () => {
                             : 'bg-white/10 hover:bg-white/20'
                             }`}
                     >
-                        Pending Allocation ({students.filter(s => (s.registrationSource === 'self' && !getStudentSeat(s._id) && s.isActive)).length})
+                        Pending Allocation ({students.filter(s => (!getStudentSeat(s._id) && s.isActive)).length})
                     </button>
                     <button
                         onClick={() => setActiveTab('inactive')}
@@ -491,6 +573,18 @@ const StudentManagement = () => {
                         <IoTrash className="inline mr-2" size={18} />
                         Deleted History
                     </button>
+                    {activeTab === 'history' && (
+                        <div className="ml-auto">
+                            <Button
+                                variant="danger"
+                                onClick={handleClearArchives}
+                                className="flex items-center gap-2 bg-red-600/80 hover:bg-red-600 text-sm px-4 py-2"
+                                disabled={archivedStudents.length === 0}
+                            >
+                                <IoTrash size={16} /> Clear All Archives
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {success && (
@@ -519,22 +613,52 @@ const StudentManagement = () => {
                     <>
                         {activeTab === 'id-cards' ? (
                             <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] gap-8">
-                                {students.filter(s => s.isActive).length === 0 ? (
-                                    <div className="col-span-full text-center p-12 bg-white/5 rounded-xl border border-white/10">
-                                        <p className="text-gray-400 text-lg">No active students found to generate ID cards.</p>
+                                {/* Shift filter header */}
+                                {shiftFilter && (
+                                    <div className="col-span-full bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-4 flex justify-between items-center">
+                                        <p className="text-purple-300 font-medium">
+                                            Showing students for: <span className="text-white font-bold">
+                                                {shifts.find(s => s._id === shiftFilter)?.name || 'Selected Shift'}
+                                            </span>
+                                        </p>
+                                        <Button
+                                            variant="secondary"
+                                            onClick={() => window.location.href = '/admin/students?tab=id-cards'}
+                                            className="bg-white/10 hover:bg-white/20"
+                                        >
+                                            View All Students
+                                        </Button>
                                     </div>
-                                ) : (
-                                    students.filter(s => s.isActive).map(student => (
-                                        <div key={student._id} className="flex justify-center p-4">
-                                            <StudentIdCard
-                                                student={{
-                                                    ...student,
-                                                    seatNumber: getStudentSeat(student._id)
-                                                }}
-                                            />
-                                        </div>
-                                    ))
                                 )}
+                                {(() => {
+                                    // Filter students: active and optionally by shift
+                                    const filteredStudents = students.filter(s => {
+                                        if (!s.isActive) return false;
+                                        if (shiftFilter && !hasShiftAssignment(s._id, shiftFilter)) return false;
+                                        return true;
+                                    });
+
+                                    return filteredStudents.length === 0 ? (
+                                        <div className="col-span-full text-center p-12 bg-white/5 rounded-xl border border-white/10">
+                                            <p className="text-gray-400 text-lg">
+                                                {shiftFilter
+                                                    ? 'No students found for this shift.'
+                                                    : 'No active students found to generate ID cards.'}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        filteredStudents.map(student => (
+                                            <div key={student._id} className="flex justify-center p-4">
+                                                <StudentIdCard
+                                                    student={{
+                                                        ...student,
+                                                        seatNumber: getStudentSeat(student._id)
+                                                    }}
+                                                />
+                                            </div>
+                                        ))
+                                    );
+                                })()}
                             </div>
                         ) : activeTab === 'history' ? (
                             <Card>
@@ -570,9 +694,17 @@ const StudentManagement = () => {
                                                         <td className="p-4 text-right">
                                                             <button
                                                                 onClick={() => handleViewArchive(student._id)}
-                                                                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition shadow-sm"
+                                                                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition shadow-sm mr-2"
+                                                                title="View Report"
                                                             >
                                                                 View Report
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteArchive(student._id)}
+                                                                className="px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition shadow-sm"
+                                                                title="Delete Permanently"
+                                                            >
+                                                                <IoTrash size={16} />
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -611,14 +743,14 @@ const StudentManagement = () => {
                                                         <td className="p-4">{student.name}</td>
                                                         <td className="p-4">{student.email}</td>
                                                         <td className="p-4">
-                                                            {student.registrationSource === 'self' && !getStudentSeat(student._id) ? (
+                                                            {student.isActive && !getStudentSeat(student._id) ? (
                                                                 <Badge variant="yellow">Pending Allocation</Badge>
                                                             ) : (
                                                                 student.shift || 'N/A'
                                                             )}
                                                         </td>
                                                         <td className="p-4">
-                                                            {student.registrationSource === 'self' && !getStudentSeat(student._id) ? (
+                                                            {student.isActive && !getStudentSeat(student._id) ? (
                                                                 <Badge variant="yellow">Pending Allocation</Badge>
                                                             ) : (
                                                                 <Badge variant={student.isActive ? 'green' : 'red'}>

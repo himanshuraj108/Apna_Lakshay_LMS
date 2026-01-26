@@ -162,10 +162,10 @@ const RequestManagement = () => {
                                                             request.status === 'approved' ? 'green' : 'red'
                                                     }
                                                 >
-                                                    {request.status}
+                                                    {request.status === 'approved' && request.type === 'support' ? 'Solved' : request.status}
                                                 </Badge>
                                                 <span className="text-sm text-gray-400 capitalize">
-                                                    {request.type} Change
+                                                    {request.type === 'seat_change' ? 'Seat' : request.type} Change
                                                 </span>
                                             </div>
 
@@ -186,6 +186,8 @@ const RequestManagement = () => {
                                                             <p className="text-sm font-semibold">Seat: {request.currentData?.seatNumber || 'N/A'}</p>
                                                             <p className="text-sm text-gray-300">Shift: <span className="font-medium">{getShiftName(request.currentData?.shift)}</span></p>
                                                         </div>
+                                                    ) : request.type === 'support' ? (
+                                                        <p className="text-sm text-gray-500 italic">New Ticket</p>
                                                     ) : (
                                                         <p className="text-sm">{JSON.stringify(request.currentData)}</p>
                                                     )}
@@ -209,6 +211,15 @@ const RequestManagement = () => {
                                                             <p className="text-sm text-green-400 font-semibold">
                                                                 Target Shift: <span>{getShiftName(request.requestedData?.shift)}</span>
                                                             </p>
+                                                        </div>
+                                                    ) : request.type === 'support' ? (
+                                                        <div>
+                                                            <p className="text-sm text-yellow-400 font-semibold capitalize">
+                                                                Category: {request.requestedData?.category}
+                                                            </p>
+                                                            <div className="mt-2 text-sm text-gray-300 bg-white/5 p-2 rounded">
+                                                                {request.requestedData?.message}
+                                                            </div>
                                                         </div>
                                                     ) : (
                                                         <p className="text-sm">{JSON.stringify(request.requestedData)}</p>
@@ -234,7 +245,8 @@ const RequestManagement = () => {
                                                     variant="success"
                                                     onClick={() => openReviewModal(request, 'approved')}
                                                 >
-                                                    <IoCheckmarkCircle className="inline mr-2" /> Approve
+                                                    <IoCheckmarkCircle className="inline mr-2" />
+                                                    {request.type === 'support' ? 'Mark Solved' : 'Approve'}
                                                 </Button>
                                                 <Button
                                                     variant="danger"

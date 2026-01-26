@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Seat = require('../models/Seat');
+const Settings = require('../models/Settings');
 const { sendOTPEmail } = require('../services/emailService');
 
 // @desc    Login user
@@ -93,6 +94,19 @@ exports.login = async (req, res) => {
             });
         }
 
+        // Check Maintenance Mode for Students (Simulate Crash)
+        if (user.role === 'student' || user.role === 'user') {
+            const settings = await Settings.findOne();
+            if (settings && settings.activeModes && settings.activeModes.custom) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'INTERNAL SERVER ERROR: SYSTEM CRASH DETECTED',
+                    error: 'Critical Failure in module core.sys caused by ShiftSystemException: 0xDEADBEEF',
+                    maintenanceMode: true
+                });
+            }
+        }
+
         // Generate token
         const token = user.generateToken();
 
@@ -104,6 +118,8 @@ exports.login = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                isActive: user.isActive,
+                registrationSource: user.registrationSource,
                 profileImage: user.profileImage,
                 createdAt: user.createdAt
             }
@@ -121,12 +137,15 @@ exports.login = async (req, res) => {
 // @route   GET /api/auth/me
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(req.user.id).select('+qrToken');
 
         let userData = {
             id: user._id,
+            qrToken: user.qrToken, // Expose token
             name: user.name,
             email: user.email,
+            studentId: user.studentId,
+            role: user.role,
             role: user.role,
             isActive: user.isActive,
             profileImage: user.profileImage,
@@ -166,6 +185,15 @@ exports.getMe = async (req, res) => {
                         endTime: assignment.shift.endTime
                     } : null;
                     userData.seatNumber = seat.number; // Explicitly add seat number
+
+                    // Self-healing: If user.seat is missing/null but we found an active seat, update it
+                    if (!user.seat) {
+                        userData.seat = seat._id; // Update response immediately
+                        try {
+                            await User.findByIdAndUpdate(user._id, { seat: seat._id });
+                            console.log(`Self-healed missing seat reference for user ${user._id}`);
+                        } catch (err) { console.error('Failed to self-heal seat reference:', err); }
+                    }
                 }
             }
         } catch (seatError) {

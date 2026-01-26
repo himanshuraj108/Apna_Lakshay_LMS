@@ -7,6 +7,8 @@ const {
     createStudent,
     updateStudent,
     deleteStudent,
+    getAnalytics,
+    exportAttendance,
     createFloor,
     deleteFloor,
     createRoom,
@@ -16,40 +18,41 @@ const {
     assignSeat,
     markAttendance,
     getAttendance,
+    quickCheckIn,
+    quickCheckOut,
+    getActiveStudents,
+    bulkCheckIn,
+    bulkCheckOut,
     getFees,
     markFeePaid,
     sendNotification,
     getRequests,
     handleRequest,
     getActionHistory,
+    deleteActionLog,
+    clearActionHistory,
     getPasswordActivity,
     resetStudentPassword,
     getArchivedStudents,
     getArchivedStudent,
+    deleteArchivedStudent,
+    clearArchives,
     // Shift Management
     getShifts,
     createShift,
     updateShift,
     deleteShift,
+    // Settings
     getSettings,
-    updateSettings
+    updateSettings,
+    fixSeatOccupancy,
+    // QR Kiosk
+    generateQrToken,
+    getQrToken,
+    resetAllQrTokens,
+    markAttendanceByQrAdmin
 } = require('../controllers/adminController');
 
-// ... existing routes ...
-
-// Shift Management
-router.route('/shifts')
-    .get(getShifts)
-    .post(createShift); // Kept original structure for post
-router.put('/shifts/:id', updateShift); // Added PUT route
-router.delete('/shifts/:id', deleteShift);
-
-// System Settings
-router.route('/settings')
-    .get(getSettings)
-    .put(updateSettings);
-
-module.exports = router;
 const {
     addSeat,
     deleteSeat,
@@ -59,6 +62,7 @@ const {
     updateRoomPrices,
     updateFloorPrices
 } = require('../controllers/seatController');
+
 const { protect, adminOnly } = require('../middleware/auth');
 
 // All routes are protected and admin-only
@@ -66,7 +70,15 @@ router.use(protect, adminOnly);
 
 // Action History
 router.get('/action-history', getActionHistory);
+router.delete('/action-history/clear', clearActionHistory);
+router.delete('/action-history/:id', deleteActionLog);
 router.get('/password-activity', getPasswordActivity);
+// ...
+// Archives
+router.get('/archives', getArchivedStudents);
+router.delete('/archives/clear', clearArchives);
+router.get('/archives/:id', getArchivedStudent);
+router.delete('/archives/:id', deleteArchivedStudent);
 
 // Dashboard
 router.get('/dashboard', getDashboard);
@@ -100,10 +112,24 @@ router.delete('/seats/:id', deleteSeat);  // Delete seat
 router.put('/rooms/:roomId/prices', updateRoomPrices);  // Update all seats in a room
 router.put('/floors/:floorId/prices', updateFloorPrices);  // Update all seats on a floor
 router.put('/rooms/:id/layout', updateRoomLayout);  // Update room layout
+router.post('/fix-seats', fixSeatOccupancy);
 
 // Attendance
 router.post('/attendance', markAttendance);
 router.get('/attendance/:date', getAttendance);
+router.post('/attendance/check-in', quickCheckIn);
+router.post('/attendance/check-out', quickCheckOut);
+router.get('/attendance/active/students', getActiveStudents);
+router.post('/attendance/bulk-check-in', bulkCheckIn);
+router.post('/attendance/bulk-check-out', bulkCheckOut);
+router.post('/attendance/mark', markAttendanceByQrAdmin);
+router.get('/analytics', getAnalytics);
+
+
+// QR Kiosk Management
+router.post('/qr/generate', generateQrToken);
+router.get('/qr/token', getQrToken);
+router.post('/reset-student-qrs', resetAllQrTokens);
 
 // Fees
 router.get('/fees', getFees);
@@ -119,12 +145,18 @@ router.put('/requests/:id', handleRequest);
 // Archives
 router.get('/archives', getArchivedStudents);
 router.get('/archives/:id', getArchivedStudent);
+router.delete('/archives/:id', deleteArchivedStudent);
 
 // Shift Management
 router.route('/shifts')
     .get(getShifts)
-    .post(createShift); // Kept original structure for post
-router.put('/shifts/:id', updateShift); // Added PUT route
+    .post(createShift);
+router.put('/shifts/:id', updateShift);
 router.delete('/shifts/:id', deleteShift);
+
+// System Settings
+router.route('/settings')
+    .get(getSettings)
+    .put(updateSettings);
 
 module.exports = router;
