@@ -312,28 +312,7 @@ try {
     };
 }
 
-// Helper: Log Action
-const logAction = async (req, action, targetModel, targetId, targetName, details) => {
-    try {
-        await ActionLog.create({
-            admin: req.user.id,
-            adminName: req.user.name,
-            action,
-            targetModel,
-            targetId,
-            targetName,
-            details,
-            ipAddress: req.ip || req.connection.remoteAddress
-        });
-    } catch (error) {
-        console.error('Failed to log action:', error.message);
-    }
-};
-
-// Generate random password
-const generatePassword = () => {
-    return Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
-};
+// Helper functions moved to bottom for clean hoisting
 
 // Dashboard
 // Dashboard
@@ -2942,3 +2921,30 @@ exports.markAttendanceByQrAdmin = async (req, res) => {
         res.status(500).json({ success: false, message: 'Scan failed', error: error.message });
     }
 };
+
+// ==========================================
+// HELPER FUNCTIONS (HOISTED)
+// ==========================================
+
+// Helper: Generate random password
+function generatePassword() {
+    return Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 1000);
+}
+
+// Helper: Log Action
+async function logAction(req, action, targetModel, targetId, targetName, details) {
+    try {
+        await ActionLog.create({
+            admin: req.user.id,
+            adminName: req.user.name,
+            action,
+            targetModel,
+            targetId,
+            targetName,
+            details,
+            ipAddress: req.ip || (req.connection ? req.connection.remoteAddress : undefined)
+        });
+    } catch (error) {
+        console.error('Action Log Failed:', error.message);
+    }
+}
