@@ -26,7 +26,12 @@ const actionLogSchema = new mongoose.Schema({
             'notification_sent',
             'attendance_marked',
             'seat_change_approved',
-            'seat_change_rejected'
+            'seat_change_rejected',
+            'create_shift',
+            'update_shift',
+            'delete_shift',
+            'password_reset',
+            'generate_qr'
         ]
     },
     targetModel: {

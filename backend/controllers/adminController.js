@@ -13,7 +13,9 @@ const ArchivedStudent = require('../models/ArchivedStudent');
 const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
-const { randomUUID } = require('crypto');
+const crypto = require('crypto');
+// Polyfill for Node < 15.6.0
+const randomUUID = crypto.randomUUID || (() => crypto.randomBytes(16).toString('hex'));
 
 // Email service for notifications (with safe loading)
 let emailService;
