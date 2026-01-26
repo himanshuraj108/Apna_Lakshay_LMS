@@ -14,6 +14,7 @@ const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
 const { randomUUID } = require('crypto');
+const emailService = require('../services/emailService');
 
 // ... (existing imports)
 
@@ -2942,3 +2943,30 @@ exports.markAttendanceByQrAdmin = async (req, res) => {
         res.status(500).json({ success: false, message: 'Scan failed', error: error.message });
     }
 };
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+// Helper: Generate random password
+function generatePassword() {
+    return Math.random().toString(36).slice(-8);
+}
+
+// Helper: Log Action
+async function logAction(req, action, targetModel, targetId, targetName, details) {
+    try {
+        await ActionLog.create({
+            admin: req.user.id,
+            adminName: req.user.name,
+            action,
+            targetModel,
+            targetId,
+            targetName,
+            details,
+            ip: req.ip
+        });
+    } catch (error) {
+        console.error('Action Log Failed:', error.message);
+    }
+}
