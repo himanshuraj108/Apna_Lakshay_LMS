@@ -246,8 +246,8 @@ const Attendance = () => {
                                     <div
                                         key={record._id}
                                         className={`p-4 rounded-xl border transition-all ${record.status === 'present'
-                                            ? 'bg-white/5 border-white/10 hover:border-green-500/30'
-                                            : 'bg-red-500/5 border-red-500/10'
+                                            ? 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-green-500/30'
+                                            : 'bg-red-50 dark:bg-red-500/5 border-red-500/10'
                                             }`}
                                     >
                                         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -276,19 +276,19 @@ const Attendance = () => {
                                             {/* Timings */}
                                             {record.status === 'present' && (
                                                 <div className="flex flex-wrap gap-4 text-sm flex-1 justify-center md:justify-start">
-                                                    <div className="flex items-center gap-2 text-gray-300 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
                                                         <IoTimeOutline className="text-green-400" />
                                                         <span className="text-gray-500 text-xs uppercase">Entry</span>
                                                         <span className="font-mono font-bold">{record.entryTime || '--:--'}</span>
                                                     </div>
 
-                                                    <div className="flex items-center gap-2 text-gray-300 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
                                                         <IoTimeOutline className="text-red-400" />
                                                         <span className="text-gray-500 text-xs uppercase">Exit</span>
                                                         <span className="font-mono font-bold">{record.exitTime || '--:--'}</span>
                                                     </div>
 
-                                                    <div className="flex items-center gap-2 text-gray-300 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
                                                         <IoHourglassOutline className="text-yellow-400" />
                                                         <span className="text-gray-500 text-xs uppercase">Duration</span>
                                                         <span className="font-mono font-bold">
@@ -301,7 +301,7 @@ const Attendance = () => {
                                             {/* Badge */}
                                             <div className="ml-auto flex items-center gap-4">
                                                 {record.notes && (
-                                                    <div className="hidden md:flex items-start gap-2 text-sm text-gray-400 bg-white/5 px-3 py-1 rounded-lg">
+                                                    <div className="hidden md:flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">
                                                         <IoDocumentTextOutline className="mt-1" />
                                                         <p className="italic max-w-[150px] truncate">"{record.notes}"</p>
                                                     </div>
@@ -339,10 +339,10 @@ const Attendance = () => {
                                                     }`}
                                             >
                                                 <td className="p-4">
-                                                    <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${student.rank === 1 ? 'bg-yellow-500/20 text-yellow-400' :
-                                                        student.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
-                                                            student.rank === 3 ? 'bg-orange-500/20 text-orange-400' :
-                                                                'bg-white/5'
+                                                    <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${student.rank === 1 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
+                                                        student.rank === 2 ? 'bg-gray-400/20 text-gray-600 dark:text-gray-400' :
+                                                            student.rank === 3 ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' :
+                                                                'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400'
                                                         }`}>
                                                         {student.rank}
                                                     </div>

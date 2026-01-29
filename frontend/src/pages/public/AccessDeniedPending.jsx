@@ -67,16 +67,16 @@ const AccessDeniedPending = () => {
 
                 <div className="space-y-3">
                     <Link
-                        to="/student"
+                        to="/student/profile"
                         className="block w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/20"
                     >
-                        Go to Dashboard
+                        Check Status
                     </Link>
                     <Link
-                        to="/student/profile"
+                        to="/student"
                         className="block w-full py-3 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-all"
                     >
-                        Check Status
+                        Go to Dashboard
                     </Link>
                 </div>
             </motion.div>
