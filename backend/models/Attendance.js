@@ -53,7 +53,8 @@ attendanceSchema.index({ student: 1, date: 1 }, { unique: true });
 
 // Calculate duration before saving
 attendanceSchema.pre('save', function (next) {
-    if (this.entryTime && this.exitTime) {
+    // Only recalculate duration if it's not already set correctly (e.g. by controller for complex dates)
+    if (this.entryTime && this.exitTime && (!this.duration || this.isModified('entryTime') || this.isModified('exitTime'))) {
         const [entryHour, entryMin] = this.entryTime.split(':').map(Number);
         const [exitHour, exitMin] = this.exitTime.split(':').map(Number);
 
@@ -61,11 +62,16 @@ attendanceSchema.pre('save', function (next) {
         let exitMinutes = exitHour * 60 + exitMin;
 
         // Handle overnight (e.g. 23:00 to 01:00)
+        // Only if simple calc results in negative, we assume it's next day.
+        // But Controller logic is preferred for absolute date diffs.
         if (exitMinutes < entryMinutes) {
             exitMinutes += 24 * 60;
         }
 
-        this.duration = exitMinutes - entryMinutes;
+        // Only set if we haven't manually set a "real" diff that might be > 24h
+        if (!this.duration || this.duration === 0) {
+            this.duration = exitMinutes - entryMinutes;
+        }
         this.isActive = false;
     } else if (this.entryTime && !this.exitTime) {
         this.isActive = true;
