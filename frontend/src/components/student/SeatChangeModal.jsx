@@ -203,12 +203,15 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
                                     <div className="bg-white/5 rounded-lg p-4">
                                         <p className="text-sm text-gray-400 mb-3">Shift Prices</p>
                                         <div className="grid grid-cols-3 gap-2">
-                                            {shifts.map(shift => (
-                                                <div key={shift.id} className="bg-white/10 rounded p-2 text-center">
-                                                    <p className="text-xs text-gray-400 mb-1">{shift.name}</p>
-                                                    <p className="text-sm font-bold text-green-400">₹{selectedSeat.basePrices?.[shift.id] || 800}</p>
-                                                </div>
-                                            ))}
+                                            {shifts.map(shift => {
+                                                const price = selectedSeat.shiftPrices?.[shift.id] ?? selectedSeat.basePrices?.[shift.id] ?? 800;
+                                                return (
+                                                    <div key={shift.id} className="bg-white/10 rounded p-2 text-center">
+                                                        <p className="text-xs text-gray-400 mb-1">{shift.name}</p>
+                                                        <p className="text-sm font-bold text-green-400">₹{price}</p>
+                                                    </div>
+                                                );
+                                            })}
                                             {!isCustom && !shifts.some(s => s.id === 'full') && (
                                                 <div className="bg-white/10 rounded p-2 text-center">
                                                     <p className="text-xs text-gray-400 mb-1">Full Day</p>
