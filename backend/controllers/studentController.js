@@ -867,132 +867,135 @@ exports.markAttendanceByQr = async (req, res) => {
         }
 
         const studentId = req.user.id;
-
-        // Check if student has an active seat assignment
-        // (Optional: depending on rules, inactive students might not be allowed?)
-        // Let's assume only active students
         const user = await User.findById(studentId);
+
         if (!user.isActive) {
             return res.status(403).json({ success: false, message: 'Your account is inactive.' });
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        // Find existing attendance for today
-        let attendance = await Attendance.findOne({
+        // 1. Check for an OPEN/ACTIVE session first (Check-out priority)
+        // Find any present record that has no exit time
+        const activeSession = await Attendance.findOne({
             student: studentId,
-            date: today
-        });
+            status: 'present',
+            exitTime: null
+        }).sort({ date: -1 }); // Get the most recent one
 
+        let attendance;
         let message = '';
         let type = '';
 
-        if (!attendance || attendance.status === 'absent' || attendance.status === 'on_leave' || !attendance.entryTime) {
+        if (activeSession) {
+            // MARK EXIT
+            attendance = activeSession;
+            const now = new Date();
+
+            // Calculate duration
+            // Use the attendance date for the entry time base to handle overnight shifts correctly
+            const entryParts = attendance.entryTime.split(':');
+            const entryDate = new Date(attendance.date);
+            entryDate.setHours(parseInt(entryParts[0]), parseInt(entryParts[1]), 0);
+
+            // If entryDate > now (impossible unless clock screw), or very old?
+            // Since we sorted by date desc, this should be the relevant one.
+
+            const diffMs = now - entryDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 1) {
+                return res.status(400).json({ success: false, message: 'Already checked in just now! Wait 1 min.' });
+            }
+
+            attendance.exitTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            attendance.duration = diffMins; // Controller calc provided for UI feedback, hook will also run
+            await attendance.save();
+
+            const hours = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+            message = `Goodbye, ${user.name}! Exit marked. Duration: ${hours}h ${mins}m`;
+            type = 'exit';
+
+        } else {
             // MARK ENTRY
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Check if we already have a completed record for TODAY
+            const todayRecord = await Attendance.findOne({
+                student: studentId,
+                date: today
+            });
+
+            if (todayRecord && todayRecord.status === 'present' && todayRecord.exitTime) {
+                return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
+            }
+
+            // Create new Entry or Update Absent Record
             const now = new Date();
             const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            let shiftLabel = 'N/A';
 
-            if (attendance) {
-                // Update existing record (overwrite absent/corrupt)
-                attendance.status = 'present';
-                attendance.entryTime = entryTime;
-                attendance.exitTime = null; // Reset exit
-                attendance.duration = 0;
-                attendance.notes = `Marked via Kiosk QR (was ${attendance.status})`;
-                await attendance.save();
+            // Check Shift Logic
+            const seat = await Seat.findOne({
+                'assignments.student': studentId,
+                'assignments.status': 'active'
+            }).populate('assignments.shift');
 
-                message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
-            } else {
-                // Create new
-                // Updated to check Shift Timing
-                const seat = await Seat.findOne({
-                    'assignments.student': studentId,
-                    'assignments.status': 'active'
-                }).populate('assignments.shift');
+            if (seat) {
+                const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+                if (assignment) {
+                    shiftLabel = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'Assigned');
 
-                let shiftLabel = 'N/A';
+                    // Check Shift Timing
+                    if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
+                        const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
+                        const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
 
-                if (seat) {
-                    const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
-                    if (assignment) {
-                        shiftLabel = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'Assigned');
+                        const allowedStart = new Date();
+                        allowedStart.setHours(sH, sM - 30, 0, 0);
+                        const allowedEnd = new Date();
+                        allowedEnd.setHours(eH, eM, 0, 0);
 
-                        // Check Shift Timing
-                        if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
-                            const now = new Date();
-                            const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
-                            const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
+                        if (allowedEnd < allowedStart) {
+                            if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
+                            else allowedEnd.setDate(allowedEnd.getDate() + 1);
+                        }
 
-                            // Allowed Start: 30 mins before shift
-                            const allowedStart = new Date();
-                            allowedStart.setHours(sH, sM - 30, 0, 0);
-
-                            // Allowed End: Exact shift end
-                            const allowedEnd = new Date();
-                            allowedEnd.setHours(eH, eM, 0, 0);
-
-                            // Handle overnight shifts (e.g. 22:00 to 06:00)
-                            if (allowedEnd < allowedStart) {
-                                // If now is past midnight (morning), shift back allowedStart to yesterday
-                                // If now is before midnight (night), shift forward allowedEnd to tomorrow
-                                // Simple check:
-                                if (now.getHours() < 12) {
-                                    allowedStart.setDate(allowedStart.getDate() - 1);
-                                } else {
-                                    allowedEnd.setDate(allowedEnd.getDate() + 1);
-                                }
-                            }
-
-                            if (now < allowedStart || now > allowedEnd) {
-                                return res.status(403).json({
-                                    success: false,
-                                    message: `Entry allowed only 30 mins before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
-                                });
-                            }
+                        if (now < allowedStart || now > allowedEnd) {
+                            return res.status(403).json({
+                                success: false,
+                                message: `Entry allowed only 30 mins before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
+                            });
                         }
                     }
                 }
+            }
 
+            if (todayRecord) {
+                // Convert absent to present or reset? 
+                // If status was absent, we overwrite. If it was half-filled? The logic above (activeSession) prevents getting here if it was open.
+                // So here it's either absent or we are forcing an overwrite (clean slate).
+                attendance = todayRecord;
+                attendance.status = 'present';
+                attendance.entryTime = entryTime;
+                attendance.exitTime = null;
+                attendance.duration = 0;
+                attendance.notes = `Marked via Kiosk QR (was ${attendance.status})`;
+                await attendance.save();
+                message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
+            } else {
                 attendance = await Attendance.create({
                     student: studentId,
                     date: today,
                     status: 'present',
                     entryTime: entryTime,
-                    // shift not in schema but note handles it
                     notes: `Marked via Kiosk QR (${shiftLabel})`,
-                    markedBy: studentId
+                    markedBy: studentId,
+                    duration: 0
                 });
                 message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
             }
             type = 'entry';
-        } else {
-            // MARK EXIT
-            if (attendance.exitTime) {
-                return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
-            }
-
-            // Calculate duration
-            const entryParts = attendance.entryTime.split(':');
-            const entryDate = new Date();
-            entryDate.setHours(parseInt(entryParts[0]), parseInt(entryParts[1]), 0);
-
-            const exitDate = new Date();
-            const diffMs = exitDate - entryDate;
-            const diffMins = Math.floor(diffMs / 60000);
-
-            if (diffMins < 1) {
-                // Prevent accidental double scan (1 min cooldown)
-                return res.status(400).json({ success: false, message: 'Already checked in just now! Wait 1 min.' });
-            }
-
-            const now = new Date();
-            attendance.exitTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            attendance.duration = diffMins;
-            await attendance.save();
-
-            message = `Goodbye, ${user.name}! Exit marked. Duration: ${Math.floor(diffMins / 60)}h ${diffMins % 60}m`;
-            type = 'exit';
         }
 
         res.status(200).json({
