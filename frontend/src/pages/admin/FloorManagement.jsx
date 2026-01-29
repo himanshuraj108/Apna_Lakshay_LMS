@@ -386,16 +386,7 @@ const FloorManagement = () => {
                                     But for strict consistency, let's keep it if logic demands, otherwise assume shifts cover it. 
                                     Let's keep 'Full Day' distinct if it's not a shift, ensuring backward compat.
                                 */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Full Day (₹)</label>
-                                    <input
-                                        type="number"
-                                        value={bulkPrices.full || ''}
-                                        onChange={(e) => setBulkPrices({ ...bulkPrices, full: parseInt(e.target.value) || 0 })}
-                                        className="input w-full"
-                                        placeholder="Price"
-                                    />
-                                </div>
+
 
                                 <Button onClick={handleBulkPriceUpdate} disabled={updating || shifts.length === 0} className="w-full">
                                     <IoSaveOutline className="inline mr-2" /> Update All
@@ -546,7 +537,7 @@ const FloorManagement = () => {
                                         <li key={shift.id}>{shift.name}: ₹{bulkPrices[shift.id]}</li>
                                     ) : null
                                 ))}
-                                {bulkPrices.full ? <li>Full Day: ₹{bulkPrices.full}</li> : null}
+
                             </ul>
                         </div>
                         <div className="flex justify-end gap-3">
