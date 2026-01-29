@@ -349,11 +349,11 @@ const StudentDashboard = () => {
                 < Card >
                     <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div onClick={() => setShowScanner(true)}>
+                        <div onClick={() => setShowScanner(true)} className="h-full">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
+                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
                             >
                                 <div className="bg-gradient-to-br from-green-500 to-teal-500 p-4 rounded-xl shadow-lg group-hover:shadow-green-500/30 transition-shadow">
                                     <IoScan size={24} className="text-white" />
@@ -365,11 +365,11 @@ const StudentDashboard = () => {
                                 <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-green-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
                             </motion.div>
                         </div>
-                        <div onClick={() => setShowIDCard(true)}>
+                        <div onClick={() => setShowIDCard(true)} className="h-full">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
+                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
                             >
                                 <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-xl shadow-lg group-hover:shadow-indigo-500/30 transition-shadow">
                                     <IoIdCardOutline size={24} className="text-white" />
@@ -382,11 +382,11 @@ const StudentDashboard = () => {
                             </motion.div>
                         </div>
 
-                        <Link to="/student/chat">
+                        <Link to="/student/chat" className="block h-full">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
+                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
                             >
                                 <div className="bg-gradient-to-br from-orange-500 to-red-500 p-4 rounded-xl shadow-lg group-hover:shadow-orange-500/30 transition-shadow">
                                     <IoChatbubblesOutline size={24} className="text-white" />
@@ -399,11 +399,11 @@ const StudentDashboard = () => {
                             </motion.div>
                         </Link>
 
-                        <Link to="/student/planner">
+                        <Link to="/student/planner" className="block h-full">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
+                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
                             >
                                 <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-xl shadow-lg group-hover:shadow-purple-500/30 transition-shadow">
                                     <IoBookOutline size={24} className="text-white" />
@@ -416,11 +416,11 @@ const StudentDashboard = () => {
                             </motion.div>
                         </Link>
 
-                        <Link to="/student/seat">
+                        <Link to="/student/seat" className="block h-full">
                             <motion.div
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                className="relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
+                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
                             >
                                 <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-xl shadow-lg group-hover:shadow-blue-500/30 transition-shadow">
                                     <IoBedOutline size={24} className="text-white" />
@@ -434,7 +434,7 @@ const StudentDashboard = () => {
                         </Link>
 
                         {/* Help & Support Action */}
-                        <div className="relative group p-6 rounded-xl flex items-center gap-4 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none">
+                        <div className="h-full relative group p-6 rounded-xl flex items-center gap-4 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none">
                             <div
                                 onClick={() => setShowSupportModal(true)}
                                 className="flex-1 flex items-center gap-4 cursor-pointer"
@@ -477,7 +477,7 @@ const StudentDashboard = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setShowScanner(true)}
-                    className="fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-2xl shadow-green-500/40 text-white border border-white/20 backdrop-blur-sm"
+                    className="absolute bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-2xl shadow-green-500/40 text-white border border-white/20 backdrop-blur-sm"
                 >
                     <IoScan size={28} />
                 </motion.button >

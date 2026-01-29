@@ -186,7 +186,7 @@ const StudyPlanner = () => {
                                 </Button>
                             </Link>
                             <div>
-                                <h1 className="text-3xl font-bold text-white flex items-center gap-2">
+                                <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <IoRocket className="text-yellow-400" />
                                     Study Base
                                 </h1>
@@ -199,19 +199,19 @@ const StudyPlanner = () => {
                         <div className="flex bg-gray-800 rounded-lg p-1 border border-white/10">
                             <button
                                 onClick={() => setView('tasks')}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${view === 'tasks' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${view === 'tasks' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
                                 <IoList /> Tasks
                             </button>
                             <button
                                 onClick={() => setView('calendar')}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${view === 'calendar' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${view === 'calendar' ? 'bg-pink-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
                                 <IoCalendar /> Calendar
                             </button>
                             <button
                                 onClick={() => setView('analytics')}
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${view === 'analytics' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${view === 'analytics' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                             >
                                 <IoStatsChart /> Analytics
                             </button>
@@ -240,11 +240,11 @@ const StudyPlanner = () => {
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-2">
                                     <Card className="!p-4 bg-blue-500/10 border-blue-500/20">
                                         <p className="text-xs text-blue-300 uppercase font-bold">Pending</p>
-                                        <p className="text-2xl font-bold text-white">{pendingTasks}</p>
+                                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{pendingTasks}</p>
                                     </Card>
                                     <Card className="!p-4 bg-green-500/10 border-green-500/20">
                                         <p className="text-xs text-green-300 uppercase font-bold">Completed</p>
-                                        <p className="text-2xl font-bold text-white">{completedTasks}</p>
+                                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{completedTasks}</p>
                                     </Card>
                                     <motion.button
                                         onClick={() => { resetForm(); setShowModal(true); }}
@@ -283,7 +283,7 @@ const StudyPlanner = () => {
                                         </div>
                                     ) : (
                                         tasks.map(task => (
-                                            <Card key={task._id} className={`!p-4 group transition-all duration-300 hover:translate-x-1 hover:border-blue-500/30 ${task.completed ? 'opacity-50 grayscale' : 'bg-gray-800/80'}`}>
+                                            <Card key={task._id} className={`!p-4 group transition-all duration-300 hover:translate-x-1 hover:border-blue-500/30 ${task.completed ? 'opacity-50 grayscale' : 'bg-white dark:bg-gray-800/80 shadow-sm'}`}>
                                                 <div className="flex items-start gap-4">
                                                     <button
                                                         onClick={() => toggleComplete(task)}
@@ -296,7 +296,7 @@ const StudyPlanner = () => {
                                                     </button>
 
                                                     <div className="flex-1 min-w-0">
-                                                        <h3 className={`text-lg font-bold text-white truncate ${task.completed ? 'line-through' : ''}`}>
+                                                        <h3 className={`text-lg font-bold text-gray-900 dark:text-white truncate ${task.completed ? 'line-through' : ''}`}>
                                                             {task.title}
                                                         </h3>
                                                         {task.description && <p className="text-gray-400 text-sm line-clamp-1">{task.description}</p>}
@@ -317,10 +317,10 @@ const StudyPlanner = () => {
                                                     </div>
 
                                                     <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => openEditModal(task)} className="text-blue-400 hover:text-white">
+                                                        <button onClick={() => openEditModal(task)} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-white">
                                                             <IoCreateOutline size={18} />
                                                         </button>
-                                                        <button onClick={() => deleteTask(task._id)} className="text-red-400 hover:text-white">
+                                                        <button onClick={() => deleteTask(task._id)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-white">
                                                             <IoTrash size={18} />
                                                         </button>
                                                     </div>
@@ -350,7 +350,7 @@ const StudyPlanner = () => {
                                 {/* ... existing achievements ... */}
 
                                 <div className="mt-8">
-                                    <h3 className="text-xl font-bold text-white mb-4">Achievements</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Achievements</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                         {/* Mock Achievements for now */}
                                         <AchievementBadge
@@ -398,12 +398,12 @@ const StudyPlanner = () => {
                         </div>
                         <PomodoroTimer onSessionComplete={fetchData} />
 
-                        <Card className="mt-6 bg-gradient-to-br from-indigo-900/50 to-blue-900/20 border-indigo-500/30">
-                            <h3 className="font-bold text-white mb-2 flex items-center gap-2">
+                        <Card className="mt-6 bg-gradient-to-br from-indigo-100 to-blue-50 dark:from-indigo-900/50 dark:to-blue-900/20 border-indigo-200 dark:border-indigo-500/30">
+                            <h3 className="font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
                                 <IoRocket className="text-indigo-400" />
                                 Pro Tip
                             </h3>
-                            <p className="text-sm text-gray-300">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                                 "The Pomodoro Technique optimizes your focus by breaking work into productive intervals separated by short breaks. It trains your brain to stay fresh and agile."
                             </p>
                         </Card>
@@ -419,32 +419,32 @@ const StudyPlanner = () => {
             >
                 <form onSubmit={handleTaskSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Title</label>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                             placeholder="What do you want to accomplish?"
                             required
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-300">Description</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Description</label>
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none h-24 resize-none"
+                            className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none h-24 resize-none"
                             placeholder="Add details..."
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-300">Priority</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Priority</label>
                             <select
                                 value={formData.priority}
                                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                             >
                                 <option value="low">Low Priority</option>
                                 <option value="medium">Medium Priority</option>
@@ -452,24 +452,24 @@ const StudyPlanner = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-300">Est. Minutes</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Est. Minutes</label>
                             <input
                                 type="number"
                                 value={formData.estimatedTime}
                                 onChange={(e) => setFormData({ ...formData, estimatedTime: parseInt(e.target.value) })}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                 min="5"
                                 step="5"
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-300">Due Date</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Due Date</label>
                         <input
                             type="date"
                             value={formData.dueDate}
                             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
                     <div className="flex gap-4 pt-4">
