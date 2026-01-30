@@ -26,7 +26,10 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://hamaralakshay.vercel.app'
+  'https://hamaralakshay.vercel.app',
+  'https://apnalakshay.com',
+  'https://www.apnalakshay.com'
+
 ];
 
 app.use(cors({
