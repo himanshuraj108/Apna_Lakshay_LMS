@@ -856,6 +856,13 @@ exports.markAttendanceByQr = async (req, res) => {
     try {
         const { qrToken } = req.body;
 
+        // Helper to get India Standard Time (UTC+5:30)
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+
         if (!qrToken) {
             return res.status(400).json({ success: false, message: 'Invalid QR Code' });
         }
@@ -888,7 +895,7 @@ exports.markAttendanceByQr = async (req, res) => {
         if (activeSession) {
             // MARK EXIT
             attendance = activeSession;
-            const now = new Date();
+            const now = getISTDate();
 
             // Calculate duration
             // Use the attendance date for the entry time base to handle overnight shifts correctly
@@ -917,7 +924,7 @@ exports.markAttendanceByQr = async (req, res) => {
 
         } else {
             // MARK ENTRY
-            const today = new Date();
+            const today = getISTDate();
             today.setHours(0, 0, 0, 0);
 
             // Check if we already have a completed record for TODAY
@@ -931,7 +938,7 @@ exports.markAttendanceByQr = async (req, res) => {
             }
 
             // Create new Entry or Update Absent Record
-            const now = new Date();
+            const now = getISTDate();
             const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             let shiftLabel = 'N/A';
 
@@ -951,9 +958,9 @@ exports.markAttendanceByQr = async (req, res) => {
                         const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
                         const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
 
-                        const allowedStart = new Date();
+                        const allowedStart = getISTDate();
                         allowedStart.setHours(sH, sM - 30, 0, 0);
-                        const allowedEnd = new Date();
+                        const allowedEnd = getISTDate();
                         allowedEnd.setHours(eH, eM, 0, 0);
 
                         if (allowedEnd < allowedStart) {
