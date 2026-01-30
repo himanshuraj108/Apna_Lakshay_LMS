@@ -477,7 +477,7 @@ const StudentDashboard = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setShowScanner(true)}
-                    className="absolute bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-2xl shadow-green-500/40 text-white border border-white/20 backdrop-blur-sm"
+                    className="fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-2xl shadow-green-500/40 text-white border border-white/20 backdrop-blur-sm"
                 >
                     <IoScan size={28} />
                 </motion.button >

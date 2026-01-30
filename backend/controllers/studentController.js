@@ -67,8 +67,35 @@ exports.getDashboard = async (req, res) => {
             date: { $gte: startOfMonth, $lte: endOfMonth }
         });
 
-        const presentCount = attendanceRecords.filter(a => a.status === 'present').length;
-        const totalDays = attendanceRecords.length;
+        // Deduplicate attendance records (fix for multiple entries per day)
+        const uniqueAttendanceMap = new Map();
+
+        attendanceRecords.forEach(record => {
+            const dateKey = new Date(record.date).toDateString(); // Group by Calendar Day
+
+            if (!uniqueAttendanceMap.has(dateKey)) {
+                uniqueAttendanceMap.set(dateKey, record);
+            } else {
+                const existing = uniqueAttendanceMap.get(dateKey);
+
+                // Conflict resolution strategy (Same as getAttendance):
+                // 1. Prefer 'present' over 'absent'
+                if (existing.status !== 'present' && record.status === 'present') {
+                    uniqueAttendanceMap.set(dateKey, record);
+                }
+                // 2. If both present, prefer the one with longer duration
+                else if (existing.status === 'present' && record.status === 'present') {
+                    if ((record.duration || 0) > (existing.duration || 0)) {
+                        uniqueAttendanceMap.set(dateKey, record);
+                    }
+                }
+            }
+        });
+
+        const cleanAttendance = Array.from(uniqueAttendanceMap.values());
+
+        const presentCount = cleanAttendance.filter(a => a.status === 'present').length;
+        const totalDays = cleanAttendance.length;
         const attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
         // Get student details first (needed for rolling cycle calculation)
