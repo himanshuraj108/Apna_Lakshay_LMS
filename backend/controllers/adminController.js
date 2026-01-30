@@ -40,6 +40,13 @@ try {
     };
 }
 
+// Helper to get India Standard Time (UTC+5:30)
+const getISTDate = () => {
+    const d = new Date();
+    const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 5.5));
+};
+
 // ... (existing imports)
 
 // ==========================================
@@ -1493,15 +1500,9 @@ exports.quickCheckIn = async (req, res) => {
     try {
         const { studentId } = req.body;
 
-        // Helper to get India Standard Time (UTC+5:30)
-        const getISTDate = () => {
-            const d = new Date();
-            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-            return new Date(utc + (3600000 * 5.5));
-        };
-
         const now = getISTDate();
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        console.log(`[AdminCheckIn] IST Time: ${currentTime}`);
 
         const attendanceDate = getISTDate();
         attendanceDate.setHours(0, 0, 0, 0);
@@ -1549,15 +1550,9 @@ exports.quickCheckOut = async (req, res) => {
     try {
         const { studentId } = req.body;
 
-        // Helper to get India Standard Time (UTC+5:30)
-        const getISTDate = () => {
-            const d = new Date();
-            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-            return new Date(utc + (3600000 * 5.5));
-        };
-
         const now = getISTDate();
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        console.log(`[AdminCheckOut] IST Time: ${currentTime}`);
 
         // Find the latest active session (handles overnight or today)
         const attendance = await Attendance.findOne({
@@ -2887,17 +2882,11 @@ exports.markAttendanceByQrAdmin = async (req, res) => {
         }
 
         // 4. Mark Attendance (Toggle)
-        // Helper to get India Standard Time (UTC+5:30)
-        const getISTDate = () => {
-            const d = new Date();
-            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
-            return new Date(utc + (3600000 * 5.5));
-        };
-
         const now = getISTDate();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        console.log(`[KioskScan] IST Time: ${currentTime}`);
         const today = getISTDate();
         today.setHours(0, 0, 0, 0);
-        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
         // Find existing active session for today
         const existingSession = await Attendance.findOne({
