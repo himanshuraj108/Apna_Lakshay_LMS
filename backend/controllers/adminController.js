@@ -1492,10 +1492,18 @@ exports.getAttendance = async (req, res) => {
 exports.quickCheckIn = async (req, res) => {
     try {
         const { studentId } = req.body;
-        const now = new Date();
+
+        // Helper to get India Standard Time (UTC+5:30)
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+
+        const now = getISTDate();
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        const attendanceDate = new Date();
+        const attendanceDate = getISTDate();
         attendanceDate.setHours(0, 0, 0, 0);
 
         const student = await User.findById(studentId);
@@ -1540,7 +1548,15 @@ exports.quickCheckIn = async (req, res) => {
 exports.quickCheckOut = async (req, res) => {
     try {
         const { studentId } = req.body;
-        const now = new Date();
+
+        // Helper to get India Standard Time (UTC+5:30)
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+
+        const now = getISTDate();
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
         // Find the latest active session (handles overnight or today)
@@ -2871,8 +2887,15 @@ exports.markAttendanceByQrAdmin = async (req, res) => {
         }
 
         // 4. Mark Attendance (Toggle)
-        const now = new Date();
-        const today = new Date();
+        // Helper to get India Standard Time (UTC+5:30)
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+
+        const now = getISTDate();
+        const today = getISTDate();
         today.setHours(0, 0, 0, 0);
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
