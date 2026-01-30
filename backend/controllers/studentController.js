@@ -280,8 +280,36 @@ exports.getAttendance = async (req, res) => {
             date: { $gte: startOfMonth, $lte: endOfMonth }
         }).sort({ date: 1 });
 
-        const presentCount = myAttendance.filter(a => a.status === 'present').length;
-        const totalDays = myAttendance.length;
+        // Deduplicate attendance records (fix for multiple entries per day)
+        const uniqueAttendanceMap = new Map();
+
+        myAttendance.forEach(record => {
+            const dateKey = new Date(record.date).toDateString(); // Group by Calendar Day
+
+            if (!uniqueAttendanceMap.has(dateKey)) {
+                uniqueAttendanceMap.set(dateKey, record);
+            } else {
+                const existing = uniqueAttendanceMap.get(dateKey);
+
+                // Conflict resolution strategy:
+                // 1. Prefer 'present' over 'absent'
+                if (existing.status !== 'present' && record.status === 'present') {
+                    uniqueAttendanceMap.set(dateKey, record);
+                }
+                // 2. If both present, prefer the one with longer duration or valid entry/exit
+                else if (existing.status === 'present' && record.status === 'present') {
+                    if ((record.duration || 0) > (existing.duration || 0)) {
+                        uniqueAttendanceMap.set(dateKey, record);
+                    }
+                }
+            }
+        });
+
+        // Use deduplicated list for response and stats
+        const cleanAttendance = Array.from(uniqueAttendanceMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const presentCount = cleanAttendance.filter(a => a.status === 'present').length;
+        const totalDays = cleanAttendance.length;
         const myPercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
         // Get all students' attendance for ranking
@@ -326,7 +354,8 @@ exports.getAttendance = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            myAttendance,
+            success: true,
+            myAttendance: cleanAttendance,
             summary: {
                 present: presentCount,
                 total: totalDays,
