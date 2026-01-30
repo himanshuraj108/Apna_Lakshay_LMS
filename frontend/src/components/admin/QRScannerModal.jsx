@@ -206,7 +206,9 @@ const QRScannerModal = ({ onClose }) => {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0 }}
-                                className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md ${scanResult.type === 'success' ? 'bg-green-500/80 text-white' : 'bg-red-500/80 text-white'
+                                className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md ${scanResult.type === 'success' && modeRef.current === 'check-in'
+                                    ? 'bg-green-500/80 text-white'
+                                    : 'bg-red-500/80 text-white'
                                     }`}
                             >
                                 <div className="bg-white rounded-full p-4 mb-4 shadow-lg">

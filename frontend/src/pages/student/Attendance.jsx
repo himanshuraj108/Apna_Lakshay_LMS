@@ -48,7 +48,7 @@ const Attendance = () => {
         try {
             const response = await api.post('/student/attendance/qr-scan', { qrToken: token });
             if (response.data.success) {
-                setScanMessage({ type: 'success', text: response.data.message });
+                setScanMessage({ type: response.data.type || 'success', text: response.data.message });
                 fetchAttendance();
                 setTimeout(() => setScanMessage(null), 5000);
             }
@@ -115,10 +115,12 @@ const Attendance = () => {
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${scanMessage.type === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${scanMessage.type === 'exit' || scanMessage.type === 'error'
+                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                : 'bg-green-500/20 text-green-400 border border-green-500/30'
                             }`}
                     >
-                        {scanMessage.type === 'success' ? <IoCheckmarkCircle size={24} /> : <IoCloseCircle size={24} />}
+                        {scanMessage.type === 'error' ? <IoCloseCircle size={24} /> : <IoCheckmarkCircle size={24} />}
                         <p className="font-bold">{scanMessage.text}</p>
                     </motion.div>
                 )}
