@@ -47,12 +47,10 @@ const QrKiosk = () => {
     useEffect(() => {
         fetchQrToken();
 
-        // Auto-refresh every 5 minutes to be safe (or rely on admin to click refresh)
-        const interval = setInterval(() => {
-            fetchQrToken(true);
-        }, 5 * 60 * 1000);
+        // Initial fetch
+        fetchQrToken();
 
-        return () => clearInterval(interval);
+        // No auto-refresh (Manual only based on user request)
     }, []);
 
     const handleDownload = () => {
@@ -156,7 +154,7 @@ const QrKiosk = () => {
                         </div>
 
                         <p className="text-xs text-gray-500 mt-4">
-                            Auto-refreshes every 5 mins • Last updated: {lastUpdated.toLocaleTimeString()}
+                            Manual Refresh Only • Last updated: {lastUpdated.toLocaleTimeString()}
                         </p>
                     </div>
                 </Card>
