@@ -14,16 +14,36 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [systemStatus, setSystemStatus] = useState('active');
+
+    const checkSystemStatus = async () => {
+        try {
+            const response = await api.get('/settings/public');
+            if (response.data.success) {
+                setSystemStatus(response.data.settings.systemStatus);
+            }
+        } catch (error) {
+            console.error('Failed to check system status:', error);
+        }
+    };
 
     useEffect(() => {
-        // Check if user is logged in on mount
-        const token = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
+        const initAuth = async () => {
+            // Check if user is logged in on mount
+            const token = localStorage.getItem('token');
+            const savedUser = localStorage.getItem('user');
 
-        if (token && savedUser) {
-            setUser(JSON.parse(savedUser));
-        }
-        setLoading(false);
+            if (token && savedUser) {
+                setUser(JSON.parse(savedUser));
+            }
+
+            // Wait for system status check
+            await checkSystemStatus();
+
+            setLoading(false);
+        };
+
+        initAuth();
     }, []);
 
     const login = async (email, password) => {
@@ -59,6 +79,8 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         loading,
+        systemStatus,
+        checkSystemStatus,
         login,
         logout,
         updateUser,
