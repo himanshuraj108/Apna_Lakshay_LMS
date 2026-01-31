@@ -33,18 +33,13 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-
-    // Check if origin is allowed explicitly or matches Vercel preview pattern
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-
-    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-    return callback(new Error(msg), false);
-  },
+  origin: [
+    'http://localhost:5173',
+    'https://hamaralakshay.vercel.app',
+    'https://apnalakshay.com',
+    'https://www.apnalakshay.com',
+    /\.vercel\.app$/
+  ],
   credentials: true
 }));
 
