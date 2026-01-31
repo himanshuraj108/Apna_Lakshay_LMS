@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -43,7 +44,31 @@ import ViewSeats from './pages/student/ViewSeats';
 import DiscussionRoom from './pages/student/DiscussionRoom';
 
 function App() {
-    const { user, loading } = useAuth();
+    const { user, loading, systemStatus } = useAuth();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Global Maintenance Check
+    useEffect(() => {
+        if (loading) return;
+
+        if (systemStatus === 'maintenance') {
+            const isMaintenancePage = location.pathname === '/maintenance';
+            const isAdmin = user?.role === 'admin';
+
+            // Check for admin override via URL query param
+            const searchParams = new URLSearchParams(location.search);
+            const adminOverride = searchParams.get('access') === 'admin';
+
+            // Allow access if:
+            // 1. It's the maintenance page
+            // 2. User is already an admin
+            // 3. User is accessing login with ?access=admin
+            if (!isMaintenancePage && !isAdmin && !adminOverride) {
+                navigate('/maintenance');
+            }
+        }
+    }, [systemStatus, loading, user, location, navigate]);
 
     if (loading) {
         return (

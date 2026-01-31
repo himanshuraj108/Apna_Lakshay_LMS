@@ -109,37 +109,49 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Socket.io Setup (only in development, not for Vercel)
-let io;
-if (process.env.NODE_ENV !== 'production') {
-  const http = require('http');
-  const { Server } = require('socket.io');
-  const socketHandler = require('./sockets/socketHandler');
+// Socket.io Setup (Enabled for all environments)
+const http = require('http');
+const { Server } = require('socket.io');
+const socketHandler = require('./sockets/socketHandler');
 
-  const server = http.createServer(app);
-  io = new Server(server, {
-    cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
-      credentials: true
-    }
-  });
+const server = http.createServer(app);
 
-  // Make io accessible to our routers
-  app.set('io', io);
+// Use the same origins as Express CORS but adapt for Socket.io format
+// Socket.io expects an array or strings, regex is supported
+const socketOrigins = [
+  'http://localhost:5173',
+  'https://hamaralakshay.vercel.app',
+  'https://apnalakshay.com',
+  'https://www.apnalakshay.com',
+  /\.vercel\.app$/
+];
 
-  // Initialize socket handlers
-  socketHandler(io);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL ? [process.env.CLIENT_URL, ...socketOrigins] : socketOrigins,
+    credentials: true,
+    methods: ["GET", "POST"]
+  }
+});
 
-  connectDB().then(() => {
+// Make io accessible to our routers
+app.set('io', io);
+
+// Initialize socket handlers
+socketHandler(io);
+
+// Start Server
+connectDB().then(() => {
+  // Only listen if we are in a runtime that expects it (not Vercel serverless export)
+  // However, for Render/VPS we MUST listen.
+  // Standard Node pattern:
+  if (require.main === module || process.env.NODE_ENV === 'production') {
     const PORT = process.env.PORT || 5000;
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 Socket.io enabled on port ${PORT}`);
     });
-  });
-} else {
-  // For Vercel serverless
-  connectDB();
-}
+  }
+});
 
 module.exports = app;

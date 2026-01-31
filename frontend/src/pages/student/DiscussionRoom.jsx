@@ -1362,9 +1362,9 @@ const DiscussionRoom = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        {!isConnected && (
+                                        {/* {!isConnected && (
                                             <p className="text-yellow-400 text-sm mt-2">Connecting to chat server...</p>
-                                        )}
+                                        )} */}
                                     </div>
                                 </Card>
                             </div>
