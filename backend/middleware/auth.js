@@ -104,7 +104,8 @@ exports.adminOnly = (req, res, next) => {
     }
 };
 // Simulate Server Crash for Students if Custom Mode is ON
-exports.checkCrashMode = async (req, res, next) => {
+// Maintenance Mode Middleware
+exports.checkMaintenanceMode = async (req, res, next) => {
     // Admin bypass
     if (req.user && req.user.role === 'admin') {
         return next();
@@ -112,18 +113,20 @@ exports.checkCrashMode = async (req, res, next) => {
 
     try {
         const Settings = require('../models/Settings');
-        const settings = await Settings.findOne();
-        if (settings && settings.activeModes && settings.activeModes.custom) {
-            // CRASH SIMULATION
-            return res.status(500).json({
+        const setting = await Settings.findOne();
+
+        // If status is specifically set to 'maintenance'
+        if (setting && setting.systemStatus === 'maintenance') {
+            return res.status(503).json({
                 success: false,
-                message: 'INTERNAL SERVER ERROR: SYSTEM CRASH DETECTED',
-                error: 'Critical Failure in module core.sys caused by ShiftSystemException: 0xDEADBEEF',
+                message: 'System under maintenance',
                 maintenanceMode: true
             });
         }
         next();
     } catch (error) {
+        // If DB fails, assume we should try to let them in or fail gracefully. 
+        // Failing open is safer for maintenance middleware to avoid accidental lockouts.
         next();
     }
 };

@@ -17,10 +17,10 @@ const {
     requestSeatChange,
     markAttendanceByQr
 } = require('../controllers/studentController');
-const { protect, checkCrashMode, authorizeActive } = require('../middleware/auth');
+const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
 
-// All routes are protected and crash-checked
-router.use(protect, checkCrashMode);
+// All routes are protected and maintenance-checked
+router.use(protect, checkMaintenanceMode);
 
 // Dashboard
 router.get('/dashboard', getDashboard);

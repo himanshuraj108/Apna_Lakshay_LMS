@@ -7,7 +7,9 @@ import PublicSeatView from './pages/public/PublicSeatView';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import Register from './pages/Register';
-import ServerCrash from './pages/ServerCrash';
+import Register from './pages/Register';
+// import ServerCrash from './pages/ServerCrash'; // Deprecated
+import MaintenancePage from './pages/public/MaintenancePage';
 import PrivacyPolicy from './pages/common/PrivacyPolicy';
 import TermsOfService from './pages/common/TermsOfService';
 import AccessDeniedPending from './pages/public/AccessDeniedPending';
@@ -61,7 +63,8 @@ function App() {
             <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/student'} /> : <Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/server-crash" element={<ServerCrash />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/maintenance" element={<MaintenancePage />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/contact" element={<ContactAdmin />} />
