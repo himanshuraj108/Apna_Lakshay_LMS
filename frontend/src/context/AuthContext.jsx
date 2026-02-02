@@ -37,8 +37,8 @@ export const AuthProvider = ({ children }) => {
                 setUser(JSON.parse(savedUser));
             }
 
-            // Wait for system status check
-            await checkSystemStatus();
+            // Start system status check in background (instant open)
+            checkSystemStatus();
 
             setLoading(false);
         };
