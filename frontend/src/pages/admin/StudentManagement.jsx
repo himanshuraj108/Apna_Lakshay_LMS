@@ -157,6 +157,7 @@ const StudentManagement = () => {
         e.preventDefault();
         setError('');
         setSuccess('');
+        setAssigningSeat(true);
 
         try {
             await api.post('/admin/seats/assign', {
@@ -174,6 +175,8 @@ const StudentManagement = () => {
             setTimeout(() => setSuccess(''), 3000);
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to assign seat');
+        } finally {
+            setAssigningSeat(false);
         }
     };
 
@@ -1012,9 +1015,18 @@ const StudentManagement = () => {
                                 type="submit"
                                 variant="success"
                                 className="flex-1"
-                                disabled={availableSeats.length === 0}
+                                disabled={availableSeats.length === 0 || assigningSeat}
                             >
-                                <IoBedOutline className="inline mr-2" /> Assign Seat
+                                {assigningSeat ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                        Assigning...
+                                    </>
+                                ) : (
+                                    <>
+                                        <IoBedOutline className="inline mr-2" /> Assign Seat
+                                    </>
+                                )}
                             </Button>
                             <Button
                                 type="button"

@@ -92,12 +92,16 @@ const Profile = () => {
         navigate('/login');
     };
 
+    const [submittingRequest, setSubmittingRequest] = useState(false);
+
     const submitRequest = async () => {
+        setSubmittingRequest(true);
         try {
             if (requestType === 'password') {
                 if (requestData.newPassword !== requestData.confirmPassword) {
                     setError('Passwords do not match');
                     setTimeout(() => setError(''), 3000);
+                    setSubmittingRequest(false);
                     return;
                 }
                 await api.put('/student/password', {
@@ -119,6 +123,8 @@ const Profile = () => {
         } catch (error) {
             setError(error.response?.data?.message || 'Operation failed');
             setTimeout(() => setError(''), 3000);
+        } finally {
+            setSubmittingRequest(false);
         }
     };
 
@@ -493,8 +499,13 @@ const Profile = () => {
                         )}
 
                         <div className="flex gap-4">
-                            <Button variant="primary" onClick={submitRequest} className="flex-1">
-                                Submit Request
+                            <Button variant="primary" onClick={submitRequest} className="flex-1" disabled={submittingRequest}>
+                                {submittingRequest ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                        Submitting...
+                                    </>
+                                ) : 'Submit Request'}
                             </Button>
                             <Button
                                 variant="secondary"
