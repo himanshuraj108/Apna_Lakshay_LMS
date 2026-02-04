@@ -1442,6 +1442,17 @@ exports.markAttendance = async (req, res) => {
             if (exitTime !== undefined) updateData.exitTime = exitTime;
             if (notes !== undefined) updateData.notes = notes;
 
+            // Explicitly calculate duration if both times provided
+            if (updateData.entryTime && updateData.exitTime) {
+                const [entryHour, entryMin] = updateData.entryTime.split(':').map(Number);
+                const [exitHour, exitMin] = updateData.exitTime.split(':').map(Number);
+                const entryMinutes = entryHour * 60 + entryMin;
+                let exitMinutes = exitHour * 60 + exitMin;
+                if (exitMinutes < entryMinutes) exitMinutes += 24 * 60; // Overnight
+                updateData.duration = exitMinutes - entryMinutes;
+                updateData.isActive = false;
+            }
+
             return await Attendance.findOneAndUpdate(
                 { student: studentId, date: attendanceDate },
                 updateData,

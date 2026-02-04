@@ -1,63 +1,67 @@
 const mongoose = require('mongoose');
+const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load env vars
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const Attendance = require('../models/Attendance');
-
-const fixDurations = async () => {
+const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
-        console.log('Connected to MongoDB');
+        console.log('MongoDB Connected');
+    } catch (err) {
+        console.error('Error connecting to MongoDB:', err.message);
+        process.exit(1);
+    }
+};
 
-        const records = await Attendance.find({
-            entryTime: { $exists: true, $ne: null },
-            exitTime: { $exists: true, $ne: null }
-        });
+const fixDurations = async () => {
+    await connectDB();
+    console.log('\n--- Starting Duration Fix ---');
 
-        console.log(`Checking ${records.length} records for duration updates...`);
+    const records = await Attendance.find({
+        status: 'present',
+        entryTime: { $exists: true, $ne: null },
+        exitTime: { $exists: true, $ne: null },
+        duration: { $in: [0, null] } // Only fix if 0 or missing
+    });
 
-        let fixedCount = 0;
+    console.log(`Found ${records.length} records to fix.`);
 
-        for (const record of records) {
-            let needsUpdate = false;
+    let updatedCount = 0;
 
-            // Calculate correct duration
+    for (const record of records) {
+        try {
             const [entryHour, entryMin] = record.entryTime.split(':').map(Number);
             const [exitHour, exitMin] = record.exitTime.split(':').map(Number);
+
+            // Validation
+            if (isNaN(entryHour) || isNaN(exitHour)) continue;
 
             const entryMinutes = entryHour * 60 + entryMin;
             let exitMinutes = exitHour * 60 + exitMin;
 
-            // Handle overnight
             if (exitMinutes < entryMinutes) {
-                exitMinutes += 24 * 60;
+                exitMinutes += 24 * 60; // Overnight
             }
 
-            const calculatedDuration = exitMinutes - entryMinutes;
+            const duration = exitMinutes - entryMinutes;
 
-            // If duration is 0, missing, or calculated diff is significant (e.g. logic change)
-            if (!record.duration || record.duration === 0 || record.duration !== calculatedDuration) {
-                console.log(`Update ${record.student} Date: ${record.date.toISOString().split('T')[0]}`);
-                console.log(`   Time: ${record.entryTime}-${record.exitTime}`);
-                console.log(`   Old Duration: ${record.duration} -> New: ${calculatedDuration}`);
-
-                record.duration = calculatedDuration;
-                record.isActive = false; // ensure closed
-                await record.save();
-                fixedCount++;
+            if (duration > 0) {
+                record.duration = duration;
+                record.isActive = false; // Ensure it's marked inactive if duration exists
+                await record.save(); // This might trigger hook but we are setting explicit values
+                updatedCount++;
+                console.log(`Updated ID ${record._id}: ${record.entryTime}-${record.exitTime} = ${duration}m`);
             }
+        } catch (err) {
+            console.error(`Failed to update ${record._id}:`, err.message);
         }
-
-        console.log(`Migration completed. Fixed ${fixedCount} records.`);
-        process.exit(0);
-
-    } catch (error) {
-        console.error('Migration failed:', error);
-        process.exit(1);
     }
+
+    console.log(`\nSuccessfully fixed ${updatedCount} records.`);
+    process.exit();
 };
 
 fixDurations();
