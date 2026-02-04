@@ -164,6 +164,13 @@ const StudentDashboard = () => {
 
     const isActive = dashboardData ? dashboardData.isActive : user?.isActive;
 
+    const getAttendanceColor = (percentage) => {
+        if (percentage >= 75) return 'text-green-400';
+        if (percentage >= 60) return 'text-blue-400';
+        if (percentage >= 40) return 'text-orange-400';
+        return 'text-red-400';
+    };
+
     return (
         <div className="min-h-screen p-6 relative">
             <AnimatePresence>
@@ -292,13 +299,13 @@ const StudentDashboard = () => {
                         <Card delay={0.1} className="h-full flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-between mb-4">
-                                    <IoCalendarOutline size={32} className="text-green-400" />
+                                    <IoCalendarOutline size={32} className={getAttendanceColor(dashboardData?.attendance?.percentage || 0)} />
                                     <span className="text-xs text-gray-400">VIEW DETAILS</span>
                                 </div>
                                 <h3 className="text-lg font-semibold mb-2">Attendance</h3>
                             </div>
                             <div>
-                                <p className="text-2xl font-bold text-green-400">{dashboardData?.attendance?.percentage || 0}%</p>
+                                <p className={`text-2xl font-bold ${getAttendanceColor(dashboardData?.attendance?.percentage || 0)}`}>{dashboardData?.attendance?.percentage || 0}%</p>
                                 <p className="text-sm text-gray-400">
                                     {dashboardData?.attendance?.present || 0} / {dashboardData?.attendance?.total || 0} days
                                 </p>
