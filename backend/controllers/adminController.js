@@ -376,7 +376,7 @@ exports.getDashboard = async (req, res) => {
 
         // 4. Fees Collected
         const feesCollectedAgg = await Fee.aggregate([
-            { $match: { status: 'paid', month: currentMonth, year: currentYear } },
+            { $match: { status: 'paid' } },
             {
                 $lookup: {
                     from: 'users',
@@ -1304,7 +1304,7 @@ exports.assignSeat = async (req, res) => {
                     'assignments.$[elem].endDate': new Date()
                 }
             },
-            { arrayFilters: [{ 'elem.student': studentId, 'elem.status': 'active' }] }
+            { arrayFilters: [{ 'elem.student': new mongoose.Types.ObjectId(studentId), 'elem.status': 'active' }] }
         );
 
         // Update isOccupied flag for previous seats

@@ -36,6 +36,7 @@ const StudentManagement = () => {
         shift: 'full',
         negotiatedPrice: ''
     });
+    const [assigningSeat, setAssigningSeat] = useState(false);
     const [deletePassword, setDeletePassword] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
