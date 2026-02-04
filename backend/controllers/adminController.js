@@ -1,4 +1,5 @@
 ﻿// Simplified adminController - just basic exports
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Floor = require('../models/Floor');
 const Room = require('../models/Room');
