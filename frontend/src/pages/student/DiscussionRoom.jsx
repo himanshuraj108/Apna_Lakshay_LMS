@@ -283,6 +283,7 @@ const DiscussionRoom = () => {
         const value = e.target.value;
         const cursorPos = e.target.selectionStart;
 
+        // Ensure we don't zoom on iOS (needs 16px font)
         setMessageInput(value);
         setCursorPosition(cursorPos);
 
@@ -667,8 +668,30 @@ const DiscussionRoom = () => {
         );
     }
 
+    // Viewport Management for Mobile "App-Like" Feel
+    useEffect(() => {
+        const viewportMeta = document.querySelector('meta[name="viewport"]');
+        const originalContent = viewportMeta?.getAttribute('content');
+
+        if (viewportMeta) {
+            // Force non-scalable viewport
+            viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+        }
+
+        // Prevent body scroll bounce
+        document.body.style.overscrollBehavior = 'none';
+
+        return () => {
+            // Cleanup
+            if (viewportMeta && originalContent) {
+                viewportMeta.setAttribute('content', originalContent);
+            }
+            document.body.style.overscrollBehavior = '';
+        };
+    }, []);
+
     return (
-        <div className={`min-h-screen p-4 md:p-6 flex flex-col ${isShaking ? 'shake-screen' : ''}`}>
+        <div className={`h-[100dvh] overflow-hidden p-4 md:p-6 flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`}>
             <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col h-[calc(100vh-100px)]">
                 {/* Header with Back Button - Hidden on mobile if chat is open */}
                 <div className={`${currentRoom ? 'hidden md:flex' : 'flex'} items-center justify-between mb-4 md:mb-6`}>
