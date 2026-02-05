@@ -114,12 +114,12 @@ const DiscussionRoom = () => {
     const fetchStudents = async () => {
         try {
             const response = await api.get('/chat/students');
-            console.log('Students API response:', response.data);
+
             if (response.data.success) {
                 setStudents(response.data.students);
-                console.log('Students loaded:', response.data.students.length);
+
             } else {
-                console.log('No students returned or success=false');
+
             }
         } catch (error) {
             console.error('Error fetching students:', error);
@@ -140,7 +140,7 @@ const DiscussionRoom = () => {
         });
 
         socket.on('user-joined', (data) => {
-            console.log(`${data.userName} joined`);
+
         });
 
         return () => {
@@ -482,12 +482,12 @@ const DiscussionRoom = () => {
     };
 
     const switchToGroup = (group) => {
-        console.log('Switching to group:', group);
+
         setCurrentRoom(group);
         setActiveTab('groups');
         loadMessages(group._id);
         joinRoom(group._id);
-        console.log('Current room set to:', group.name);
+
     };
 
     const handleRenameGroup = async (newName) => {
@@ -696,41 +696,52 @@ const DiscussionRoom = () => {
         <div className={`h-[100dvh] overflow-hidden p-4 md:p-6 flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`}>
             <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col h-[calc(100vh-100px)]">
                 {/* Header with Back Button - Hidden on mobile if chat is open */}
-                <div className={`${currentRoom ? 'hidden md:flex' : 'flex'} items-center justify-between mb-4 md:mb-6`}>
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="secondary"
-                            onClick={() => navigate('/student')}
-                            className="flex items-center gap-2"
-                        >
-                            <IoArrowBack size={20} />
-                            Back to Dashboard
-                        </Button>
-                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-3">
-                            <IoChatbubblesOutline className="text-orange-500" size={36} />
-                            Discussion Room
-                        </h1>
-                        {isConnected && (
-                            <span className="flex items-center gap-2 text-green-400 text-sm">
-                                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                                Connected
-                            </span>
-                        )}
-                        {pendingInvitations.length > 0 && (
-                            <button
-                                onClick={() => {
-                                    setCurrentInvitation(pendingInvitations[0]);
-                                    setShowInvitationPopup(true);
-                                }}
-                                className="relative ml-4 text-orange-400 hover:text-orange-300 transition-colors"
-                                title="Group invitations"
+
+                <div className="flex flex-col gap-4 mb-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={() => navigate('/student')}
+                                className="flex items-center gap-2 px-3 py-1.5 text-sm"
                             >
-                                <IoPeople size={24} />
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                                    {pendingInvitations.length}
+                                <IoArrowBack size={18} />
+                                Dashboard
+                            </Button>
+
+                            <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block"></div>
+
+                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-2">
+                                <IoChatbubblesOutline className="text-orange-500" size={24} />
+                                <span className="hidden sm:inline">Discussion Room</span>
+                                <span className="sm:hidden">Chat</span>
+                            </h1>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            {isConnected && (
+                                <span className="flex items-center gap-2 text-green-400 text-xs md:text-sm bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
+                                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                                    <span className="hidden sm:inline">Connected</span>
                                 </span>
-                            </button>
-                        )}
+                            )}
+
+                            {pendingInvitations.length > 0 && (
+                                <button
+                                    onClick={() => {
+                                        setCurrentInvitation(pendingInvitations[0]);
+                                        setShowInvitationPopup(true);
+                                    }}
+                                    className="relative text-orange-400 hover:text-orange-300 transition-colors p-1"
+                                    title="Group invitations"
+                                >
+                                    <IoPeople size={24} />
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                                        {pendingInvitations.length}
+                                    </span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -860,7 +871,7 @@ const DiscussionRoom = () => {
                                                 className="cursor-pointer hover:border-orange-500/50 transition-all"
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    console.log('Card clicked, group:', group);
+
                                                     switchToGroup(group);
                                                 }}
                                             >
