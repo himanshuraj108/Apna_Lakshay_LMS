@@ -11,6 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 import GroupCreationModal from '../../components/GroupCreationModal';
 import GroupSettingsModal from '../../components/GroupSettingsModal';
 import GroupInvitationPopup from '../../components/GroupInvitationPopup';
+import DiscussionGuidelinesModal from '../../components/DiscussionGuidelinesModal';
+import { BASE_URL } from '../../utils/api';
 
 const DiscussionRoom = () => {
     const navigate = useNavigate();
@@ -424,7 +426,7 @@ const DiscussionRoom = () => {
 
     const handleDownloadImage = async (fileUrl, fileName) => {
         try {
-            const response = await fetch(`http://localhost:5000${fileUrl}`);
+            const response = await fetch(`${BASE_URL}${fileUrl}`);
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -733,111 +735,107 @@ const DiscussionRoom = () => {
                 </div>
 
                 {/* Guidelines Banner */}
-                <AnimatePresence>
-                    {showGuidelines && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-xl p-6 mb-6 relative"
-                        >
+                {/* Guidelines Modal */}
+                <DiscussionGuidelinesModal
+                    isOpen={showGuidelines}
+                    onClose={() => setShowGuidelines(false)}
+                />
 
-                            <div className="flex items-start gap-4">
-                                <div className="bg-orange-500/20 p-3 rounded-full">
-                                    <IoWarning className="text-orange-400" size={24} />
-                                </div>
-                                <div className="flex-1">
-                                    <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                                        <IoInformationCircle className="text-blue-400" />
-                                        Study Discussion Guidelines
-                                    </h2>
-                                    <div className="space-y-4 text-gray-300">
-                                        <p>Welcome to the Study Discussion Room! This is a professional space for learning and collaboration. Please follow these guidelines:</p>
-                                        <ul className="list-disc pl-5 space-y-2">
-                                            <li><strong>Be Respectful:</strong> Treat everyone with courtesy. No harassment, hate speech, or bullying.</li>
-                                            <li><strong>Stay on Topic:</strong> Keep discussions relevant to course materials, assignments, and study topics.</li>
-                                            <li><strong>No Spam:</strong> Avoid repetitive messages or promotional content.</li>
-                                            <li><strong>Privacy First:</strong> Do not share personal contact information like phone numbers or addresses.</li>
-                                            <li><strong>Help Others:</strong> Constructive feedback and helping peers is encouraged.</li>
-                                        </ul>
-                                        <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mt-4">
-                                            <p className="text-sm text-blue-300">
-                                                <strong>Note:</strong> Admins monitor this chat. Violations may result in suspension of chat privileges.
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="mt-8 flex justify-end">
-                                        <Button onClick={() => setShowGuidelines(false)}>
-                                            I Understand
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )
-                    }
-                </AnimatePresence >
+                {/* Sticky Menubar Navigation */}
+                <div className="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-md border-b border-white/10 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 pt-2">
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-1 relative">
+                            {/* Tab Indicator Background - Optional fancy effect could go here */}
 
-                {/* Tab Switcher */}
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex gap-2">
-                        <Button
-                            variant={activeTab === 'public' ? 'primary' : 'secondary'}
-                            onClick={() => {
-                                setActiveTab('public');
-                                const publicRoom = rooms.find(r => r.type === 'public');
-                                if (publicRoom) {
-                                    setCurrentRoom(publicRoom);
-                                    loadMessages(publicRoom._id);
-                                }
-                            }}
-                            className="flex items-center gap-2"
-                        >
-                            <IoPeople size={20} />
-                            Public Chat
-                        </Button>
-                        <Button
-                            variant={activeTab === 'groups' ? 'primary' : 'secondary'}
-                            onClick={() => {
-                                setActiveTab('groups');
-                                setCurrentRoom(null); // Clear room to show group list
-                            }}
-                            className="flex items-center gap-2"
-                        >
-                            <IoPeople size={20} />
-                            Groups ({groups.length})
-                        </Button>
-                        <Button
-                            variant={activeTab === 'private' ? 'primary' : 'secondary'}
-                            onClick={() => {
-                                setActiveTab('private');
-                                setCurrentRoom(null);
-                            }}
-                            className="flex items-center gap-2"
-                        >
-                            <IoPersonOutline size={20} />
-                            Private
-                        </Button>
-                    </div>
-
-                    {
-                        activeTab === 'groups' && (
-                            <Button
-                                variant="primary"
-                                onClick={() => setShowGroupModal(true)}
-                                className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500"
+                            {/* Public Tab */}
+                            <button
+                                onClick={() => {
+                                    setActiveTab('public');
+                                    const publicRoom = rooms.find(r => r.type === 'public');
+                                    if (publicRoom) {
+                                        setCurrentRoom(publicRoom);
+                                        loadMessages(publicRoom._id);
+                                    }
+                                }}
+                                className={`flex-1 pb-3 text-center relative transition-colors ${activeTab === 'public' ? 'text-orange-400 font-bold' : 'text-gray-400 font-medium'}`}
                             >
-                                <IoAddCircle size={20} />
-                                Create Group
-                            </Button>
-                        )
-                    }
+                                <div className="flex items-center justify-center gap-2">
+                                    <IoPeople size={20} />
+                                    <span>Public</span>
+                                </div>
+                                {activeTab === 'public' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-red-500"
+                                    />
+                                )}
+                            </button>
+
+                            {/* Groups Tab */}
+                            <button
+                                onClick={() => {
+                                    setActiveTab('groups');
+                                    setCurrentRoom(null);
+                                }}
+                                className={`flex-1 pb-3 text-center relative transition-colors ${activeTab === 'groups' ? 'text-orange-400 font-bold' : 'text-gray-400 font-medium'}`}
+                            >
+                                <div className="flex items-center justify-center gap-2">
+                                    <IoPeople size={20} />
+                                    <span>Groups</span>
+                                    {groups.length > 0 && (
+                                        <span className="bg-white/10 text-xs px-2 py-0.5 rounded-full">{groups.length}</span>
+                                    )}
+                                </div>
+                                {activeTab === 'groups' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-red-500"
+                                    />
+                                )}
+                            </button>
+
+                            {/* Private Tab */}
+                            <button
+                                onClick={() => {
+                                    setActiveTab('private');
+                                    setCurrentRoom(null);
+                                }}
+                                className={`flex-1 pb-3 text-center relative transition-colors ${activeTab === 'private' ? 'text-orange-400 font-bold' : 'text-gray-400 font-medium'}`}
+                            >
+                                <div className="flex items-center justify-center gap-2">
+                                    <IoPersonOutline size={20} />
+                                    <span>Private</span>
+                                </div>
+                                {activeTab === 'private' && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-red-500"
+                                    />
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
+                {/* Show "Create Group" button below menubar only when in Groups tab */}
+                {activeTab === 'groups' && (
+                    <div className="mb-4 flex justify-end">
+                        <Button
+                            variant="primary"
+                            onClick={() => setShowGroupModal(true)}
+                            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 w-full sm:w-auto justify-center"
+                        >
+                            <IoAddCircle size={20} />
+                            Create New Group
+                        </Button>
+                    </div>
+                )}
+
+
                 {/* Main Content Area */}
-                <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
+                <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden">
                     {/* Sidebar - Groups/Chat List */}
-                    <div className={`w-full lg:w-80 flex flex-col gap-6 ${currentRoom ? 'hidden lg:flex' : 'flex'}`}>
+                    <div className={`w-full lg:w-80 flex flex-col gap-6 h-full ${currentRoom ? 'hidden lg:flex' : 'flex'}`}>
                         {/* Groups List (when on groups tab and no group selected) */}
                         {
                             activeTab === 'groups' && !currentRoom && (
@@ -984,7 +982,7 @@ const DiscussionRoom = () => {
                     {/* Main Chat Container */}
                     {
                         (activeTab === 'public' || ((activeTab === 'groups' || activeTab === 'private') && currentRoom)) && (
-                            <div className={`flex-1 flex flex-col h-full absolute inset-0 md:relative md:inset-auto z-20 bg-gray-900 md:bg-transparent ${!currentRoom && 'hidden md:flex'}`}>
+                            <div className={`flex-1 flex flex-col h-full z-20 bg-gray-900 md:bg-transparent ${!currentRoom && 'hidden md:flex'}`}>
                                 <Card className="flex flex-col h-full border-none md:border md:border-white/10 rounded-none md:rounded-2xl">
                                     {/* Chat Header */}
                                     <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -1115,7 +1113,7 @@ const DiscussionRoom = () => {
                                                                 </div>
                                                             ) : msg.sender?.profileImage ? (
                                                                 <img
-                                                                    src={msg.sender.profileImage.startsWith('http') ? msg.sender.profileImage : `http://localhost:5000${msg.sender.profileImage}`}
+                                                                    src={msg.sender.profileImage.startsWith('http') ? msg.sender.profileImage : `${BASE_URL}${msg.sender.profileImage}`}
                                                                     alt={msg.sender.name}
                                                                     className="w-full h-full object-cover"
                                                                 />
@@ -1159,11 +1157,11 @@ const DiscussionRoom = () => {
                                                                     )}
                                                                 </p>
                                                                 {msg.type === 'image' && msg.fileUrl && (
-                                                                    <div className="relative mt-2 group inline-block">
+                                                                    <div className="relative mt-2 group inline-block max-w-full">
                                                                         <img
-                                                                            src={`http://localhost:5000${msg.fileUrl}`}
+                                                                            src={`${BASE_URL}${msg.fileUrl}`}
                                                                             alt={msg.fileName || 'Image'}
-                                                                            className="max-w-md rounded-lg border border-white/20"
+                                                                            className="max-w-full md:max-w-md h-auto rounded-lg border border-white/20"
                                                                         />
                                                                         <button
                                                                             onClick={() => handleDownloadImage(msg.fileUrl, msg.fileName)}
@@ -1176,7 +1174,7 @@ const DiscussionRoom = () => {
                                                                 )}
                                                                 {msg.type === 'pdf' && msg.fileUrl && (
                                                                     <a
-                                                                        href={`http://localhost:5000${msg.fileUrl}`}
+                                                                        href={`${BASE_URL}${msg.fileUrl}`}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         className="mt-2 flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
@@ -1237,7 +1235,7 @@ const DiscussionRoom = () => {
                                                                         <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border border-white/10 bg-gray-700">
                                                                             {student.profileImage ? (
                                                                                 <img
-                                                                                    src={student.profileImage.startsWith('http') ? student.profileImage : `http://localhost:5000${student.profileImage}`}
+                                                                                    src={student.profileImage.startsWith('http') ? student.profileImage : `${BASE_URL}${student.profileImage}`}
                                                                                     alt={student.name}
                                                                                     className="w-full h-full object-cover"
                                                                                 />
@@ -1344,7 +1342,7 @@ const DiscussionRoom = () => {
                                             </div>
                                         )}
 
-                                        <div className={`flex items-center gap-3 border rounded-lg px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-800/50 border-gray-700 opacity-60' : 'bg-white/5 border-white/10'}`}>
+                                        <div className={`flex items-center gap-2 md:gap-3 border rounded-lg px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-800/50 border-gray-700 opacity-60' : 'bg-white/5 border-white/10'}`}>
                                             {/* File Input Hidden */}
                                             <input
                                                 ref={fileInputRef}
@@ -1361,27 +1359,27 @@ const DiscussionRoom = () => {
                                                 value={!isGlobalChatEnabled ? "Currently chat is disabled" : (user?.isChatBlocked ? "You are blocked from chat" : (currentRoom?.isDisabled ? "This room is disabled" : messageInput))}
                                                 onChange={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleInputChange}
                                                 onKeyPress={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleKeyPress}
-                                                placeholder={isGlobalChatEnabled && !user?.isChatBlocked && !currentRoom?.isDisabled ? `Message ${currentRoom?.type === 'private' ? 'student' : currentRoom?.name}...` : ""}
-                                                className="flex-1 bg-transparent border-none text-white focus:ring-0 focus:outline-none placeholder-gray-500"
+                                                placeholder={isGlobalChatEnabled && !user?.isChatBlocked && !currentRoom?.isDisabled ? `Message...` : ""}
+                                                className="flex-1 min-w-0 bg-transparent border-none text-white focus:ring-0 focus:outline-none placeholder-gray-500 text-sm md:text-base py-1"
                                                 readOnly={!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
                                             />
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1 md:gap-2 shrink-0">
                                                 <button
                                                     onClick={() => fileInputRef.current?.click()}
                                                     disabled={uploadingFile || !isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
-                                                    className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                                                    className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
                                                     title="Attach file"
                                                 >
-                                                    <IoAttach size={24} />
+                                                    <IoAttach size={20} className="md:w-6 md:h-6" />
                                                 </button>
 
                                                 <button
                                                     onClick={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : sendMessage}
                                                     disabled={(!messageInput.trim() && !selectedFile) || uploadingFile || !isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
-                                                    className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl text-white hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    className="p-1.5 md:p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg md:rounded-xl text-white hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                                 >
-                                                    {(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? <IoLockClosed size={20} /> : <IoSend size={20} />}
+                                                    {(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? <IoLockClosed size={18} className="md:w-5 md:h-5" /> : <IoSend size={18} className="md:w-5 md:h-5" />}
                                                 </button>
                                             </div>
                                         </div>
