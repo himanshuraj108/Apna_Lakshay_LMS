@@ -1,4 +1,4 @@
-# 📚 Apna Lakshay - Library Management System
+# Apna Lakshay - Library Management System
 
 A production-ready MERN stack web application for offline library seat booking and digital management.
 
