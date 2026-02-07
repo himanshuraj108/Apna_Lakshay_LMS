@@ -2,7 +2,7 @@
 
 A production-ready MERN stack web application for offline library seat booking and digital management.
 
-## 🧱 Tech Stack
+## Tech Stack
 
 - **Frontend**: React.js, Vite, Tailwind CSS, Framer Motion
 - **Backend**: Node.js, Express.js
