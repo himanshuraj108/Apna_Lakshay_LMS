@@ -10,7 +10,7 @@ A production-ready MERN stack web application for offline library seat booking a
 - **Authentication**: JWT
 - **Email**: Nodemailer with Google App Password
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
