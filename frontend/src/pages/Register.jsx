@@ -91,10 +91,10 @@ const Register = () => {
                 setSuccess(response.data.message);
                 setFormData({ name: '', email: '', mobile: '', address: '' });
 
-                // Redirect to login after 3 seconds
+                // Redirect to login after 5 seconds
                 setTimeout(() => {
                     navigate('/login');
-                }, 3000);
+                }, 5000);
             }
         } catch (error) {
             setError(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -151,12 +151,29 @@ const Register = () => {
                             </div>
                         )}
 
+
                         {success && (
-                            <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg mb-4">
-                                {success}
-                                <p className="text-sm mt-2">Redirecting to login...</p>
-                            </div>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-500 rounded-2xl p-6 mb-6 text-center"
+                            >
+                                <div className="flex justify-center mb-4">
+                                    <div className="bg-green-500 rounded-full p-4">
+                                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <h3 className="text-2xl font-bold text-green-400 mb-3">Registration Successful!</h3>
+                                <div className="bg-white/10 rounded-xl p-4 mb-4">
+                                    <p className="text-lg font-semibold text-white mb-2">Check Your Email for Credentials</p>
+                                    <p className="text-sm text-gray-300">Your login credentials have been sent to <span className="font-bold text-green-400">{formData.email || 'your email'}</span></p>
+                                </div>
+                                <p className="text-sm text-gray-400 animate-pulse">Redirecting to login in 5 seconds...</p>
+                            </motion.div>
                         )}
+
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>

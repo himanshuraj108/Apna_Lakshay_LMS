@@ -82,7 +82,7 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-[#0f172a] p-4">
+        <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-[#0f172a] p-4 sm:p-6 md:p-8">
             {/* Background elements similar to Login */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-[20%] left-[10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[100px]" />
@@ -94,12 +94,12 @@ const ForgotPassword = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full max-w-md relative z-10"
             >
-                <div className="bg-[#1e293b]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-                    <div className="mb-6 flex items-center gap-4">
+                <div className="bg-[#1e293b]/80 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-2xl">
+                    <div className="mb-6 flex items-center gap-3 sm:gap-4">
                         <Link to="/login" className="text-gray-400 hover:text-white transition-colors">
-                            <IoArrowBack size={24} />
+                            <IoArrowBack size={20} className="sm:w-6 sm:h-6" />
                         </Link>
-                        <h2 className="text-2xl font-bold text-white">
+                        <h2 className="text-xl sm:text-2xl font-bold text-white">
                             {step === 1 && 'Forgot Password'}
                             {step === 2 && 'Verify OTP'}
                             {step === 3 && 'Reset Password'}
@@ -107,14 +107,14 @@ const ForgotPassword = () => {
                     </div>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm mb-6">
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm mb-4 sm:mb-6">
                             {error}
                         </div>
                     )}
 
                     {success && (
-                        <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl text-sm mb-6 flex items-center gap-2">
-                            <IoCheckmarkCircle size={18} /> {success}
+                        <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm mb-4 sm:mb-6 flex items-center gap-2">
+                            <IoCheckmarkCircle size={16} className="sm:w-[18px] sm:h-[18px] flex-shrink-0" /> {success}
                         </div>
                     )}
 
@@ -126,24 +126,24 @@ const ForgotPassword = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 onSubmit={handleSendOTP}
-                                className="space-y-6"
+                                className="space-y-4 sm:space-y-6"
                             >
-                                <p className="text-gray-400 text-sm">Enter your registered email address to receive a verification code.</p>
+                                <p className="text-gray-400 text-xs sm:text-sm">Enter your registered email address to receive a verification code.</p>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-2">Email Address</label>
                                     <div className="relative">
-                                        <IoMail className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-500" size={20} />
+                                        <IoMail className="absolute top-1/2 -translate-y-1/2 left-3 sm:left-4 text-gray-500" size={18} />
                                         <input
                                             type="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none"
+                                            className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none text-sm sm:text-base"
                                             placeholder="Enter your email"
                                             required
                                         />
                                     </div>
                                 </div>
-                                <Button variant="primary" type="submit" className="w-full" disabled={loading}>
+                                <Button variant="primary" type="submit" className="w-full text-sm sm:text-base py-2.5 sm:py-3" disabled={loading}>
                                     {loading ? 'Sending OTP...' : 'Send Verification Code'}
                                 </Button>
                             </motion.form>
@@ -156,32 +156,32 @@ const ForgotPassword = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 onSubmit={handleVerifyOTP}
-                                className="space-y-6"
+                                className="space-y-4 sm:space-y-6"
                             >
-                                <p className="text-gray-400 text-sm">Enter the 4-digit code sent to <span className="text-white font-medium">{email}</span></p>
+                                <p className="text-gray-400 text-xs sm:text-sm">Enter the 4-digit code sent to <span className="text-white font-medium break-all">{email}</span></p>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">OTP Code</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-2">OTP Code</label>
                                     <div className="relative">
-                                        <IoKeypad className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-500" size={20} />
+                                        <IoKeypad className="absolute top-1/2 -translate-y-1/2 left-3 sm:left-4 text-gray-500" size={18} />
                                         <input
                                             type="text"
                                             value={otp}
                                             onChange={(e) => setOtp(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none tracking-widest text-lg font-mono"
+                                            className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none tracking-widest text-base sm:text-lg font-mono"
                                             placeholder="XXXX"
                                             maxLength={4}
                                             required
                                         />
                                     </div>
                                 </div>
-                                <Button variant="primary" type="submit" className="w-full" disabled={loading}>
+                                <Button variant="primary" type="submit" className="w-full text-sm sm:text-base py-2.5 sm:py-3" disabled={loading}>
                                     {loading ? 'Verifying...' : 'Verify OTP'}
                                 </Button>
                                 <div className="text-center">
                                     <button
                                         type="button"
                                         onClick={() => setStep(1)}
-                                        className="text-sm text-blue-400 hover:text-blue-300"
+                                        className="text-xs sm:text-sm text-blue-400 hover:text-blue-300"
                                     >
                                         Change Email
                                     </button>
@@ -196,18 +196,18 @@ const ForgotPassword = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
                                 onSubmit={handleResetPassword}
-                                className="space-y-6"
+                                className="space-y-4 sm:space-y-6"
                             >
-                                <p className="text-gray-400 text-sm">Create a new strong password for your account.</p>
+                                <p className="text-gray-400 text-xs sm:text-sm">Create a new strong password for your account.</p>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">New Password</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-2">New Password</label>
                                     <div className="relative">
-                                        <IoLockClosed className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-500" size={20} />
+                                        <IoLockClosed className="absolute top-1/2 -translate-y-1/2 left-3 sm:left-4 text-gray-500" size={18} />
                                         <input
                                             type="password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none"
+                                            className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none text-sm sm:text-base"
                                             placeholder="New password"
                                             minLength={6}
                                             required
@@ -215,21 +215,21 @@ const ForgotPassword = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-400 mb-2">Confirm Password</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-2">Confirm Password</label>
                                     <div className="relative">
-                                        <IoLockClosed className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-500" size={20} />
+                                        <IoLockClosed className="absolute top-1/2 -translate-y-1/2 left-3 sm:left-4 text-gray-500" size={18} />
                                         <input
                                             type="password"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none"
+                                            className="w-full pl-10 sm:pl-11 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 transition-colors text-white outline-none text-sm sm:text-base"
                                             placeholder="Confirm new password"
                                             minLength={6}
                                             required
                                         />
                                     </div>
                                 </div>
-                                <Button variant="primary" type="submit" className="w-full" disabled={loading}>
+                                <Button variant="primary" type="submit" className="w-full text-sm sm:text-base py-2.5 sm:py-3" disabled={loading}>
                                     {loading ? 'Resetting...' : 'Set New Password'}
                                 </Button>
                             </motion.form>
