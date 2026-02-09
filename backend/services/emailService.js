@@ -239,21 +239,23 @@ exports.sendSeatAssignmentEmail = async (student, seat, shift) => {
     <p>Your dedicated study space is ready! Here are your seat allocation details:</p>
     
     <div class="highlight-box">
-      <table width="100%">
+      <table width="100%" cellpadding="8" cellspacing="0">
         <tr>
-          <td width="50%">
-            <span class="label">Seat Number</span>
-            <p class="value" style="font-size: 28px; color: #7C3AED;">${seat.number}</p>
+          <td width="50%" style="vertical-align: top; text-align: center; padding: 15px;">
+            <span class="label" style="display: block; margin-bottom: 8px;">Seat Number</span>
+            <p class="value" style="font-size: 32px; color: #7C3AED; font-weight: bold; margin: 0;">${seat.number}</p>
           </td>
-          <td width="50%">
-            <span class="label">Assigned Shift</span>
-            <p class="value">${shift}</p>
+          <td width="50%" style="vertical-align: top; text-align: center; padding: 15px; border-left: 1px solid #E5E7EB;">
+            <span class="label" style="display: block; margin-bottom: 8px;">Assigned Shift</span>
+            <p class="value" style="font-size: 20px; font-weight: bold; margin: 0;">${shift}</p>
           </td>
         </tr>
       </table>
-      <hr style="border: 0; border-top: 1px solid #E5E7EB; margin: 15px 0;">
-      <span class="label">Monthly Fee</span>
-      <p class="value">₹${seat.currentPrice}</p>
+      <hr style="border: 0; border-top: 2px solid #E5E7EB; margin: 20px 0;">
+      <div style="text-align: center; padding: 10px 0;">
+        <span class="label" style="display: block; margin-bottom: 8px;">Monthly Fee</span>
+        <p class="value" style="font-size: 24px; color: #059669; font-weight: bold; margin: 0;">₹${seat.currentPrice}</p>
+      </div>
     </div>
   `;
 
