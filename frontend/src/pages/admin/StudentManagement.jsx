@@ -30,7 +30,15 @@ const StudentManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
-    const [formData, setFormData] = useState({ name: '', email: '', mobile: '', address: '', systemMode: mode });
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        mobile: '',
+        address: '',
+        password: '',
+        confirmPassword: '',
+        systemMode: mode
+    });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
         shift: 'full',
@@ -61,6 +69,13 @@ const StudentManagement = () => {
         // Update form data default if mode changes
         setFormData(prev => ({ ...prev, systemMode: mode }));
     }, [mode]);
+
+    // Update active tab when URL param changes
+    useEffect(() => {
+        if (tabParam) {
+            setActiveTab(tabParam);
+        }
+    }, [tabParam]);
 
     const fetchStudents = async () => {
         try {
@@ -225,7 +240,21 @@ const StudentManagement = () => {
     const openAddModal = () => {
         setEditMode(false);
         setSelectedStudent(null);
-        setFormData({ name: '', email: '', mobile: '', address: '' });
+
+        // Generate initial random password
+        const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let password = '';
+        for (let i = 0; i < 8; i++) {
+            password += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+
+        setFormData({
+            name: '',
+            email: '',
+            mobile: '',
+            address: '',
+            password: password
+        });
         setShowModal(true);
     };
 
@@ -416,9 +445,19 @@ const StudentManagement = () => {
         if (!selectedSeat) return shifts;
 
         // Filter out shifts that are already taken on this seat
-        return shifts.filter(shift => {
+        const available = shifts.filter(shift => {
             return !selectedSeat.takenShiftIds.includes(shift._id || shift.id);
         });
+
+        // Special: If ANY shift is taken, remove 'full' shift option too
+        if (selectedSeat.takenShiftIds.length > 0) {
+            return available.filter(s => {
+                const isFull = s.id === 'full' || s.id === 'full_day' || (s.name && s.name.toLowerCase().includes('full'));
+                return !isFull;
+            });
+        }
+
+        return available;
     };
 
 
@@ -1015,6 +1054,38 @@ const StudentManagement = () => {
                                 placeholder="Enter student address"
                             />
                         </div>
+
+                        {!editMode && (
+                            <div className="space-y-1">
+                                <label className="block text-sm font-medium mb-1">Generated Password</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={formData.password}
+                                        readOnly
+                                        className="input flex-1 bg-gray-700/50 cursor-not-allowed font-mono text-center tracking-wider"
+                                        placeholder="Generating..."
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                                            let password = '';
+                                            for (let i = 0; i < 8; i++) {
+                                                password += charset.charAt(Math.floor(Math.random() * charset.length));
+                                            }
+                                            setFormData({ ...formData, password: password });
+                                        }}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors font-medium"
+                                    >
+                                        Regenerate
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    This password will be sent to the student via email.
+                                </p>
+                            </div>
+                        )}
                         <div className="flex gap-4">
                             <Button type="submit" variant="primary" className="flex-1">
                                 {editMode ? 'Update Student' : 'Create Student'}
@@ -1028,7 +1099,7 @@ const StudentManagement = () => {
                                 Cancel
                             </Button>
                         </div>
-                        {!editMode && (
+                        {!editMode && !formData.password && (
                             <p className="text-sm text-gray-400">
                                 Note: A random password will be generated and shown after creation (email disabled)
                             </p>
@@ -1085,9 +1156,10 @@ const StudentManagement = () => {
                                         </option>
                                     ));
                                 })()}
-                                {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                    <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
-                                )}
+                                {!isCustom && !shifts.some(s => s.id === 'full') &&
+                                    (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
+                                        <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
+                                    )}
                             </select>
                             {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
                                 <p className="text-sm text-yellow-400 mt-2">

@@ -195,18 +195,20 @@ exports.registerStudent = async (req, res) => {
             });
         }
 
-        // Generate random password
-        const generatePassword = () => {
-            const length = 8;
-            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let password = '';
-            for (let i = 0; i < length; i++) {
-                password += charset.charAt(Math.floor(Math.random() * charset.length));
-            }
-            return password;
-        };
-
-        const plainPassword = generatePassword();
+        // Use provided password or generate random one
+        let plainPassword = req.body.password;
+        if (!plainPassword) {
+            const generatePassword = () => {
+                const length = 8;
+                const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let password = '';
+                for (let i = 0; i < length; i++) {
+                    password += charset.charAt(Math.floor(Math.random() * charset.length));
+                }
+                return password;
+            };
+            plainPassword = generatePassword();
+        }
 
         // Create student user
         const student = await User.create({

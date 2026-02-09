@@ -15,10 +15,14 @@ import {
     IoDocumentTextOutline,
     IoFlashOutline,
     IoBarChartOutline,
-    IoRefresh
+    IoRefresh,
+    IoArrowForward
 } from 'react-icons/io5';
 
+import { useNavigate } from 'react-router-dom';
+
 const AttendanceManagement = () => {
+    const navigate = useNavigate();
     const [students, setStudents] = useState([]);
     const [attendance, setAttendance] = useState({});
 
@@ -119,6 +123,10 @@ const AttendanceManagement = () => {
     };
 
     const toggleStatus = (studentId) => {
+        // Prevent toggling if student has no seat (should rely on redirect, but good safety)
+        const student = students.find(s => s._id === studentId);
+        if (!student?.seat) return;
+
         setAttendance(prev => {
             const current = prev[studentId] || { status: 'absent', entryTime: '', exitTime: '', notes: '' };
             return {
@@ -166,7 +174,11 @@ const AttendanceManagement = () => {
         setAttendance(prev => {
             const updated = { ...prev };
             Object.keys(updated).forEach(id => {
-                updated[id] = { ...updated[id], status: 'present' };
+                // Only mark students with seats
+                const student = students.find(s => s._id === id);
+                if (student?.seat) {
+                    updated[id] = { ...updated[id], status: 'present' };
+                }
             });
             return updated;
         });
@@ -176,6 +188,7 @@ const AttendanceManagement = () => {
         setAttendance(prev => {
             const updated = { ...prev };
             Object.keys(updated).forEach(id => {
+                // Only mark students with seats (though absent is default/fine for no-seat too)
                 updated[id] = { ...updated[id], status: 'absent' };
             });
             return updated;
@@ -319,39 +332,57 @@ const AttendanceManagement = () => {
                                 {students.map((student) => {
                                     const data = attendance[student._id] || { status: 'absent' };
                                     const isPresent = data.status === 'present';
+                                    const hasSeat = !!student.seat;
 
                                     return (
                                         <motion.div
                                             key={student._id}
-                                            className={`relative overflow-hidden rounded-xl border transition-all duration-200 ${isPresent
-                                                ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-green-500/50 shadow-lg shadow-green-900/20'
-                                                : 'bg-gray-900 border-white/10 opacity-75 hover:opacity-100'
+                                            className={`relative overflow-hidden rounded-xl border transition-all duration-200 ${!hasSeat
+                                                ? 'bg-yellow-500/5 border-yellow-500/20 opacity-90'
+                                                : isPresent
+                                                    ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-green-500/50 shadow-lg shadow-green-900/20'
+                                                    : 'bg-gray-900 border-white/10 opacity-75 hover:opacity-100'
                                                 }`}
                                         >
                                             {/* Header Section */}
                                             <div
-                                                className={`p-4 flex items-start justify-between cursor-pointer border-b border-white/5 ${isPresent ? 'bg-green-500/5' : ''
+                                                className={`p-4 flex items-start justify-between cursor-pointer border-b border-white/5 ${!hasSeat ? 'hover:bg-yellow-500/10'
+                                                    : isPresent ? 'bg-green-500/5' : ''
                                                     }`}
-                                                onClick={() => toggleStatus(student._id)}
+                                                onClick={() => {
+                                                    if (!hasSeat) {
+                                                        navigate('/admin/students?tab=pending');
+                                                    } else {
+                                                        toggleStatus(student._id);
+                                                    }
+                                                }}
                                             >
                                                 <div className="flex-1">
                                                     <h3 className="font-bold text-lg text-white">{student.name}</h3>
                                                     <p className="text-sm text-gray-400">{student.email}</p>
-                                                    {student.seat && (
+                                                    {student.seat ? (
                                                         <Badge variant="blue" className="mt-2 text-xs">
                                                             Seat: {student.seat.number}
                                                         </Badge>
+                                                    ) : (
+                                                        <Badge variant="yellow" className="mt-2 text-xs animate-pulse">
+                                                            Pending Allocation ⚠️
+                                                        </Badge>
                                                     )}
                                                 </div>
-                                                <div className={`rounded-full p-2 ${isPresent ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                                <div className={`rounded-full p-2 ${!hasSeat ? 'bg-yellow-500/20 text-yellow-400'
+                                                    : isPresent ? 'bg-green-500/20 text-green-400'
+                                                        : 'bg-red-500/20 text-red-400'
                                                     }`}>
-                                                    {isPresent ? <IoCheckmarkCircle size={24} /> : <IoCloseCircle size={24} />}
+                                                    {!hasSeat ? <IoBedOutline size={24} />
+                                                        : isPresent ? <IoCheckmarkCircle size={24} />
+                                                            : <IoCloseCircle size={24} />}
                                                 </div>
                                             </div>
 
-                                            {/* Detailed Controls (Only visible if Present) */}
+                                            {/* Detailed Controls (Only visible if Present AND has seat) */}
                                             <AnimatePresence>
-                                                {isPresent && (
+                                                {isPresent && hasSeat && (
                                                     <motion.div
                                                         initial={{ height: 0, opacity: 0 }}
                                                         animate={{ height: 'auto', opacity: 1 }}
@@ -425,9 +456,18 @@ const AttendanceManagement = () => {
                                             </AnimatePresence>
 
                                             {/* Status Badge Footer */}
-                                            {!isPresent && (
+                                            {(!isPresent && hasSeat) && (
                                                 <div className="p-3 bg-red-500/5 border-t border-red-500/10 flex justify-center">
                                                     <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Marked Absent</span>
+                                                </div>
+                                            )}
+
+                                            {/* Pending Action Footer */}
+                                            {!hasSeat && (
+                                                <div className="p-3 bg-yellow-500/10 border-t border-yellow-500/10 flex justify-center">
+                                                    <span className="text-xs font-bold text-yellow-500 uppercase tracking-widest flex items-center gap-2">
+                                                        Click to Assign Seat <IoArrowForward />
+                                                    </span>
                                                 </div>
                                             )}
                                         </motion.div>

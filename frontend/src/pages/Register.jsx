@@ -14,7 +14,9 @@ const Register = () => {
         name: '',
         email: '',
         mobile: '',
-        address: ''
+        address: '',
+        password: '',
+        confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -77,8 +79,20 @@ const Register = () => {
         }
 
         // Basic validation
-        if (!formData.name || !formData.email || !formData.mobile || !formData.address) {
+        if (!formData.name || !formData.email || !formData.mobile || !formData.address || !formData.password || !formData.confirmPassword) {
             setError('Please fill in all fields');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters');
             setLoading(false);
             return;
         }
@@ -89,12 +103,19 @@ const Register = () => {
             const response = await api.post('/public/register', formData);
             if (response.data.success) {
                 setSuccess(response.data.message);
-                setFormData({ name: '', email: '', mobile: '', address: '' });
 
-                // Redirect to login after 5 seconds
+                // Store credentials for auto-fill
+                const loginCredentials = {
+                    email: formData.email,
+                    password: formData.password
+                };
+
+                setFormData({ name: '', email: '', mobile: '', address: '', password: '', confirmPassword: '' });
+
+                // Redirect to login after 3 seconds with state
                 setTimeout(() => {
-                    navigate('/login');
-                }, 5000);
+                    navigate('/login', { state: loginCredentials });
+                }, 3000); // Reduced to 3s for better UX
             }
         } catch (error) {
             setError(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -256,6 +277,39 @@ const Register = () => {
                                     rows="3"
                                     required
                                 />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        className="input w-full"
+                                        placeholder="••••••••"
+                                        minLength={6}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                        Confirm Password *
+                                    </label>
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        className="input w-full"
+                                        placeholder="••••••••"
+                                        minLength={6}
+                                        required
+                                    />
+                                </div>
                             </div>
 
                             <Button
