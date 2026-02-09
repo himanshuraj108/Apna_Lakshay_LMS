@@ -162,9 +162,9 @@ const sendEmail = async (to, subject, title, contentHtml, actionBtn = null) => {
   };
 
   try {
-    // 1. Try Primary (Gmail) with 15s timeout
+    // 1. Try Primary (Gmail) with 7s timeout
     console.log(`📧 Attempting to send email to ${to} via Gmail...`);
-    await sendWithTimeout(transporter, 'Gmail', 15000);
+    await sendWithTimeout(transporter, 'Gmail', 7000);
     console.log(`✅ Email sent to ${to} via Gmail`);
     return true;
 
