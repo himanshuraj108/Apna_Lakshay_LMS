@@ -22,18 +22,33 @@ try {
 
 // Create Backup Transporter (Brevo)
 let brevoTransporter;
+let brevoTransporter2525; // Fallback for Render
+
 if (process.env.BREVO_USER && process.env.BREVO_PASS) {
   try {
+    // Standard Port 587
     brevoTransporter = nodemailer.createTransport({
       host: process.env.BREVO_HOST || 'smtp-relay.brevo.com',
       port: process.env.BREVO_PORT || 587,
-      secure: false, // true for 465, false for other ports
+      secure: false,
       auth: {
         user: process.env.BREVO_USER,
         pass: process.env.BREVO_PASS
       }
     });
-    console.log('✅ Backup Email transporter (Brevo) configured');
+
+    // Fallback Port 2525
+    brevoTransporter2525 = nodemailer.createTransport({
+      host: process.env.BREVO_HOST || 'smtp-relay.brevo.com',
+      port: 2525,
+      secure: false,
+      auth: {
+        user: process.env.BREVO_USER,
+        pass: process.env.BREVO_PASS
+      }
+    });
+
+    console.log('✅ Backup Email transporters (Brevo 587 & 2525) configured');
   } catch (error) {
     console.error('❌ Failed to configure backup transporter:', error.message);
   }
@@ -156,15 +171,28 @@ const sendEmail = async (to, subject, title, contentHtml, actionBtn = null) => {
   } catch (primaryError) {
     console.warn(`⚠️ Primary Email (Gmail) failed: ${primaryError.message}`);
 
-    // 2. Try Backup (Brevo) if available
+    // 2. Try Backup (Brevo 587)
     if (brevoTransporter) {
-      console.log(`🔄 Switching to Backup (Brevo) for ${to}...`);
+      console.log(`🔄 Switching to Backup (Brevo 587) for ${to}...`);
       try {
-        await sendWithTimeout(brevoTransporter, 'Brevo', 15000); // 15s timeout for backup too
-        console.log(`✅ Email sent to ${to} via Backup (Brevo)`);
+        await sendWithTimeout(brevoTransporter, 'Brevo 587', 15000);
+        console.log(`✅ Email sent to ${to} via Backup (Brevo 587)`);
         return true;
       } catch (backupError) {
-        console.error(`❌ Backup Email (Brevo) also failed: ${backupError.message}`);
+        console.warn(`⚠️ Backup Email (Brevo 587) failed: ${backupError.message}`);
+
+        // 3. Try Backup (Brevo 2525) - Render often allows this
+        if (brevoTransporter2525) {
+          console.log(`🔄 Switching to Backup (Brevo 2525) for ${to}...`);
+          try {
+            await sendWithTimeout(brevoTransporter2525, 'Brevo 2525', 15000);
+            console.log(`✅ Email sent to ${to} via Backup (Brevo 2525)`);
+            return true;
+          } catch (backupError2525) {
+            console.error(`❌ Backup Email (Brevo 2525) also failed: ${backupError2525.message}`);
+            return false;
+          }
+        }
         return false;
       }
     } else {

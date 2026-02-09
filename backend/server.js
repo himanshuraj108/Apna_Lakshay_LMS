@@ -149,8 +149,8 @@ connectDB().then(() => {
   // However, for Render/VPS we MUST listen.
   // Standard Node pattern:
   if (require.main === module || process.env.NODE_ENV === 'production') {
-    const PORT = process.env.PORT || 5000;
-    server.listen(PORT, () => {
+    const PORT = process.env.PORT || 8080; // Fly.io default is 8080
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 Socket.io enabled on port ${PORT}`);
     });
