@@ -49,12 +49,31 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
 
                     {/* Status Badge */}
                     <div className="mb-6 flex justify-center">
-                        <Badge
-                            variant={seat.status === 'occupied' ? 'red' : seat.status === 'partial' ? 'yellow' : 'green'}
-                            className="text-lg px-6 py-2"
-                        >
-                            {seat.status === 'occupied' ? '🔴 Fully Occupied' : seat.status === 'partial' ? '🟠 Partially Occupied' : '🟢 Available'}
-                        </Badge>
+                        {(() => {
+                            // Calculate if seat is fully occupied (all shifts unavailable)
+                            const isFullyOccupied = shifts.every(shift => {
+                                const isFullDay = shift.id === 'full' ||
+                                    shift.legacyName === 'full_day' ||
+                                    (shift.name && shift.name.toLowerCase().includes('full'));
+
+                                const isPartiallyBooked = seat.activeShifts && seat.activeShifts.length > 0;
+                                const isOccupied = seat.isFullyBlocked || (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
+
+                                // Shift is unavailable if it's occupied OR (it's full day and partial shifts exist)
+                                return isOccupied || (isFullDay && isPartiallyBooked);
+                            });
+
+                            const hasAnyOccupied = seat.activeShifts && seat.activeShifts.length > 0;
+
+                            const variant = isFullyOccupied ? 'red' : hasAnyOccupied ? 'yellow' : 'green';
+                            const text = isFullyOccupied ? '🔴 Fully Occupied' : hasAnyOccupied ? '🟠 Partially Occupied' : '🟢 Available';
+
+                            return (
+                                <Badge variant={variant} className="text-lg px-6 py-2">
+                                    {text}
+                                </Badge>
+                            );
+                        })()}
                     </div>
 
                     {/* Seat Details */}
