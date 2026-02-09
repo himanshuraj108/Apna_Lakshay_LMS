@@ -367,7 +367,7 @@ const StudentManagement = () => {
         }
     };
 
-    // Get all available seats from floors (including partially booked)
+    // Get all available seats from floors (including fully and partially booked)
     const getAvailableSeats = () => {
         const seats = [];
         floors.forEach(floor => {
@@ -381,7 +381,7 @@ const StudentManagement = () => {
                         return typeof a.shift === 'object' ? a.shift._id : a.shift;
                     }).filter(Boolean);
 
-                    // Check if seat is fully occupied (all shifts or full day)
+                    // Check if seat has full day booking
                     const hasFullDay = activeAssignments.some(a => {
                         if (a.type === 'full_day' || a.legacyShift === 'full') return true;
                         if (a.shift && typeof a.shift === 'object') {
@@ -390,17 +390,16 @@ const StudentManagement = () => {
                         return false;
                     });
 
-                    // Only exclude if fully occupied
-                    if (!hasFullDay) {
-                        seats.push({
-                            ...seat,
-                            displayName: `${floor.name} - ${room.name} - ${seat.number}`,
-                            floorName: floor.name,
-                            roomName: room.name,
-                            takenShiftIds: takenShiftIds,
-                            isPartiallyBooked: activeAssignments.length > 0
-                        });
-                    }
+                    // Include ALL seats - shift dropdown will filter based on availability
+                    seats.push({
+                        ...seat,
+                        displayName: `${floor.name} - ${room.name} - ${seat.number}`,
+                        floorName: floor.name,
+                        roomName: room.name,
+                        takenShiftIds: takenShiftIds,
+                        isPartiallyBooked: activeAssignments.length > 0 && !hasFullDay,
+                        isFullyBooked: hasFullDay || takenShiftIds.length >= shifts.length
+                    });
                 });
             });
         });
@@ -1058,7 +1057,7 @@ const StudentManagement = () => {
                                     availableSeats.map(seat => (
                                         <option key={seat._id} value={seat._id}>
                                             {seat.displayName} - ₹{seat.basePrices?.full || 1200}
-                                            {seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
+                                            {seat.isFullyBooked ? ' (Fully Booked)' : seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
                                         </option>
                                     ))
                                 )}
