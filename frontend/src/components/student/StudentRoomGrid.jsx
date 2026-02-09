@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { IoBedOutline } from 'react-icons/io5';
+import useShifts from '../../hooks/useShifts';
 
 const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
     const doorPosition = room.doorPosition || 'south';
+    const { shifts } = useShifts();
 
     // Group seats by wall
     const northSeats = room.seats.filter(s => s.position?.wall === 'north').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
@@ -16,17 +18,31 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
     const SeatCard = ({ seat }) => {
         const isHighlighted = seat._id === highlightSeatId;
 
-        // Determine styling based on status
+        // Determine if seat is FULLY occupied (all shifts unavailable)
         let statusColor = 'green';
-        if (seat.status === 'occupied') statusColor = 'red';
-        else if (seat.status === 'partial') statusColor = 'orange';
-        // Fallback for legacy data
-        else if (seat.isOccupied && !seat.status) statusColor = 'red';
+
+        if (shifts && shifts.length > 0 && seat.activeShifts && seat.activeShifts.length > 0) {
+            // Check if ALL shifts are unavailable
+            const isFullyOccupied = shifts.every(shift => {
+                const isFullDay = shift.id === 'full' ||
+                    shift.name?.toLowerCase().includes('full');
+
+                const isPartiallyBooked = seat.activeShifts.length > 0;
+                const isOccupied = seat.isFullyBlocked || seat.activeShifts.some(s => s === shift.id || s === shift.name);
+
+                // Shift is unavailable if occupied OR (it's full day and partial shifts exist)
+                return isOccupied || (isFullDay && isPartiallyBooked);
+            });
+
+            statusColor = isFullyOccupied ? 'red' : 'orange';
+        } else if (seat.isOccupied || seat.status === 'occupied') {
+            statusColor = 'red';
+        }
 
         const colorClasses = {
             green: 'bg-green-500/30 border-green-500 hover:bg-green-500/40',
             red: 'bg-red-500/30 border-red-500 hover:bg-red-500/40',
-            orange: 'bg-orange-500/30 border-orange-500 hover:bg-orange-500/40' // Add orange style
+            orange: 'bg-orange-500/30 border-orange-500 hover:bg-orange-500/40'
         };
 
         return (

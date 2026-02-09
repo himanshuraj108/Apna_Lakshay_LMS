@@ -65,8 +65,8 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
 
                             const hasAnyOccupied = seat.activeShifts && seat.activeShifts.length > 0;
 
-                            const variant = isFullyOccupied ? 'red' : hasAnyOccupied ? 'yellow' : 'green';
-                            const text = isFullyOccupied ? '🔴 Fully Occupied' : hasAnyOccupied ? '🟠 Partially Occupied' : '🟢 Available';
+                            const variant = isFullyOccupied ? 'red' : hasAnyOccupied ? 'red' : 'green';
+                            const text = isFullyOccupied ? '🔴 Fully Occupied' : hasAnyOccupied ? '🔴 Partially Occupied' : '🟢 Available';
 
                             return (
                                 <Badge variant={variant} className="text-lg px-6 py-2">
