@@ -367,18 +367,38 @@ const StudentManagement = () => {
         }
     };
 
-    // Get all available seats from floors
+    // Get all available seats from floors (including partially booked)
     const getAvailableSeats = () => {
         const seats = [];
         floors.forEach(floor => {
             floor.rooms.forEach(room => {
                 room.seats.forEach(seat => {
-                    if (!seat.isOccupied) {
+                    // Get active assignments for this seat
+                    const activeAssignments = seat.assignments?.filter(a => a.status === 'active') || [];
+
+                    // Get list of taken shift IDs
+                    const takenShiftIds = activeAssignments.map(a => {
+                        return typeof a.shift === 'object' ? a.shift._id : a.shift;
+                    }).filter(Boolean);
+
+                    // Check if seat is fully occupied (all shifts or full day)
+                    const hasFullDay = activeAssignments.some(a => {
+                        if (a.type === 'full_day' || a.legacyShift === 'full') return true;
+                        if (a.shift && typeof a.shift === 'object') {
+                            return a.shift.name?.toLowerCase().includes('full');
+                        }
+                        return false;
+                    });
+
+                    // Only exclude if fully occupied
+                    if (!hasFullDay) {
                         seats.push({
                             ...seat,
                             displayName: `${floor.name} - ${room.name} - ${seat.number}`,
                             floorName: floor.name,
-                            roomName: room.name
+                            roomName: room.name,
+                            takenShiftIds: takenShiftIds,
+                            isPartiallyBooked: activeAssignments.length > 0
                         });
                     }
                 });
@@ -389,6 +409,20 @@ const StudentManagement = () => {
 
     const availableSeats = getAvailableSeats();
 
+    // Get available shifts for a specific seat
+    const getAvailableShiftsForSeat = (seatId) => {
+        if (!seatId) return shifts; // If no seat selected, show all shifts
+
+        const selectedSeat = availableSeats.find(s => s._id === seatId);
+        if (!selectedSeat) return shifts;
+
+        // Filter out shifts that are already taken on this seat
+        return shifts.filter(shift => {
+            return !selectedSeat.takenShiftIds.includes(shift._id || shift.id);
+        });
+    };
+
+
     // Helper to get seat number for a student
     const getStudentSeat = (studentId) => {
         if (!floors || floors.length === 0) return null;
@@ -398,8 +432,24 @@ const StudentManagement = () => {
             for (const room of floor.rooms) {
                 if (!room.seats) continue;
                 for (const seat of room.seats) {
-                    // Check if assignedTo exists and matches studentId
-                    // assignedTo can be populated object or ID string
+                    // Check assignments array for active assignments
+                    if (seat.assignments && seat.assignments.length > 0) {
+                        const hasActiveAssignment = seat.assignments.some(assignment => {
+                            if (assignment.status !== 'active') return false;
+
+                            const assignedStudentId = typeof assignment.student === 'object'
+                                ? assignment.student._id
+                                : assignment.student;
+
+                            return assignedStudentId === studentId;
+                        });
+
+                        if (hasActiveAssignment) {
+                            return seat.number;
+                        }
+                    }
+
+                    // Fallback to legacy assignedTo field
                     if (seat.assignedTo) {
                         const assignedId = typeof seat.assignedTo === 'object' ? seat.assignedTo._id : seat.assignedTo;
                         if (assignedId === studentId) {
@@ -446,6 +496,42 @@ const StudentManagement = () => {
             }
         }
         return false;
+    };
+
+    // Helper to get student's assigned shifts as a display string
+    const getStudentShifts = (studentId) => {
+        if (!floors || floors.length === 0) return null;
+
+        const assignedShifts = [];
+        for (const floor of floors) {
+            if (!floor.rooms) continue;
+            for (const room of floor.rooms) {
+                if (!room.seats) continue;
+                for (const seat of room.seats) {
+                    if (!seat.assignments) continue;
+
+                    // Check active assignments
+                    const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+                    for (const assignment of activeAssignments) {
+                        // Check if this assignment belongs to our student
+                        const assignedStudentId = typeof assignment.student === 'object'
+                            ? assignment.student._id
+                            : assignment.student;
+
+                        if (assignedStudentId === studentId) {
+                            // Get shift name
+                            if (assignment.shift && typeof assignment.shift === 'object') {
+                                assignedShifts.push(assignment.shift.name);
+                            } else if (assignment.type === 'full_day' || assignment.legacyShift === 'full') {
+                                assignedShifts.push('Full Day');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return assignedShifts.length > 0 ? assignedShifts.join(', ') : null;
     };
 
     // Filter students based on active tab
@@ -747,20 +833,29 @@ const StudentManagement = () => {
                                                         <td className="p-4">{student.name}</td>
                                                         <td className="p-4">{student.email}</td>
                                                         <td className="p-4">
-                                                            {student.isActive && !getStudentSeat(student._id) ? (
-                                                                <Badge variant="yellow">Pending Allocation</Badge>
-                                                            ) : (
-                                                                student.shift || 'N/A'
-                                                            )}
+                                                            {(() => {
+                                                                const shifts = getStudentShifts(student._id);
+                                                                if (!shifts && student.isActive) {
+                                                                    return <Badge variant="yellow">Pending Allocation</Badge>;
+                                                                }
+                                                                return shifts || 'N/A';
+                                                            })()}
                                                         </td>
                                                         <td className="p-4">
-                                                            {student.isActive && !getStudentSeat(student._id) ? (
-                                                                <Badge variant="yellow">Pending Allocation</Badge>
-                                                            ) : (
-                                                                <Badge variant={student.isActive ? 'green' : 'red'}>
-                                                                    {student.isActive ? 'Active' : 'Inactive'}
-                                                                </Badge>
-                                                            )}
+                                                            {(() => {
+                                                                const hasSeat = getStudentSeat(student._id);
+                                                                const hasShifts = getStudentShifts(student._id);
+
+                                                                if (student.isActive && (!hasSeat || !hasShifts)) {
+                                                                    return <Badge variant="yellow">Pending Allocation</Badge>;
+                                                                }
+
+                                                                return (
+                                                                    <Badge variant={student.isActive ? 'green' : 'red'}>
+                                                                        {student.isActive ? 'Active' : 'Inactive'}
+                                                                    </Badge>
+                                                                );
+                                                            })()}
                                                         </td>
                                                         <td className="p-4">
                                                             {new Date(student.createdAt).toLocaleDateString()}
@@ -955,7 +1050,6 @@ const StudentManagement = () => {
                                 value={seatFormData.seatId}
                                 onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
                                 className="input"
-                                required
                             >
                                 <option value="">Choose a seat...</option>
                                 {availableSeats.length === 0 ? (
@@ -964,13 +1058,14 @@ const StudentManagement = () => {
                                     availableSeats.map(seat => (
                                         <option key={seat._id} value={seat._id}>
                                             {seat.displayName} - ₹{seat.basePrices?.full || 1200}
+                                            {seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
                                         </option>
                                     ))
                                 )}
                             </select>
                             {availableSeats.length === 0 && (
                                 <p className="text-sm text-red-400 mt-2">
-                                    No available seats. All seats are currently occupied.
+                                    No available seats. All seats are currently fully occupied.
                                 </p>
                             )}
                         </div>
@@ -981,18 +1076,25 @@ const StudentManagement = () => {
                                 value={seatFormData.shift}
                                 onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
                                 className="input"
-                                required
                             >
                                 <option value="">Select shift...</option>
-                                {shifts.map(shift => (
-                                    <option key={shift.id} value={shift.id}>
-                                        {shift.name} ({getShiftTimeRange(shift)}) - ₹{shift.id === 'full' ? '1200' : '800'}
-                                    </option>
-                                ))}
+                                {(() => {
+                                    const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
+                                    return availableShifts.map(shift => (
+                                        <option key={shift.id} value={shift.id}>
+                                            {shift.name} ({getShiftTimeRange(shift)}) - ₹{shift.id === 'full' ? '1200' : '800'}
+                                        </option>
+                                    ));
+                                })()}
                                 {!isCustom && !shifts.some(s => s.id === 'full') && (
                                     <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
                                 )}
                             </select>
+                            {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
+                                <p className="text-sm text-yellow-400 mt-2">
+                                    No available shifts for this seat. All shifts are taken.
+                                </p>
+                            )}
                         </div>
 
                         <div>

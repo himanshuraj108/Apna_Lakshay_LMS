@@ -1257,37 +1257,66 @@ exports.assignSeat = async (req, res) => {
     try {
         const { seatId, studentId, shift, negotiatedPrice } = req.body;
 
-        const seat = await Seat.findById(seatId).populate('floor room');
-        const student = await User.findById(studentId);
+        // Validate that at least one parameter (seatId or shift) is provided
+        if (!seatId && !shift) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide at least seat or shift to update'
+            });
+        }
 
-        if (!seat || !student) {
+        // Validate studentId
+        if (!studentId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Student ID is required'
+            });
+        }
+
+        const student = await User.findById(studentId);
+        if (!student) {
             return res.status(404).json({
                 success: false,
-                message: 'Seat or student not found'
+                message: 'Student not found'
             });
         }
 
-        // Check availability logic for DYNAMIC SHIFTS
-        // 1. Is the seat blocked by a full-day assignment?
-        const activeAssignments = seat.assignments.filter(a => a.status === 'active');
-        const isFullyBlocked = activeAssignments.some(a => a.type === 'full_day');
-
-        if (isFullyBlocked) {
-            return res.status(400).json({
-                success: false,
-                message: 'Seat is fully occupied (Full Day)'
-            });
+        // If seatId is provided, validate it
+        let seat = null;
+        if (seatId) {
+            seat = await Seat.findById(seatId).populate('floor room');
+            if (!seat) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Seat not found'
+                });
+            }
         }
 
-        // 2. Is the specific shift already taken?
-        // Note: 'shift' body param should be the Shift ID
-        const isShiftTaken = activeAssignments.some(a => a.shift && a.shift.toString() === shift);
 
-        if (isShiftTaken) {
-            return res.status(400).json({
-                success: false,
-                message: 'Seat is already occupied for this shift'
-            });
+        // Check availability logic for DYNAMIC SHIFTS (only if seat is being assigned/changed)
+        if (seatId && shift) {
+            // 1. Is the seat blocked by a full-day assignment?
+            const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+            const isFullyBlocked = activeAssignments.some(a => a.type === 'full_day');
+
+            if (isFullyBlocked) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Seat is fully occupied (Full Day)'
+                });
+            }
+
+            // 2. Is the specific shift already taken?
+            // Note: 'shift' body param should be the Shift ID
+            const isShiftTaken = activeAssignments.some(a => a.shift && a.shift.toString() === shift);
+
+            if (isShiftTaken) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Seat is already occupied for this shift'
+                });
+            }
         }
 
         // 3. Remove student from any previous active seat assignments (Move student)
@@ -1321,92 +1350,100 @@ exports.assignSeat = async (req, res) => {
             }
         }
 
-        // 4. Create new assignment object
-        const newAssignment = {
-            student: student._id, // Explicitly use ObjectId from fetched student
-            shift: shift, // Shift ID
-            type: 'specific', // Assuming specific shift for now
-            status: 'active',
-            assignedAt: new Date(),
-            price: negotiatedPrice || seat.shiftPrices.get(shift) || seat.basePrices.day // Fallback
-        };
+        // 4. Create new assignment object (only if both seat and shift are provided)
+        if (seatId && shift) {
+            const newAssignment = {
+                student: student._id, // Explicitly use ObjectId from fetched student
+                shift: shift, // Shift ID
+                type: 'specific', // Assuming specific shift for now
+                status: 'active',
+                assignedAt: new Date(),
+                price: negotiatedPrice || seat.shiftPrices?.get(shift) || seat.basePrices?.day || 0 // Fallback with safe access
+            };
 
-        // 5. Add to seat
-        seat.assignments.push(newAssignment);
-        seat.isOccupied = true; // General flag
-        await seat.save();
+            // 5. Add to seat
+            seat.assignments.push(newAssignment);
+            seat.isOccupied = true; // General flag
+            await seat.save();
 
-        // Update student reference (Only set seatAssignedAt if not already set)
-        const userUpdateUpdates = { seat: seatId };
-        if (!student.seatAssignedAt) {
-            userUpdateUpdates.seatAssignedAt = new Date();
-        }
-        await User.findByIdAndUpdate(studentId, userUpdateUpdates);
+            // Update student reference (Only set seatAssignedAt if not already set)
+            const userUpdateUpdates = { seat: seatId };
+            if (!student.seatAssignedAt) {
+                userUpdateUpdates.seatAssignedAt = new Date();
+            }
+            await User.findByIdAndUpdate(studentId, userUpdateUpdates);
 
-        const now = new Date();
+            const now = new Date();
 
-        // Calculate due date based on student's joined date (Billing Cycle)
-        // reusing 'student' variable fetched at start of function
-        const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
-        const joinedDay = joinedDate.getDate();
+            // Calculate due date based on student's joined date (Billing Cycle)
+            // reusing 'student' variable fetched at start of function
+            const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
+            const joinedDay = joinedDate.getDate();
 
-        // Due date is the start of the current billing cycle (Prepaid model)
-        // e.g. Joined 15th Jan -> Due 15th Jan
-        const dueDate = new Date(now.getFullYear(), now.getMonth(), joinedDay);
+            // Due date is the start of the current billing cycle (Prepaid model)
+            // e.g. Joined 15th Jan -> Due 15th Jan
+            const dueDate = new Date(now.getFullYear(), now.getMonth(), joinedDay);
 
-        // Create or update fee record
-        await Fee.findOneAndUpdate(
-            {
-                student: studentId,
-                month: now.getMonth() + 1,
-                year: now.getFullYear()
-            },
-            {
-                amount: newAssignment.price,
-                dueDate,
-                status: 'pending'
-            },
-            { upsert: true, new: true }
-        );
+            // Create or update fee record
+            await Fee.findOneAndUpdate(
+                {
+                    student: studentId,
+                    month: now.getMonth() + 1,
+                    year: now.getFullYear()
+                },
+                {
+                    amount: newAssignment.price,
+                    dueDate,
+                    status: 'pending'
+                },
+                { upsert: true, new: true }
+            );
 
-        await Notification.create({
-            recipient: studentId,
-            title: 'Seat Assigned',
-            message: `Your seat ${seat.number} has been assigned.`,
-            type: 'seat',
-            createdBy: req.user.id
-        });
+            await Notification.create({
+                recipient: studentId,
+                title: 'Seat Assigned',
+                message: `Your seat ${seat.number} has been assigned.`,
+                type: 'seat',
+                createdBy: req.user.id
+            });
 
-        // Send seat assignment email
-        try {
-            // Resolve shift name
-            let shiftName = shift;
+            // Send seat assignment email
             try {
-                const shiftObj = await Shift.findById(shift);
-                if (shiftObj) shiftName = shiftObj.name;
-            } catch (ignore) {
-                console.log('Could not resolve shift name');
+                // Resolve shift name
+                let shiftName = shift;
+                try {
+                    const shiftObj = await Shift.findById(shift);
+                    if (shiftObj) shiftName = shiftObj.name;
+                } catch (ignore) {
+                    console.log('Could not resolve shift name');
+                }
+
+                await emailService.sendSeatAssignmentEmail(
+                    student,
+                    {
+                        ...seat.toObject(),
+                        currentPrice: newAssignment.price
+                    },
+                    shiftName
+                );
+            } catch (emailError) {
+                console.error('Seat assignment email failed:', emailError.message);
             }
 
-            await emailService.sendSeatAssignmentEmail(
-                student,
-                {
-                    ...seat.toObject(),
-                    currentPrice: newAssignment.price
-                },
-                shiftName
-            );
-        } catch (emailError) {
-            console.error('Seat assignment email failed:', emailError.message);
+            // Log action
+            await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, `Assigned to ${student.name}`);
+
+            res.status(200).json({
+                success: true,
+                message: 'Seat assigned successfully'
+            });
+        } else {
+            // This shouldn't happen as we validate at the start, but handle gracefully
+            return res.status(400).json({
+                success: false,
+                message: 'Both seat and shift are required for seat assignment'
+            });
         }
-
-        // Log action
-        await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, `Assigned to ${student.name}`);
-
-        res.status(200).json({
-            success: true,
-            message: 'Seat assigned successfully'
-        });
     } catch (error) {
         console.error('Assign seat error:', error);
         res.status(500).json({
