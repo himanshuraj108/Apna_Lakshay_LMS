@@ -162,10 +162,10 @@ const sendEmail = async (to, subject, title, contentHtml, actionBtn = null) => {
   };
 
   try {
-    // 1. Try Primary (Gmail) with 15s timeout
-    console.log(`📧 Attempting to send email to ${to} via Gmail...`);
-    await sendWithTimeout(transporter, 'Gmail', 15000);
-    console.log(`✅ Email sent to ${to} via Gmail`);
+    // 1. Try Primary (Brevo 587) with 15s timeout
+    console.log(`📧 Attempting to send email to ${to} via Brevo (Port 587)...`);
+    await sendWithTimeout(brevoTransporter, 'Brevo 587', 15000);
+    console.log(`✅ Email sent to ${to} via Brevo (Port 587)`);
     return true;
 
   } catch (primaryError) {
