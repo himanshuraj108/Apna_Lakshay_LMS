@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import api from '../utils/api';
@@ -269,7 +269,7 @@ const Register = () => {
                         </form>
 
                         <div className="mt-6 text-center">
-                            <p class="text-gray-400 text-sm">
+                            <p className="text-gray-400 text-sm">
                                 Already have an account?{' '}
                                 <Link to="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
                                     Login here
@@ -292,6 +292,33 @@ const Register = () => {
                     </div>
                 </motion.div>
             </div>
+
+            {/* Loading Overlay */}
+            <AnimatePresence>
+                {loading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-custom"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.5, opacity: 0 }}
+                            className="flex flex-col items-center bg-[#1e293b] p-8 rounded-3xl border border-white/10 shadow-2xl max-w-sm mx-4 text-center"
+                        >
+                            <div className="relative w-24 h-24 mb-6">
+                                <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full"></div>
+                                <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                <IoPersonAdd className="absolute inset-0 m-auto text-blue-500 text-3xl animate-pulse" />
+                            </div>
+                            <h3 className="text-2xl font-bold text-white mb-2">Creating Account</h3>
+                            <p className="text-gray-400">Please wait while we register specific details and set up your dashboard...</p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
