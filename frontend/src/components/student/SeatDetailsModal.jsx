@@ -18,12 +18,6 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
         return getShiftName(shiftVal);
     };
 
-    console.log('SeatDetailsModal Debug:', {
-        seat,
-        activeShifts: seat?.activeShifts,
-        isPartiallyBooked: seat?.activeShifts?.length > 0
-    });
-
     return (
         <AnimatePresence>
             <motion.div
