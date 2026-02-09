@@ -154,7 +154,7 @@ const FloorManagement = () => {
     const [updateFloorPricesModal, setUpdateFloorPricesModal] = useState({ isOpen: false, floor: null });
     const [bulkPrices, setBulkPrices] = useState({ day: 800, night: 800, full: 1200 });
     const [updating, setUpdating] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [selectedStudents, setSelectedStudents] = useState([]);
     const [showIdCardModal, setShowIdCardModal] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, floorName: '', seatCount: 0 });
 
@@ -277,17 +277,46 @@ const FloorManagement = () => {
     };
 
     const handleSeatClick = (seat) => {
-        if (!seat.assignedTo) return;
 
-        // Seat.assignedTo is now a populated object with name, email, profileImage etc.
-        // We also need to ensure we pass the seat number
-        const student = {
-            ...seat.assignedTo,
-            seatNumber: seat.number, // Use the seat's number
-            shift: seat.shift,
-            shiftDetails: seat.shiftDetails // Pass shift time details
-        };
-        setSelectedStudent(student);
+
+        // Get all active assignments from the new system
+        const activeAssignments = seat.assignments?.filter(a => a.status === 'active') || [];
+
+
+        if (activeAssignments.length === 0) {
+
+            // Fallback to legacy field if no assignments
+            if (seat.assignedTo) {
+
+                const student = {
+                    ...seat.assignedTo,
+                    seatNumber: seat.number,
+                    shift: seat.shift || 'N/A'
+                };
+                setSelectedStudents([student]);
+                setShowIdCardModal(true);
+            }
+            return;
+        }
+
+        // Build student objects from assignments
+
+        const students = activeAssignments.map(assignment => {
+
+            const studentData = typeof assignment.student === 'object' ? assignment.student : {};
+            const shiftName = assignment.shift && typeof assignment.shift === 'object'
+                ? assignment.shift.name
+                : (assignment.type === 'full_day' || assignment.legacyShift === 'full' ? 'Full Day' : 'N/A');
+
+            return {
+                ...studentData,
+                seatNumber: seat.number,
+                shift: shiftName,
+                shiftDetails: assignment.shift
+            };
+        });
+
+        setSelectedStudents(students);
         setShowIdCardModal(true);
     };
 
@@ -303,7 +332,7 @@ const FloorManagement = () => {
             });
             const dataUrl = canvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.png`;
+            link.download = `ID_Card_${selectedStudents[0]?.name?.replace(/\s+/g, '_') || 'Student'}.png`;
             link.href = dataUrl;
             link.click();
         } catch (err) {
@@ -335,7 +364,7 @@ const FloorManagement = () => {
             const y = 20;
 
             pdf.addImage(imgData, 'PNG', x, y, targetWidth, targetHeight);
-            pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.pdf`);
+            pdf.save(`ID_Card_${selectedStudents[0]?.name?.replace(/\s+/g, '_') || 'Student'}.pdf`);
         } catch (err) {
             console.error('PDF Download failed', err);
         }
@@ -615,15 +644,31 @@ const FloorManagement = () => {
                 <Modal
                     isOpen={showIdCardModal}
                     onClose={() => setShowIdCardModal(false)}
-                    title="Student ID Card"
+                    title={selectedStudents.length > 1 ? `Student ID Cards (${selectedStudents.length} Students)` : "Student ID Card"}
+                    maxWidth="max-w-7xl"
                 >
-                    <div className="flex flex-col items-center justify-center p-4">
-                        {selectedStudent && (
+                    <div className="p-4">
+                        {selectedStudents.length > 0 && (
                             <>
-                                <div id="seat-id-card-preview" className="p-4 bg-white rounded-xl">
-                                    <StudentIdCard student={selectedStudent} />
+                                {/* Grid layout for multiple cards */}
+                                <div className="grid grid-cols-1 gap-6 mb-6">
+                                    {selectedStudents.map((student, index) => (
+                                        <div key={index} className="flex flex-col items-center">
+                                            {/* Student Info Header */}
+                                            <div className="mb-3 text-center">
+                                                <p className="font-bold text-xl text-white">{student.name || 'Unknown'}</p>
+                                                <p className="text-sm text-gray-400">Seat: {student.seatNumber} | Shift: {student.shift || 'N/A'}</p>
+                                            </div>
+                                            {/* ID Card */}
+                                            <div id={index === 0 ? 'seat-id-card-preview' : undefined} className="bg-white rounded-xl p-4">
+                                                <StudentIdCard student={student} />
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full">
+
+                                {/* Download buttons (only for first card) */}
+                                <div className="flex flex-col sm:flex-row gap-4 w-full">
                                     <Button
                                         variant="secondary"
                                         className="flex-1"
@@ -636,20 +681,21 @@ const FloorManagement = () => {
                                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                                         onClick={handleDownloadPNG}
                                     >
-                                        <IoDownload className="inline mr-2" /> PNG
+                                        <IoDownload className="inline mr-2" /> Download PNG (First Card)
                                     </Button>
                                     <Button
                                         variant="primary"
                                         className="flex-1 bg-red-600 hover:bg-red-700"
                                         onClick={handleDownloadPDF}
                                     >
-                                        <IoDownload className="inline mr-2" /> PDF
+                                        <IoDownload className="inline mr-2" /> Download PDF (First Card)
                                     </Button>
                                 </div>
                             </>
                         )}
                     </div>
                 </Modal>
+
             </div>
         </div>
     );
