@@ -23,6 +23,9 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Trust proxy for Render/Vercel/Heroku
+app.set('trust proxy', 1);
+
 // Middleware
 const allowedOrigins = [
   'http://localhost:5173',
