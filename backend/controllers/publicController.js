@@ -224,8 +224,12 @@ exports.registerStudent = async (req, res) => {
         const emailService = require('../services/emailService');
         try {
             await emailService.sendCredentialsEmail(name, email, plainPassword);
+            console.log(`✅ Credentials email sent successfully to ${email}`);
         } catch (emailError) {
-            console.error('Failed to send credentials email:', emailError);
+            console.error('❌ Failed to send credentials email:');
+            console.error('Error:', emailError.message);
+            console.error('Stack:', emailError.stack);
+            console.error('Code:', emailError.code);
             // Continue even if email fails
         }
 

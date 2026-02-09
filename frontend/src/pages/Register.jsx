@@ -158,18 +158,32 @@ const Register = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-500 rounded-2xl p-6 mb-6 text-center"
                             >
-                                <div className="flex justify-center mb-4">
-                                    <div className="bg-green-500 rounded-full p-4">
-                                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
+                                <h3 className="text-lg font-semibold text-green-400 mb-4">Registration Successful!</h3>
+
+                                {/* Prominent Email Check Message with Blinking Animation */}
+                                <div className="bg-white/10 rounded-xl p-6 mb-4 relative overflow-hidden">
+                                    {/* Pulsing background effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 animate-pulse"></div>
+
+                                    {/* Animated Email Icon */}
+                                    <div className="flex justify-center mb-4 relative z-10">
+                                        <div className="bg-blue-500 rounded-full p-4 animate-bounce">
+                                            <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
                                     </div>
+
+                                    {/* Blinking Check Email Text */}
+                                    <p className="text-2xl font-bold text-white mb-3 relative z-10 animate-pulse">
+                                        Check Your Email for Credentials
+                                    </p>
+                                    <p className="text-sm text-gray-300 relative z-10">
+                                        Your login credentials have been sent to <br />
+                                        <span className="font-bold text-green-400 text-base">{formData.email || 'your email'}</span>
+                                    </p>
                                 </div>
-                                <h3 className="text-2xl font-bold text-green-400 mb-3">Registration Successful!</h3>
-                                <div className="bg-white/10 rounded-xl p-4 mb-4">
-                                    <p className="text-lg font-semibold text-white mb-2">Check Your Email for Credentials</p>
-                                    <p className="text-sm text-gray-300">Your login credentials have been sent to <span className="font-bold text-green-400">{formData.email || 'your email'}</span></p>
-                                </div>
+
                                 <p className="text-sm text-gray-400 animate-pulse">Redirecting to login in 5 seconds...</p>
                             </motion.div>
                         )}
