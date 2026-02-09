@@ -162,24 +162,24 @@ const sendEmail = async (to, subject, title, contentHtml, actionBtn = null) => {
   };
 
   try {
-    // 1. Try Primary (Gmail) with 15s timeout
-    console.log(`📧 Attempting to send email to ${to} via Gmail...`);
-    await sendWithTimeout(transporter, 'Gmail', 15000);
-    console.log(`✅ Email sent to ${to} via Gmail`);
+    // 1. Try Primary (Brevo 587) with 15s timeout
+    console.log(`📧 Attempting to send email to ${to} via Brevo (Port 587)...`);
+    await sendWithTimeout(brevoTransporter2525, 'Brevo 2525', 15000);
+    console.log(`✅ Email sent to ${to} via Brevo (Port 587)`);
     return true;
 
   } catch (primaryError) {
-    console.warn(`⚠️ Primary Email (Gmail) failed: ${primaryError.message}`);
+    console.warn(`⚠️ Primary Email (Brevo 587) failed: ${primaryError.message}`);
 
-    // 2. Try Backup (Brevo 587)
-    if (brevoTransporter) {
+    // 2. Try Backup (Brevo 2525) - Render often allows this port
+    if (brevoTransporter2525) {
       console.log(`🔄 Switching to Backup (Brevo 587) for ${to}...`);
       try {
-        await sendWithTimeout(brevoTransporter, 'Brevo 587', 15000);
-        console.log(`✅ Email sent to ${to} via Backup (Brevo 587)`);
+        await sendWithTimeout(brevoTransporter2525, 'Brevo 2525', 15000);
+        console.log(`✅ Email sent to \ via Backup (Brevo 2525)`);
         return true;
       } catch (backupError) {
-        console.warn(`⚠️ Backup Email (Brevo 587) failed: ${backupError.message}`);
+        console.warn(`⚠️ Backup Email (Brevo 2525) failed: ${backupError.message}`);
 
         // 3. Try Backup (Brevo 2525) - Render often allows this
         if (brevoTransporter2525) {
