@@ -18,6 +18,12 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
         return getShiftName(shiftVal);
     };
 
+    console.log('SeatDetailsModal Debug:', {
+        seat,
+        activeShifts: seat?.activeShifts,
+        isPartiallyBooked: seat?.activeShifts?.length > 0
+    });
+
     return (
         <AnimatePresence>
             <motion.div
@@ -80,6 +86,26 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                                 {shifts.map(shift => {
                                     const isOccupied = seat.isFullyBlocked || (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
 
+                                    // Special logic for Full Day: Not Available (Gray) if any partial shift is taken
+                                    // Robust check: ID is 'full', or legacy name, OR name contains 'Full' (case insensitive)
+                                    const isFullDay = shift.id === 'full' ||
+                                        shift.legacyName === 'full_day' ||
+                                        (shift.name && shift.name.toLowerCase().includes('full'));
+
+                                    const isPartiallyBooked = seat.activeShifts && seat.activeShifts.length > 0;
+                                    const isFullDayblocked = isFullDay && isPartiallyBooked;
+
+                                    let statusColor = 'bg-green-500/20 text-green-400 border-green-500/30';
+                                    let statusText = 'Vacant';
+
+                                    if (isOccupied) {
+                                        statusColor = 'bg-red-500/20 text-red-400 border-red-500/30';
+                                        statusText = 'Occupied';
+                                    } else if (isFullDayblocked) {
+                                        statusColor = 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+                                        statusText = 'Not Available';
+                                    }
+
                                     return (
                                         <div key={shift.id} className="flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5">
                                             <div>
@@ -90,9 +116,8 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                                             </div>
                                             <div className="text-right">
                                                 <div className="flex items-center gap-2 justify-end mb-1">
-                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${isOccupied ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'
-                                                        }`}>
-                                                        {isOccupied ? 'Occupied' : 'Vacant'}
+                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${statusColor}`}>
+                                                        {statusText}
                                                     </span>
                                                 </div>
                                                 <p className="text-sm font-bold text-gray-300">₹{seat.basePrices?.[shift.id] || seat.shiftPrices?.[shift.id] || 800}</p>

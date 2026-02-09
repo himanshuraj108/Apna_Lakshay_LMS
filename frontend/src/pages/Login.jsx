@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff } from 'react-icons/io5';
@@ -15,11 +15,24 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // PWA Install State
     const [deferredPrompt, setDeferredPrompt] = useState(null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
 
+    useEffect(() => {
+        // Auto-fill from registration redirection
+        if (location.state?.email && location.state?.password) {
+            setEmail(location.state.email);
+            setPassword(location.state.password);
+
+            // Clear state to prevent persistence on refresh (optional, but good practice)
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
+    // PWA Install Prompt Logic
     useEffect(() => {
         const handleBeforeInstallPrompt = (e) => {
             e.preventDefault();

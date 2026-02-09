@@ -656,7 +656,12 @@ exports.getStudent = async (req, res) => {
 exports.createStudent = async (req, res) => {
     try {
         const { name, email, mobile, address, systemMode = 'custom', studentId } = req.body;
-        const password = generatePassword();
+
+        // Use provided password or generate one
+        let password = req.body.password;
+        if (!password) {
+            password = generatePassword();
+        }
 
         const student = await User.create({
             name,
