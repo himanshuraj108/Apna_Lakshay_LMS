@@ -107,6 +107,31 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==========================================
+// PERFORMANCE INDEXES
+// ==========================================
+
+// Index on email for login queries and uniqueness
+userSchema.index({ email: 1 }, { unique: true });
+
+// Index on studentId for lookups (sparse because it can be null)
+userSchema.index({ studentId: 1 }, { unique: true, sparse: true });
+
+// Index on mobile for uniqueness and lookups
+userSchema.index({ mobile: 1 }, { unique: true });
+
+// Index on seat reference for reverse lookups (find user by seat)
+userSchema.index({ seat: 1 });
+
+// Compound index for dashboard queries filtering by role and active status
+userSchema.index({ role: 1, isActive: 1 });
+
+// Index on qrToken for QR scan lookups (sparse because select: false)
+userSchema.index({ qrToken: 1 }, { sparse: true });
+
+// Index on createdAt for sorting (already created by timestamps: true)
+// Index on updatedAt for sorting (already created by timestamps: true)
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) {

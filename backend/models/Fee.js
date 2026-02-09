@@ -42,7 +42,23 @@ const feeSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==========================================
+// PERFORMANCE INDEXES
+// ==========================================
+
 // Compound index for unique fees per student per month
 feeSchema.index({ student: 1, month: 1, year: 1 }, { unique: true });
+
+// Index on student for student dashboard queries
+feeSchema.index({ student: 1 });
+
+// Index on status for filtering pending/overdue fees
+feeSchema.index({ status: 1 });
+
+// Index on dueDate for overdue fee detection
+feeSchema.index({ dueDate: 1 });
+
+// Compound index for admin dashboard fee queries (filter by status and due date)
+feeSchema.index({ status: 1, dueDate: 1 });
 
 module.exports = mongoose.model('Fee', feeSchema);

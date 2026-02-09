@@ -14,13 +14,36 @@ exports.getDashboard = async (req, res) => {
     try {
         const studentId = req.user.id;
 
-        // Get seat info (checking new assignments array structure)
-        const seat = await Seat.findOne({
-            'assignments.student': studentId,
-            'assignments.status': 'active'
-        })
-            .populate('floor room')
-            .populate('assignments.shift');
+        // ==========================================
+        // PERFORMANCE OPTIMIZATION: Run independent queries in parallel
+        // ==========================================
+        const [seat, student, unreadCount, activeRequestsCount] = await Promise.all([
+            // Query 1: Get seat info
+            Seat.findOne({
+                'assignments.student': studentId,
+                'assignments.status': 'active'
+            })
+                .populate('floor room')
+                .populate('assignments.shift')
+                .lean(), // Use lean() for faster read-only query
+
+            // Query 2: Get student details
+            User.findById(studentId)
+                .select('registrationSource createdAt name isActive')
+                .lean(),
+
+            // Query 3: Get unread notifications count
+            Notification.countDocuments({
+                recipient: studentId,
+                isRead: false
+            }),
+
+            // Query 4: Get active requests count
+            Request.countDocuments({
+                student: studentId,
+                status: { $in: ['pending', 'approved', 'rejected'] }
+            })
+        ]);
 
         let assignedSeatData = null;
         if (seat) {
@@ -65,7 +88,7 @@ exports.getDashboard = async (req, res) => {
         const attendanceRecords = await Attendance.find({
             student: studentId,
             date: { $gte: startOfMonth, $lte: endOfMonth }
-        });
+        }).lean(); // Use lean() for faster query
 
         // Deduplicate attendance records (fix for multiple entries per day)
         const uniqueAttendanceMap = new Map();
@@ -98,9 +121,6 @@ exports.getDashboard = async (req, res) => {
         const totalDays = cleanAttendance.length;
         const attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
-        // Get student details first (needed for rolling cycle calculation)
-        const student = await User.findById(studentId).select('registrationSource createdAt name isActive');
-
         // Calculate Target Fee Month based on Rolling Cycle
         let currentFee = null;
         let feeReminder = null;
@@ -127,7 +147,7 @@ exports.getDashboard = async (req, res) => {
                 student: studentId,
                 month: targetMonth,
                 year: targetYear
-            });
+            }).lean(); // Use lean() for faster query
 
             // Calculate Dates and Reminder
             if (currentFee && currentFee.status !== 'paid') {
@@ -161,32 +181,8 @@ exports.getDashboard = async (req, res) => {
                 student: studentId,
                 month: now.getMonth() + 1,
                 year: now.getFullYear()
-            });
+            }).lean();
         }
-
-        // Get unread notifications count
-        const unreadCount = await Notification.countDocuments({
-            recipient: studentId,
-            isRead: false
-        });
-
-        // Get active requests count
-        const activeRequestsCount = await Request.countDocuments({
-            student: studentId,
-            status: { $in: ['pending', 'approved', 'rejected'] } // Show status for all non-archived? Or just active? User said "case count > 0", usually implies pending + recently closed?
-            // Actually, "View Status" implies seeing history. If count > 0 (even past), they might want to see history.
-            // But user said "when case count > 0". Usually means "active" cases. 
-            // Let's assume "pending" requests are the vital ones. 
-            // The user said "view status always show ... when case count > 0".
-            // If I have 0 pending but 10 approved, should I see "View Status"? Probably yes, to see history.
-            // Let's count *all* requests for now, or maybe just "pending"?
-            // "Retrieve own ticket" implies pending ones.
-            // Let's count ALL requests so they can access history if they have ever made a request.
-        });
-
-        // Re-reading: "view status always show ... when case count > 0"
-        // If I withdraw a ticket, case count might go down?
-        // Let's stick to ALL requests for "history" access.
 
         res.status(200).json({
             success: true,

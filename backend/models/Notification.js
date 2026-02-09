@@ -33,4 +33,20 @@ const notificationSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==========================================
+// PERFORMANCE INDEXES
+// ==========================================
+
+// Index on recipient for student notification queries
+notificationSchema.index({ recipient: 1 });
+
+// Compound index for unread notification count (most common query)
+notificationSchema.index({ recipient: 1, isRead: 1 });
+
+// Index on createdAt for sorting notifications by date (descending)
+notificationSchema.index({ createdAt: -1 });
+
+// Compound index for fetching recent unread notifications
+notificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Notification', notificationSchema);
