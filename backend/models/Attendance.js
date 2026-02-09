@@ -48,8 +48,28 @@ const attendanceSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==========================================
+// PERFORMANCE INDEXES
+// ==========================================
+
 // Compound index to ensure one record per student per day
 attendanceSchema.index({ student: 1, date: 1 }, { unique: true });
+
+// Index on student for student dashboard attendance queries
+attendanceSchema.index({ student: 1 });
+
+// Index on date for admin analytics queries (attendance by date range)
+attendanceSchema.index({ date: 1 });
+
+// Index on status for filtering present/absent records
+attendanceSchema.index({ status: 1 });
+
+// Compound index for admin dashboard (filter by date and status)
+attendanceSchema.index({ date: 1, status: 1 });
+
+// Index on isActive for finding currently checked-in students
+attendanceSchema.index({ isActive: 1 });
+
 
 // Calculate duration before saving
 attendanceSchema.pre('save', function (next) {

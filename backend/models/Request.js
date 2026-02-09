@@ -46,4 +46,23 @@ const requestSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==========================================
+// PERFORMANCE INDEXES
+// ==========================================
+
+// Index on student for student dashboard queries (my requests)
+requestSchema.index({ student: 1 });
+
+// Index on status for filtering pending/approved requests
+requestSchema.index({ status: 1 });
+
+// Index on type for filtering by request type
+requestSchema.index({ type: 1 });
+
+// Compound index for admin dashboard (filter pending requests)
+requestSchema.index({ status: 1, createdAt: -1 });
+
+// Compound index for student request history (filter by student and status)
+requestSchema.index({ student: 1, status: 1 });
+
 module.exports = mongoose.model('Request', requestSchema);

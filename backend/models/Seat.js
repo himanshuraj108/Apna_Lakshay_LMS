@@ -84,6 +84,25 @@ const seatSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// ==========================================
+// PERFORMANCE INDEXES
+// ==========================================
+
+// Index on floor for getFloors queries
+seatSchema.index({ floor: 1 });
+
+// Index on room for room-level queries
+seatSchema.index({ room: 1 });
+
+// Index on isOccupied for filtering available seats
+seatSchema.index({ isOccupied: 1 });
+
+// Compound index for getFloors optimization (filter by floor, room, occupancy)
+seatSchema.index({ floor: 1, room: 1, isOccupied: 1 });
+
+// Index on assignments.student for reverse lookup (find seat by student)
+seatSchema.index({ 'assignments.student': 1 });
+
 // Virtual to populate assignments
 seatSchema.virtual('activeAssignments').get(function () {
     return this.assignments ? this.assignments.filter(a => a.status === 'active') : [];

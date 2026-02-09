@@ -986,7 +986,7 @@ exports.getFloors = async (req, res) => {
                     populate: [
                         {
                             path: 'assignments.student',
-                            select: 'name email profileImage createdAt isActive registrationSource seatAssignedAt address'
+                            select: 'name email profileImage isActive' // Reduced fields for performance
                         },
                         {
                             path: 'assignments.shift',
@@ -995,7 +995,8 @@ exports.getFloors = async (req, res) => {
                     ]
                 }
             })
-            .sort({ level: 1 });
+            .sort({ level: 1 })
+            .lean(); // Use lean() for read-only data (10-50x faster)
 
         // Self-Healing: Check for and remove orphaned assignments (deleted students)
         for (const floor of floors) {
@@ -1018,13 +1019,12 @@ exports.getFloors = async (req, res) => {
             }
         }
 
-
         const processedFloors = floors.map(floor => ({
-            ...floor.toObject(),
+            ...floor,
             rooms: floor.rooms.map(room => ({
-                ...room.toObject(),
+                ...room,
                 seats: room.seats.map(seat => {
-                    const seatObj = seat.toObject();
+                    const seatObj = seat; // Already a plain object from lean()
                     let isOccupied = false;
                     let displayAssignment = null;
                     let displayShift = null;
@@ -1100,7 +1100,7 @@ exports.getFloors = async (req, res) => {
                         ...seatObj,
                         isOccupied, // Computed dynamic status
                         assignedTo: displayAssignment ? {
-                            ...displayAssignment.toObject(),
+                            ...displayAssignment,
                             shift: displayShift,
                             shiftId: displayShift === 'full' ? 'full' : (shiftDetails ? displayShift : null),
                             shiftDetails
