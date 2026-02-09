@@ -5,7 +5,7 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
   console.warn('⚠️ Email credentials not configured in .env file');
 }
 
-// Create transporter with error handling
+// Create Primary Transporter (Gmail)
 let transporter;
 try {
   transporter = nodemailer.createTransport({
@@ -15,16 +15,28 @@ try {
       pass: process.env.EMAIL_PASSWORD
     }
   });
-  console.log('✅ Email transporter created successfully');
+  console.log('✅ Primary Email transporter (Gmail) created successfully');
 } catch (error) {
-  console.error('❌ Failed to create email transporter:', error.message);
-  // Create a dummy transporter to prevent crashes
-  transporter = {
-    sendMail: async () => {
-      console.log('Email service not available - transporter not created');
-      return { messageId: 'dummy' };
-    }
-  };
+  console.error('❌ Failed to create primary email transporter:', error.message);
+}
+
+// Create Backup Transporter (Brevo)
+let brevoTransporter;
+if (process.env.BREVO_USER && process.env.BREVO_PASS) {
+  try {
+    brevoTransporter = nodemailer.createTransport({
+      host: process.env.BREVO_HOST || 'smtp-relay.brevo.com',
+      port: process.env.BREVO_PORT || 587,
+      secure: false, // true for 465, false for other ports
+      auth: {
+        user: process.env.BREVO_USER,
+        pass: process.env.BREVO_PASS
+      }
+    });
+    console.log('✅ Backup Email transporter (Brevo) configured');
+  } catch (error) {
+    console.error('❌ Failed to configure backup transporter:', error.message);
+  }
 }
 
 /**
@@ -103,22 +115,62 @@ const getPremiumTemplate = (title, content, actionBtn = null) => {
 };
 
 /**
- * Universal Send Helper
+ * Universal Send Helper with Fallback
  */
 const sendEmail = async (to, subject, title, contentHtml, actionBtn = null) => {
-  try {
-    const html = getPremiumTemplate(title, contentHtml, actionBtn);
-    await transporter.sendMail({
-      from: `Library Management System <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`, // Fallback safe
-      to,
-      subject,
-      html
+  const html = getPremiumTemplate(title, contentHtml, actionBtn);
+  const from = `Library Management System <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`;
+
+  // Helper to send with timeout
+  const sendWithTimeout = (availableTransporter, label, timeoutMs = 15000) => {
+    return new Promise((resolve, reject) => {
+      if (!availableTransporter) {
+        return reject(new Error(`${label} transporter not initialized`));
+      }
+
+      // Timeout Timer
+      const timer = setTimeout(() => {
+        reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      // Attempt Send
+      availableTransporter.sendMail({ from, to, subject, html })
+        .then(info => {
+          clearTimeout(timer);
+          resolve(info);
+        })
+        .catch(err => {
+          clearTimeout(timer);
+          reject(err);
+        });
     });
-    console.log(`Email sent to ${to}: ${subject}`);
+  };
+
+  try {
+    // 1. Try Primary (Gmail) with 15s timeout
+    console.log(`📧 Attempting to send email to ${to} via Gmail...`);
+    await sendWithTimeout(transporter, 'Gmail', 15000);
+    console.log(`✅ Email sent to ${to} via Gmail`);
     return true;
-  } catch (error) {
-    console.error(`Email failed to ${to}:`, error.message);
-    return false;
+
+  } catch (primaryError) {
+    console.warn(`⚠️ Primary Email (Gmail) failed: ${primaryError.message}`);
+
+    // 2. Try Backup (Brevo) if available
+    if (brevoTransporter) {
+      console.log(`🔄 Switching to Backup (Brevo) for ${to}...`);
+      try {
+        await sendWithTimeout(brevoTransporter, 'Brevo', 15000); // 15s timeout for backup too
+        console.log(`✅ Email sent to ${to} via Backup (Brevo)`);
+        return true;
+      } catch (backupError) {
+        console.error(`❌ Backup Email (Brevo) also failed: ${backupError.message}`);
+        return false;
+      }
+    } else {
+      console.error('❌ Backup Email (Brevo) not configured. Cannot failover.');
+      return false;
+    }
   }
 };
 
@@ -287,15 +339,22 @@ exports.sendAnnouncementEmail = async (recipients, title, message) => {
   `;
 
   // Send individually for personalization (or use BCC implementation if scale needed)
+  console.log(`📢 Sending announcement to ${recipients.length} recipients...`);
+  let successCount = 0;
+
   for (const recipient of recipients) {
-    await sendEmail(
+    const success = await sendEmail(
       recipient.email,
       `${title}`,
       title,
       content,
       { text: 'View Dashboard', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login` }
     );
+    if (success) successCount++;
   }
+
+  console.log(`✅ Announcement sent to ${successCount}/${recipients.length} recipients`);
+  return successCount > 0;
 };
 
 // 7. OTP Email
