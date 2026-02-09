@@ -220,19 +220,16 @@ exports.registerStudent = async (req, res) => {
             registrationSource: 'self'
         });
 
-        // Send credentials email
+        // Send credentials email (non-blocking - don't await)
         const emailService = require('../services/emailService');
-        try {
-            await emailService.sendCredentialsEmail(name, email, plainPassword);
-            console.log(`✅ Credentials email sent successfully to ${email}`);
-        } catch (emailError) {
-            console.error('❌ Failed to send credentials email:');
-            console.error('Error:', emailError.message);
-            console.error('Stack:', emailError.stack);
-            console.error('Code:', emailError.code);
-            // Continue even if email fails
-        }
+        emailService.sendCredentialsEmail(name, email, plainPassword)
+            .then(() => console.log(`✅ Credentials email sent successfully to ${email}`))
+            .catch(emailError => {
+                console.error('❌ Failed to send credentials email:');
+                console.error('Error:', emailError.message);
+            });
 
+        // Respond immediately without waiting for email
         res.status(201).json({
             success: true,
             message: 'Registration successful! Login credentials have been sent to your email.',

@@ -27,7 +27,6 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         minlength: [10, 'Mobile number must be 10 digits'],
-        minlength: [10, 'Mobile number must be 10 digits'],
         maxlength: [10, 'Mobile number must be 10 digits']
     },
     address: {
@@ -110,15 +109,7 @@ const userSchema = new mongoose.Schema({
 // ==========================================
 // PERFORMANCE INDEXES
 // ==========================================
-
-// Index on email for login queries and uniqueness
-userSchema.index({ email: 1 }, { unique: true });
-
-// Index on studentId for lookups (sparse because it can be null)
-userSchema.index({ studentId: 1 }, { unique: true, sparse: true });
-
-// Index on mobile for uniqueness and lookups
-userSchema.index({ mobile: 1 }, { unique: true });
+// Note: email, studentId, and mobile already have indexes from 'unique: true'
 
 // Index on seat reference for reverse lookups (find user by seat)
 userSchema.index({ seat: 1 });
