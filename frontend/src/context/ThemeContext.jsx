@@ -7,9 +7,9 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    // Default to 'system' if no preference saved
+    // Default to 'dark' if no preference saved
     const [theme, setTheme] = useState(
-        localStorage.getItem('theme') || 'system'
+        localStorage.getItem('theme') || 'dark'
     );
 
     useEffect(() => {
