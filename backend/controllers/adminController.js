@@ -15,8 +15,17 @@ const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+
 // Polyfill for Node < 15.6.0
 const randomUUID = crypto.randomUUID || (() => crypto.randomBytes(16).toString('hex'));
+
+const logAutomation = (msg) => {
+    const logFile = path.join(__dirname, '../../admin_automation.log');
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logFile, `[${timestamp}] ${msg}\n`);
+};
 
 // Email service for notifications (with safe loading)
 let emailService;
@@ -243,9 +252,36 @@ exports.createShift = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Shift name already exists' });
         }
 
+        // Check for time overlaps with existing shifts
+        const { doTimeRangesOverlap } = require('../utils/timeUtils');
+        const allShifts = await Shift.find({ isActive: true });
+
+        const overlappingShifts = allShifts.filter(existing =>
+            doTimeRangesOverlap(
+                startTime,
+                endTime,
+                existing.startTime,
+                existing.endTime
+            )
+        );
+
         const shift = await Shift.create({ name, startTime, endTime });
 
         await logAction(req, 'create_shift', 'Shift', shift._id, shift.name, `Created shift ${shift.name} (${startTime}-${endTime})`);
+
+        // Return success with optional warning about overlaps
+        if (overlappingShifts.length > 0) {
+            return res.status(201).json({
+                success: true,
+                shift,
+                warning: `This shift overlaps with ${overlappingShifts.length} existing shift(s)`,
+                overlappingShifts: overlappingShifts.map(s => ({
+                    name: s.name,
+                    startTime: s.startTime,
+                    endTime: s.endTime
+                }))
+            });
+        }
 
         res.status(201).json({ success: true, shift });
     } catch (error) {
@@ -1312,15 +1348,44 @@ exports.assignSeat = async (req, res) => {
                 });
             }
 
-            // 2. Is the specific shift already taken?
-            // Note: 'shift' body param should be the Shift ID
-            const isShiftTaken = activeAssignments.some(a => a.shift && a.shift.toString() === shift);
-
-            if (isShiftTaken) {
-                return res.status(400).json({
+            // 2. Check for time-based overlaps (not just exact shift ID match)
+            // Get the requested shift details
+            const requestedShift = await Shift.findById(shift);
+            if (!requestedShift) {
+                return res.status(404).json({
                     success: false,
-                    message: 'Seat is already occupied for this shift'
+                    message: 'Shift not found'
                 });
+            }
+
+            // Import time overlap utility
+            const { doTimeRangesOverlap } = require('../utils/timeUtils');
+
+            // Check if requested shift time overlaps with any existing assignment
+            for (const assignment of activeAssignments) {
+                if (assignment.shift) {
+                    const assignedShift = await Shift.findById(assignment.shift);
+                    if (assignedShift) {
+                        const hasOverlap = doTimeRangesOverlap(
+                            requestedShift.startTime,
+                            requestedShift.endTime,
+                            assignedShift.startTime,
+                            assignedShift.endTime
+                        );
+
+                        if (hasOverlap) {
+                            return res.status(400).json({
+                                success: false,
+                                message: `Seat is already occupied during this time period. Conflict with ${assignedShift.name} (${assignedShift.startTime}-${assignedShift.endTime})`,
+                                conflictingShift: {
+                                    name: assignedShift.name,
+                                    startTime: assignedShift.startTime,
+                                    endTime: assignedShift.endTime
+                                }
+                            });
+                        }
+                    }
+                }
             }
         }
 
@@ -1969,6 +2034,88 @@ exports.handleRequest = async (req, res) => {
             type: 'request',
             createdBy: req.user.id
         });
+
+        // AUTOMATION: Handle Seat/Combined Changes
+        if (status === 'approved' && (request.type === 'seat' || request.type === 'seat_change')) {
+            logAutomation(`🔄 Processing request ${request._id} for student ${request.student?.email}`);
+            logAutomation(`Requested Data: ${JSON.stringify(request.requestedData)}`);
+            try {
+                const targetSeatId = request.requestedData?.requestedSeatId;
+                const targetShiftId = request.requestedData?.shift || request.requestedData?.requestedShift;
+
+                if (!targetSeatId) {
+                    throw new Error('Target Seat ID missing in request data');
+                }
+
+                // Handle populate vs ID safety
+                const studentId = (request.student && request.student._id) ? request.student._id : request.student;
+                if (!studentId) {
+                    throw new Error('Student ID missing on request object');
+                }
+
+                // 1. Find and de-allocate current seat
+                logAutomation(`Searching for current active seat for student ${studentId}...`);
+                const currentSeat = await Seat.findOne({
+                    'assignments.student': studentId,
+                    'assignments.status': 'active'
+                });
+
+                if (currentSeat) {
+                    logAutomation(`📍 Found current seat ${currentSeat.number}, deactivating assignment...`);
+                    const assignmentIndex = currentSeat.assignments.findIndex(
+                        a => a.student.toString() === studentId.toString() && a.status === 'active'
+                    );
+
+                    if (assignmentIndex !== -1) {
+                        currentSeat.assignments[assignmentIndex].status = 'expired';
+                        const remainingActive = currentSeat.assignments.filter(a => a.status === 'active');
+                        if (remainingActive.length === 0) {
+                            currentSeat.isOccupied = false;
+                        }
+                        await currentSeat.save();
+                        logAutomation(`✅ Deactivated current seat ${currentSeat.number}`);
+                    }
+                } else {
+                    logAutomation('⚠️ No current active seat found for student (New Allocation?)');
+                }
+
+                // 2. Allocate new seat
+                logAutomation(`Finding target seat ${targetSeatId}...`);
+                const targetSeat = await Seat.findById(targetSeatId);
+                if (!targetSeat) {
+                    throw new Error(`Target seat ${targetSeatId} not found`);
+                }
+
+                logAutomation(`📍 Allocating new seat ${targetSeat.number} with shift ${targetShiftId}...`);
+
+                targetSeat.assignments.push({
+                    student: studentId,
+                    shift: targetShiftId,
+                    status: 'active',
+                    assignedAt: new Date(),
+                    type: 'specific'
+                });
+
+                targetSeat.isOccupied = true;
+
+                await targetSeat.save();
+                logAutomation(`✅ Successfully allocated seat ${targetSeat.number} to student`);
+
+                // 3. Update User's seat reference
+                logAutomation(`Updating User ${studentId} seat reference...`);
+                await User.findByIdAndUpdate(studentId, {
+                    seat: targetSeat._id,
+                    seatAssignedAt: new Date()
+                });
+                logAutomation(`✅ Updated User ${studentId} to point to seat ${targetSeatId}`);
+
+
+            } catch (err) {
+                const errMsg = `❌ Error processing seat change automation: ${err.message}`;
+                logAutomation(errMsg);
+                console.error(errMsg, err);
+            }
+        }
 
         // If shift change request is approved, update the actual seat shift
         if (status === 'approved' && request.type === 'shift') {

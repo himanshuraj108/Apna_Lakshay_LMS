@@ -525,7 +525,33 @@ exports.submitRequest = async (req, res) => {
             currentData = {}; // No current data needed
             // requestedData contains { category, message } passed from frontend
         }
-        // requestedData contains { category, message } passed from frontend
+
+        // Special handling for legacy/combined Seat/Shift requests: Populate with readable details
+        if (req.body.requestedData && req.body.requestedData.requestedSeatId) {
+            try {
+                const targetSeat = await Seat.findById(req.body.requestedData.requestedSeatId);
+                if (targetSeat) {
+                    const Room = require('../models/Room');
+                    const Floor = require('../models/Floor');
+
+                    const room = await Room.findOne({ seats: targetSeat._id });
+                    const floor = room ? await Floor.findOne({ rooms: room._id }) : null;
+
+                    // Mutate requestedData to add readable details
+                    Object.assign(requestedData, {
+                        seatNumber: targetSeat.number,
+                        room: room ? room.name : 'Unknown Room',
+                        floor: floor ? floor.name : 'Unknown Floor'
+                    });
+                }
+            } catch (err) {
+                console.error('Error populating seat details for request:', err);
+            }
+        }
+
+        if (req.body.requestedData && req.body.requestedData.requestedShift) {
+            requestedData.shift = req.body.requestedData.requestedShift;
+        }
 
         // Generate 6-digit Ticket ID
         const ticketId = Math.floor(100000 + Math.random() * 900000).toString();
@@ -722,6 +748,109 @@ exports.deleteProfileImage = async (req, res) => {
             message: 'Profile image deleted successfully'
         });
     } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get available shifts for student's current seat
+// @route   GET /api/student/available-shifts
+exports.getAvailableShifts = async (req, res) => {
+    try {
+        const student = await User.findById(req.user.id);
+
+        // Get seat with all assignments and shift details
+        const seat = await Seat.findOne({
+            'assignments.student': req.user.id,
+            'assignments.status': 'active'
+        }).populate({
+            path: 'assignments.shift',
+            select: 'name startTime endTime'
+        });
+
+        if (!seat) {
+            return res.status(400).json({
+                success: false,
+                message: 'No seat assigned'
+            });
+        }
+
+        // Get active assignments on this seat (excluding current student)
+        const otherAssignments = seat.assignments.filter(a =>
+            a.status === 'active' && a.student.toString() !== student._id.toString()
+        );
+
+        // Get current student's assignment to exclude their current shift
+        const myAssignment = seat.assignments.find(a =>
+            a.status === 'active' && a.student.toString() === student._id.toString()
+        );
+
+        let myCurrentShift = null;
+        if (myAssignment && myAssignment.shift) {
+            myCurrentShift = myAssignment.shift;
+        }
+
+        // Get all possible shifts
+        const Shift = require('../models/Shift');
+        const allShifts = await Shift.find({ isActive: true });
+
+        // Import overlap detection
+        const { doTimeRangesOverlap } = require('../utils/timeUtils');
+
+        // Filter to available shifts
+        const availableShifts = allShifts.filter(candidateShift => {
+            // Exclude current shift
+            if (myCurrentShift && candidateShift._id.toString() === myCurrentShift._id.toString()) {
+                return false;
+            }
+
+            // Check if this shift overlaps with any existing assignment
+            for (const assignment of otherAssignments) {
+                if (!assignment.shift || typeof assignment.shift !== 'object') continue;
+
+                const hasOverlap = doTimeRangesOverlap(
+                    candidateShift.startTime,
+                    candidateShift.endTime,
+                    assignment.shift.startTime,
+                    assignment.shift.endTime
+                );
+
+                if (hasOverlap) return false; // Not available
+            }
+            return true; // Available
+        });
+
+        // Map occupied shifts for display
+        const occupiedShifts = otherAssignments
+            .filter(a => a.shift && typeof a.shift === 'object')
+            .map(a => ({
+                _id: a.shift._id,
+                name: a.shift.name,
+                startTime: a.shift.startTime,
+                endTime: a.shift.endTime,
+                occupiedBy: 'Another student' // Privacy - don't expose student names
+            }));
+
+        res.status(200).json({
+            success: true,
+            availableShifts,
+            occupiedShifts,
+            currentShift: myCurrentShift ? {
+                _id: myCurrentShift._id,
+                name: myCurrentShift.name,
+                startTime: myCurrentShift.startTime,
+                endTime: myCurrentShift.endTime
+            } : null,
+            currentSeat: {
+                number: seat.number,
+                totalOccupants: otherAssignments.length + 1 // Including the requesting student
+            }
+        });
+    } catch (error) {
+        console.error('Get available shifts error:', error);
         res.status(500).json({
             success: false,
             message: 'Server error',

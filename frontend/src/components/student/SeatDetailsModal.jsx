@@ -52,19 +52,53 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                         {(() => {
                             // Calculate if seat is fully occupied (all shifts unavailable)
                             const isFullyOccupied = shifts.every(shift => {
-                                const isFullDay = shift.id === 'full' ||
+                                // 1. Time Overlap Logic
+                                const doTimeRangesOverlap = (start1, end1, start2, end2) => {
+                                    if (!start1 || !end1 || !start2 || !end2) return false;
+                                    const timeToMinutes = (time) => {
+                                        const [hours, minutes] = time.split(':').map(Number);
+                                        return hours * 60 + minutes;
+                                    };
+                                    const s1 = timeToMinutes(start1);
+                                    const e1 = timeToMinutes(end1);
+                                    const s2 = timeToMinutes(start2);
+                                    const e2 = timeToMinutes(end2);
+                                    return s1 < e2 && s2 < e1;
+                                };
+
+                                // 2. Check overlap with any active assignment
+                                const isOverlapOccupied = seat.assignments?.some(assignment => {
+                                    if (assignment.status !== 'active' || !assignment.shift) return false;
+                                    return doTimeRangesOverlap(
+                                        shift.startTime,
+                                        shift.endTime,
+                                        assignment.shift.startTime,
+                                        assignment.shift.endTime
+                                    );
+                                });
+
+                                // 3. Check for DIRECT booking (Exact Match)
+                                const isDirectlyBooked = (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName)) ||
+                                    (seat.assignments && seat.assignments.some(a => a.shift && a.shift._id === shift.id));
+
+                                const isFullDayShift = shift.id === 'full' ||
                                     shift.legacyName === 'full_day' ||
                                     (shift.name && shift.name.toLowerCase().includes('full'));
 
-                                const isPartiallyBooked = seat.activeShifts && seat.activeShifts.length > 0;
-                                const isOccupied = seat.isFullyBlocked || (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
+                                const isDirectFullDayBooked = seat.isFullyBlocked && isFullDayShift;
 
-                                // Shift is unavailable if it's occupied OR (it's full day and partial shifts exist)
-                                return isOccupied || (isFullDay && isPartiallyBooked);
+                                // Shift is unavailable if:
+                                // - It is directly booked
+                                // - It is blocked by an overlap
+                                // - It is a Full Day shift and the seat is partially booked (cannot book full day if partially taken)
+                                const isPartiallyBooked = seat.assignments && seat.assignments.length > 0;
+
+                                return isDirectlyBooked || isDirectFullDayBooked || isOverlapOccupied || (isFullDayShift && isPartiallyBooked);
                             });
 
-                            const hasAnyOccupied = seat.activeShifts && seat.activeShifts.length > 0;
+                            const hasAnyOccupied = seat.assignments && seat.assignments.length > 0;
 
+                            // If NO shifts are available to be booked, it is Fully Occupied
                             const variant = isFullyOccupied ? 'red' : hasAnyOccupied ? 'yellow' : 'green';
                             const text = isFullyOccupied ? '🔴 Fully Occupied' : hasAnyOccupied ? '🟠 Partially Occupied' : '🟢 Available';
 
@@ -97,24 +131,53 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                             </div>
                             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                 {shifts.map(shift => {
-                                    const isOccupied = seat.isFullyBlocked || (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
+                                    // 1. Time Overlap Check
+                                    const doTimeRangesOverlap = (start1, end1, start2, end2) => {
+                                        if (!start1 || !end1 || !start2 || !end2) return false;
+                                        const timeToMinutes = (time) => {
+                                            const [hours, minutes] = time.split(':').map(Number);
+                                            return hours * 60 + minutes;
+                                        };
+                                        const s1 = timeToMinutes(start1);
+                                        const e1 = timeToMinutes(end1);
+                                        const s2 = timeToMinutes(start2);
+                                        const e2 = timeToMinutes(end2);
+                                        return s1 < e2 && s2 < e1;
+                                    };
 
-                                    // Special logic for Full Day: Not Available (Gray) if any partial shift is taken
-                                    // Robust check: ID is 'full', or legacy name, OR name contains 'Full' (case insensitive)
-                                    const isFullDay = shift.id === 'full' ||
+                                    // 2. Check overlap with any active assignment
+                                    const isOverlapOccupied = seat.assignments?.some(assignment => {
+                                        if (assignment.status !== 'active' || !assignment.shift) return false;
+                                        return doTimeRangesOverlap(
+                                            shift.startTime,
+                                            shift.endTime,
+                                            assignment.shift.startTime,
+                                            assignment.shift.endTime
+                                        );
+                                    });
+
+                                    // 3. Check for DIRECT booking (Exact Match)
+                                    // Matches if ID matches, or legacy name matches
+                                    const isDirectlyBooked = (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName)) ||
+                                        (seat.assignments && seat.assignments.some(a => a.shift && a.shift._id === shift.id));
+
+                                    // Special case: If seat is fully blocked (Full Day booking), and we are viewing "Full Day", it is directly booked
+                                    const isFullDayShift = shift.id === 'full' ||
                                         shift.legacyName === 'full_day' ||
                                         (shift.name && shift.name.toLowerCase().includes('full'));
 
-                                    const isPartiallyBooked = seat.activeShifts && seat.activeShifts.length > 0;
-                                    const isFullDayblocked = isFullDay && isPartiallyBooked;
+                                    const isDirectFullDayBooked = seat.isFullyBlocked && isFullDayShift;
 
+                                    // Final Status Determination
                                     let statusColor = 'bg-green-500/20 text-green-400 border-green-500/30';
                                     let statusText = 'Vacant';
 
-                                    if (isOccupied) {
+                                    if (isDirectlyBooked || isDirectFullDayBooked) {
+                                        // Student actually booked THIS specific shift
                                         statusColor = 'bg-red-500/20 text-red-400 border-red-500/30';
                                         statusText = 'Occupied';
-                                    } else if (isFullDayblocked) {
+                                    } else if (isOverlapOccupied || (seat.isFullyBlocked && !isFullDayShift)) {
+                                        // Shift is blocked by another booking (overlap or full day blocking partial), but not directly booked
                                         statusColor = 'bg-gray-500/20 text-gray-400 border-gray-500/30';
                                         statusText = 'Not Available';
                                     }

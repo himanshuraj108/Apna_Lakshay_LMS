@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { IoBedOutline } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 
-const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
+const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupied = false }) => {
     const doorPosition = room.doorPosition || 'south';
     const { shifts } = useShifts();
 
@@ -18,25 +18,60 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId }) => {
     const SeatCard = ({ seat }) => {
         const isHighlighted = seat._id === highlightSeatId;
 
-        // Determine if seat is FULLY occupied (all shifts unavailable)
+        // Use displayOccupied if filtering by shift, otherwise use normal logic
         let statusColor = 'green';
 
-        if (shifts && shifts.length > 0 && seat.activeShifts && seat.activeShifts.length > 0) {
-            // Check if ALL shifts are unavailable
-            const isFullyOccupied = shifts.every(shift => {
-                const isFullDay = shift.id === 'full' ||
-                    shift.name?.toLowerCase().includes('full');
+        if (useDisplayOccupied) {
+            // Simple check for shift-filtered view
+            statusColor = seat.displayOccupied ? 'red' : 'green';
+        } else {
+            // Determine if seat is FULLY occupied (all shifts unavailable)
+            if (shifts && shifts.length > 0) {
+                // Check if ALL shifts are unavailable
+                const isFullyOccupied = shifts.every(shift => {
+                    // 1. Time Overlap Logic
+                    const doTimeRangesOverlap = (start1, end1, start2, end2) => {
+                        if (!start1 || !end1 || !start2 || !end2) return false;
+                        const timeToMinutes = (time) => {
+                            const [hours, minutes] = time.split(':').map(Number);
+                            return hours * 60 + minutes;
+                        };
+                        const s1 = timeToMinutes(start1);
+                        const e1 = timeToMinutes(end1);
+                        const s2 = timeToMinutes(start2);
+                        const e2 = timeToMinutes(end2);
+                        return s1 < e2 && s2 < e1;
+                    };
 
-                const isPartiallyBooked = seat.activeShifts.length > 0;
-                const isOccupied = seat.isFullyBlocked || seat.activeShifts.some(s => s === shift.id || s === shift.name);
+                    // 2. Check overlap with any active assignment
+                    const isOverlapOccupied = seat.assignments?.some(assignment => {
+                        if (assignment.status !== 'active' || !assignment.shift) return false;
+                        return doTimeRangesOverlap(
+                            shift.startTime,
+                            shift.endTime,
+                            assignment.shift.startTime,
+                            assignment.shift.endTime
+                        );
+                    });
 
-                // Shift is unavailable if occupied OR (it's full day and partial shifts exist)
-                return isOccupied || (isFullDay && isPartiallyBooked);
-            });
+                    // 3. Direct checks
+                    const isFullDay = shift.id === 'full' ||
+                        shift.legacyName === 'full_day' ||
+                        (shift.name && shift.name.toLowerCase().includes('full'));
 
-            statusColor = isFullyOccupied ? 'red' : 'orange';
-        } else if (seat.isOccupied || seat.status === 'occupied') {
-            statusColor = 'red';
+                    const isPartiallyBooked = seat.assignments && seat.assignments.length > 0;
+
+                    const isDirectlyBooked = seat.isFullyBlocked ||
+                        (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
+
+                    // Shift is unavailable if occupied OR (it's full day and partial shifts exist)
+                    return isDirectlyBooked || isOverlapOccupied || (isFullDay && isPartiallyBooked);
+                });
+
+                statusColor = isFullyOccupied ? 'red' : (seat.activeShifts && seat.activeShifts.length > 0 ? 'orange' : 'green');
+            } else if (seat.isOccupied || seat.status === 'occupied') {
+                statusColor = 'red';
+            }
         }
 
         const colorClasses = {
