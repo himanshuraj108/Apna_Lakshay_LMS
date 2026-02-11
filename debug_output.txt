@@ -1,0 +1,14 @@
+✅ Connected to MongoDB
+👤 User found: himanshu (698982670bc2aae7b81e5186)
+
+📜 Recent Requests (3 found):
+- Type: seat, Status: approved, ID: 698c2bf7b43cd03609440285, Created: Wed Feb 11 2026 12:42:55 GMT+0530 (India Standard Time)
+  Requested Data: {"requestedSeatId":"697eaae18dd3a14b5db275a0","requestedShift":"697913514853bb9fe17151dd","seatNumber":"S1","room":"STUDY ROOM - A","floor":"FIRST FLOOR","shift":"697913514853bb9fe17151dd"}
+- Type: seat, Status: approved, ID: 698c2a81c5bac9f1ee14f0c0, Created: Wed Feb 11 2026 12:36:41 GMT+0530 (India Standard Time)
+  Requested Data: {"requestedSeatId":"697eaae18dd3a14b5db275a0","requestedShift":"697913514853bb9fe17151dd","seatNumber":"S1","room":"STUDY ROOM - A","floor":"FIRST FLOOR","shift":"697913514853bb9fe17151dd"}
+- Type: seat, Status: rejected, ID: 698c288c4b2761b9ec55f907, Created: Wed Feb 11 2026 12:28:20 GMT+0530 (India Standard Time)
+  Requested Data: {"requestedSeatId":"697eaae18dd3a14b5db275a0","requestedShift":"697913514853bb9fe17151dd"}
+
+💺 Seat Assignments (All time):
+Seat OFFICE (6982badde00f5f22d34eacd7):
+  - Status: active, Shift: 698c052a79126d4a784aab0c, Type: specific, Assigned: Wed Feb 11 2026 11:23:11 GMT+0530 (India Standard Time)

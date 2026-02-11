@@ -165,11 +165,16 @@ const RequestManagement = () => {
                                                     {request.status === 'approved' && request.type === 'support' ? 'Solved' : request.status}
                                                 </Badge>
                                                 <span className="text-sm text-gray-400 capitalize">
-                                                    {request.type === 'seat_change' ? 'Seat' : request.type} Change
+                                                    {request.type === 'seat' ? 'Seat/Shift' : request.type === 'seat_change' ? 'Seat' : request.type} Change
                                                 </span>
                                             </div>
 
                                             <p className="text-sm text-gray-400 mb-3">{request.student?.email}</p>
+                                            {request.description && (
+                                                <p className="text-sm text-white/80 bg-white/5 p-2 rounded mb-3 italic">
+                                                    "{request.description}"
+                                                </p>
+                                            )}
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                                                 <div className="bg-white/5 rounded-lg p-3">
@@ -181,7 +186,7 @@ const RequestManagement = () => {
                                                                 {request.currentData?.floor || 'N/A'} - {request.currentData?.room || 'N/A'}
                                                             </p>
                                                         </div>
-                                                    ) : request.type === 'shift' ? (
+                                                    ) : (request.type === 'shift' || request.type === 'seat') ? (
                                                         <div>
                                                             <p className="text-sm font-semibold">Seat: {request.currentData?.seatNumber || 'N/A'}</p>
                                                             <p className="text-sm text-gray-300">Shift: <span className="font-medium">{getShiftName(request.currentData?.shift)}</span></p>
@@ -194,7 +199,17 @@ const RequestManagement = () => {
                                                 </div>
                                                 <div className="bg-white/5 rounded-lg p-3">
                                                     <p className="text-xs text-gray-400 mb-1">Requested Data</p>
-                                                    {request.type === 'seat_change' ? (
+                                                    {request.type === 'seat' ? (
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-green-400">Seat: {request.requestedData?.seatNumber || request.requestedData?.requestedSeatId || 'N/A'}</p>
+                                                            <p className="text-xs text-gray-400 mt-1">
+                                                                {request.requestedData?.floor} - {request.requestedData?.room}
+                                                            </p>
+                                                            <p className="text-sm text-green-400 font-semibold mt-2">
+                                                                Shift: <span>{getShiftName(request.requestedData?.shift || request.requestedData?.requestedShift)}</span>
+                                                            </p>
+                                                        </div>
+                                                    ) : request.type === 'seat_change' ? (
                                                         <div>
                                                             <p className="text-sm font-semibold text-green-400">{request.requestedData?.seatNumber || 'N/A'}</p>
                                                             <p className="text-xs text-gray-400 mt-1">

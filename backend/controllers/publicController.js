@@ -101,7 +101,18 @@ exports.getSeats = async (req, res) => {
                         shift: displayShift,
                         position: seat.position,
                         basePrices: seat.basePrices,
-                        shiftPrices: seat.shiftPrices
+                        shiftPrices: seat.shiftPrices,
+                        // Add assignments with shift details for overlap detection
+                        assignments: activeAssignments.map(a => ({
+                            status: a.status,
+                            shift: a.shift ? {
+                                _id: a.shift._id,
+                                name: a.shift.name,
+                                startTime: a.shift.startTime,
+                                endTime: a.shift.endTime
+                            } : null,
+                            legacyShift: a.legacyShift
+                        }))
                     };
                 })
             }))

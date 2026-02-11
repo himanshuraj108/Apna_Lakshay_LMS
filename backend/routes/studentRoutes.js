@@ -14,6 +14,7 @@ const {
     uploadProfileImage,
     deleteProfileImage,
     changePassword,
+    getAvailableShifts,
     requestSeatChange,
     markAttendanceByQr
 } = require('../controllers/studentController');
@@ -43,6 +44,7 @@ router.put('/notifications/:id/read', markNotificationRead);
 router.post('/request', authorizeActive, submitRequest);
 router.get('/request', getMyRequests);
 router.put('/request/:id/withdraw', withdrawRequest);
+router.get('/available-shifts', authorizeActive, getAvailableShifts);
 router.post('/request-seat-change', authorizeActive, requestSeatChange);
 
 // Profile

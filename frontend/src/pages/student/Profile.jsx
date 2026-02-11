@@ -11,6 +11,7 @@ import api, { BASE_URL } from '../../utils/api';
 import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoSunny, IoMoon, IoDesktopOutline } from 'react-icons/io5';
 import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
+import CombinedSeatShiftModal from '../../components/student/CombinedSeatShiftModal';
 import useShifts from '../../hooks/useShifts';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -28,6 +29,10 @@ const Profile = () => {
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
     const [showSeatChangeModal, setShowSeatChangeModal] = useState(false);
+    const [showCombinedChangeModal, setShowCombinedChangeModal] = useState(false);
+    const [availableShifts, setAvailableShifts] = useState([]);
+    const [occupiedShifts, setOccupiedShifts] = useState([]);
+    const [loadingShifts, setLoadingShifts] = useState(false);
 
     useEffect(() => {
         fetchProfile();
@@ -90,6 +95,33 @@ const Profile = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const fetchAvailableShifts = async () => {
+        console.log('🔍 Fetching available shifts...', { hasSeat: !!profile?.seat, seatNumber: profile?.seat });
+
+        if (!profile?.seat) {
+            console.warn('❌ No seat assigned, cannot fetch shifts');
+            return;
+        }
+
+        setLoadingShifts(true);
+        try {
+            const response = await api.get('/student/available-shifts');
+            console.log('✅ Available shifts response:', response.data);
+            setAvailableShifts(response.data.availableShifts || []);
+            setOccupiedShifts(response.data.occupiedShifts || []);
+            console.log('📊 State updated:', {
+                availableCount: response.data.availableShifts?.length || 0,
+                occupiedCount: response.data.occupiedShifts?.length || 0
+            });
+        } catch (error) {
+            console.error('❌ Error fetching available shifts:', error);
+            setError('Failed to load shift availability');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setLoadingShifts(false);
+        }
     };
 
     const [submittingRequest, setSubmittingRequest] = useState(false);
@@ -363,6 +395,7 @@ const Profile = () => {
                                     variant="primary"
                                     onClick={() => {
                                         setRequestType('shift');
+                                        fetchAvailableShifts();
                                         setShowRequestModal(true);
                                     }}
                                 >
@@ -439,31 +472,78 @@ const Profile = () => {
                                     </div>
                                 )}
 
+                                {/* Occupied Shifts Warning */}
+                                {occupiedShifts.length > 0 && (
+                                    <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                        <p className="text-xs text-yellow-500 font-semibold mb-2">⚠️ Unavailable Shifts (Occupied)</p>
+                                        {occupiedShifts.map((occupied, idx) => (
+                                            <div key={idx} className="text-sm text-gray-400 mb-1">
+                                                • {occupied.name} ({occupied.startTime} - {occupied.endTime}) - {occupied.occupiedBy}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
                                 <label className="block text-sm font-medium mb-2">New Shift</label>
-                                <select
-                                    value={requestData.shift || ''}
-                                    onChange={(e) => {
-                                        const selected = e.target.value;
-                                        if (profile.currentShift === selected) {
-                                            setError("You are already in this shift!");
+                                {loadingShifts ? (
+                                    <div className="flex items-center justify-center py-4 bg-gray-800/30 border border-gray-700 rounded-lg">
+                                        <div className="w-6 h-6 border-2 border-gray-400 border-t-white rounded-full animate-spin"></div>
+                                        <span className="ml-2 text-gray-400">Loading shifts...</span>
+                                    </div>
+                                ) : (
+                                    <select
+                                        value={requestData.shift || ''}
+                                        onChange={(e) => {
+                                            const selected = e.target.value;
+                                            setRequestData({ shift: selected });
+                                        }}
+                                        className="input"
+                                        disabled={loadingShifts || availableShifts.length === 0}
+                                    >
+                                        <option value="">Select an available shift...</option>
+                                        {availableShifts.length > 0 ? (
+                                            availableShifts.map(shift => (
+                                                <option key={shift._id} value={shift._id}>
+                                                    {shift.name} ({shift.startTime} - {shift.endTime})
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No available shifts</option>
+                                        )}
+                                    </select>
+                                )}
+
+                                {/* Always Visible: Browse Other Seats Button */}
+                                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                                    <p className="text-xs text-blue-400 mb-2">💡 Looking for different options?</p>
+                                    <Button
+                                        variant="primary"
+                                        className="w-full"
+                                        onClick={() => {
                                             setShowRequestModal(false);
-                                            setTimeout(() => setError(''), 3000);
-                                            return;
-                                        }
-                                        setRequestData({ shift: selected });
-                                    }}
-                                    className="input"
-                                >
-                                    <option value="">Select shift...</option>
-                                    {shifts.map(shift => (
-                                        <option key={shift.id} value={shift.id}>
-                                            {shift.name} ({getShiftTimeRange(shift)})
-                                        </option>
-                                    ))}
-                                    {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                        <option value="full">Full Day (9 AM - 9 PM)</option>
-                                    )}
-                                </select>
+                                            setShowCombinedChangeModal(true);
+                                        }}
+                                    >
+                                        Shift not available? Want to change shift? CLICK HERE
+                                    </Button>
+                                </div>
+
+                                {/* Availability Messages */}
+                                {availableShifts.length === 0 && !loadingShifts && (
+                                    <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                        <p className="text-sm text-red-400">
+                                            ❌ No shifts available on your current seat (#{profile?.seat?.number || profile?.seat})
+                                        </p>
+                                    </div>
+                                )}
+                                {availableShifts.length > 0 && !loadingShifts && (
+                                    <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                        <p className="text-xs text-green-500 font-semibold mb-1">✓ {availableShifts.length} Available Shift{availableShifts.length !== 1 ? 's' : ''}</p>
+                                        <p className="text-sm text-gray-400">
+                                            The shifts above don't conflict with any existing bookings. Select one to submit your request.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -540,6 +620,19 @@ const Profile = () => {
                         setSuccess('Seat change request submitted successfully!');
                         setTimeout(() => setSuccess(''), 3000);
                         fetchProfile();
+                    }}
+                />
+
+                {/* Combined Seat + Shift Change Modal */}
+                <CombinedSeatShiftModal
+                    isOpen={showCombinedChangeModal}
+                    onClose={() => setShowCombinedChangeModal(false)}
+                    currentSeat={profile?.seat}
+                    onSuccess={() => {
+                        setShowCombinedChangeModal(false);
+                        fetchProfile();
+                        setSuccess('Combined seat and shift change request submitted!');
+                        setTimeout(() => setSuccess(''), 3000);
                     }}
                 />
             </div>

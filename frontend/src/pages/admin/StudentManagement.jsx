@@ -437,6 +437,24 @@ const StudentManagement = () => {
 
     const availableSeats = getAvailableSeats();
 
+    // Helper function to check if two time ranges overlap
+    const doTimeRangesOverlap = (start1, end1, start2, end2) => {
+        // Convert time strings (HH:MM) to minutes since midnight
+        const toMinutes = (time) => {
+            if (!time) return 0;
+            const [hours, minutes] = time.split(':').map(Number);
+            return hours * 60 + minutes;
+        };
+
+        const s1 = toMinutes(start1);
+        const e1 = toMinutes(end1);
+        const s2 = toMinutes(start2);
+        const e2 = toMinutes(end2);
+
+        // Two ranges overlap if: start1 < end2 AND start2 < end1
+        return s1 < e2 && s2 < e1;
+    };
+
     // Get available shifts for a specific seat
     const getAvailableShiftsForSeat = (seatId) => {
         if (!seatId) return shifts; // If no seat selected, show all shifts
@@ -444,13 +462,46 @@ const StudentManagement = () => {
         const selectedSeat = availableSeats.find(s => s._id === seatId);
         if (!selectedSeat) return shifts;
 
-        // Filter out shifts that are already taken on this seat
-        const available = shifts.filter(shift => {
-            return !selectedSeat.takenShiftIds.includes(shift._id || shift.id);
+        // Get active assignments with shift details for this seat
+        const activeAssignments = selectedSeat.assignments?.filter(a => a.status === 'active') || [];
+
+        // Filter out shifts that overlap with existing assignments
+        const available = shifts.filter(candidateShift => {
+            // Check if this shift overlaps with any existing assignment
+            for (const assignment of activeAssignments) {
+                const assignedShift = assignment.shift;
+
+                // Skip if no shift object
+                if (!assignedShift || typeof assignedShift !== 'object') continue;
+
+                // Check for time overlap
+                if (candidateShift.startTime && candidateShift.endTime &&
+                    assignedShift.startTime && assignedShift.endTime) {
+                    const hasOverlap = doTimeRangesOverlap(
+                        candidateShift.startTime,
+                        candidateShift.endTime,
+                        assignedShift.startTime,
+                        assignedShift.endTime
+                    );
+
+                    if (hasOverlap) {
+                        return false; // Exclude this shift - it overlaps
+                    }
+                }
+
+                // Also check for exact ID match (fallback)
+                const candidateId = candidateShift._id || candidateShift.id;
+                const assignedId = assignedShift._id || assignedShift.id;
+                if (candidateId && assignedId && candidateId === assignedId) {
+                    return false;
+                }
+            }
+
+            return true; // No overlap found, include this shift
         });
 
         // Special: If ANY shift is taken, remove 'full' shift option too
-        if (selectedSeat.takenShiftIds.length > 0) {
+        if (selectedSeat.takenShiftIds.length > 0 || activeAssignments.length > 0) {
             return available.filter(s => {
                 const isFull = s.id === 'full' || s.id === 'full_day' || (s.name && s.name.toLowerCase().includes('full'));
                 return !isFull;
