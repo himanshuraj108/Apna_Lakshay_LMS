@@ -44,9 +44,8 @@ const ContactAdmin = () => {
                                 <div>
                                     <h3 className="text-white font-medium mb-1">Visit Us</h3>
                                     <p className="text-sm text-gray-400">
-                                        Apna Lakshay Library<br />
-                                        123 Education Hub, Main Road<br />
-                                        City Center, Delhi - 110001
+                                        Basbariya Chawk Near Nahar<br />
+                                        Sitamarhi, Bihar - 843302
                                     </p>
                                 </div>
                             </div>
@@ -57,8 +56,8 @@ const ContactAdmin = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-white font-medium mb-1">Call Us</h3>
-                                    <p className="text-sm text-gray-400">+91 98765 43210</p>
-                                    <p className="text-sm text-gray-400">+91 11 2345 6789</p>
+                                    <p className="text-sm text-gray-400">+91 97989 08881</p>
+                                    <p className="text-sm text-gray-400">+91 62057 72574</p>
                                 </div>
                             </div>
 
@@ -68,8 +67,7 @@ const ContactAdmin = () => {
                                 </div>
                                 <div>
                                     <h3 className="text-white font-medium mb-1">Email Us</h3>
-                                    <p className="text-sm text-gray-400">admin@apnalakshay.com</p>
-                                    <p className="text-sm text-gray-400">support@apnalakshay.com</p>
+                                    <p className="text-sm text-gray-400">apnalakshaylms@gmail.com</p>
                                 </div>
                             </div>
                         </div>
