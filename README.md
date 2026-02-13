@@ -69,7 +69,7 @@ npm run dev
 ```
 Frontend runs on: `http://localhost:5173`
 
-## 🔐 Default Credentials
+## Default Credentials
 
 **Admin Login:**
 - Email: `admin`
