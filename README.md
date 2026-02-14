@@ -78,7 +78,7 @@ Frontend runs on: `http://localhost:5173`
 **Student Accounts:**
 Students are created by admin and receive credentials via email.
 
-## ✨ Features
+## Features
 
 ### Admin Features
 - Dashboard with analytics (students, seats, fees, requests)
