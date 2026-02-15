@@ -106,7 +106,7 @@ Students are created by admin and receive credentials via email.
 - Available seats show prices, occupied seats don't
 - Mobile modal: "Download App" / "Continue in Browser"
 
-## 📧 Email System
+## Email System
 
 Sends automated emails for:
 - Student credential delivery
