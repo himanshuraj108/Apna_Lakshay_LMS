@@ -1,4 +1,4 @@
-# Deployment Guide - Hamara Lakshay
+# Deployment Guide - Apna Lakshay
 
 ## Prerequisites
 
