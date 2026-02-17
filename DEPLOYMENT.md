@@ -350,6 +350,6 @@ app.use(cors({
 
 ---
 
-**🎉 Your Hamara Lakshay application is now live in production!**
+**🎉 Your Apna Lakshay application is now live in production!**
 
 For support: Contact your development team
