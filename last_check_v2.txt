@@ -1,6 +1,7 @@
 ﻿[dotenv@17.2.3] injecting env (11) from backend\.env -- tip: ≡ƒæÑ sync secrets across teammates & machines: https://dotenvx.com/ops
-Switched localhost to 127.0.0.1: mongodb://127.0.0.1:27017/Apna-lakshay
+Switched localhost to 127.0.0.1: mongodb://127.0.0.1:27017/apna-akshay
 Connecting...
 Connected to DB (Simulated).
 Disconnected
+
 
