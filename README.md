@@ -238,7 +238,7 @@ lms/
 4. Use PM2 or similar for backend process management
 5. Set up reverse proxy (Nginx) for domain
 
-## 👨‍💻 Developer 
+## Developer 
 
 Built with ❤️ for Apna Lakshay Library
 
