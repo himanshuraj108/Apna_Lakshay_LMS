@@ -230,7 +230,7 @@ lms/
 - Verify Google App Password is correct
 - Check EMAIL_USER and EMAIL_PASSWORD in `.env`
 
-## 📦 Production Deployment
+## Production Deployment
 
 1. Build frontend: `cd frontend && npm run build`
 2. Serve static files from backend
