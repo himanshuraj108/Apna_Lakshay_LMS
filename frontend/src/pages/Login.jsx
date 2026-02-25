@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff } from 'react-icons/io5';
-import Button from '../components/ui/Button';
 import useMobileViewport from '../hooks/useMobileViewport';
 
 const Login = () => {
@@ -26,8 +25,6 @@ const Login = () => {
         if (location.state?.email && location.state?.password) {
             setEmail(location.state.email);
             setPassword(location.state.password);
-
-            // Clear state to prevent persistence on refresh (optional, but good practice)
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
@@ -39,15 +36,12 @@ const Login = () => {
             setDeferredPrompt(e);
             setShowInstallBanner(true);
         };
-
         const handleAppInstalled = () => {
             setShowInstallBanner(false);
             setDeferredPrompt(null);
         };
-
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.addEventListener('appinstalled', handleAppInstalled);
-
         return () => {
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
@@ -67,94 +61,89 @@ const Login = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         const result = await login(email, password);
-
         if (result.success) {
             const user = JSON.parse(localStorage.getItem('user'));
             navigate(user.role === 'admin' ? '/admin' : '/student');
         } else {
             setError(result.message);
         }
-
         setLoading(false);
     };
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center py-6 md:py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto bg-gray-900 dark">
+        <div
+            className="min-h-screen relative flex items-center justify-center py-6 md:py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto dark"
+            style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.12) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.10) 0%, transparent 55%), #030712' }}
+        >
+            {/* Ambient blobs */}
+            <div className="fixed top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-orange-600/10 blur-[130px] pointer-events-none" />
+            <div className="fixed bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-red-600/8 blur-[120px] pointer-events-none" />
 
-            {/* View Seats Floating Button - Prominent Call to Action */}
+            {/* View Seats Floating Button (desktop) */}
             <Link to="/public-seats" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
                 <motion.button
                     initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{
-                        scale: 1,
-                        opacity: 1,
-                        boxShadow: ["0px 0px 0px rgba(124, 58, 237, 0)", "0px 0px 20px rgba(124, 58, 237, 0.5)", "0px 0px 0px rgba(124, 58, 237, 0)"]
-                    }}
-                    transition={{
-                        scale: { duration: 0.5 },
-                        opacity: { duration: 0.5 },
-                        boxShadow: {
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                        }
-                    }}
-                    whileHover={{ scale: 1.1 }}
+                    animate={{ scale: 1, opacity: 1, boxShadow: ["0px 0px 0px rgba(249,115,22,0)", "0px 0px 22px rgba(249,115,22,0.5)", "0px 0px 0px rgba(249,115,22,0)"] }}
+                    transition={{ scale: { duration: 0.5 }, opacity: { duration: 0.5 }, boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" } }}
+                    whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-full text-white shadow-2xl border border-white/20 backdrop-blur-md group"
+                    className="flex items-center gap-3 px-7 py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 rounded-full text-white shadow-2xl shadow-orange-500/30 border border-white/15 backdrop-blur-md group font-bold tracking-wide text-sm"
                 >
-                    <IoGridOutline size={20} className="animate-pulse w-6 h-6" />
-                    <span className="font-bold text-lg tracking-wide">VIEW SEATS</span>
-                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={20} />
+                    <IoGridOutline size={20} className="animate-pulse" />
+                    VIEW SEATS
+                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
                 </motion.button>
             </Link>
 
-            {/* Main Content - Centered */}
+            {/* Card */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
-                className="w-full max-w-md relative z-10 p-0 md:p-6"
+                className="w-full max-w-md relative z-10"
             >
-                <div className="relative bg-[#1e293b]/70 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl">
-                    {/* Brand Header Inside Card */}
-                    <div className="text-center mb-6 md:mb-8">
-                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
-                            Apna <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshay</span>
-                        </h1>
-                        <p className="text-gray-400 text-xs md:text-sm tracking-widest uppercase mb-4 md:mb-6">Apna Lakshay Library Management System</p>
+                <div className="relative bg-white/4 backdrop-blur-2xl border border-white/10 rounded-3xl p-7 md:p-9 shadow-2xl shadow-black/60">
 
-                        <div className="h-px w-16 md:w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto"></div>
+                    {/* Brand */}
+                    <div className="text-center mb-7">
+                        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg shadow-orange-500/30 mb-4">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-black text-white mb-1">
+                            Apna <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Lakshay</span>
+                        </h1>
+                        <p className="text-gray-500 text-xs tracking-widest uppercase">Library Management System</p>
+                        <div className="h-px w-20 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent mx-auto mt-4" />
                     </div>
 
-                    {/* Mobile View Seats Button - Inline */}
-                    <div className="lg:hidden mb-8 flex justify-center">
+                    {/* Mobile View Seats */}
+                    <div className="lg:hidden mb-6">
                         <Link to="/public-seats" className="w-full">
                             <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 rounded-xl text-white shadow-lg border border-white/10 backdrop-blur-md group"
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 border border-orange-500/25 rounded-xl text-orange-300 font-semibold text-sm transition-all group"
                             >
-                                <IoGridOutline size={20} className="animate-pulse" />
-                                <span className="font-bold text-sm md:text-base tracking-wide">VIEW AVAILABLE SEATS</span>
-                                <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
+                                <IoGridOutline size={18} />
+                                VIEW AVAILABLE SEATS
+                                <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} />
                             </motion.button>
                         </Link>
                     </div>
 
-                    <div className="mb-8 text-center">
-                        <h2 className="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-                        <p className="text-gray-400 text-sm">Please sign in to continue</p>
+                    <div className="mb-7 text-center">
+                        <h2 className="text-2xl font-bold text-white mb-1">Welcome Back</h2>
+                        <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
                             <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+                                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                                className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
                             >
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
                                 {error}
@@ -162,154 +151,120 @@ const Login = () => {
                         )}
 
                         <div className="space-y-4">
+                            {/* Email */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5 ml-1">Email Address</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Email Address</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <IoMail className="text-gray-500 group-focus-within:text-blue-400 transition-colors" size={20} />
+                                        <IoMail className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={18} />
                                     </div>
                                     <input
-                                        type="text"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-3.5 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white placeholder-gray-600 outline-none"
-                                        placeholder="hello@example.com"
-                                        required
+                                        type="text" value={email} onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
+                                        placeholder="hello@example.com" required
                                     />
                                 </div>
                             </div>
 
+                            {/* Password */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1.5 ml-1">Password</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Password</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <IoLockClosed className="text-gray-500 group-focus-within:text-blue-400 transition-colors" size={20} />
+                                        <IoLockClosed className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={18} />
                                     </div>
                                     <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-11 pr-12 py-3.5 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white placeholder-gray-600 outline-none"
-                                        placeholder="••••••••"
-                                        required
+                                        type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
+                                        placeholder="••••••••" required
                                     />
                                     <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-blue-400 transition-colors cursor-pointer focus:outline-none"
+                                        type="button" onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-600 hover:text-orange-400 transition-colors cursor-pointer focus:outline-none"
                                     >
-                                        {showPassword ? <IoEyeOff size={20} /> : <IoEye size={20} />}
+                                        {showPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex justify-end">
-                            <Link to="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                            <Link to="/forgot-password" className="text-xs text-orange-400 hover:text-orange-300 transition-colors font-medium">
                                 Forgot password?
                             </Link>
                         </div>
 
                         <motion.button
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                            type="submit" disabled={loading}
+                            className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed text-sm tracking-wide"
                         >
                             {loading ? (
                                 <>
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    <span>Logging in...</span>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Signing in…
                                 </>
                             ) : (
                                 <>
-                                    <span>Sign In</span>
-                                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" />
+                                    Sign In
+                                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} />
                                 </>
                             )}
                         </motion.button>
                     </form>
 
-                    {/* Registration Link */}
                     <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-400">
-                            Don't have an account?{' '}
-                            <Link to="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+                        <p className="text-sm text-gray-500">
+                            Don&apos;t have an account?{' '}
+                            <Link to="/register" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
                                 Register here
                             </Link>
                         </p>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                        <p className="text-xs text-slate-500">
-                            Protected by secure encryption • Ver 1.0.0
-                        </p>
+                    <div className="mt-7 pt-5 border-t border-white/5 text-center">
+                        <p className="text-xs text-gray-700">Protected by secure encryption • Ver 1.0.0</p>
                     </div>
                 </div>
             </motion.div>
 
-            {/* PWA Install Banner - Blue Card Design */}
+            {/* PWA Install Banner */}
             <AnimatePresence>
                 {showInstallBanner && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
+                        initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed bottom-0 sm:bottom-6 left-0 sm:left-auto sm:right-6 w-full sm:w-[400px] z-[60] p-4 sm:p-0 flex items-end justify-center sm:block"
+                        className="fixed bottom-0 sm:bottom-6 left-0 sm:left-auto sm:right-6 w-full sm:w-[380px] z-[60] p-4 sm:p-0 flex items-end justify-center sm:block"
                     >
-                        <div className="bg-[#4f46e5] rounded-3xl p-6 shadow-2xl relative overflow-hidden w-full max-w-sm mx-auto">
-                            {/* Close Button */}
-                            <button
-                                onClick={() => setShowInstallBanner(false)}
-                                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
-                            >
-                                <IoClose size={20} />
+                        <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-3xl p-6 shadow-2xl shadow-orange-500/30 relative overflow-hidden w-full max-w-sm mx-auto border border-white/15">
+                            <button onClick={() => setShowInstallBanner(false)}
+                                className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
+                                <IoClose size={18} />
                             </button>
-
-                            {/* Header Section */}
-                            <div className="flex gap-4 mb-6">
-                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
-                                    <IoGridOutline className="text-[#4f46e5] text-3xl" />
+                            <div className="flex gap-4 mb-5">
+                                <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center shrink-0">
+                                    <IoGridOutline className="text-white text-2xl" />
                                 </div>
-                                <div className="pt-1">
-                                    <h3 className="text-xl font-bold text-white leading-tight mb-1">Install Apna Lakshya</h3>
-                                    <p className="text-indigo-100 text-xs leading-relaxed">
-                                        Get the full app experience with offline access and faster loading.
-                                    </p>
+                                <div className="pt-0.5">
+                                    <h3 className="text-lg font-bold text-white mb-1">Install Apna Lakshay</h3>
+                                    <p className="text-orange-100 text-xs leading-relaxed">Faster loading, offline access, full app experience.</p>
                                 </div>
                             </div>
-
-                            {/* Features Grid */}
-                            <div className="grid grid-cols-3 gap-2 mb-6">
-                                <div className="bg-white/10 rounded-xl p-3 flex flex-col items-center gap-2 text-center">
-                                    <IoArrowForward className="text-white -rotate-45" />
-                                    <span className="text-[10px] font-medium text-white uppercase tracking-wider">Fast</span>
-                                </div>
-                                <div className="bg-white/10 rounded-xl p-3 flex flex-col items-center gap-2 text-center">
-                                    <IoDownload className="text-white" />
-                                    <span className="text-[10px] font-medium text-white uppercase tracking-wider">Offline</span>
-                                </div>
-                                <div className="bg-white/10 rounded-xl p-3 flex flex-col items-center gap-2 text-center">
-                                    <IoGridOutline className="text-white" />
-                                    <span className="text-[10px] font-medium text-white uppercase tracking-wider">Native</span>
-                                </div>
+                            <div className="grid grid-cols-3 gap-2 mb-5">
+                                {[['⚡', 'Fast'], ['📴', 'Offline'], ['📱', 'Native']].map(([icon, label]) => (
+                                    <div key={label} className="bg-white/10 rounded-xl p-2.5 flex flex-col items-center gap-1.5 text-center">
+                                        <span className="text-lg">{icon}</span>
+                                        <span className="text-[10px] font-semibold text-white uppercase tracking-wider">{label}</span>
+                                    </div>
+                                ))}
                             </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={handleInstallClick}
-                                    className="flex-1 bg-white text-[#4f46e5] py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform"
-                                >
-                                    <IoDownload className="text-lg" />
-                                    Install App
+                            <div className="flex items-center gap-3">
+                                <button onClick={handleInstallClick}
+                                    className="flex-1 bg-white text-red-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-lg active:scale-95 transition-transform">
+                                    <IoDownload size={18} /> Install App
                                 </button>
-                                <button
-                                    onClick={() => setShowInstallBanner(false)}
-                                    className="px-4 py-3.5 text-white font-semibold hover:bg-white/10 rounded-xl transition-colors"
-                                >
+                                <button onClick={() => setShowInstallBanner(false)}
+                                    className="px-4 py-3 text-white/80 font-semibold hover:bg-white/10 rounded-xl transition-colors text-sm">
                                     Later
                                 </button>
                             </div>

@@ -1,24 +1,45 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import {
-    IoArrowBack,
-    IoCalendar,
-    IoCheckmarkCircle,
-    IoCloseCircle,
-    IoTimeOutline,
-    IoHourglassOutline,
-    IoDocumentTextOutline,
-    IoAnalytics,
-    IoScan
+    IoArrowBack, IoCalendar, IoCheckmarkCircle, IoCloseCircle,
+    IoTimeOutline, IoHourglassOutline, IoDocumentTextOutline,
+    IoAnalytics, IoScan, IoTrophyOutline, IoFlameOutline
 } from 'react-icons/io5';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
+
+// ── Shared BG ────────────────────────────────────────────────────────────
+const PageBg = () => (
+    <>
+        <div className="fixed inset-0 bg-[#050508] -z-10" />
+        <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-purple-700/10 blur-[120px] -z-10 animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="fixed bottom-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full bg-blue-700/10 blur-[100px] -z-10 animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="fixed top-[40%] right-[20%] w-[300px] h-[300px] rounded-full bg-indigo-700/8 blur-[80px] -z-10 animate-pulse" style={{ animationDuration: '10s' }} />
+    </>
+);
+
+// ── Stat Card ─────────────────────────────────────────────────────────────
+const StatCard = ({ label, value, color, glow, icon: Icon, delay }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay, type: 'spring', stiffness: 100 }}
+        className="relative group rounded-2xl p-5 border border-white/8 bg-white/3 backdrop-blur-xl overflow-hidden"
+        style={{ boxShadow: `0 0 0 0 ${glow}` }}
+        whileHover={{ scale: 1.03, boxShadow: `0 20px 50px -10px ${glow}` }}
+    >
+        <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60 group-hover:opacity-100 transition-opacity`} />
+        <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 blur-2xl transition-all duration-500`} />
+        <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} w-fit shadow-lg mb-3`}>
+            <Icon size={18} className="text-white" />
+        </div>
+        <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">{label}</p>
+        <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent`}>{value}</p>
+    </motion.div>
+);
 
 const Attendance = () => {
     const { user } = useAuth();
@@ -28,9 +49,7 @@ const Attendance = () => {
     const [showScanner, setShowScanner] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
 
-    useEffect(() => {
-        fetchAttendance();
-    }, []);
+    useEffect(() => { fetchAttendance(); }, []);
 
     const fetchAttendance = async () => {
         try {
@@ -53,322 +72,232 @@ const Attendance = () => {
                 setTimeout(() => setScanMessage(null), 5000);
             }
         } catch (error) {
-            setScanMessage({
-                type: 'error',
-                text: error.response?.data?.message || 'Scan failed'
-            });
+            setScanMessage({ type: 'error', text: error.response?.data?.message || 'Scan failed' });
             setTimeout(() => setScanMessage(null), 5000);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen p-6">
-                <div className="max-w-6xl mx-auto">
-                    <SkeletonLoader type="card" count={3} />
-                </div>
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="min-h-screen p-6 bg-[#050508]">
+            <div className="max-w-6xl mx-auto"><SkeletonLoader type="card" count={3} /></div>
+        </div>
+    );
 
     const { myAttendance = [], summary = {}, rankings = [] } = attendanceData || {};
-
-    // Calculate total hours
     const totalMinutes = myAttendance.reduce((acc, curr) => acc + (curr.duration || 0), 0);
-    const totalHoursBytes = Math.floor(totalMinutes / 60);
-    const totalMinutesRemainder = totalMinutes % 60;
-    const totalDurationStr = `${totalHoursBytes}h ${totalMinutesRemainder}m`;
+    const totalHrs = Math.floor(totalMinutes / 60);
+    const totalMins = totalMinutes % 60;
+    const pct = summary.percentage || 0;
+    const pctColor = pct >= 76 ? 'from-green-500 to-emerald-400' : pct >= 61 ? 'from-blue-500 to-cyan-400' : pct >= 41 ? 'from-orange-500 to-amber-400' : 'from-red-500 to-rose-400';
 
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
+        <div className="min-h-screen text-white">
+            <PageBg />
+            <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8">
+
+                {/* Header */}
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-10 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                         <Link to="/student">
-                            <Button variant="secondary">
-                                <IoArrowBack className="inline mr-2" /> Back
-                            </Button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-all backdrop-blur-sm">
+                                <IoArrowBack size={16} /> Back
+                            </motion.button>
                         </Link>
-                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                            Attendance
-                        </h1>
+                        <div>
+                            <h1 className="text-3xl font-black text-white">Attendance</h1>
+                            <p className="text-gray-500 text-sm mt-0.5">Your study presence tracker</p>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                         {user?.seat && (
-                            <Button
-                                variant="primary"
-                                onClick={() => setShowScanner(true)}
-                            >
-                                <IoScan className="mr-2" /> Scan Entry/Exit
-                            </Button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowScanner(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all">
+                                <IoScan size={16} /> Scan Entry/Exit
+                            </motion.button>
                         )}
-                        <Button
-                            variant={showAnalytics ? "primary" : "secondary"}
-                            onClick={() => setShowAnalytics(!showAnalytics)}
-                        >
-                            <IoAnalytics className="mr-2" /> {showAnalytics ? 'Show Logs' : 'Analytics'}
-                        </Button>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowAnalytics(!showAnalytics)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${showAnalytics ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300' : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'}`}>
+                            <IoAnalytics size={16} /> {showAnalytics ? 'Show Logs' : 'Analytics'}
+                        </motion.button>
                     </div>
+                </motion.div>
+
+                {/* Scan toast */}
+                <AnimatePresence>
+                    {scanMessage && (
+                        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+                            className={`mb-6 p-4 rounded-2xl flex items-center gap-3 border backdrop-blur-md ${scanMessage.type === 'exit' || scanMessage.type === 'error'
+                                ? 'bg-red-500/10 text-red-400 border-red-500/30' : 'bg-green-500/10 text-green-400 border-green-500/30'}`}>
+                            {scanMessage.type === 'error' ? <IoCloseCircle size={22} /> : <IoCheckmarkCircle size={22} />}
+                            <p className="font-bold">{scanMessage.text}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
+
+                {/* Summary Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <StatCard label="Days Logged" value={summary.total || 0} color="from-slate-400 to-gray-300" glow="rgba(148,163,184,0.3)" icon={IoCalendar} delay={0} />
+                    <StatCard label="Present" value={summary.present || 0} color="from-green-500 to-emerald-400" glow="rgba(34,197,94,0.4)" icon={IoCheckmarkCircle} delay={0.1} />
+                    <StatCard label="Attendance %" value={`${pct}%`} color="from-blue-500 to-cyan-400" glow="rgba(59,130,246,0.4)" icon={IoAnalytics} delay={0.2} />
+                    <StatCard label="Study Hours" value={`${totalHrs}h ${totalMins}m`} color="from-purple-500 to-violet-400" glow="rgba(168,85,247,0.4)" icon={IoHourglassOutline} delay={0.3} />
                 </div>
 
-                {scanMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${scanMessage.type === 'exit' || scanMessage.type === 'error'
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                : 'bg-green-500/20 text-green-400 border border-green-500/30'
-                            }`}
-                    >
-                        {scanMessage.type === 'error' ? <IoCloseCircle size={24} /> : <IoCheckmarkCircle size={24} />}
-                        <p className="font-bold">{scanMessage.text}</p>
-                    </motion.div>
-                )}
-
-                {showScanner && (
-                    <AttendanceScanner
-                        onScanSuccess={handleQrScan}
-                        onClose={() => setShowScanner(false)}
-                    />
-                )}
-
-                {/* Monthly Summary - Always Visible */}
-                <Card className="mb-6">
-                    <h2 className="text-2xl font-bold mb-4">Monthly Summary</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="bg-white/5 rounded-lg p-6 border border-white/5">
-                            <p className="text-gray-400 text-sm mb-2">Days Logged</p>
-                            <p className="text-4xl font-bold">{summary.total || 0}</p>
-                        </div>
-                        <div className="bg-green-500/10 rounded-lg p-6 border border-green-500/20">
-                            <p className="text-green-400 text-sm mb-2">Present</p>
-                            <p className="text-4xl font-bold text-green-400">{summary.present || 0}</p>
-                        </div>
-                        <div className="bg-blue-500/10 rounded-lg p-6 border border-blue-500/20">
-                            <p className="text-blue-400 text-sm mb-2">Attendance %</p>
-                            <p className="text-4xl font-bold text-blue-400">{summary.percentage || 0}%</p>
-                        </div>
-                        <div className="bg-purple-500/10 rounded-lg p-6 border border-purple-500/20">
-                            <p className="text-purple-400 text-sm mb-2">Study Hours</p>
-                            <p className="text-4xl font-bold text-purple-400">{totalDurationStr}</p>
-                        </div>
+                {/* Progress Bar */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                    className="mb-8 p-5 rounded-2xl border border-white/8 bg-white/3 backdrop-blur-xl">
+                    <div className="flex justify-between mb-3">
+                        <span className="text-gray-400 text-sm font-medium">Attendance Progress</span>
+                        <span className={`text-sm font-black bg-gradient-to-r ${pctColor} bg-clip-text text-transparent`}>{pct}%</span>
                     </div>
-
-                    {/* Progress Bar */}
-                    <div className="mt-6">
-                        <div className="flex justify-between text-sm mb-2">
-                            <span>Attendance Progress</span>
-                            <span className={`font-bold ${(summary.percentage || 0) >= 76 ? 'text-green-400' :
-                                (summary.percentage || 0) >= 61 ? 'text-blue-400' :
-                                    (summary.percentage || 0) >= 41 ? 'text-orange-400' :
-                                        'text-red-400'
-                                }`}>
-                                {summary.percentage || 0}%
-                            </span>
-                        </div>
-                        <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden">
-                            <div
-                                className={`h-4 rounded-full transition-all duration-500 ${(summary.percentage || 0) >= 76 ? 'bg-gradient-to-r from-green-500 to-green-400' :
-                                    (summary.percentage || 0) >= 61 ? 'bg-gradient-to-r from-blue-500 to-blue-400' :
-                                        (summary.percentage || 0) >= 41 ? 'bg-gradient-to-r from-orange-500 to-orange-400' :
-                                            'bg-gradient-to-r from-red-500 to-red-400'
-                                    }`}
-                                style={{ width: `${summary.percentage || 0}%` }}
-                            />
-                        </div>
+                    <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/5">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.2, ease: 'easeOut' }}
+                            className={`h-full rounded-full bg-gradient-to-r ${pctColor} shadow-lg`} />
                     </div>
-                </Card>
+                    <div className="flex justify-between mt-2 text-xs text-gray-600">
+                        <span>0%</span><span>Target: 76%</span><span>100%</span>
+                    </div>
+                </motion.div>
 
-                {/* Main Content Area */}
-                {showAnalytics ? (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                        {/* Chart matched to Current Month */}
-                        <Card className="mb-6">
-                            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                                <IoAnalytics className="text-purple-400" /> Monthly Trends (This Month)
+                {/* Main Content */}
+                <AnimatePresence mode="wait">
+                    {showAnalytics ? (
+                        <motion.div key="analytics" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+                            className="rounded-2xl border border-white/8 bg-white/3 backdrop-blur-xl p-6">
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                <IoAnalytics className="text-purple-400" /> Monthly Trends
                             </h2>
-
-                            <div className="h-64 flex items-stretch gap-2 md:gap-3 px-2 overflow-x-auto custom-scrollbar pb-2">
+                            <div className="h-64 flex items-stretch gap-1.5 overflow-x-auto pb-2">
                                 {(() => {
-                                    // Generate ALL days of current month
-                                    const data = [];
                                     const now = new Date();
                                     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-                                    // Calculate maxVal safely
                                     const durations = myAttendance.map(r => (r.duration || 0) / 60);
                                     const maxVal = Math.max(5, ...durations);
-
+                                    const data = [];
                                     for (let i = 1; i <= daysInMonth; i++) {
                                         const d = new Date(now.getFullYear(), now.getMonth(), i);
                                         if (d > now && d.getDate() !== now.getDate()) break;
-
-                                        const dateStr = d.toDateString();
-                                        const dayRecords = myAttendance.filter(r =>
-                                            new Date(r.date).toDateString() === dateStr
-                                        );
-
+                                        const dayRecords = myAttendance.filter(r => new Date(r.date).toDateString() === d.toDateString());
                                         const totalDuration = dayRecords.reduce((acc, curr) => acc + (curr.duration || 0), 0);
-
-                                        data.push({
-                                            label: d.getDate(),
-                                            day: d.toLocaleDateString('en-US', { weekday: 'narrow' }),
-                                            value: totalDuration / 60
-                                        });
+                                        data.push({ label: d.getDate(), value: totalDuration / 60 });
                                     }
-
-                                    return data.map((item, index) => (
-                                        <div key={index} className="flex-1 min-w-[20px] h-full flex flex-col justify-end items-center gap-2 group relative">
-                                            <div className="absolute -top-10 bg-gray-800 text-xs p-2 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-white/10">
-                                                Day {item.label}: {item.value.toFixed(1)} hrs
+                                    return data.map((item, idx) => (
+                                        <div key={idx} className="flex-1 min-w-[18px] h-full flex flex-col justify-end items-center gap-1 group relative">
+                                            <div className="absolute -top-10 bg-gray-900 text-xs p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 border border-white/10">
+                                                Day {item.label}: {item.value.toFixed(1)}h
                                             </div>
-                                            <div
-                                                className={`w-full rounded-t-md transition-all duration-500 ${item.value > 8 ? 'bg-green-500' :
-                                                    item.value > 4 ? 'bg-blue-500' :
-                                                        item.value > 0 ? 'bg-purple-500' :
-                                                            'bg-white/5'
-                                                    }`}
-                                                style={{ height: `${(item.value / maxVal) * 100}%` }}
+                                            <motion.div
+                                                initial={{ height: 0 }}
+                                                animate={{ height: `${(item.value / maxVal) * 100}%` }}
+                                                transition={{ delay: idx * 0.02, duration: 0.6 }}
+                                                className={`w-full rounded-t-md ${item.value > 8 ? 'bg-gradient-to-t from-green-600 to-green-400' : item.value > 4 ? 'bg-gradient-to-t from-blue-600 to-blue-400' : item.value > 0 ? 'bg-gradient-to-t from-purple-600 to-purple-400' : 'bg-white/5'}`}
                                             />
-                                            <span className="text-[10px] text-gray-500">{item.label}</span>
+                                            <span className="text-[9px] text-gray-600">{item.label}</span>
                                         </div>
                                     ));
                                 })()}
                             </div>
-                        </Card>
-                    </motion.div>
-                ) : (
-                    // Default View: Log + Rankings (Stacked)
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                        {/* Daily Log */}
-                        <Card>
-                            <h2 className="text-2xl font-bold mb-6">Daily Log</h2>
-                            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                                {myAttendance.slice().reverse().map((record) => (
-                                    <div
-                                        key={record._id}
-                                        className={`p-4 rounded-xl border transition-all ${record.status === 'present'
-                                            ? 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-green-500/30'
-                                            : 'bg-red-50 dark:bg-red-500/5 border-red-500/10'
-                                            }`}
-                                    >
-                                        <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                            {/* Date */}
-                                            <div className="flex items-center gap-4 min-w-[180px]">
-                                                <div className={`p-3 rounded-full ${record.status === 'present'
-                                                    ? 'bg-green-500/20 text-green-400'
-                                                    : 'bg-red-500/20 text-red-400'
-                                                    }`}>
-                                                    {record.status === 'present'
-                                                        ? <IoCheckmarkCircle size={24} />
-                                                        : <IoCloseCircle size={24} />
-                                                    }
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-lg">
-                                                        {new Date(record.date).toLocaleDateString('en-IN', {
-                                                            weekday: 'short',
-                                                            day: 'numeric',
-                                                            month: 'short'
-                                                        })}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Timings */}
-                                            {record.status === 'present' && (
-                                                <div className="flex flex-wrap gap-4 text-sm flex-1 justify-center md:justify-start">
-                                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
-                                                        <IoTimeOutline className="text-green-400" />
-                                                        <span className="text-gray-500 text-xs uppercase">Entry</span>
-                                                        <span className="font-mono font-bold">{record.entryTime || '--:--'}</span>
+                        </motion.div>
+                    ) : (
+                        <motion.div key="logs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                            {/* Daily Log */}
+                            <div className="rounded-2xl border border-white/8 bg-white/3 backdrop-blur-xl p-6">
+                                <h2 className="text-xl font-bold mb-6">Daily Log</h2>
+                                <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1 custom-scrollbar">
+                                    {myAttendance.length === 0 && (
+                                        <div className="text-center py-12 text-gray-500">No attendance records yet</div>
+                                    )}
+                                    {myAttendance.slice().reverse().map((record, idx) => (
+                                        <motion.div key={record._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
+                                            className={`p-4 rounded-xl border transition-all ${record.status === 'present'
+                                                ? 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5'
+                                                : 'bg-red-500/5 border-red-500/15'}`}>
+                                            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                                <div className="flex items-center gap-3 min-w-[180px]">
+                                                    <div className={`p-2.5 rounded-xl ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                        {record.status === 'present' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
                                                     </div>
-
-                                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
-                                                        <IoTimeOutline className="text-red-400" />
-                                                        <span className="text-gray-500 text-xs uppercase">Exit</span>
-                                                        <span className="font-mono font-bold">{record.exitTime || '--:--'}</span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5">
-                                                        <IoHourglassOutline className="text-yellow-400" />
-                                                        <span className="text-gray-500 text-xs uppercase">Duration</span>
-                                                        <span className="font-mono font-bold">
-                                                            {record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--'}
+                                                    <div>
+                                                        <p className="font-bold text-white">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                            {record.status.toUpperCase()}
                                                         </span>
                                                     </div>
                                                 </div>
-                                            )}
-
-                                            {/* Badge */}
-                                            <div className="ml-auto flex items-center gap-4">
-                                                {record.notes && (
-                                                    <div className="hidden md:flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-3 py-1 rounded-lg">
-                                                        <IoDocumentTextOutline className="mt-1" />
-                                                        <p className="italic max-w-[150px] truncate">"{record.notes}"</p>
+                                                {record.status === 'present' && (
+                                                    <div className="flex flex-wrap gap-3 text-sm flex-1">
+                                                        {[
+                                                            { icon: <IoTimeOutline className="text-green-400" />, label: 'Entry', value: record.entryTime || '--:--' },
+                                                            { icon: <IoTimeOutline className="text-red-400" />, label: 'Exit', value: record.exitTime || '--:--' },
+                                                            { icon: <IoHourglassOutline className="text-yellow-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' }
+                                                        ].map(({ icon, label, value }) => (
+                                                            <div key={label} className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/8 text-gray-300">
+                                                                {icon}
+                                                                <span className="text-gray-500 text-xs uppercase">{label}</span>
+                                                                <span className="font-mono font-bold text-white">{value}</span>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 )}
-                                                <Badge variant={record.status === 'present' ? 'green' : 'red'} className="text-sm px-3 py-1">
-                                                    {record.status.toUpperCase()}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-
-                        {/* Rankings */}
-                        <Card>
-                            <h2 className="text-2xl font-bold mb-4">
-                                <IoAnalytics className="inline mr-2" />
-                                Attendance Rankings
-                            </h2>
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-white/10">
-                                            <th className="text-left p-4">Rank</th>
-                                            <th className="text-left p-4">Student Name</th>
-                                            <th className="text-right p-4">Percentage</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rankings.map((student, index) => (
-                                            <tr
-                                                key={student.studentId}
-                                                className={`border-b border-white/5 ${student.isMe ? 'bg-primary-500/20 font-bold' : ''
-                                                    }`}
-                                            >
-                                                <td className="p-4">
-                                                    <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${student.rank === 1 ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' :
-                                                        student.rank === 2 ? 'bg-gray-400/20 text-gray-600 dark:text-gray-400' :
-                                                            student.rank === 3 ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' :
-                                                                'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400'
-                                                        }`}>
-                                                        {student.rank}
+                                                {record.notes && (
+                                                    <div className="hidden md:flex items-start gap-2 text-sm text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg ml-auto">
+                                                        <IoDocumentTextOutline className="mt-0.5 shrink-0" />
+                                                        <p className="italic max-w-[140px] truncate">"{record.notes}"</p>
                                                     </div>
-                                                </td>
-                                                <td className="p-4">
-                                                    {student.name}
-                                                    {student.isMe && <Badge variant="green" className="ml-2">You</Badge>}
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <span className={`text-lg font-bold ${student.percentage >= 90 ? 'text-green-400' :
-                                                        student.percentage >= 75 ? 'text-yellow-400' :
-                                                            'text-red-400'
-                                                        }`}>
-                                                        {student.percentage}%
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
                             </div>
-                        </Card>
-                    </motion.div>
-                )}
+
+                            {/* Rankings */}
+                            <div className="rounded-2xl border border-white/8 bg-white/3 backdrop-blur-xl p-6">
+                                <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                                    <IoTrophyOutline className="text-yellow-400" /> Attendance Rankings
+                                </h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-white/8">
+                                                {['Rank', 'Student', '%'].map(h => (
+                                                    <th key={h} className={`p-4 text-xs uppercase tracking-widest text-gray-500 ${h === '%' ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rankings.map((student, index) => (
+                                                <tr key={student.studentId}
+                                                    className={`border-b border-white/5 transition-all ${student.isMe ? 'bg-purple-500/10 border-purple-500/20' : 'hover:bg-white/3'}`}>
+                                                    <td className="p-4">
+                                                        <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold
+                                                            ${student.rank === 1 ? 'bg-yellow-500/20 text-yellow-400 shadow-lg shadow-yellow-500/20' :
+                                                                student.rank === 2 ? 'bg-gray-500/20 text-gray-400' :
+                                                                    student.rank === 3 ? 'bg-orange-500/20 text-orange-400' :
+                                                                        'bg-white/5 text-gray-500'}`}>
+                                                            {student.rank === 1 ? '🥇' : student.rank === 2 ? '🥈' : student.rank === 3 ? '🥉' : student.rank}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4 font-medium text-gray-200">
+                                                        {student.name}
+                                                        {student.isMe && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">You</span>}
+                                                    </td>
+                                                    <td className="p-4 text-right">
+                                                        <span className={`text-lg font-black ${student.percentage >= 90 ? 'text-green-400' : student.percentage >= 75 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                                            {student.percentage}%
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );

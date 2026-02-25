@@ -2,18 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
 import SkeletonLoader from '../../components/ui/SkeletonLoader';
-import IDCard from '../../components/dashboard/IDCard'; // Import IDCard
+import IDCard from '../../components/dashboard/IDCard';
 import api from '../../utils/api';
 import {
     IoBedOutline, IoCalendarOutline, IoCashOutline,
-    IoBookOutline, IoNotificationsOutline, IoLogOut, IoPersonOutline,
-    IoIdCardOutline, IoArrowForward, IoScan, IoCheckmarkCircle, IoCloseCircle,
-    IoChatbubblesOutline, IoHelpCircleOutline, IoGridOutline, IoTabletLandscapeOutline,
-    IoNewspaper
+    IoBookOutline, IoNotificationsOutline, IoPersonOutline,
+    IoIdCardOutline, IoScan, IoCheckmarkCircle, IoCloseCircle,
+    IoChatbubblesOutline, IoHelpCircleOutline,
+    IoNewspaper, IoArrowForwardCircle,
+    IoFlashOutline, IoStatsChartOutline, IoShieldCheckmarkOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -22,6 +20,101 @@ import LmsGuideSection from '../../components/student/LmsGuideSection';
 import NewspaperModal from '../../components/student/NewspaperModal';
 import Footer from '../../components/layout/Footer';
 
+// ─── Animated background orbs ─────────────────────────────────────────
+const BG_STYLE = `
+@keyframes orb1 {0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(40px,-60px) scale(1.1);}66%{transform:translate(-30px,20px) scale(0.9);}}
+@keyframes orb2 {0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(-50px,40px) scale(1.15);}66%{transform:translate(25px,-35px) scale(0.85);}}
+@keyframes orb3 {0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(30px,30px) scale(1.2);}}
+@keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
+@keyframes pulse-ring{0%{transform:scale(.9);opacity:1;}80%,100%{transform:scale(1.3);opacity:0;}}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.shimmer-text{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite;}
+.card-glass{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.07);}
+.card-glass:hover{background:linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02));border-color:rgba(255,255,255,0.12);}
+`;
+
+const BackgroundOrbs = () => (
+    <>
+        <style>{BG_STYLE}</style>
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            <div style={{ animation: 'orb1 14s ease-in-out infinite' }} className="absolute top-[-15%] left-[-8%] w-[700px] h-[700px] rounded-full bg-purple-600/8 blur-3xl" />
+            <div style={{ animation: 'orb2 18s ease-in-out infinite' }} className="absolute top-[35%] right-[-12%] w-[600px] h-[600px] rounded-full bg-blue-600/8 blur-3xl" />
+            <div style={{ animation: 'orb3 11s ease-in-out infinite' }} className="absolute bottom-[-8%] left-[25%] w-[500px] h-[500px] rounded-full bg-indigo-600/6 blur-3xl" />
+            <div style={{ animation: 'orb1 20s ease-in-out infinite reverse' }} className="absolute top-[60%] left-[10%] w-[400px] h-[400px] rounded-full bg-cyan-600/5 blur-3xl" />
+            {/* Subtle grid */}
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)', backgroundSize: '48px 48px' }} />
+        </div>
+    </>
+);
+
+// ─── Stat Card ────────────────────────────────────────────────────────
+const StatCard = ({ icon: Icon, label, value, sub, color, glow, delay, to }) => {
+    const inner = (
+        <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay, type: 'spring', stiffness: 100 }}
+            whileHover={{ y: -6, scale: 1.02 }}
+            className="card-glass relative h-full rounded-2xl p-6 cursor-pointer transition-all duration-300 group overflow-hidden"
+            style={{ boxShadow: `0 0 0 0 ${glow}` }}
+            whileHover_extra={{ boxShadow: `0 20px 60px -10px ${glow}` }}
+        >
+            {/* Top gradient line */}
+            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60 group-hover:opacity-100 transition-opacity`} />
+            {/* Glow blob on hover */}
+            <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 blur-2xl transition-all duration-500`} />
+
+            <div className="flex items-start justify-between mb-5">
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`} style={{ boxShadow: `0 8px 24px -4px ${glow}` }}>
+                    <Icon size={22} className="text-white" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-600 group-hover:text-gray-400 transition-colors">VIEW →</span>
+            </div>
+
+            <p className="text-sm font-medium text-gray-500 mb-1">{label}</p>
+            <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent leading-none`}>{value}</p>
+            {sub && <p className="text-xs text-gray-600 mt-2">{sub}</p>}
+        </motion.div>
+    );
+    return to ? <Link to={to} className="block h-full">{inner}</Link> : inner;
+};
+
+// ─── Action Card ──────────────────────────────────────────────────────
+const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, badge }) => {
+    const inner = (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay, type: 'spring', stiffness: 90 }}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onClick}
+            className="card-glass relative h-full rounded-2xl p-5 flex items-center gap-4 cursor-pointer group overflow-hidden transition-all duration-300"
+        >
+            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-0 group-hover:opacity-100 transition-opacity`} />
+            <div className={`absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 blur-2xl transition-all duration-500`} />
+
+            <div className={`relative shrink-0 p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform group-hover:scale-110 duration-300`} style={{ boxShadow: `0 8px 20px -4px ${glow}` }}>
+                <Icon size={22} className="text-white" />
+                {badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center border-2 border-gray-950 animate-pulse">
+                        {badge > 9 ? '9+' : badge}
+                    </span>
+                )}
+            </div>
+
+            <div className="flex-1 min-w-0">
+                <p className="font-semibold text-white text-sm group-hover:text-white transition-colors leading-snug">{label}</p>
+                <p className="text-xs text-gray-600 group-hover:text-gray-400 transition-colors mt-0.5">{desc}</p>
+            </div>
+
+            <IoArrowForwardCircle className={`shrink-0 text-gray-700 group-hover:text-white group-hover:translate-x-1 transition-all duration-300`} size={22} />
+        </motion.div>
+    );
+    return to ? <Link to={to} className="block h-full">{inner}</Link> : inner;
+};
+
+// ─── Main Dashboard ───────────────────────────────────────────────────
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -35,487 +128,233 @@ const StudentDashboard = () => {
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
-    // View Mode State
-    const [viewMode, setViewMode] = useState(() => localStorage.getItem('viewMode') || 'desktop');
-    const [isMobileDevice, setIsMobileDevice] = useState(false);
 
-    // Detect Mobile Device
-    useEffect(() => {
-        const checkMobile = () => {
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            if (/android/i.test(userAgent) || /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-                setIsMobileDevice(true);
-            }
-        };
-        checkMobile();
-    }, []);
 
-    // Toggle Viewport
-    useEffect(() => {
-        const viewportMeta = document.querySelector('meta[name="viewport"]');
-        if (viewportMeta) {
-            if (viewMode === 'mobile') {
-                viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0');
-            } else if (viewMode === 'tablet') {
-                viewportMeta.setAttribute('content', 'width=768, user-scalable=yes');
-            } else {
-                // Desktop
-                viewportMeta.setAttribute('content', 'width=1280, user-scalable=yes');
-            }
-            // Persist the selection
-            localStorage.setItem('viewMode', viewMode);
-        }
-    }, [viewMode]);
+    useEffect(() => { fetchDashboardData(); }, []);
 
     useEffect(() => {
-        fetchDashboardData();
-    }, []);
-
-    // Show reminder when data is loaded
-    useEffect(() => {
-        if (dashboardData?.feeReminder?.show) {
-            setShowFeeReminder(true);
-        }
+        if (dashboardData?.feeReminder?.show) setShowFeeReminder(true);
     }, [dashboardData]);
 
     const fetchDashboardData = async () => {
         try {
-            const response = await api.get('/student/dashboard');
-            setDashboardData(response.data.data);
-        } catch (error) {
-            console.error('Error fetching dashboard:', error);
-        } finally {
-            setLoading(false);
-        }
+            const res = await api.get('/student/dashboard');
+            setDashboardData(res.data.data);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+    const handleLogout = () => { logout(); navigate('/login'); };
 
     const handleQrScan = async (token) => {
         setShowScanner(false);
         try {
-            const response = await api.post('/student/attendance/qr-scan', { qrToken: token });
-            if (response.data.success) {
-                setScanMessage({ type: 'success', text: response.data.message });
+            const res = await api.post('/student/attendance/qr-scan', { qrToken: token });
+            if (res.data.success) {
+                setScanMessage({ type: 'success', text: res.data.message });
                 fetchDashboardData();
                 setTimeout(() => setScanMessage(null), 5000);
             }
-        } catch (error) {
-            setScanMessage({
-                type: 'error',
-                text: error.response?.data?.message || 'Scan failed'
-            });
+        } catch (e) {
+            setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' });
             setTimeout(() => setScanMessage(null), 5000);
         }
     };
 
-    const getFeeStatusBadge = (status) => {
-        if (status === 'paid') return <Badge variant="green">Paid</Badge>;
-        if (status === 'overdue') return <Badge variant="red">Overdue</Badge>;
-        return <Badge variant="yellow">Due Soon</Badge>;
-    };
+    const attPct = dashboardData?.attendance?.percentage || 0;
+    const attColor = attPct >= 75 ? 'from-green-400 to-emerald-500' : attPct >= 50 ? 'from-yellow-400 to-amber-500' : 'from-red-400 to-rose-500';
+    const isActive = dashboardData ? dashboardData.isActive : user?.isActive;
 
-    // Fee Reminder Component
-    const FeeReminderModal = () => (
-        <AnimatePresence>
-            {showFeeReminder && dashboardData?.feeReminder && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="bg-gray-900 border border-red-500/50 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
-                    >
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-orange-500" />
-                        <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                                <IoNotificationsOutline className="text-red-500 text-3xl" />
-                            </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Attention Needed</h3>
-                            <p className="text-gray-300 text-sm leading-relaxed">
-                                {dashboardData.feeReminder.message}
-                            </p>
-                        </div>
-                        <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl mb-6 border border-white/10">
-                            <span className="text-gray-400 text-xs uppercase tracking-wider">Amount Due</span>
-                            <span className="text-2xl font-bold text-white">₹{dashboardData.feeReminder.amount}</span>
-                        </div>
-                        <Button
-                            className="w-full justify-center py-3 text-lg"
-                            onClick={() => setShowFeeReminder(false)}
-                        >
-                            I Understand
-                        </Button>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
-    );
+    const initials = (user?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
     if (loading) {
         return (
             <div className="min-h-screen p-6">
-                <div className="max-w-6xl mx-auto">
+                <BackgroundOrbs />
+                <div className="relative z-10 max-w-6xl mx-auto">
                     <SkeletonLoader type="card" count={4} />
                 </div>
             </div>
         );
     }
 
-    const isActive = dashboardData ? dashboardData.isActive : user?.isActive;
-
-    const getAttendanceColor = (percentage) => {
-        if (percentage >= 75) return 'text-green-400';
-        if (percentage >= 60) return 'text-blue-400';
-        if (percentage >= 40) return 'text-orange-400';
-        return 'text-red-400';
-    };
-
     return (
-        <div className="min-h-screen p-6 relative">
+        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#050508' }}>
+            <BackgroundOrbs />
+
+            {/* ── Modals ── */}
             <AnimatePresence>
                 {showIDCard && (
                     <IDCard
-                        student={{
-                            ...user,
-                            isActive: isActive,
-                            registrationSource: dashboardData?.registrationSource,
-                            seat: dashboardData?.seat,
-                            shift: dashboardData?.seat?.shift,
-                            seatNumber: dashboardData?.seat?.number,
-                            shiftDetails: dashboardData?.seat?.shiftDetails
-                        }}
+                        student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }}
                         onClose={() => setShowIDCard(false)}
                     />
                 )}
-            </AnimatePresence>
-
-            <FeeReminderModal />
-            <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
-            <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
-            <AnimatePresence>
                 {showNewspaper && <NewspaperModal onClose={() => setShowNewspaper(false)} />}
-            </AnimatePresence>
-
-            {/* Scan Result Message */}
-            <AnimatePresence>
-                {scanMessage && (
-                    <div className="fixed top-24 right-6 z-50">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            className={`p-4 rounded-xl shadow-2xl flex items-center gap-3 border backdrop-blur-md ${scanMessage.type === 'success'
-                                ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                                : 'bg-red-500/10 border-red-500/20 text-red-400'
-                                }`}
-                        >
-                            {scanMessage.type === 'success' ? <IoCheckmarkCircle size={24} /> : <IoCloseCircle size={24} />}
-                            <p className="font-semibold">{scanMessage.text}</p>
+                {showFeeReminder && dashboardData?.feeReminder && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-gray-900 border border-red-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-600 to-orange-500 rounded-t-2xl" />
+                            <div className="text-center mb-5 mt-2">
+                                <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3 animate-pulse">
+                                    <IoNotificationsOutline className="text-red-400 text-2xl" />
+                                </div>
+                                <h3 className="text-white font-bold text-lg">Fee Reminder</h3>
+                                <p className="text-gray-400 text-sm mt-1">{dashboardData.feeReminder.message}</p>
+                            </div>
+                            <div className="flex justify-between items-center bg-white/5 p-4 rounded-xl mb-5 border border-white/10">
+                                <span className="text-gray-500 text-xs uppercase tracking-wider">Amount Due</span>
+                                <span className="text-2xl font-black text-white">₹{dashboardData.feeReminder.amount}</span>
+                            </div>
+                            <button onClick={() => setShowFeeReminder(false)} className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">
+                                I Understand
+                            </button>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* Scanner Modal */}
-            {showScanner && (
-                <AttendanceScanner
-                    onScanSuccess={handleQrScan}
-                    onClose={() => setShowScanner(false)}
-                />
-            )}
+            <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
+            <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
 
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-3">
-                            Welcome, {user?.name}!
-                            {!isActive && (
-                                <span className="text-sm bg-red-500/10 border border-red-500/20 text-red-500 px-3 py-1 rounded-full font-medium">
-                                    Inactive
-                                </span>
-                            )}
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">Your daily dashboard</p>
-                    </div>
-                    <div className="flex gap-4 items-center">
-                        {isMobileDevice && (
-                            <div className="flex items-center gap-1 bg-gray-800 p-1 rounded-full border border-gray-700">
-                                <button
-                                    onClick={() => setViewMode('desktop')}
-                                    className={`p-2 rounded-full transition-all ${viewMode === 'desktop' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                    title="Desktop View"
-                                >
-                                    <IoGridOutline size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('tablet')}
-                                    className={`p-2 rounded-full transition-all ${viewMode === 'tablet' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                    title="Tablet View"
-                                >
-                                    <IoTabletLandscapeOutline size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setViewMode('mobile')}
-                                    className={`p-2 rounded-full transition-all ${viewMode === 'mobile' ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                    title="Mobile View"
-                                >
-                                    <IoIdCardOutline size={16} className="rotate-90" />
-                                </button>
-                            </div>
-                        )}
-                        <Link to="/student/profile">
-                            <Button variant="secondary">
-                                <IoPersonOutline className="inline mr-2" size={20} />
-                                Profile
-                            </Button>
-                        </Link>
-                    </div>
-                </div >
+            {/* Scan toast */}
+            <AnimatePresence>
+                {scanMessage && (
+                    <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
+                        className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${scanMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
+                    >
+                        {scanMessage.type === 'success' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                        <p className="font-semibold text-sm">{scanMessage.text}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                {/* Dashboard Cards */}
-                < div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" >
-                    {/* My Seat */}
-                    < Link to="/student/seat" className="h-full block" >
-                        <Card delay={0} className="h-full flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <IoBedOutline size={32} className="text-blue-400" />
-                                    <span className="text-xs text-gray-400">VIEW DETAILS</span>
-                                </div>
-                                <h3 className="text-lg font-semibold mb-2">My Seat</h3>
-                            </div>
-                            {dashboardData?.seat ? (
-                                <div>
-                                    <p className="text-2xl font-bold text-blue-400">{dashboardData.seat.number}</p>
-                                    <p className="text-sm text-gray-400">{dashboardData.seat.shift?.toUpperCase()} Shift</p>
-                                </div>
-                            ) : (
-                                <p className="text-yellow-400">No Seat Assigned</p>
-                            )}
-                        </Card>
-                    </Link >
+            {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
 
-                    {/* Attendance */}
-                    < Link to="/student/attendance" className="h-full block" >
-                        <Card delay={0.1} className="h-full flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <IoCalendarOutline size={32} className={getAttendanceColor(dashboardData?.attendance?.percentage || 0)} />
-                                    <span className="text-xs text-gray-400">VIEW DETAILS</span>
-                                </div>
-                                <h3 className="text-lg font-semibold mb-2">Attendance</h3>
-                            </div>
-                            <div>
-                                <p className={`text-2xl font-bold ${getAttendanceColor(dashboardData?.attendance?.percentage || 0)}`}>{dashboardData?.attendance?.percentage || 0}%</p>
-                                <p className="text-sm text-gray-400">
-                                    {dashboardData?.attendance?.present || 0} / {dashboardData?.attendance?.total || 0} days
-                                </p>
-                            </div>
-                        </Card>
-                    </Link >
+            {/* ── Page ── */}
+            <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-28">
 
-                    {/* Fee Status */}
-                    < Link to="/student/fees" className="h-full block" >
-                        <Card delay={0.2} className="h-full flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <IoCashOutline size={32} className="text-yellow-400" />
-                                    <span className="text-xs text-gray-400">VIEW DETAILS</span>
-                                </div>
-                                <h3 className="text-lg font-semibold mb-2">Fee Status</h3>
-                            </div>
-                            {dashboardData?.fee ? (
-                                <div>
-                                    <p className="text-2xl font-bold">₹{dashboardData.fee.amount}</p>
-                                    <div className="mt-2">{getFeeStatusBadge(dashboardData.fee.status)}</div>
-                                </div>
-                            ) : (
-                                <p className="text-gray-400">No Fee Record</p>
-                            )}
-                        </Card>
-                    </Link >
-
-                    {/* Notifications */}
-                    < Link to="/student/notifications" className="h-full block" >
-                        <Card delay={0.3} className="h-full flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <IoNotificationsOutline size={32} className="text-pink-400" />
-                                    <span className="text-xs text-gray-400">VIEW ALL</span>
-                                </div>
-                                <h3 className="text-lg font-semibold mb-2">Notifications</h3>
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-pink-400">{dashboardData?.unreadNotifications || 0}</p>
-                                <p className="text-sm text-gray-400">Unread Messages</p>
-                            </div>
-                        </Card>
-                    </Link >
-                </div >
-
-                {/* Quick Actions */}
-                < Card >
-                    <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div onClick={() => setShowScanner(true)} className="h-full">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
-                            >
-                                <div className="bg-gradient-to-br from-green-500 to-teal-500 p-4 rounded-xl shadow-lg group-hover:shadow-green-500/30 transition-shadow">
-                                    <IoScan size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-200 transition-colors">Scan Entry/Exit</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Mark Attendance</p>
-                                </div>
-                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-green-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </motion.div>
-                        </div>
-                        <div onClick={() => setShowIDCard(true)} className="h-full">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
-                            >
-                                <div className="bg-gradient-to-br from-indigo-500 to-purple-500 p-4 rounded-xl shadow-lg group-hover:shadow-indigo-500/30 transition-shadow">
-                                    <IoIdCardOutline size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-blue-200 transition-colors">Virtual ID Card</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">View & Download</p>
-                                </div>
-                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-indigo-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </motion.div>
-                        </div>
-
-                        <Link to="/student/chat" className="block h-full">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
-                            >
-                                <div className="bg-gradient-to-br from-orange-500 to-red-500 p-4 rounded-xl shadow-lg group-hover:shadow-orange-500/30 transition-shadow">
-                                    <IoChatbubblesOutline size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-200 transition-colors">Discussion Room</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Study Chat</p>
-                                </div>
-                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-orange-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </motion.div>
-                        </Link>
-
-                        {/* 📰 Daily Newspaper */}
-                        <div onClick={() => setShowNewspaper(true)} className="h-full">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
-                            >
-                                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-xl shadow-lg group-hover:shadow-purple-500/30 transition-shadow">
-                                    <IoNewspaper size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-200 transition-colors">Daily Newspaper</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Hindi &amp; English</p>
-                                </div>
-                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </motion.div>
-                        </div>
-
-                        <Link to="/student/planner" className="block h-full">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
-                            >
-                                <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-xl shadow-lg group-hover:shadow-purple-500/30 transition-shadow">
-                                    <IoBookOutline size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-200 transition-colors">Study Planner</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Plan your day</p>
-                                </div>
-                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </motion.div>
-                        </Link>
-
-                        <Link to="/student/seat" className="block h-full">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
-                            >
-                                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-xl shadow-lg group-hover:shadow-blue-500/30 transition-shadow">
-                                    <IoBedOutline size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-200 transition-colors">View Seat on Map</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">See where you sit</p>
-                                </div>
-                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-cyan-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
-                            </motion.div>
-                        </Link>
-
-                        {/* Help & Support Action */}
-                        <div className="h-full relative group p-6 rounded-xl flex items-center gap-4 bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none">
-                            <div
-                                onClick={() => setShowSupportModal(true)}
-                                className="flex-1 flex items-center gap-4 cursor-pointer"
-                            >
-                                <div className="bg-gradient-to-br from-yellow-500 to-amber-600 p-4 rounded-xl shadow-lg group-hover:shadow-yellow-500/30 transition-shadow">
-                                    <IoHelpCircleOutline size={24} className="text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-yellow-600 dark:group-hover:text-yellow-200 transition-colors">Help & Support</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Report Issues</p>
-                                </div>
-                            </div>
-
-                            <IoArrowForward
-                                onClick={() => setShowSupportModal(true)}
-                                className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-yellow-600 dark:group-hover:text-white cursor-pointer hover:scale-110 transition-all"
-                                title="New Request"
-                            />
-
-                            {dashboardData?.requestsCount > 0 && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowHistoryModal(true);
-                                    }}
-                                    className="absolute bottom-4 right-4 text-xs text-yellow-600 dark:text-yellow-500 hover:text-yellow-500 dark:hover:text-yellow-400 underline underline-offset-2 z-10"
-                                >
-                                    View Status
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </Card >
-
-                {/* LMS Guide Section */}
-                < LmsGuideSection />
-
-                {/* Floating Scan Button */}
-                < motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowScanner(true)}
-                    className="fixed bottom-8 right-8 z-50 p-4 bg-gradient-to-r from-green-500 to-teal-500 rounded-full shadow-2xl shadow-green-500/40 text-white border border-white/20 backdrop-blur-sm"
+                {/* ── Hero Header ── */}
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+                    className="flex items-center justify-between mb-10 gap-4 flex-wrap"
                 >
-                    <IoScan size={28} />
-                </motion.button >
+                    <div className="flex items-center gap-5">
+                        {/* Avatar */}
+                        <div className="relative shrink-0" style={{ animation: 'float 4s ease-in-out infinite' }}>
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 blur-md opacity-60 scale-110" />
+                            <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-white font-black text-xl shadow-xl border-2 border-white/20">
+                                {initials}
+                            </div>
+                            {isActive && <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-950 shadow" />}
+                        </div>
+
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium mb-0.5">Welcome back 👋</p>
+                            <h1 className="shimmer-text text-3xl sm:text-4xl font-black leading-tight">
+                                {user?.name}
+                            </h1>
+                            <div className="flex items-center gap-2 mt-1.5">
+                                {isActive
+                                    ? <span className="inline-flex items-center gap-1.5 text-xs bg-green-500/10 border border-green-500/20 text-green-400 px-2.5 py-1 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />Active Member</span>
+                                    : <span className="inline-flex items-center gap-1.5 text-xs bg-red-500/10 border border-red-500/20 text-red-400 px-2.5 py-1 rounded-full font-semibold">Inactive</span>
+                                }
+                                <span className="text-gray-700 text-xs">•</span>
+                                <span className="text-gray-500 text-xs">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Header Actions */}
+                    <div className="flex items-center gap-2">
+                        <Link to="/student/profile">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-all backdrop-blur-sm"
+                            >
+                                <IoPersonOutline size={16} /> Profile
+                            </motion.button>
+                        </Link>
+                    </div>
+                </motion.div>
+
+                {/* ── Stats Grid ── */}
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                    <StatCard
+                        icon={IoBedOutline} label="My Seat" delay={0.1}
+                        value={dashboardData?.seat?.number || 'N/A'}
+                        sub={dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}
+                        color="from-blue-500 to-cyan-500" glow="rgba(59,130,246,0.4)"
+                        to="/student/seat"
+                    />
+                    <StatCard
+                        icon={IoCalendarOutline} label="Attendance" delay={0.15}
+                        value={`${attPct}%`}
+                        sub={`${dashboardData?.attendance?.present || 0} / ${dashboardData?.attendance?.total || 0} days`}
+                        color={attColor} glow="rgba(52,211,153,0.4)"
+                        to="/student/attendance"
+                    />
+                    <StatCard
+                        icon={IoCashOutline} label="Fee Status" delay={0.2}
+                        value={dashboardData?.fee ? `₹${dashboardData.fee.amount}` : '—'}
+                        sub={dashboardData?.fee?.status ? dashboardData.fee.status.charAt(0).toUpperCase() + dashboardData.fee.status.slice(1) : 'No Record'}
+                        color="from-amber-400 to-orange-500" glow="rgba(245,158,11,0.4)"
+                        to="/student/fees"
+                    />
+                    <StatCard
+                        icon={IoNotificationsOutline} label="Notifications" delay={0.25}
+                        value={dashboardData?.unreadNotifications || 0}
+                        sub="Unread messages"
+                        color="from-pink-500 to-rose-500" glow="rgba(236,72,153,0.4)"
+                        to="/student/notifications"
+                    />
+                </div>
+
+                {/* ── Quick Actions ── */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                    className="card-glass rounded-2xl p-6 mb-8"
+                >
+                    {/* Section header */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl shadow-lg shadow-purple-500/30">
+                            <IoFlashOutline size={18} className="text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-white font-bold text-lg leading-none">Quick Actions</h2>
+                            <p className="text-gray-600 text-xs mt-0.5">Everything you need, one tap away</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <ActionCard icon={IoScan} label="Scan Entry / Exit" desc="Mark attendance instantly" color="from-green-500 to-teal-500" glow="rgba(16,185,129,0.4)" delay={0.05} onClick={() => setShowScanner(true)} />
+                        <ActionCard icon={IoIdCardOutline} label="Virtual ID Card" desc="View & download your card" color="from-indigo-500 to-purple-500" glow="rgba(99,102,241,0.4)" delay={0.1} onClick={() => setShowIDCard(true)} />
+                        <ActionCard icon={IoChatbubblesOutline} label="Discussion Room" desc="Chat with fellow students" color="from-orange-500 to-red-500" glow="rgba(249,115,22,0.4)" delay={0.15} to="/student/chat" />
+                        <ActionCard icon={IoNewspaper} label="Daily Newspaper" desc="Hindi & English papers" color="from-purple-500 to-violet-600" glow="rgba(168,85,247,0.4)" delay={0.2} onClick={() => setShowNewspaper(true)} />
+                        <ActionCard icon={IoBookOutline} label="Study Planner" desc="Plan your day effectively" color="from-pink-500 to-rose-500" glow="rgba(236,72,153,0.4)" delay={0.25} to="/student/planner" />
+                        <ActionCard icon={IoBedOutline} label="View Seat on Map" desc="See exactly where you sit" color="from-cyan-500 to-blue-500" glow="rgba(6,182,212,0.4)" delay={0.3} to="/student/seat" />
+                        <ActionCard icon={IoHelpCircleOutline} label="Help & Support" desc="Report issues or get help" color="from-yellow-500 to-amber-500" glow="rgba(234,179,8,0.4)" delay={0.35} onClick={() => setShowSupportModal(true)}
+                            badge={dashboardData?.requestsCount || 0}
+                        />
+                    </div>
+                </motion.div>
+
+                {/* ── LMS Guide ── */}
+                <LmsGuideSection />
 
                 <Footer />
-            </div >
-        </div >
+            </div>
+
+            {/* ── Floating scan button ── */}
+            <motion.button
+                whileHover={{ scale: 1.12 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setShowScanner(true)}
+                className="fixed bottom-8 right-8 z-50 w-16 h-16 flex items-center justify-center rounded-full text-white shadow-2xl"
+                style={{ background: 'linear-gradient(135deg, #10b981, #14b8a6)', boxShadow: '0 8px 32px rgba(16,185,129,0.5)' }}
+            >
+                {/* Pulse ring */}
+                <span className="absolute inset-0 rounded-full bg-green-500 opacity-40" style={{ animation: 'pulse-ring 2s ease-out infinite' }} />
+                <IoScan size={28} />
+            </motion.button>
+        </div>
     );
 };
 
