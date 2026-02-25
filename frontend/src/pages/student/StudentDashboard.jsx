@@ -12,12 +12,14 @@ import {
     IoBedOutline, IoCalendarOutline, IoCashOutline,
     IoBookOutline, IoNotificationsOutline, IoLogOut, IoPersonOutline,
     IoIdCardOutline, IoArrowForward, IoScan, IoCheckmarkCircle, IoCloseCircle,
-    IoChatbubblesOutline, IoHelpCircleOutline, IoGridOutline, IoTabletLandscapeOutline
+    IoChatbubblesOutline, IoHelpCircleOutline, IoGridOutline, IoTabletLandscapeOutline,
+    IoNewspaper
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
 import RequestHistoryModal from '../../components/student/RequestHistoryModal';
 import LmsGuideSection from '../../components/student/LmsGuideSection';
+import NewspaperModal from '../../components/student/NewspaperModal';
 import Footer from '../../components/layout/Footer';
 
 const StudentDashboard = () => {
@@ -28,6 +30,7 @@ const StudentDashboard = () => {
     const [showScanner, setShowScanner] = useState(false);
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [showNewspaper, setShowNewspaper] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
@@ -193,6 +196,9 @@ const StudentDashboard = () => {
             <FeeReminderModal />
             <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
             <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
+            <AnimatePresence>
+                {showNewspaper && <NewspaperModal onClose={() => setShowNewspaper(false)} />}
+            </AnimatePresence>
 
             {/* Scan Result Message */}
             <AnimatePresence>
@@ -405,6 +411,24 @@ const StudentDashboard = () => {
                                 <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-orange-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
                             </motion.div>
                         </Link>
+
+                        {/* 📰 Daily Newspaper */}
+                        <div onClick={() => setShowNewspaper(true)} className="h-full">
+                            <motion.div
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="h-full relative group p-6 rounded-xl flex items-center gap-4 cursor-pointer bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-gray-200 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300 shadow-sm dark:shadow-none"
+                            >
+                                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-4 rounded-xl shadow-lg group-hover:shadow-purple-500/30 transition-shadow">
+                                    <IoNewspaper size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-200 transition-colors">Daily Newspaper</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Hindi &amp; English</p>
+                                </div>
+                                <IoArrowForward className="ml-auto text-gray-400 dark:text-gray-600 group-hover:text-purple-600 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
+                            </motion.div>
+                        </div>
 
                         <Link to="/student/planner" className="block h-full">
                             <motion.div
