@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
 import api from '../utils/api';
-import { IoArrowBack, IoPersonAdd } from 'react-icons/io5';
+import { IoArrowBack, IoPersonAdd, IoMail, IoCall, IoHome, IoLockClosed, IoPerson, IoArrowForward } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 
 const Register = () => {
@@ -26,19 +24,11 @@ const Register = () => {
 
     // Debounced email check
     const checkEmailAvailability = async (email) => {
-        if (!email || !email.includes('@')) {
-            setEmailError('');
-            return;
-        }
-
+        if (!email || !email.includes('@')) { setEmailError(''); return; }
         setCheckingEmail(true);
         try {
             const response = await api.get(`/public/check-email?email=${encodeURIComponent(email)}`);
-            if (!response.data.available) {
-                setEmailError('This email is already registered');
-            } else {
-                setEmailError('');
-            }
+            setEmailError(response.data.available ? '' : 'This email is already registered');
         } catch (error) {
             console.error('Email check error:', error);
         } finally {
@@ -48,74 +38,34 @@ const Register = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-
-        // Mobile Restriction: Numbers only, max 10 digits
         if (name === 'mobile') {
-            const numericValue = value.replace(/\D/g, ''); // Remove non-digits
-            if (numericValue.length > 10) return; // Prevent > 10
-
-            setFormData({
-                ...formData,
-                [name]: numericValue
-            });
+            const numericValue = value.replace(/\D/g, '');
+            if (numericValue.length > 10) return;
+            setFormData({ ...formData, [name]: numericValue });
             return;
         }
-
-        setFormData({
-            ...formData,
-            [name]: value
-        });
+        setFormData({ ...formData, [name]: value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setSuccess('');
-
-        // Check for email error
-        if (emailError) {
-            setError('Please use a different email address');
-            return;
-        }
-
-        // Basic validation
+        if (emailError) { setError('Please use a different email address'); return; }
         if (!formData.name || !formData.email || !formData.mobile || !formData.address || !formData.password || !formData.confirmPassword) {
-            setError('Please fill in all fields');
-            setLoading(false);
-            return;
+            setError('Please fill in all fields'); setLoading(false); return;
         }
-
-        if (formData.password !== formData.confirmPassword) {
-            setError('Passwords do not match');
-            setLoading(false);
-            return;
-        }
-
-        if (formData.password.length < 6) {
-            setError('Password must be at least 6 characters');
-            setLoading(false);
-            return;
-        }
+        if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); setLoading(false); return; }
+        if (formData.password.length < 6) { setError('Password must be at least 6 characters'); setLoading(false); return; }
 
         setLoading(true);
-
         try {
             const response = await api.post('/public/register', formData);
             if (response.data.success) {
                 setSuccess(response.data.message);
-
-                // Store credentials for auto-fill
-                const loginCredentials = {
-                    email: formData.email,
-                    password: formData.password
-                };
-
+                const loginCredentials = { email: formData.email, password: formData.password };
                 setFormData({ name: '', email: '', mobile: '', address: '', password: '', confirmPassword: '' });
-
-                // Redirect to login after 3 seconds with state
-                setTimeout(() => {
-                    navigate('/login', { state: loginCredentials });
-                }, 3000); // Reduced to 3s for better UX
+                setTimeout(() => { navigate('/login', { state: loginCredentials }); }, 3000);
             }
         } catch (error) {
             setError(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -124,255 +74,178 @@ const Register = () => {
         }
     };
 
+    const fields = [
+        { label: 'Full Name', name: 'name', type: 'text', placeholder: 'Enter your full name', icon: IoPerson },
+        { label: 'Email Address', name: 'email', type: 'email', placeholder: 'your.email@example.com', icon: IoMail, onBlur: (e) => checkEmailAvailability(e.target.value), hasError: !!emailError },
+        { label: 'Mobile Number', name: 'mobile', type: 'tel', placeholder: '10-digit mobile number', icon: IoCall },
+    ];
+
     return (
-        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 dark">
-            {/* Animated Background Elements */}
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -inset-[10px] opacity-50">
-                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-                    <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-                    <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-                </div>
-            </div>
+        <div
+            className="min-h-screen relative flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto dark"
+            style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.12) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.10) 0%, transparent 55%), #030712' }}
+        >
+            {/* Ambient blobs */}
+            <div className="fixed top-[-15%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-600/8 blur-[130px] pointer-events-none" />
+            <div className="fixed bottom-[-10%] left-[-5%] w-[400px] h-[400px] rounded-full bg-red-600/8 blur-[120px] pointer-events-none" />
 
-            {/* Main Content */}
-            <div className="relative min-h-screen flex items-center justify-center p-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="w-full max-w-md"
-                >
-                    <Link to="/login" className="block mb-4">
-                        <Button variant="secondary" className="mb-4">
-                            <IoArrowBack className="inline mr-2" /> Back to Login
-                        </Button>
-                    </Link>
+            <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="w-full max-w-md relative z-10"
+            >
+                <Link to="/login" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-orange-400 transition-colors mb-5 group">
+                    <IoArrowBack size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                    Back to Login
+                </Link>
 
-                    <div className="relative bg-[#1e293b]/70 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-                        {/* Brand Header */}
-                        <div className="text-center mb-8">
-                            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
-                                Apna <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">Lakshay</span>
-                            </h1>
-                            <p className="text-gray-400 text-sm tracking-widest uppercase mb-6">Apna Lakshay Library Management System</p>
+                <div className="bg-white/4 backdrop-blur-2xl border border-white/10 rounded-3xl p-7 md:p-9 shadow-2xl shadow-black/60">
 
-                            <div className="h-px w-24 bg-gradient-to-r from-transparent via-white/20 to-transparent mx-auto mb-6"></div>
-
-                            <div className="flex items-center justify-center gap-3 mb-6">
-                                <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl">
-                                    <IoPersonAdd size={24} />
-                                </div>
-                                <h2 className="text-2xl font-bold">Student Registration</h2>
-                            </div>
+                    {/* Brand Header */}
+                    <div className="text-center mb-7">
+                        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg shadow-orange-500/30 mb-4">
+                            <IoPersonAdd size={24} color="white" />
                         </div>
+                        <h1 className="text-3xl font-black text-white mb-1">
+                            Apna <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Lakshay</span>
+                        </h1>
+                        <p className="text-gray-500 text-xs tracking-widest uppercase">Library Management System</p>
+                        <div className="h-px w-20 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent mx-auto mt-4" />
+                        <h2 className="text-xl font-bold text-white mt-5">Student Registration</h2>
+                        <p className="text-gray-500 text-sm mt-1">Create your account to get started</p>
+                    </div>
 
-                        {error && (
-                            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-4">
-                                {error}
-                            </div>
-                        )}
-
-
+                    {/* Success Banner */}
+                    <AnimatePresence>
                         {success && (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-2 border-green-500 rounded-2xl p-6 mb-6 text-center"
+                                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                                className="bg-green-500/10 border border-green-500/30 rounded-2xl p-5 mb-6 text-center"
                             >
-                                <h3 className="text-lg font-semibold text-green-400 mb-4">Registration Successful!</h3>
-
-                                {/* Prominent Email Check Message with Blinking Animation */}
-                                <div className="bg-white/10 rounded-xl p-6 mb-4 relative overflow-hidden">
-                                    {/* Pulsing background effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 animate-pulse"></div>
-
-                                    {/* Animated Email Icon */}
-                                    <div className="flex justify-center mb-4 relative z-10">
-                                        <div className="bg-blue-500 rounded-full p-4 animate-bounce">
-                                            <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                            </svg>
-                                        </div>
-                                    </div>
-
-                                    {/* Blinking Check Email Text */}
-                                    <p className="text-2xl font-bold text-white mb-3 relative z-10 animate-pulse">
-                                        Check Your Email for Credentials
-                                    </p>
-                                    <p className="text-sm text-gray-300 relative z-10">
-                                        Your login credentials have been sent to <br />
-                                        <span className="font-bold text-green-400 text-base">{formData.email || 'your email'}</span>
-                                    </p>
+                                <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
                                 </div>
-
-                                <p className="text-sm text-gray-400 animate-pulse">Redirecting to login in 5 seconds...</p>
+                                <h3 className="text-base font-semibold text-green-400 mb-1">Registration Successful!</h3>
+                                <p className="text-sm text-gray-400">Check your email for login credentials.</p>
+                                <p className="text-xs text-gray-500 mt-2 animate-pulse">Redirecting to login…</p>
                             </motion.div>
                         )}
+                    </AnimatePresence>
 
+                    {/* Error */}
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                            {error}
+                        </div>
+                    )}
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Full Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    className="input w-full"
-                                    placeholder="Enter your full name"
-                                    required
-                                />
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Standard fields */}
+                        {fields.map(({ label, name, type, placeholder, icon: Icon, onBlur, hasError }) => (
+                            <div key={name}>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{label} *</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <Icon className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={17} />
+                                    </div>
+                                    <input
+                                        type={type} name={name} value={formData[name]} onChange={handleChange} onBlur={onBlur}
+                                        className={`w-full pl-11 pr-4 py-3.5 bg-white/5 border rounded-xl focus:ring-2 outline-none transition-all text-white placeholder-gray-600 text-sm ${hasError ? 'border-red-500/60 focus:border-red-500/60 focus:ring-red-500/15' : 'border-white/10 focus:border-orange-500/60 focus:ring-orange-500/15'
+                                            }`}
+                                        placeholder={placeholder} required
+                                    />
+                                </div>
+                                {name === 'email' && checkingEmail && <p className="text-xs text-gray-500 mt-1">Checking availability…</p>}
+                                {name === 'email' && emailError && <p className="text-xs text-red-400 mt-1">{emailError}</p>}
                             </div>
+                        ))}
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Email Address *
-                                </label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    onBlur={(e) => checkEmailAvailability(e.target.value)}
-                                    className={`input w-full ${emailError ? 'border-red-500' : ''}`}
-                                    placeholder="your.email@example.com"
-                                    required
-                                />
-                                {checkingEmail && (
-                                    <p className="text-xs text-gray-400 mt-1">Checking availability...</p>
-                                )}
-                                {emailError && (
-                                    <p className="text-xs text-red-400 mt-1">{emailError}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Mobile Number *
-                                </label>
-                                <input
-                                    type="tel"
-                                    name="mobile"
-                                    value={formData.mobile}
-                                    onChange={handleChange}
-                                    className="input w-full"
-                                    placeholder="10-digit mobile number"
-                                    pattern="[0-9]{10}"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
-                                    Address *
-                                </label>
+                        {/* Address */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Address *</label>
+                            <div className="relative group">
+                                <div className="absolute top-3.5 left-0 pl-4 flex items-start pointer-events-none">
+                                    <IoHome className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={17} />
+                                </div>
                                 <textarea
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    className="input w-full"
-                                    placeholder="Enter your complete address"
-                                    rows="3"
-                                    required
+                                    name="address" value={formData.address} onChange={handleChange}
+                                    className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm resize-none"
+                                    placeholder="Enter your complete address" rows={3} required
                                 />
                             </div>
+                        </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Password *
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        className="input w-full"
-                                        placeholder="••••••••"
-                                        minLength={6}
-                                        required
-                                    />
+                        {/* Password row */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {[
+                                { label: 'Password', name: 'password' },
+                                { label: 'Confirm Password', name: 'confirmPassword' }
+                            ].map(({ label, name }) => (
+                                <div key={name}>
+                                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{label} *</label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                            <IoLockClosed className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={17} />
+                                        </div>
+                                        <input
+                                            type="password" name={name} value={formData[name]} onChange={handleChange}
+                                            className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
+                                            placeholder="••••••••" minLength={6} required
+                                        />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Confirm Password *
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        className="input w-full"
-                                        placeholder="••••••••"
-                                        minLength={6}
-                                        required
-                                    />
-                                </div>
+                            ))}
+                        </div>
+
+                        <motion.button
+                            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                            type="submit" disabled={loading}
+                            className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed text-sm tracking-wide mt-2"
+                        >
+                            {loading ? (
+                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Registering…</>
+                            ) : (
+                                <>Register <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} /></>
+                            )}
+                        </motion.button>
+                    </form>
+
+                    <div className="mt-5 text-center">
+                        <p className="text-sm text-gray-500">
+                            Already have an account?{' '}
+                            <Link to="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+                                Login here
+                            </Link>
+                        </p>
+                    </div>
+
+                    {/* Prominent email reminder */}
+                    <div className="mt-5 bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-2xl p-4">
+                        <div className="flex gap-3 items-start">
+                            <div className="shrink-0 w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
                             </div>
-
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                className="w-full"
-                                disabled={loading}
-                            >
-                                {loading ? 'Registering...' : 'Register'}
-                            </Button>
-                        </form>
-
-                        <div className="mt-6 text-center">
-                            <p className="text-gray-400 text-sm">
-                                Already have an account?{' '}
-                                <Link to="/login" className="text-blue-400 hover:text-blue-300 font-semibold">
-                                    Login here
-                                </Link>
-                            </p>
-                        </div>
-
-                        <div className="mt-6 bg-white/5 rounded-lg p-4">
-                            <p className="text-xs text-gray-400">
-                                <strong>Note:</strong> After registration, you'll receive login credentials via email.
-                                Seat allocation will be done by the library admin.
-                            </p>
-                        </div>
-
-                        <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                            <p className="text-xs text-slate-500">
-                                Protected by secure encryption • Ver 1.0.0
-                            </p>
+                            <div>
+                                <p className="text-sm font-bold text-orange-300 mb-1">Check Your Email After Registration</p>
+                                <ul className="text-xs text-gray-400 space-y-1">
+                                    <li className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-orange-400 shrink-0" />Your <span className="text-white font-semibold">login credentials</span> will be sent to your email.</li>
+                                    <li className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-orange-400 shrink-0" />Seat allocation will be assigned by the library admin.</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
-                </motion.div>
-            </div>
 
-            {/* Loading Overlay */}
-            <AnimatePresence>
-                {loading && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-custom"
-                    >
-                        <motion.div
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.5, opacity: 0 }}
-                            className="flex flex-col items-center bg-[#1e293b] p-8 rounded-3xl border border-white/10 shadow-2xl max-w-sm mx-4 text-center"
-                        >
-                            <div className="relative w-24 h-24 mb-6">
-                                <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full"></div>
-                                <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                <IoPersonAdd className="absolute inset-0 m-auto text-blue-500 text-3xl animate-pulse" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">Creating Account</h3>
-                            <p className="text-gray-400">Please wait while we register specific details and set up your dashboard...</p>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    <div className="mt-6 pt-5 border-t border-white/5 text-center">
+                        <p className="text-xs text-gray-700">Protected by secure encryption • Ver 1.0.0</p>
+                    </div>
+                </div>
+            </motion.div>
         </div>
     );
 };

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -10,14 +10,69 @@ import ProtectedRoute from './components/ProtectedRoute';
 // ==========================================
 
 // Loading Fallback Component
-const PageLoader = () => (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
-        <div className="text-center">
-            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-400">Loading...</p>
+const PageLoader = () => {
+    const barRef = useRef(null);
+
+    useEffect(() => {
+        // Inject top progress bar
+        const bar = document.createElement('div');
+        bar.className = 'page-progress-bar';
+        document.body.appendChild(bar);
+        barRef.current = bar;
+        return () => { bar.remove(); };
+    }, []);
+
+    return (
+        <div className="fixed inset-0 flex flex-col items-center justify-center z-50"
+            style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(249,115,22,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(239,68,68,0.08) 0%, transparent 60%), #030712' }}>
+
+            {/* Logo card */}
+            <div className="relative flex flex-col items-center gap-6">
+                {/* Spinning ring */}
+                <div className="relative w-24 h-24">
+                    <svg className="loader-ring absolute inset-0 w-full h-full" viewBox="0 0 96 96" fill="none">
+                        <circle cx="48" cy="48" r="44" stroke="rgba(249,115,22,0.15)" strokeWidth="4" />
+                        <circle cx="48" cy="48" r="44"
+                            stroke="url(#loaderGrad)" strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeDasharray="138 138"
+                            strokeDashoffset="104" />
+                        <defs>
+                            <linearGradient id="loaderGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#f97316" />
+                                <stop offset="100%" stopColor="#ef4444" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    {/* Icon in centre */}
+                    <div className="loader-logo absolute inset-0 flex items-center justify-center">
+                        <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/40">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Text */}
+                <div className="loader-text flex flex-col items-center gap-2">
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent tracking-wide">
+                        Study Portal
+                    </h2>
+                    <p className="text-gray-500 text-sm">Loading, please wait…</p>
+
+                    {/* Inline dots */}
+                    <div className="flex gap-1.5 mt-1">
+                        {[0, 1, 2].map(i => (
+                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-500/60"
+                                style={{ animation: `logo-pulse 1.2s ease ${i * 0.2}s infinite` }} />
+                        ))}
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // Public Pages - Lazy Loaded
 const PublicSeatView = lazy(() => import('./pages/public/PublicSeatView'));
@@ -90,7 +145,7 @@ function App() {
     }
 
     return (
-        <Suspense fallback={<PageLoader />}>
+        <Suspense key={location.pathname} fallback={<PageLoader />}>
             <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Navigate to="/login" replace />} />

@@ -37,6 +37,7 @@ const DiscussionRoom = () => {
     const [showInvitationPopup, setShowInvitationPopup] = useState(false);
     const [currentInvitation, setCurrentInvitation] = useState(null);
     const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+    const [mentionSearch, setMentionSearch] = useState('');
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const showToast = (message, type = 'success') => {
@@ -693,759 +694,657 @@ const DiscussionRoom = () => {
     }, []);
 
     return (
-        <div className={`h-[100dvh] overflow-hidden p-4 md:p-6 flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`}>
-            <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col h-[calc(100vh-100px)]">
-                {/* Header with Back Button - Hidden on mobile if chat is open */}
-
-                <div className="flex flex-col gap-4 mb-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="secondary"
-                                onClick={() => navigate('/student')}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm"
-                            >
-                                <IoArrowBack size={18} />
-                                Dashboard
-                            </Button>
-
-                            <div className="h-6 w-px bg-white/10 mx-1 hidden sm:block"></div>
-
-                            <h1 className="text-xl md:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-2">
-                                <IoChatbubblesOutline className="text-orange-500" size={24} />
-                                <span className="hidden sm:inline">Discussion Room</span>
-                                <span className="sm:hidden">Chat</span>
-                            </h1>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            {isConnected && (
-                                <span className="flex items-center gap-2 text-green-400 text-xs md:text-sm bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
-                                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
-                                    <span className="hidden sm:inline">Connected</span>
-                                </span>
-                            )}
-
-                            {pendingInvitations.length > 0 && (
-                                <button
-                                    onClick={() => {
-                                        setCurrentInvitation(pendingInvitations[0]);
-                                        setShowInvitationPopup(true);
-                                    }}
-                                    className="relative text-orange-400 hover:text-orange-300 transition-colors p-1"
-                                    title="Group invitations"
-                                >
-                                    <IoPeople size={24} />
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                                        {pendingInvitations.length}
-                                    </span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
+        <div className={`h-[100dvh] overflow-hidden flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`} style={{ background: 'radial-gradient(ellipse at top left, rgba(249,115,22,0.08) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(239,68,68,0.06) 0%, transparent 50%), #030712' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-3 md:px-6 md:pt-5 shrink-0">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+                        <IoArrowBack size={16} /> <span className="hidden sm:inline">Dashboard</span>
+                    </button>
+                    <div className="h-5 w-px bg-white/10 hidden sm:block" />
+                    <h1 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
+                        <span className="p-1.5 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg shadow-lg shadow-orange-500/30">
+                            <IoChatbubblesOutline size={18} className="text-white" />
+                        </span>
+                        <span className="hidden sm:inline bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Discussion Room</span>
+                        <span className="sm:hidden text-white">Chat</span>
+                    </h1>
                 </div>
+                <div className="flex items-center gap-3">
+                    {isConnected && (
+                        <span className="flex items-center gap-1.5 text-green-400 text-xs bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
+                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                            <span className="hidden sm:inline">Live</span>
+                        </span>
+                    )}
+                    {pendingInvitations.length > 0 && (
+                        <button onClick={() => { setCurrentInvitation(pendingInvitations[0]); setShowInvitationPopup(true); }}
+                            className="relative p-2 text-orange-400 hover:text-orange-300 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl border border-orange-500/20 transition-all" title="Group invitations">
+                            <IoPeople size={20} />
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{pendingInvitations.length}</span>
+                        </button>
+                    )}
+                </div>
+            </div>
 
-                {/* Guidelines Banner */}
-                {/* Guidelines Modal */}
-                <DiscussionGuidelinesModal
-                    isOpen={showGuidelines}
-                    onClose={() => setShowGuidelines(false)}
-                />
+            {/* Guidelines Modal */}
+            <DiscussionGuidelinesModal
+                isOpen={showGuidelines}
+                onClose={() => setShowGuidelines(false)}
+            />
 
-                {/* Sticky Menubar Navigation */}
-                <div className="sticky top-0 z-30 bg-gray-900/95 backdrop-blur-md border-b border-white/10 mb-4 -mx-4 px-4 md:-mx-6 md:px-6 pt-2">
-                    <div className="flex items-center justify-between">
-                        <div className="flex flex-1 relative">
-                            {/* Tab Indicator Background - Optional fancy effect could go here */}
-
-                            {/* Public Tab */}
-                            <button
-                                onClick={() => {
-                                    setActiveTab('public');
+            {/* Tab Navigation */}
+            <div className="shrink-0 px-4 md:px-6 mb-3">
+                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 gap-1 backdrop-blur-sm">
+                    {[['public', <IoPeople size={15} />, 'Public'],
+                    ['groups', <IoPeople size={15} />, 'Groups'],
+                    ['private', <IoPersonOutline size={15} />, 'Private']
+                    ].map(([tab, icon, label]) => (
+                        <button key={tab}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                if (tab === 'public') {
                                     const publicRoom = rooms.find(r => r.type === 'public');
-                                    if (publicRoom) {
-                                        setCurrentRoom(publicRoom);
-                                        loadMessages(publicRoom._id);
-                                    }
-                                }}
-                                className={`flex-1 pb-3 text-center relative transition-colors ${activeTab === 'public' ? 'text-orange-400 font-bold' : 'text-gray-400 font-medium'}`}
-                            >
-                                <div className="flex items-center justify-center gap-2">
-                                    <IoPeople size={20} />
-                                    <span>Public</span>
-                                </div>
-                                {activeTab === 'public' && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-red-500"
-                                    />
-                                )}
-                            </button>
-
-                            {/* Groups Tab */}
-                            <button
-                                onClick={() => {
-                                    setActiveTab('groups');
+                                    if (publicRoom) { setCurrentRoom(publicRoom); loadMessages(publicRoom._id); }
+                                } else {
                                     setCurrentRoom(null);
-                                }}
-                                className={`flex-1 pb-3 text-center relative transition-colors ${activeTab === 'groups' ? 'text-orange-400 font-bold' : 'text-gray-400 font-medium'}`}
-                            >
-                                <div className="flex items-center justify-center gap-2">
-                                    <IoPeople size={20} />
-                                    <span>Groups</span>
-                                    {groups.length > 0 && (
-                                        <span className="bg-white/10 text-xs px-2 py-0.5 rounded-full">{groups.length}</span>
-                                    )}
-                                </div>
-                                {activeTab === 'groups' && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-red-500"
-                                    />
-                                )}
-                            </button>
-
-                            {/* Private Tab */}
-                            <button
-                                onClick={() => {
-                                    setActiveTab('private');
-                                    setCurrentRoom(null);
-                                }}
-                                className={`flex-1 pb-3 text-center relative transition-colors ${activeTab === 'private' ? 'text-orange-400 font-bold' : 'text-gray-400 font-medium'}`}
-                            >
-                                <div className="flex items-center justify-center gap-2">
-                                    <IoPersonOutline size={20} />
-                                    <span>Private</span>
-                                </div>
-                                {activeTab === 'private' && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-red-500"
-                                    />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Show "Create Group" button below menubar only when in Groups tab */}
-                {activeTab === 'groups' && (
-                    <div className="mb-4 flex justify-end">
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowGroupModal(true)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 w-full sm:w-auto justify-center"
+                                }
+                            }}
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25'
+                                : 'text-gray-400 hover:text-gray-200'
+                                }`}
                         >
-                            <IoAddCircle size={20} />
-                            Create New Group
-                        </Button>
-                    </div>
-                )}
+                            {icon} <span>{label}</span>
+                            {tab === 'groups' && groups.length > 0 && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'
+                                    }`}>{groups.length}</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
 
+            {/* Create Group button for groups tab */}
+            {activeTab === 'groups' && (
+                <div className="px-4 md:px-6 mb-3 flex justify-end">
+                    <button onClick={() => setShowGroupModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-semibold rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 hover:scale-[1.02] transition-all">
+                        <IoAddCircle size={18} /> Create New Group
+                    </button>
+                </div>
+            )}
 
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-hidden">
-                    {/* Sidebar - Groups/Chat List */}
-                    <div className={`w-full lg:w-80 flex flex-col gap-6 h-full ${currentRoom ? 'hidden lg:flex' : 'flex'}`}>
-                        {/* Groups List (when on groups tab and no group selected) */}
-                        {
-                            activeTab === 'groups' && !currentRoom && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 mb-6 overflow-y-auto flex-1">
-                                    {groups.length === 0 ? (
-                                        <Card className="col-span-full text-center py-20">
-                                            <IoPeople size={48} className="mx-auto mb-4 opacity-50" />
-                                            <p className="text-gray-400 mb-4">You haven't joined any groups yet</p>
-                                            <Button
-                                                variant="primary"
-                                                onClick={() => setShowGroupModal(true)}
-                                                className="bg-gradient-to-r from-orange-500 to-red-500"
-                                            >
-                                                <IoAddCircle size={20} className="inline mr-2" />
-                                                Create Your First Group
-                                            </Button>
-                                        </Card>
-                                    ) : (
-                                        groups.map(group => (
-                                            <Card
-                                                key={group._id}
-                                                className="cursor-pointer hover:border-orange-500/50 transition-all"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-
-                                                    switchToGroup(group);
-                                                }}
-                                            >
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                                                            {group.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-bold text-lg">{group.name}</h3>
-                                                            <p className="text-sm text-gray-400">{group.participants?.length || 0} members</p>
-                                                        </div>
-                                                    </div>
-                                                    {group.creator._id === user?.id && (
-                                                        <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Admin</span>
-                                                    )}
-                                                </div>
-                                                {group.description && (
-                                                    <p className="text-sm text-gray-400 mb-2">{group.description}</p>
-                                                )}
-                                            </Card>
-                                        ))
-                                    )}
-                                </div>
-                            )
-                        }
-
-                        {/* Private Chat List */}
-                        {
-                            activeTab === 'private' && (
-                                <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                                    <div className="mb-4">
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0 overflow-hidden px-4 md:px-6 pb-4">
+                {/* Sidebar */}
+                <div className={`w-full lg:w-72 flex flex-col gap-3 h-full ${currentRoom ? 'hidden lg:flex' : 'flex'}`}>
+                    {/* Groups List (when on groups tab and no group selected) */}
+                    {
+                        activeTab === 'groups' && !currentRoom && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 mb-6 overflow-y-auto flex-1">
+                                {groups.length === 0 ? (
+                                    <Card className="col-span-full text-center py-20">
+                                        <IoPeople size={48} className="mx-auto mb-4 opacity-50" />
+                                        <p className="text-gray-400 mb-4">You haven't joined any groups yet</p>
                                         <Button
-                                            onClick={() => {
-                                                setGroupModalMode('private');
-                                                setShowGroupModal(true);
-                                            }}
-                                            className="w-full justify-center bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500 text-white shadow-xl shadow-indigo-500/20 border border-indigo-400/30 py-8 rounded-2xl group transition-all duration-500 transform hover:scale-[1.02] relative overflow-hidden"
+                                            variant="primary"
+                                            onClick={() => setShowGroupModal(true)}
+                                            className="bg-gradient-to-r from-orange-500 to-red-500"
                                         >
-                                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                            <div className="flex flex-col items-center gap-3 relative z-10">
-                                                <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300 shadow-lg backdrop-blur-sm">
-                                                    <IoAddCircle size={32} className="text-white drop-shadow-md" />
+                                            <IoAddCircle size={20} className="inline mr-2" />
+                                            Create Your First Group
+                                        </Button>
+                                    </Card>
+                                ) : (
+                                    groups.map(group => (
+                                        <Card
+                                            key={group._id}
+                                            className="cursor-pointer hover:border-orange-500/50 transition-all"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+
+                                                switchToGroup(group);
+                                            }}
+                                        >
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                        {group.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-lg">{group.name}</h3>
+                                                        <p className="text-sm text-gray-400">{group.participants?.length || 0} members</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col items-center">
-                                                    <span className="font-bold text-lg tracking-wider uppercase text-white/90 group-hover:text-white">Start New Chat</span>
-                                                    <span className="text-xs text-indigo-200 group-hover:text-white/80 font-medium mt-1">Direct Message a Student</span>
+                                                {group.creator._id === user?.id && (
+                                                    <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Admin</span>
+                                                )}
+                                            </div>
+                                            {group.description && (
+                                                <p className="text-sm text-gray-400 mb-2">{group.description}</p>
+                                            )}
+                                        </Card>
+                                    ))
+                                )}
+                            </div>
+                        )
+                    }
+
+                    {/* Private Chat List */}
+                    {
+                        activeTab === 'private' && (
+                            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                <div className="mb-4">
+                                    <Button
+                                        onClick={() => {
+                                            setGroupModalMode('private');
+                                            setShowGroupModal(true);
+                                        }}
+                                        className="w-full justify-center bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500 text-white shadow-xl shadow-indigo-500/20 border border-indigo-400/30 py-8 rounded-2xl group transition-all duration-500 transform hover:scale-[1.02] relative overflow-hidden"
+                                    >
+                                        <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                        <div className="flex flex-col items-center gap-3 relative z-10">
+                                            <div className="bg-white/20 p-3 rounded-full group-hover:scale-110 group-hover:bg-white/30 transition-all duration-300 shadow-lg backdrop-blur-sm">
+                                                <IoAddCircle size={32} className="text-white drop-shadow-md" />
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <span className="font-bold text-lg tracking-wider uppercase text-white/90 group-hover:text-white">Start New Chat</span>
+                                                <span className="text-xs text-indigo-200 group-hover:text-white/80 font-medium mt-1">Direct Message a Student</span>
+                                            </div>
+                                        </div>
+                                    </Button>
+                                </div>
+                                {rooms.filter(r => r.type === 'private').length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <IoPersonOutline size={32} className="mx-auto mb-2 opacity-30 text-gray-400" />
+                                        <p className="text-gray-500 text-sm">No private chats yet</p>
+                                    </div>
+                                ) : (
+                                    rooms.filter(r => r.type === 'private').map(room => {
+                                        const otherUser = room.participants.find(p => p._id !== user.id);
+                                        return (
+                                            <div
+                                                key={room._id}
+                                                onClick={() => {
+                                                    if (room.isActive) {
+                                                        setCurrentRoom(room);
+                                                        loadMessages(room._id);
+                                                        joinRoom(room._id);
+                                                    } else {
+                                                        // Check if I have a pending invitation for this room
+                                                        const invite = pendingInvitations.find(inv => (inv.group._id || inv.group) === room._id);
+
+                                                        if (invite) {
+                                                            // Open invitation popup
+                                                            setCurrentInvitation(invite);
+                                                            setShowInvitationPopup(true);
+                                                        } else {
+                                                            showToast('Waiting for the other user to accept your request.', 'info');
+                                                        }
+                                                    }
+                                                }}
+                                                className={`p-3 rounded-xl cursor-pointer transition-all ${currentRoom?._id === room._id
+                                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg border border-white/20'
+                                                    : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden border border-white/10 bg-gray-700">
+                                                        {otherUser?.profileImage ? (
+                                                            <img
+                                                                src={otherUser.profileImage.startsWith('http') ? otherUser.profileImage : `http://localhost:5000${otherUser.profileImage}`}
+                                                                alt={otherUser.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg">
+                                                                {otherUser?.name?.charAt(0) || '?'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-white">{otherUser?.name || 'Unknown User'}</h3>
+                                                        {/* Seat Info */}
+                                                        {(() => {
+                                                            const studentInfo = students?.find(s => s._id === otherUser?._id);
+                                                            if (studentInfo?.seatInfo) {
+                                                                return <p className="text-xs text-white/80">{studentInfo.seatInfo.number} | {studentInfo.seatInfo.shift}</p>;
+                                                            }
+                                                            return <p className="text-xs text-gray-400">{room.isActive ? 'Private Chat' : 'Request Pending'}</p>;
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </Button>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+                </div>
+                {/* Main Chat Area */}
+                {
+                    (activeTab === 'public' || ((activeTab === 'groups' || activeTab === 'private') && currentRoom)) && (
+                        <div className={`flex-1 flex flex-col h-full z-20 ${!currentRoom && 'hidden lg:flex'}`}>
+                            <div className="flex flex-col h-full bg-white/3 backdrop-blur-sm border border-white/8 rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                {/* Chat Header */}
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 bg-white/3 shrink-0">
+                                    <div className="flex items-center gap-3">
+                                        <button onClick={() => setCurrentRoom(null)} className="lg:hidden p-1.5 -ml-1 text-gray-400 hover:text-white transition-colors">
+                                            <IoArrowBack size={22} />
+                                        </button>
+                                        <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-lg shadow-orange-500/30">
+                                            <IoPeople size={18} className="text-white" />
+                                        </div>
+                                        <div onClick={() => currentRoom?.type === 'group' && setShowGroupSettings(true)}
+                                            className={currentRoom?.type === 'group' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}>
+                                            <h3 className="font-bold text-white">
+                                                {currentRoom?.type === 'group' ? currentRoom.name
+                                                    : currentRoom?.type === 'private' ? (currentRoom.participants.find(p => p._id !== user.id)?.name || 'Private Chat')
+                                                        : 'Public Study Chat'}
+                                            </h3>
+                                            <p className="text-xs text-gray-500">
+                                                {currentRoom?.type === 'group' ? `${currentRoom.participants?.length || 0} members`
+                                                    : currentRoom?.type === 'private' ? 'Private Conversation'
+                                                        : 'All students online'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    {rooms.filter(r => r.type === 'private').length === 0 ? (
-                                        <div className="text-center py-10">
-                                            <IoPersonOutline size={32} className="mx-auto mb-2 opacity-30 text-gray-400" />
-                                            <p className="text-gray-500 text-sm">No private chats yet</p>
+                                    <div className="flex items-center gap-2">
+                                        {(currentRoom?.type === 'group' || currentRoom?.type === 'private') && (
+                                            <button onClick={() => setCurrentRoom(null)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all">
+                                                <IoArrowBack size={13} /> Back
+                                            </button>
+                                        )}
+                                        {currentRoom?.type === 'private' && (
+                                            <div className="relative">
+                                                <button onClick={() => setShowPrivateMenu(!showPrivateMenu)}
+                                                    className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white">
+                                                    <IoEllipsisVertical size={18} />
+                                                </button>
+                                                {showPrivateMenu && (
+                                                    <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                                                        <button onClick={handleDeleteForMe} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors text-gray-300">
+                                                            <IoEyeOff size={15} /> Delete for Me
+                                                        </button>
+                                                        <button onClick={handleDeleteEveryone} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/20 text-red-400 transition-colors">
+                                                            <IoTrash size={15} /> Delete for Everyone
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Messages Area */}
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3" onClick={() => setShowPrivateMenu(false)}>
+                                    {messages.length === 0 ? (
+                                        <div className="text-center py-20 text-gray-400">
+                                            <IoChatbubblesOutline size={48} className="mx-auto mb-4 opacity-50" />
+                                            <p>No messages yet. Start the conversation!</p>
                                         </div>
                                     ) : (
-                                        rooms.filter(r => r.type === 'private').map(room => {
-                                            const otherUser = room.participants.find(p => p._id !== user.id);
-                                            return (
-                                                <div
-                                                    key={room._id}
-                                                    onClick={() => {
-                                                        if (room.isActive) {
-                                                            setCurrentRoom(room);
-                                                            loadMessages(room._id);
-                                                            joinRoom(room._id);
-                                                        } else {
-                                                            // Check if I have a pending invitation for this room
-                                                            const invite = pendingInvitations.find(inv => (inv.group._id || inv.group) === room._id);
+                                        messages.map((msg) => {
+                                            const isOwnMessage = msg.sender?._id === user?.id;
 
-                                                            if (invite) {
-                                                                // Open invitation popup
-                                                                setCurrentInvitation(invite);
-                                                                setShowInvitationPopup(true);
-                                                            } else {
-                                                                showToast('Waiting for the other user to accept your request.', 'info');
-                                                            }
+                                            return (
+                                                <motion.div
+                                                    key={msg._id}
+                                                    ref={el => messageRefs.current[msg._id] = el}
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''} transition-all duration-300 ${highlightedMessageId === msg._id ? 'bg-yellow-500/10 rounded-lg p-2 -m-2' : ''
+                                                        }`}
+                                                    onMouseDown={(e) => {
+                                                        msg.touchStartX = e.clientX;
+                                                    }}
+                                                    onMouseUp={(e) => {
+                                                        if (msg.touchStartX) {
+                                                            handleSwipe(msg, msg.touchStartX, e.clientX);
                                                         }
                                                     }}
-                                                    className={`p-3 rounded-xl cursor-pointer transition-all ${currentRoom?._id === room._id
-                                                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg border border-white/20'
-                                                        : 'bg-white/5 hover:bg-white/10 border border-white/5'
-                                                        }`}
+                                                    onTouchStart={(e) => {
+                                                        msg.touchStartX = e.touches[0].clientX;
+                                                    }}
+                                                    onTouchEnd={(e) => {
+                                                        if (msg.touchStartX) {
+                                                            handleSwipe(msg, msg.touchStartX, e.changedTouches[0].clientX);
+                                                        }
+                                                    }}
                                                 >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-12 h-12 rounded-full flex-shrink-0 overflow-hidden border border-white/10 bg-gray-700">
-                                                            {otherUser?.profileImage ? (
-                                                                <img
-                                                                    src={otherUser.profileImage.startsWith('http') ? otherUser.profileImage : `http://localhost:5000${otherUser.profileImage}`}
-                                                                    alt={otherUser.name}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg">
-                                                                    {otherUser?.name?.charAt(0) || '?'}
+                                                    {/* Profile Image Placeholder */}
+                                                    <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden border ${msg.sender?.role === 'admin' ? 'border-red-500 bg-black shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'border-white/10 bg-gray-700'}`}>
+                                                        {msg.sender?.role === 'admin' ? (
+                                                            <div className="w-full h-full flex items-center justify-center text-red-500 animate-pulse">
+                                                                <IoSkull size={24} />
+                                                            </div>
+                                                        ) : msg.sender?.profileImage ? (
+                                                            <img
+                                                                src={msg.sender.profileImage.startsWith('http') ? msg.sender.profileImage : `${BASE_URL}${msg.sender.profileImage}`}
+                                                                alt={msg.sender.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                                                {msg.sender?.name?.charAt(0) || '?'}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className={`flex-1 ${isOwnMessage ? 'flex flex-col items-end' : ''}`}>
+                                                        <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
+                                                            <span className="font-semibold text-sm">{msg.sender?.name || 'Unknown'}</span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                        <div className={`rounded-2xl px-4 py-2.5 border max-w-[75%] sm:max-w-[65%] ${isOwnMessage
+                                                            ? 'bg-gradient-to-br from-orange-500/25 to-red-500/20 border-orange-500/25'
+                                                            : msg.sender?.role === 'admin'
+                                                                ? 'bg-gradient-to-br from-red-900/90 to-black border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                                                : 'bg-white/5 border-white/8'
+                                                            }`}>
+                                                            {/* Reply indicator */}
+                                                            {msg.replyTo && (
+                                                                <div className={`mb-2 pb-2 border-b ${msg.sender?.role === 'admin' ? 'border-red-500/30' : 'border-white/10'}`}>
+                                                                    <div className={`text-xs italic border-l-2 pl-2 ${msg.sender?.role === 'admin' ? 'text-red-400 border-red-500' : 'text-gray-400 border-blue-400'}`}>
+                                                                        <div className="font-semibold">Reply to: {msg.replyTo.sender?.name || 'Unknown'}</div>
+                                                                        <div className="text-gray-500 truncate mt-0.5">{msg.replyTo.content || 'Message'}</div>
+                                                                    </div>
                                                                 </div>
                                                             )}
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-bold text-white">{otherUser?.name || 'Unknown User'}</h3>
-                                                            {/* Seat Info */}
-                                                            {(() => {
-                                                                const studentInfo = students?.find(s => s._id === otherUser?._id);
-                                                                if (studentInfo?.seatInfo) {
-                                                                    return <p className="text-xs text-white/80">{studentInfo.seatInfo.number} | {studentInfo.seatInfo.shift}</p>;
-                                                                }
-                                                                return <p className="text-xs text-gray-400">{room.isActive ? 'Private Chat' : 'Request Pending'}</p>;
-                                                            })()}
+                                                            <p className={`whitespace-pre-wrap break-words ${msg.sender?.role === 'admin' ? 'text-red-100 font-bold tracking-wider drop-shadow-md font-mono text-lg uppercase' : 'text-gray-200'}`}>
+                                                                {msg.content.split(/(@\w+)/g).map((part, i) =>
+                                                                    part.startsWith('@') ? (
+                                                                        <span key={i} className={`font-semibold px-1 rounded ${msg.sender?.role === 'admin' ? 'text-white bg-red-600' : 'text-blue-400 bg-blue-500/10'}`}>
+                                                                            {part}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span key={i}>{part}</span>
+                                                                    )
+                                                                )}
+                                                            </p>
+                                                            {msg.type === 'image' && msg.fileUrl && (
+                                                                <div className="relative mt-2 group inline-block max-w-full">
+                                                                    <img
+                                                                        src={`${BASE_URL}${msg.fileUrl}`}
+                                                                        alt={msg.fileName || 'Image'}
+                                                                        className="max-w-full md:max-w-md h-auto rounded-lg border border-white/20"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleDownloadImage(msg.fileUrl, msg.fileName)}
+                                                                        className="absolute top-2 right-2 bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        title="Download image"
+                                                                    >
+                                                                        <IoCloudDownload size={20} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                            {msg.type === 'pdf' && msg.fileUrl && (
+                                                                <a
+                                                                    href={`${BASE_URL}${msg.fileUrl}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="mt-2 flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                                                                >
+                                                                    <IoAttach size={16} />
+                                                                    {msg.fileName || 'Download PDF'}
+                                                                </a>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </motion.div>
                                             );
                                         })
                                     )}
                                 </div>
-                            )}
-                    </div>
-                    {/* Main Chat Container */}
-                    {
-                        (activeTab === 'public' || ((activeTab === 'groups' || activeTab === 'private') && currentRoom)) && (
-                            <div className={`flex-1 flex flex-col h-full z-20 bg-gray-900 md:bg-transparent ${!currentRoom && 'hidden md:flex'}`}>
-                                <Card className="flex flex-col h-full border-none md:border md:border-white/10 rounded-none md:rounded-2xl">
-                                    {/* Chat Header */}
-                                    <div className="flex items-center justify-between p-4 border-b border-white/10">
-                                        <div className="flex items-center gap-3">
-                                            {/* Mobile Back Button */}
-                                            <button
-                                                onClick={() => setCurrentRoom(null)}
-                                                className="lg:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
-                                            >
-                                                <IoArrowBack size={24} />
-                                            </button>
-                                            <div className="bg-gradient-to-br from-orange-500 to-red-500 p-3 rounded-full">
-                                                <IoPeople size={24} className="text-white" />
-                                            </div>
-                                            <div
-                                                onClick={() => currentRoom?.type === 'group' && setShowGroupSettings(true)}
-                                                className={currentRoom?.type === 'group' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}
-                                            >
-                                                <h3 className="font-bold text-lg">
-                                                    {currentRoom?.type === 'group'
-                                                        ? currentRoom.name
-                                                        : currentRoom?.type === 'private'
-                                                            ? (currentRoom.participants.find(p => p._id !== user.id)?.name || 'Private Chat')
-                                                            : 'Public Study Chat'}
-                                                </h3>
-                                                <p className="text-sm text-gray-400">
-                                                    {currentRoom?.type === 'group'
-                                                        ? `${currentRoom.participants?.length || 0} members (click to view)`
-                                                        : currentRoom?.type === 'private'
-                                                            ? 'Private Conversation'
-                                                            : 'All students'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {currentRoom?.type === 'group' && (
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() => setCurrentRoom(null)}
-                                                className="text-sm"
-                                            >
-                                                <IoArrowBack size={16} className="inline mr-1" />
-                                                Back to Groups
-                                            </Button>
-                                        )}
-                                        {currentRoom?.type === 'private' && (
-                                            <Button
-                                                variant="secondary"
-                                                onClick={() => setCurrentRoom(null)}
-                                                className="text-sm"
-                                            >
-                                                <IoArrowBack size={16} className="inline mr-1" />
-                                                Back
-                                            </Button>
-                                        )}
-                                        {currentRoom?.type === 'private' && (
-                                            <div className="relative">
-                                                <button
-                                                    onClick={() => setShowPrivateMenu(!showPrivateMenu)}
-                                                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                                                >
-                                                    <IoEllipsisVertical size={20} />
-                                                </button>
 
-                                                {/* Dropdown Menu */}
-                                                {showPrivateMenu && (
-                                                    <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900 border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden">
-                                                        <button
-                                                            onClick={handleDeleteForMe}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors text-gray-300"
-                                                        >
-                                                            <IoEyeOff size={16} />
-                                                            Delete for Me
-                                                        </button>
-                                                        <button
-                                                            onClick={handleDeleteEveryone}
-                                                            className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/20 text-red-400 transition-colors"
-                                                        >
-                                                            <IoTrash size={16} />
-                                                            Delete for Everyone
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Messages Area */}
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4" onClick={() => setShowPrivateMenu(false)}>
-                                        {messages.length === 0 ? (
-                                            <div className="text-center py-20 text-gray-400">
-                                                <IoChatbubblesOutline size={48} className="mx-auto mb-4 opacity-50" />
-                                                <p>No messages yet. Start the conversation!</p>
-                                            </div>
-                                        ) : (
-                                            messages.map((msg) => {
-                                                const isOwnMessage = msg.sender?._id === user?.id;
-
-                                                return (
-                                                    <motion.div
-                                                        key={msg._id}
-                                                        ref={el => messageRefs.current[msg._id] = el}
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''} transition-all duration-300 ${highlightedMessageId === msg._id ? 'bg-yellow-500/10 rounded-lg p-2 -m-2' : ''
-                                                            }`}
-                                                        onMouseDown={(e) => {
-                                                            msg.touchStartX = e.clientX;
-                                                        }}
-                                                        onMouseUp={(e) => {
-                                                            if (msg.touchStartX) {
-                                                                handleSwipe(msg, msg.touchStartX, e.clientX);
-                                                            }
-                                                        }}
-                                                        onTouchStart={(e) => {
-                                                            msg.touchStartX = e.touches[0].clientX;
-                                                        }}
-                                                        onTouchEnd={(e) => {
-                                                            if (msg.touchStartX) {
-                                                                handleSwipe(msg, msg.touchStartX, e.changedTouches[0].clientX);
-                                                            }
-                                                        }}
-                                                    >
-                                                        {/* Profile Image Placeholder */}
-                                                        <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden border ${msg.sender?.role === 'admin' ? 'border-red-500 bg-black shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'border-white/10 bg-gray-700'}`}>
-                                                            {msg.sender?.role === 'admin' ? (
-                                                                <div className="w-full h-full flex items-center justify-center text-red-500 animate-pulse">
-                                                                    <IoSkull size={24} />
-                                                                </div>
-                                                            ) : msg.sender?.profileImage ? (
-                                                                <img
-                                                                    src={msg.sender.profileImage.startsWith('http') ? msg.sender.profileImage : `${BASE_URL}${msg.sender.profileImage}`}
-                                                                    alt={msg.sender.name}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                                                                    {msg.sender?.name?.charAt(0) || '?'}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className={`flex-1 ${isOwnMessage ? 'flex flex-col items-end' : ''}`}>
-                                                            <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-                                                                <span className="font-semibold text-sm">{msg.sender?.name || 'Unknown'}</span>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
-                                                            </div>
-                                                            <div className={`rounded-lg px-4 py-2 border max-w-[70%] ${isOwnMessage
-                                                                ? 'bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/30'
-                                                                : msg.sender?.role === 'admin'
-                                                                    ? 'bg-gradient-to-br from-red-900/90 to-black border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                                                                    : 'bg-white/5 border-white/10'
-                                                                }`}>
-                                                                {/* Reply indicator */}
-                                                                {msg.replyTo && (
-                                                                    <div className={`mb-2 pb-2 border-b ${msg.sender?.role === 'admin' ? 'border-red-500/30' : 'border-white/10'}`}>
-                                                                        <div className={`text-xs italic border-l-2 pl-2 ${msg.sender?.role === 'admin' ? 'text-red-400 border-red-500' : 'text-gray-400 border-blue-400'}`}>
-                                                                            <div className="font-semibold">Reply to: {msg.replyTo.sender?.name || 'Unknown'}</div>
-                                                                            <div className="text-gray-500 truncate mt-0.5">{msg.replyTo.content || 'Message'}</div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                <p className={`whitespace-pre-wrap break-words ${msg.sender?.role === 'admin' ? 'text-red-100 font-bold tracking-wider drop-shadow-md font-mono text-lg uppercase' : 'text-gray-200'}`}>
-                                                                    {msg.content.split(/(@\w+)/g).map((part, i) =>
-                                                                        part.startsWith('@') ? (
-                                                                            <span key={i} className={`font-semibold px-1 rounded ${msg.sender?.role === 'admin' ? 'text-white bg-red-600' : 'text-blue-400 bg-blue-500/10'}`}>
-                                                                                {part}
-                                                                            </span>
-                                                                        ) : (
-                                                                            <span key={i}>{part}</span>
-                                                                        )
-                                                                    )}
-                                                                </p>
-                                                                {msg.type === 'image' && msg.fileUrl && (
-                                                                    <div className="relative mt-2 group inline-block max-w-full">
-                                                                        <img
-                                                                            src={`${BASE_URL}${msg.fileUrl}`}
-                                                                            alt={msg.fileName || 'Image'}
-                                                                            className="max-w-full md:max-w-md h-auto rounded-lg border border-white/20"
-                                                                        />
-                                                                        <button
-                                                                            onClick={() => handleDownloadImage(msg.fileUrl, msg.fileName)}
-                                                                            className="absolute top-2 right-2 bg-black/70 hover:bg-black/90 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                            title="Download image"
-                                                                        >
-                                                                            <IoCloudDownload size={20} />
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                                {msg.type === 'pdf' && msg.fileUrl && (
-                                                                    <a
-                                                                        href={`${BASE_URL}${msg.fileUrl}`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="mt-2 flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
-                                                                    >
-                                                                        <IoAttach size={16} />
-                                                                        {msg.fileName || 'Download PDF'}
-                                                                    </a>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })
-                                        )}
-                                        <div ref={messagesEndRef} />
-                                    </div>
-
-                                    {/* Message Input */}
-                                    <div className="p-4 border-t border-white/10 relative">
-                                        {/* Mention Autocomplete Dropdown */}
-                                        <AnimatePresence>
-                                            {showMentionDropdown && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 10 }}
-                                                    className="absolute bottom-full left-4 right-4 mb-2 bg-gray-800 border border-white/20 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"
-                                                >
-                                                    {(() => {
-                                                        // Get unique students from messages (left-side students)
-                                                        const activeStudents = messages
-                                                            .filter(msg => msg.sender?._id !== user?.id) // Exclude yourself
-                                                            .reduce((acc, msg) => {
-                                                                if (msg.sender && !acc.find(s => s._id === msg.sender._id)) {
-                                                                    acc.push({
-                                                                        _id: msg.sender._id,
-                                                                        name: msg.sender.name,
-                                                                        profileImage: msg.sender.profileImage
-                                                                    });
-                                                                }
-                                                                return acc;
-                                                            }, [])
-                                                            .filter(s => s.name.toLowerCase().includes(mentionSearch));
-
-                                                        return activeStudents.length > 0 ? (
-                                                            activeStudents.map((student) => {
-                                                                const fullStudentInfo = students?.find(s => s._id === student._id);
-                                                                const seatDisplay = fullStudentInfo?.seatInfo
-                                                                    ? `${fullStudentInfo.seatInfo.number} | ${fullStudentInfo.seatInfo.shift}`
-                                                                    : fullStudentInfo?.studentId ? `ID: ${fullStudentInfo.studentId}` : '';
-
-                                                                return (
-                                                                    <div
-                                                                        key={student._id}
-                                                                        onClick={() => handleMentionSelect(student)}
-                                                                        className="px-4 py-3 hover:bg-white/10 cursor-pointer transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
-                                                                    >
-                                                                        <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border border-white/10 bg-gray-700">
-                                                                            {student.profileImage ? (
-                                                                                <img
-                                                                                    src={student.profileImage.startsWith('http') ? student.profileImage : `${BASE_URL}${student.profileImage}`}
-                                                                                    alt={student.name}
-                                                                                    className="w-full h-full object-cover"
-                                                                                />
-                                                                            ) : (
-                                                                                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                                                                                    {student.name.charAt(0)}
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-white font-medium">{student.name}</span>
-                                                                            {seatDisplay && (
-                                                                                <span className="text-xs text-gray-400">{seatDisplay}</span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })
-                                                        ) : (
-                                                            <div className="px-4 py-3 text-gray-400 text-sm">
-                                                                No active students to mention
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-
-                                        {/* Reply Preview */}
-                                        {replyToMessage && (
+                                {/* Input Area */}
+                                <div className="px-4 py-3 border-t border-white/8 shrink-0 relative">
+                                    {/* Mention Autocomplete Dropdown */}
+                                    <AnimatePresence>
+                                        {showMentionDropdown && (
                                             <motion.div
-                                                initial={{ opacity: 0, y: -10 }}
+                                                initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="mb-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3"
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute bottom-full left-4 right-4 mb-2 bg-gray-800 border border-white/20 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"
                                             >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex-1 border-l-2 border-blue-400 pl-3">
-                                                        <div className="text-xs font-semibold text-blue-400">
-                                                            Replying to {replyToMessage.sender?.name}
+                                                {(() => {
+                                                    // Get unique students from messages (left-side students)
+                                                    const activeStudents = messages
+                                                        .filter(msg => msg.sender?._id !== user?.id) // Exclude yourself
+                                                        .reduce((acc, msg) => {
+                                                            if (msg.sender && !acc.find(s => s._id === msg.sender._id)) {
+                                                                acc.push({
+                                                                    _id: msg.sender._id,
+                                                                    name: msg.sender.name,
+                                                                    profileImage: msg.sender.profileImage
+                                                                });
+                                                            }
+                                                            return acc;
+                                                        }, [])
+                                                        .filter(s => s.name.toLowerCase().includes(mentionSearch));
+
+                                                    return activeStudents.length > 0 ? (
+                                                        activeStudents.map((student) => {
+                                                            const fullStudentInfo = students?.find(s => s._id === student._id);
+                                                            const seatDisplay = fullStudentInfo?.seatInfo
+                                                                ? `${fullStudentInfo.seatInfo.number} | ${fullStudentInfo.seatInfo.shift}`
+                                                                : fullStudentInfo?.studentId ? `ID: ${fullStudentInfo.studentId}` : '';
+
+                                                            return (
+                                                                <div
+                                                                    key={student._id}
+                                                                    onClick={() => handleMentionSelect(student)}
+                                                                    className="px-4 py-3 hover:bg-white/10 cursor-pointer transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                                                                >
+                                                                    <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border border-white/10 bg-gray-700">
+                                                                        {student.profileImage ? (
+                                                                            <img
+                                                                                src={student.profileImage.startsWith('http') ? student.profileImage : `${BASE_URL}${student.profileImage}`}
+                                                                                alt={student.name}
+                                                                                className="w-full h-full object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                                                                                {student.name.charAt(0)}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-white font-medium">{student.name}</span>
+                                                                        {seatDisplay && (
+                                                                            <span className="text-xs text-gray-400">{seatDisplay}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="px-4 py-3 text-gray-400 text-sm">
+                                                            No active students to mention
                                                         </div>
-                                                        <div className="text-sm text-gray-300 truncate mt-1">
-                                                            {replyToMessage.content}
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => setReplyToMessage(null)}
-                                                        className="text-gray-400 hover:text-white transition-colors"
-                                                    >
-                                                        <IoClose size={20} />
-                                                    </button>
-                                                </div>
+                                                    );
+                                                })()}
                                             </motion.div>
                                         )}
+                                    </AnimatePresence>
 
-                                        {/* File Preview */}
-                                        {selectedFile && (
-                                            <div className="mb-3 bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <IoAttach className="text-blue-400" size={20} />
-                                                    <span className="text-sm text-gray-300">{selectedFile.name}</span>
-                                                    <span className="text-xs text-gray-500">
-                                                        ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-                                                    </span>
+                                    {/* Reply Preview */}
+                                    {replyToMessage && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mb-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3"
+                                        >
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 border-l-2 border-blue-400 pl-3">
+                                                    <div className="text-xs font-semibold text-blue-400">
+                                                        Replying to {replyToMessage.sender?.name}
+                                                    </div>
+                                                    <div className="text-sm text-gray-300 truncate mt-1">
+                                                        {replyToMessage.content}
+                                                    </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => {
-                                                        setSelectedFile(null);
-                                                        if (fileInputRef.current) fileInputRef.current.value = '';
-                                                    }}
-                                                    className="text-red-400 hover:text-red-300 transition-colors"
+                                                    onClick={() => setReplyToMessage(null)}
+                                                    className="text-gray-400 hover:text-white transition-colors"
                                                 >
                                                     <IoClose size={20} />
                                                 </button>
                                             </div>
-                                        )}
+                                        </motion.div>
+                                    )}
 
-                                        {/* Chat Disabled Warning */}
-                                        {!isGlobalChatEnabled && (
-                                            <div className="mb-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-3">
-                                                <IoBan className="text-red-500" size={20} />
-                                                <span className="text-red-400 text-sm font-semibold">
-                                                    Messaging is disabled by administrator
+                                    {/* File Preview */}
+                                    {selectedFile && (
+                                        <div className="mb-3 bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <IoAttach className="text-blue-400" size={20} />
+                                                <span className="text-sm text-gray-300">{selectedFile.name}</span>
+                                                <span className="text-xs text-gray-500">
+                                                    ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                                                 </span>
                                             </div>
-                                        )}
-
-                                        {/* User Blocked Warning */}
-                                        {isGlobalChatEnabled && user?.isChatBlocked && (
-                                            <div className="mb-3 bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex items-center gap-3">
-                                                <IoBan className="text-red-500" size={24} />
-                                                <span className="text-red-300 text-sm font-semibold">
-                                                    You are blocked from this chat due to unacceptable behaviour
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {/* Room Disabled Warning */}
-                                        {isGlobalChatEnabled && !user?.isChatBlocked && currentRoom?.isDisabled && (
-                                            <div className="mb-3 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 flex items-center gap-3">
-                                                <IoBan className="text-orange-500" size={20} />
-                                                <span className="text-orange-400 text-sm font-semibold">
-                                                    This room has been disabled by administrator
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        <div className={`flex items-center gap-2 md:gap-3 border rounded-lg px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-800/50 border-gray-700 opacity-60' : 'bg-white/5 border-white/10'}`}>
-                                            {/* File Input Hidden */}
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf"
-                                                onChange={handleFileSelect}
-                                                className="hidden"
-                                                disabled={!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
-                                            />
-
-                                            <input
-                                                type="text"
-                                                ref={inputRef}
-                                                value={!isGlobalChatEnabled ? "Currently chat is disabled" : (user?.isChatBlocked ? "You are blocked from chat" : (currentRoom?.isDisabled ? "This room is disabled" : messageInput))}
-                                                onChange={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleInputChange}
-                                                onKeyPress={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleKeyPress}
-                                                placeholder={isGlobalChatEnabled && !user?.isChatBlocked && !currentRoom?.isDisabled ? `Message...` : ""}
-                                                className="flex-1 min-w-0 bg-transparent border-none text-white focus:ring-0 focus:outline-none placeholder-gray-500 text-sm md:text-base py-1"
-                                                readOnly={!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
-                                            />
-
-                                            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                                                <button
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    disabled={uploadingFile || !isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
-                                                    className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-                                                    title="Attach file"
-                                                >
-                                                    <IoAttach size={20} className="md:w-6 md:h-6" />
-                                                </button>
-
-                                                <button
-                                                    onClick={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : sendMessage}
-                                                    disabled={(!messageInput.trim() && !selectedFile) || uploadingFile || !isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
-                                                    className="p-1.5 md:p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg md:rounded-xl text-white hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                                >
-                                                    {(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? <IoLockClosed size={18} className="md:w-5 md:h-5" /> : <IoSend size={18} className="md:w-5 md:h-5" />}
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedFile(null);
+                                                    if (fileInputRef.current) fileInputRef.current.value = '';
+                                                }}
+                                                className="text-red-400 hover:text-red-300 transition-colors"
+                                            >
+                                                <IoClose size={20} />
+                                            </button>
                                         </div>
-                                        {/* {!isConnected && (
-                                            <p className="text-yellow-400 text-sm mt-2">Connecting to chat server...</p>
-                                        )} */}
+                                    )}
+
+                                    {/* Chat Disabled Warning */}
+                                    {!isGlobalChatEnabled && (
+                                        <div className="mb-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-3">
+                                            <IoBan className="text-red-500" size={20} />
+                                            <span className="text-red-400 text-sm font-semibold">
+                                                Messaging is disabled by administrator
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* User Blocked Warning */}
+                                    {isGlobalChatEnabled && user?.isChatBlocked && (
+                                        <div className="mb-3 bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex items-center gap-3">
+                                            <IoBan className="text-red-500" size={24} />
+                                            <span className="text-red-300 text-sm font-semibold">
+                                                You are blocked from this chat due to unacceptable behaviour
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Room Disabled Warning */}
+                                    {isGlobalChatEnabled && !user?.isChatBlocked && currentRoom?.isDisabled && (
+                                        <div className="mb-3 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 flex items-center gap-3">
+                                            <IoBan className="text-orange-500" size={20} />
+                                            <span className="text-orange-400 text-sm font-semibold">
+                                                This room has been disabled by administrator
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className={`flex items-center gap-2 md:gap-3 border rounded-lg px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-800/50 border-gray-700 opacity-60' : 'bg-white/5 border-white/10'}`}>
+                                        {/* File Input Hidden */}
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/jpg,image/png,image/gif,application/pdf"
+                                            onChange={handleFileSelect}
+                                            className="hidden"
+                                            disabled={!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
+                                        />
+
+                                        <input
+                                            type="text"
+                                            ref={inputRef}
+                                            value={!isGlobalChatEnabled ? "Currently chat is disabled" : (user?.isChatBlocked ? "You are blocked from chat" : (currentRoom?.isDisabled ? "This room is disabled" : messageInput))}
+                                            onChange={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleInputChange}
+                                            onKeyPress={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleKeyPress}
+                                            placeholder={isGlobalChatEnabled && !user?.isChatBlocked && !currentRoom?.isDisabled ? `Message...` : ""}
+                                            className="flex-1 min-w-0 bg-transparent border-none text-white focus:ring-0 focus:outline-none placeholder-gray-500 text-sm md:text-base py-1"
+                                            readOnly={!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
+                                        />
+
+                                        <div className="flex items-center gap-1 md:gap-2 shrink-0">
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={uploadingFile || !isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
+                                                className="p-1.5 md:p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                                                title="Attach file"
+                                            >
+                                                <IoAttach size={20} className="md:w-6 md:h-6" />
+                                            </button>
+
+                                            <button
+                                                onClick={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : sendMessage}
+                                                disabled={(!messageInput.trim() && !selectedFile) || uploadingFile || !isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
+                                                className="p-1.5 md:p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg md:rounded-xl text-white hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            >
+                                                {(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? <IoLockClosed size={18} className="md:w-5 md:h-5" /> : <IoSend size={18} className="md:w-5 md:h-5" />}
+                                            </button>
+                                        </div>
                                     </div>
-                                </Card>
+                                </div>
                             </div>
-                        )
-                    }
-                </div>
-
-                {/* Group Creation Modal */}
-                <GroupCreationModal
-                    isOpen={showGroupModal}
-                    onClose={() => setShowGroupModal(false)}
-                    onCreateGroup={handleCreateGroup}
-                    students={students}
-                    mode={groupModalMode}
-                />
-                {/* Group Settings Modal */}
-                <GroupSettingsModal
-                    isOpen={showGroupSettings}
-                    onClose={() => setShowGroupSettings(false)}
-                    group={currentRoom}
-                    currentUserId={user?.id}
-                    onRemoveMember={handleRemoveMember}
-                    onInviteMember={handleInviteMember}
-                    onRenameGroup={handleRenameGroup}
-                    onDeleteGroup={handleDeleteGroup}
-                    onLeaveGroup={handleLeaveGroup}
-                    onGetAvailableStudents={getAvailableStudents}
-                    allStudents={students}
-                    currentUser={user}
-                    sentInvitations={sentInvitations}
-                />
-
-                {/* Group Invitation Popup */}
-                {
-                    showInvitationPopup && currentInvitation && (
-                        <GroupInvitationPopup
-                            invitation={currentInvitation}
-                            onAccept={handleAcceptInvitation}
-                            onReject={handleRejectInvitation}
-                            onClose={() => {
-                                setShowInvitationPopup(false);
-                                setCurrentInvitation(null);
-                            }}
-                        />
+                        </div>
                     )
                 }
             </div>
-        </div>
 
+            {/* Group Creation Modal */}
+            <GroupCreationModal
+                isOpen={showGroupModal}
+                onClose={() => setShowGroupModal(false)}
+                onCreateGroup={handleCreateGroup}
+                students={students}
+                mode={groupModalMode}
+            />
+            {/* Group Settings Modal */}
+            <GroupSettingsModal
+                isOpen={showGroupSettings}
+                onClose={() => setShowGroupSettings(false)}
+                group={currentRoom}
+                currentUserId={user?.id}
+                onRemoveMember={handleRemoveMember}
+                onInviteMember={handleInviteMember}
+                onRenameGroup={handleRenameGroup}
+                onDeleteGroup={handleDeleteGroup}
+                onLeaveGroup={handleLeaveGroup}
+                onGetAvailableStudents={getAvailableStudents}
+                allStudents={students}
+                currentUser={user}
+                sentInvitations={sentInvitations}
+            />
+
+            {/* Group Invitation Popup */}
+            {showInvitationPopup && currentInvitation && (
+                <GroupInvitationPopup
+                    invitation={currentInvitation}
+                    onAccept={handleAcceptInvitation}
+                    onReject={handleRejectInvitation}
+                    onClose={() => {
+                        setShowInvitationPopup(false);
+                        setCurrentInvitation(null);
+                    }}
+                />
+            )}
+
+            {/* Toast */}
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ show: false, message: '', type: 'success' })}
+                />
+            )}
+        </div>
     );
 };
 

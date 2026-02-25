@@ -144,12 +144,11 @@ exports.getMe = async (req, res) => {
             qrToken: user.qrToken, // Expose token
             name: user.name,
             email: user.email,
+            mobile: user.mobile,
             studentId: user.studentId,
-            role: user.role,
             role: user.role,
             isActive: user.isActive,
             profileImage: user.profileImage,
-            createdAt: user.createdAt,
             createdAt: user.createdAt,
             registrationSource: user.registrationSource, // Required for status logic
             address: user.address,
