@@ -2,13 +2,13 @@ const https = require('https');
 
 const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
 
-// Preset exam categories — English
 const CATEGORY_QUERIES_EN = {
     upsc: 'UPSC civil services IAS general studies',
     ssc: 'SSC CGL CHSL staff selection commission',
     banking: 'IBPS SBI bank PO clerk exam',
     nta: 'JEE NEET NTA entrance exam',
     ncert: 'NCERT textbook class 11 12',
+    rrb: 'RRB NTPC railway recruitment board exam',
     reasoning: 'logical reasoning aptitude quantitative',
     english: 'english grammar vocabulary competitive exam',
     gk: 'general knowledge current affairs India 2025',
@@ -21,6 +21,7 @@ const CATEGORY_QUERIES_HI = {
     banking: 'बैंक परीक्षा IBPS SBI हिंदी',
     nta: 'JEE NEET NTA प्रवेश परीक्षा हिंदी',
     ncert: 'NCERT पाठ्यपुस्तक हिंदी',
+    rrb: 'RRB NTPC रेलवे भर्ती हिंदी',
     reasoning: 'तर्कशक्ति अभिक्षमता हिंदी',
     english: 'अंग्रेजी व्याकरण प्रतियोगी परीक्षा',
     gk: 'सामान्य ज्ञान करेंट अफेयर्स भारत',

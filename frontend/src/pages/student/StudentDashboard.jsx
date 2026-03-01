@@ -441,7 +441,7 @@ const StudentDashboard = () => {
                             color="from-amber-400 to-orange-500"
                             glow="rgba(245,158,11,0.45)"
                             delay={0.22}
-                            comingSoon
+                            to="/student/mock-test"
                         />
                     </div>
                 </motion.div>
