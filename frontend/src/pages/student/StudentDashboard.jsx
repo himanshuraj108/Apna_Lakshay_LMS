@@ -11,13 +11,16 @@ import {
     IoIdCardOutline, IoScan, IoCheckmarkCircle, IoCloseCircle,
     IoChatbubblesOutline, IoHelpCircleOutline,
     IoNewspaper, IoArrowForwardCircle,
-    IoFlashOutline, IoStatsChartOutline, IoShieldCheckmarkOutline
+    IoFlashOutline, IoStatsChartOutline, IoShieldCheckmarkOutline,
+    IoDocumentTextOutline, IoSparklesOutline, IoLockClosedOutline,
+    IoLibraryOutline, IoAlertCircleOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
 import RequestHistoryModal from '../../components/student/RequestHistoryModal';
 import LmsGuideSection from '../../components/student/LmsGuideSection';
 import NewspaperModal from '../../components/student/NewspaperModal';
+import ExamAlertsModal from '../../components/student/ExamAlertsModal';
 import Footer from '../../components/layout/Footer';
 
 // ─── Animated background orbs ─────────────────────────────────────────
@@ -114,6 +117,64 @@ const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, 
     return to ? <Link to={to} className="block h-full">{inner}</Link> : inner;
 };
 
+// ─── Learning Region Card ───────────────────────────────────────────────
+const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingSoon }) => {
+    const inner = (
+        <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay, type: 'spring', stiffness: 90 }}
+            whileHover={!comingSoon ? { y: -6, scale: 1.03 } : {}}
+            className={`card-glass relative rounded-2xl p-6 flex flex-col items-start gap-4 overflow-hidden transition-all duration-300 group ${comingSoon ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+        >
+            {/* top accent line */}
+            <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${color} ${comingSoon ? 'opacity-30' : 'opacity-50 group-hover:opacity-100'
+                } transition-opacity`} />
+
+            {/* glow blob */}
+            {!comingSoon && (
+                <div className={`absolute -top-8 -right-8 w-28 h-28 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-15 blur-2xl transition-all duration-500`} />
+            )}
+
+            {/* icon + coming-soon badge */}
+            <div className="relative">
+                <div
+                    className={`p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform duration-300 ${comingSoon ? '' : 'group-hover:scale-110'
+                        }`}
+                    style={{ boxShadow: comingSoon ? 'none' : `0 8px 24px -4px ${glow}` }}
+                >
+                    <Icon size={24} className="text-white" />
+                </div>
+                {comingSoon && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 border border-white/10 rounded-full flex items-center justify-center">
+                        <IoLockClosedOutline size={10} className="text-gray-300" />
+                    </span>
+                )}
+            </div>
+
+            {/* text */}
+            <div className="flex-1">
+                <p className="font-bold text-white text-base leading-snug">{label}</p>
+                <p className="text-xs text-gray-500 group-hover:text-gray-400 transition-colors mt-1">{desc}</p>
+            </div>
+
+            {/* footer */}
+            {comingSoon ? (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 text-amber-400 px-3 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+                    Coming Soon
+                </span>
+            ) : (
+                <span className={`text-[10px] font-bold uppercase tracking-[0.15em] text-gray-600 group-hover:text-gray-300 transition-colors flex items-center gap-1`}>
+                    Open <IoArrowForwardCircle size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
+                </span>
+            )}
+        </motion.div>
+    );
+    return !comingSoon && to ? <Link to={to} className="block">{inner}</Link> : inner;
+};
+
 // ─── Main Dashboard ───────────────────────────────────────────────────
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
@@ -124,6 +185,7 @@ const StudentDashboard = () => {
     const [showSupportModal, setShowSupportModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showNewspaper, setShowNewspaper] = useState(false);
+    const [showExamAlerts, setShowExamAlerts] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
@@ -216,6 +278,7 @@ const StudentDashboard = () => {
 
             <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
             <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
+            <ExamAlertsModal isOpen={showExamAlerts} onClose={() => setShowExamAlerts(false)} />
 
             {/* Scan toast */}
             <AnimatePresence>
@@ -332,6 +395,53 @@ const StudentDashboard = () => {
                         <ActionCard icon={IoBedOutline} label="View Seat on Map" desc="See exactly where you sit" color="from-cyan-500 to-blue-500" glow="rgba(6,182,212,0.4)" delay={0.3} to="/student/seat" />
                         <ActionCard icon={IoHelpCircleOutline} label="Help & Support" desc="Report issues or get help" color="from-yellow-500 to-amber-500" glow="rgba(234,179,8,0.4)" delay={0.35} onClick={() => setShowSupportModal(true)}
                             badge={dashboardData?.requestsCount || 0}
+                        />
+                        <ActionCard icon={IoAlertCircleOutline} label="Exam Alerts" desc="UPSC · SSC · IBPS · NTA live" color="from-orange-500 to-amber-400" glow="rgba(249,115,22,0.4)" delay={0.4} onClick={() => setShowExamAlerts(true)} />
+                    </div>
+                </motion.div>
+
+                {/* ── Learning Region ── */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.38 }}
+                    className="card-glass rounded-2xl p-6 mb-8"
+                >
+                    {/* Section header */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/30">
+                            <IoLibraryOutline size={18} className="text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-white font-bold text-lg leading-none">Learning Region</h2>
+                            <p className="text-gray-600 text-xs mt-0.5">Study smarter with powerful tools</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <LearningCard
+                            icon={IoBookOutline}
+                            label="Books"
+                            desc="Access curated study books"
+                            color="from-blue-500 to-cyan-500"
+                            glow="rgba(59,130,246,0.45)"
+                            delay={0.1}
+                            to="/student/books"
+                        />
+                        <LearningCard
+                            icon={IoDocumentTextOutline}
+                            label="Notes"
+                            desc="Browse & download notes"
+                            color="from-violet-500 to-purple-600"
+                            glow="rgba(139,92,246,0.45)"
+                            delay={0.16}
+                            to="/student/notes"
+                        />
+                        <LearningCard
+                            icon={IoSparklesOutline}
+                            label="AI Mock Test"
+                            desc="AI-powered practice tests"
+                            color="from-amber-400 to-orange-500"
+                            glow="rgba(245,158,11,0.45)"
+                            delay={0.22}
+                            comingSoon
                         />
                     </div>
                 </motion.div>

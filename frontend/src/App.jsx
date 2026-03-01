@@ -112,6 +112,8 @@ const Notifications = lazy(() => import('./pages/student/Notifications'));
 const Profile = lazy(() => import('./pages/student/Profile'));
 const ViewSeats = lazy(() => import('./pages/student/ViewSeats'));
 const DiscussionRoom = lazy(() => import('./pages/student/DiscussionRoom'));
+const BooksPage = lazy(() => import('./pages/student/BooksPage'));
+const NotesPage = lazy(() => import('./pages/student/NotesPage'));
 
 function App() {
     const { user, loading, systemStatus } = useAuth();
@@ -185,6 +187,8 @@ function App() {
                 <Route path="/student/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/student/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/student/chat" element={<ProtectedRoute requireSeat><DiscussionRoom /></ProtectedRoute>} />
+                <Route path="/student/books" element={<ProtectedRoute><BooksPage /></ProtectedRoute>} />
+                <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" />} />
