@@ -21,7 +21,7 @@ const {
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
 const { getNotes } = require('../controllers/notesController');
-const { generateTest, evaluateTest } = require('../controllers/mockTestController');
+const { generateTest, evaluateTest, getExamPattern } = require('../controllers/mockTestController');
 const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
 
 
@@ -40,7 +40,8 @@ router.get('/books', getBooks);
 // Notes (Internet Archive API)
 router.get('/notes', getNotes);
 
-// AI Mock Test (Gemini API)
+// AI Mock Test (Gemini/Groq API)
+router.get('/mock-test/pattern/:examCode', getExamPattern);
 router.post('/mock-test/generate', generateTest);
 router.post('/mock-test/evaluate', evaluateTest);
 

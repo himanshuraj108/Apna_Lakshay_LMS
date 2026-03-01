@@ -76,11 +76,26 @@ export const AuthProvider = ({ children }) => {
         setUser(newUser);
     };
 
+    const checkAuth = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const res = await api.get('/auth/me');
+            if (res.data.success) {
+                updateUser(res.data.user);
+            }
+        } catch (error) {
+            console.error('Failed to update auth context:', error);
+        }
+    };
+
     const value = {
         user,
         loading,
         systemStatus,
         checkSystemStatus,
+        checkAuth,
         login,
         logout,
         updateUser,

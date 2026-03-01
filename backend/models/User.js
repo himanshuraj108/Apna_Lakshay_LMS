@@ -61,6 +61,14 @@ const userSchema = new mongoose.Schema({
         ref: 'User',
         default: null
     },
+    mockTestCredits: {
+        type: Number,
+        default: 3
+    },
+    mockTestCreditsResetDate: {
+        type: String,
+        default: null
+    },
     isActive: {
         type: Boolean,
         default: false

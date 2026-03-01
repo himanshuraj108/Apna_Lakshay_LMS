@@ -139,6 +139,14 @@ exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('+qrToken');
 
+        // Check and Reset Daily Mock Test Credits (00:00 IST)
+        const currentDateIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
+        if (user.mockTestCreditsResetDate !== currentDateIST) {
+            user.mockTestCredits = 3;
+            user.mockTestCreditsResetDate = currentDateIST;
+            await user.save({ validateBeforeSave: false });
+        }
+
         let userData = {
             id: user._id,
             qrToken: user.qrToken, // Expose token
@@ -153,7 +161,8 @@ exports.getMe = async (req, res) => {
             registrationSource: user.registrationSource, // Required for status logic
             address: user.address,
             seat: user.seat,
-            seatAssignedAt: user.seatAssignedAt // Use persistent date from User model
+            seatAssignedAt: user.seatAssignedAt, // Use persistent date from User model
+            mockTestCredits: user.mockTestCredits
         };
 
         try {
