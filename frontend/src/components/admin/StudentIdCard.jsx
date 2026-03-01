@@ -129,7 +129,7 @@ const StudentIdCard = ({ student }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
-                            <p className={`font-medium text-xs font-bold ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
+                            <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
                                 {getFormattedShift()}
                             </p>
                         </div>
