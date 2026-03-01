@@ -18,13 +18,27 @@ const {
     requestSeatChange,
     markAttendanceByQr
 } = require('../controllers/studentController');
+const { getExamAlerts } = require('../controllers/examAlertsController');
+const { getBooks } = require('../controllers/booksController');
+const { getNotes } = require('../controllers/notesController');
 const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
+
 
 // All routes are protected and maintenance-checked
 router.use(protect, checkMaintenanceMode);
 
 // Dashboard
 router.get('/dashboard', getDashboard);
+
+// Exam Alerts (RSS feed aggregation)
+router.get('/exam-alerts', getExamAlerts);
+
+// Books (Google Books API)
+router.get('/books', getBooks);
+
+// Notes (Internet Archive API)
+router.get('/notes', getNotes);
+
 
 // My Seat
 router.get('/seat', getMySeat);
