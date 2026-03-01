@@ -25,6 +25,7 @@ const CATEGORIES = [
     { key: 'banking', label: 'Banking', color: 'from-green-500 to-emerald-600', glow: 'rgba(16,185,129,0.3)' },
     { key: 'nta', label: 'JEE / NEET', color: 'from-purple-500 to-violet-600', glow: 'rgba(139,92,246,0.3)' },
     { key: 'ncert', label: 'NCERT', color: 'from-amber-400 to-orange-500', glow: 'rgba(245,158,11,0.3)' },
+    { key: 'rrb', label: 'RRB / Railway', color: 'from-sky-500 to-blue-600', glow: 'rgba(14,165,233,0.3)' },
     { key: 'polity', label: 'Polity', color: 'from-pink-500 to-rose-500', glow: 'rgba(236,72,153,0.3)' },
     { key: 'history', label: 'History', color: 'from-yellow-500 to-amber-500', glow: 'rgba(234,179,8,0.3)' },
     { key: 'geography', label: 'Geography', color: 'from-teal-500 to-cyan-600', glow: 'rgba(20,184,166,0.3)' },
@@ -117,6 +118,7 @@ const NotesPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
+    const [customExam, setCustomExam] = useState('');
     const [activeCategory, setActiveCategory] = useState('upsc');
     const [lang, setLang] = useState('en');
 
@@ -186,8 +188,8 @@ const NotesPage = () => {
                         whileTap={{ scale: 0.95 }}
                         onClick={toggleLang}
                         className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${lang === 'hi'
-                                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
-                                : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
+                            ? 'bg-orange-500/20 border-orange-500/40 text-orange-300'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
                             }`}
                     >
                         <span className={lang === 'en' ? 'text-white font-black' : 'text-gray-500'}>EN</span>
@@ -221,24 +223,46 @@ const NotesPage = () => {
 
                 {/* Category pills */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
-                    className="flex gap-2 mb-8 overflow-x-auto pb-1"
+                    className="flex gap-2 mb-3 overflow-x-auto pb-1"
                     style={{ scrollbarWidth: 'none' }}
                 >
                     {CATEGORIES.map(cat => (
                         <motion.button
                             key={cat.key}
-                            onClick={() => { setActiveCategory(cat.key); setSearch(''); }}
+                            onClick={() => { setActiveCategory(cat.key); setSearch(''); setCustomExam(''); }}
                             whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${activeCategory === cat.key && !search
+                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${activeCategory === cat.key && !search && !customExam
                                 ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
                                 : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:border-white/20'
                                 }`}
-                            style={activeCategory === cat.key && !search ? { boxShadow: `0 4px 20px -4px ${cat.glow}` } : {}}
+                            style={activeCategory === cat.key && !search && !customExam ? { boxShadow: `0 4px 20px -4px ${cat.glow}` } : {}}
                         >
                             {cat.label}
                         </motion.button>
                     ))}
                 </motion.div>
+
+                {/* Custom exam input */}
+                <motion.form initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
+                    onSubmit={e => { e.preventDefault(); if (customExam.trim()) { setSearch(''); fetchNotes(customExam.trim(), activeCategory, lang); } }}
+                    className="flex gap-2 mb-6"
+                >
+                    <input
+                        value={customExam}
+                        onChange={e => setCustomExam(e.target.value)}
+                        placeholder="Can't find your exam? Type it here e.g. CAPF, CLAT, CDS…"
+                        className="flex-1 px-4 py-2.5 bg-white/3 border border-dashed border-white/10 rounded-xl text-white text-xs placeholder-gray-600 focus:outline-none focus:border-violet-500/40 transition-all"
+                    />
+                    <motion.button type="submit" whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shrink-0"
+                    >Search</motion.button>
+                    {customExam && (
+                        <motion.button type="button" whileTap={{ scale: 0.95 }}
+                            onClick={() => { setCustomExam(''); fetchNotes('', activeCategory, lang); }}
+                            className="px-3 py-2.5 bg-white/5 border border-white/10 text-gray-400 hover:text-white text-xs rounded-xl transition-all"
+                        >✕</motion.button>
+                    )}
+                </motion.form>
 
                 {/* Loading */}
                 {loading && (

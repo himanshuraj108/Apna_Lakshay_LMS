@@ -114,6 +114,7 @@ const ViewSeats = lazy(() => import('./pages/student/ViewSeats'));
 const DiscussionRoom = lazy(() => import('./pages/student/DiscussionRoom'));
 const BooksPage = lazy(() => import('./pages/student/BooksPage'));
 const NotesPage = lazy(() => import('./pages/student/NotesPage'));
+const MockTestPage = lazy(() => import('./pages/student/MockTestPage'));
 
 function App() {
     const { user, loading, systemStatus } = useAuth();
@@ -189,6 +190,7 @@ function App() {
                 <Route path="/student/chat" element={<ProtectedRoute requireSeat><DiscussionRoom /></ProtectedRoute>} />
                 <Route path="/student/books" element={<ProtectedRoute><BooksPage /></ProtectedRoute>} />
                 <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+                <Route path="/student/mock-test" element={<ProtectedRoute><MockTestPage /></ProtectedRoute>} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" />} />
