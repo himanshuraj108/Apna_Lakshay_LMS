@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
@@ -7,11 +7,22 @@ import api from '../../utils/api';
 const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
     const { shifts } = useShifts();
     const [formData, setFormData] = useState({
-        seatNumber: seat?.number || '',
-        basePrices: seat?.shiftPrices || seat?.basePrices || {}, // Use shiftPrices if available, fallback for legacy
-        wall: seat?.position?.wall || 'north'
+        seatNumber: '',
+        basePrices: {},
+        wall: 'north'
     });
     const [loading, setLoading] = useState(false);
+
+    // Sync form data whenever the seat prop changes (fixes stale-state bug on re-open)
+    useEffect(() => {
+        if (seat) {
+            setFormData({
+                seatNumber: seat.number || '',
+                basePrices: seat.shiftPrices || seat.basePrices || {},
+                wall: seat.position?.wall || 'north'
+            });
+        }
+    }, [seat]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -49,7 +60,7 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full"
+                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
@@ -93,7 +104,7 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                                         }
                                     })}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
+                                    placeholder="Leave blank to skip"
                                 />
                             </div>
                         ))}
