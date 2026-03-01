@@ -59,7 +59,7 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full"
+                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
@@ -95,7 +95,7 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
                                         }
                                     })}
                                     className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                    required
+                                    placeholder="Leave blank to skip"
                                 />
                             </div>
                         ))}
@@ -115,7 +115,7 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
                                     }
                                 })}
                                 className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
+                                placeholder="Leave blank to skip"
                             />
                         </div>
 
