@@ -5,6 +5,42 @@ import { IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoTrophyOutline, IoRefre
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 
+// ─── Global Mobile CSS ───────────────────────────────────────────────
+const MOBILE_CSS = `
+@media (max-width: 640px) {
+  .exam-header { flex-direction: column !important; gap: 10px !important; padding: 10px 14px !important; }
+  .exam-header-right { flex-wrap: wrap !important; gap: 8px !important; justify-content: space-between; width: 100%; }
+  .exam-credits-label { font-size: 12px !important; }
+  .exam-grid { grid-template-columns: 1fr 1fr !important; }
+  .info-grid { grid-template-columns: 1fr !important; }
+  .info-stats { gap: 10px !important; }
+  .info-stat-card { padding: 10px 14px !important; flex: 1 1 140px !important; }
+  .session-layout { flex-direction: column !important; height: auto !important; min-height: 100vh; }
+  .palette-panel { width: 100% !important; }
+  .palette-toggle-btn { display: flex !important; }
+  .palette-hidden { display: none !important; }
+  .result-kpi-grid { grid-template-columns: 1fr !important; }
+  .result-stats-grid { grid-template-columns: 1fr 1fr !important; }
+  .result-header { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
+  .result-header-btns { width: 100%; display: flex; gap: 8px; }
+  .result-header-btns button { flex: 1; font-size: 12px !important; padding: 8px 10px !important; }
+  .q-action-bar { gap: 6px !important; }
+  .q-action-bar button { font-size: 11px !important; padding: 8px 10px !important; }
+  .test-topbar { flex-wrap: wrap !important; gap: 8px !important; padding: 8px 12px !important; }
+  .test-topbar-left { font-size: 13px !important; }
+  .test-topbar-left .exam-title { font-size: 12px !important; }
+  .test-topbar-right { gap: 10px !important; }
+  .submit-btn { padding: 6px 14px !important; font-size: 12px !important; }
+  .modal-content { padding: 16px !important; }
+  .modal-footer { padding: 12px 16px !important; flex-direction: column !important; gap: 8px !important; }
+  .modal-footer button { width: 100% !important; }
+}
+@media (min-width: 641px) {
+  .palette-panel { display: flex !important; }
+  .palette-toggle-btn { display: none !important; }
+}
+`;
+
 // ─── Exam Groups Data (Selector Only) ─────────────────────────────────
 const EXAM_GROUPS = [
     {
@@ -132,7 +168,7 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
     return (
         <AnimatePresence>
             {isOpen && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(8px)' }} />
                     <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ position: 'relative', width: '100%', maxWidth: '500px', background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
                         <div style={{ background: '#1e293b', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -175,7 +211,7 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
                             )}
 
                         </div>
-                        <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                        <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                             {requireCheckbox && (
                                 <button onClick={onClose} style={{ background: 'white', color: '#64748b', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 24px', fontWeight: '700', cursor: 'pointer' }}>
                                     Cancel
@@ -241,23 +277,24 @@ const ExamSelect = ({ onSelect }) => {
 
     return (
         <div style={{ background: '#f1f5f9', minHeight: '100vh' }}>
+            <style>{MOBILE_CSS}</style>
             <InstructionsModal isOpen={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} type="credits" />
 
-            <div style={{ background: '#1a3a6a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ color: 'white' }}>
+            <div className="exam-header" style={{ background: '#1a3a6a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ color: 'white', flexShrink: 0 }}>
                     <div style={{ fontWeight: '800', fontSize: '18px', letterSpacing: '0.5px' }}>Apna Lakshay</div>
                     <div style={{ fontSize: '11px', opacity: 0.7 }}>Advanced AI Mock Test Portal</div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ color: isLocked ? '#fca5a5' : '#93c5fd', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                        <span>Mock Test Credits: <span style={{ color: 'white' }}>{credits}/3</span></span>
-                        {isLocked && <span style={{ fontSize: '12px', background: '#dc2626', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>Unlocks in {timeLeftToReset}</span>}
+                <div className="exam-header-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div className="exam-credits-label" style={{ color: isLocked ? '#fca5a5' : '#93c5fd', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', flexWrap: 'wrap' }}>
+                        <span>Credits: <span style={{ color: 'white' }}>{credits}/3</span></span>
+                        {isLocked && <span style={{ fontSize: '11px', background: '#dc2626', color: 'white', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Unlocks in {timeLeftToReset}</span>}
                         <button onClick={() => setShowInstructionsModal(true)} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', display: 'flex', padding: 0 }} title="Instructions">
                             <IoInformationCircleOutline size={18} />
                         </button>
                     </div>
                     <Link to="/student">
-                        <button style={{ color: 'white', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button style={{ color: 'white', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
                             <IoArrowBack size={14} /> Dashboard
                         </button>
                     </Link>
@@ -275,7 +312,7 @@ const ExamSelect = ({ onSelect }) => {
                         {EXAM_GROUPS.map(grp => (
                             <div key={grp.id} style={{ marginBottom: '24px', background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontWeight: '800', fontSize: '14px', color: grp.color, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>{grp.name}</div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px' }}>
+                                <div className="exam-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                                     {grp.exams.map(exam => (
                                         <button key={exam.code} onClick={() => onSelect(exam.code)}
                                             style={{
@@ -335,6 +372,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 
     return (
         <div style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '60px' }}>
+            <style>{MOBILE_CSS}</style>
             {/* Header */}
             <div style={{ background: '#1a3a6a', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
@@ -345,17 +383,14 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                     <h1 style={{ color: 'white', fontSize: '32px', fontWeight: '900', marginBottom: '8px' }}>{pattern.name}</h1>
                     <div style={{ color: '#93c5fd', fontSize: '15px', fontWeight: '500', marginBottom: '24px' }}>{pattern.type} — {pattern.desc}</div>
 
-                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <IoTimeOutline size={22} color="#60a5fa" />
+                    <div className="info-stats" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                        <div className="info-stat-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div><div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', fontWeight: '700' }}>Real Exam Duration</div><div style={{ fontWeight: '700', fontSize: '15px' }}>{pattern.duration} Minutes</div></div>
                         </div>
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <IoInformationCircleOutline size={22} color="#4ade80" />
+                        <div className="info-stat-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div><div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', fontWeight: '700' }}>Real Marking Scheme</div><div style={{ fontWeight: '700', fontSize: '15px' }}>+{pattern.positive} Correct / {pattern.negative > 0 ? `−${pattern.negative} Incorrect` : 'No Ngtv'}</div></div>
                         </div>
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <IoBookOutline size={22} color="#f472b6" />
+                        <div className="info-stat-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div><div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', fontWeight: '700' }}>Questions</div><div style={{ fontWeight: '700', fontSize: '15px' }}>{pattern.totalQuestions} Questions</div></div>
                         </div>
                         <button onClick={() => setShowInstructions(true)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '700', transition: 'all 0.2s' }}>
@@ -367,7 +402,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
             </div>
 
             <div className="max-w-5xl mx-auto px-4" style={{ marginTop: '-20px', position: 'relative', zIndex: 20 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '24px' }}>
+                <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '24px' }}>
 
                     {/* Left Col: Syllabus & Sections */}
                     <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
@@ -467,6 +502,7 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
     const [current, setCurrent] = useState(0);
     const [answers, setAnswers] = useState({});
     const [statuses, setStatuses] = useState(() => Object.fromEntries(initialQuestions.map((_, i) => [i, 'not_visited'])));
+    const [showPalette, setShowPalette] = useState(false); // mobile palette toggle
 
     // Timer is real exam duration if all sections, or scaled by weight if single section
     const isFull = config.sectionId === 'all';
@@ -632,19 +668,20 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
 
     return (
         <div style={{ background: '#f1f5f9', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+            <style>{MOBILE_CSS}</style>
             {/* Top Bar */}
-            <div style={{ background: '#1a3a6a', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                <div style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="test-topbar" style={{ background: '#1a3a6a', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                <div className="test-topbar-left" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ fontWeight: '900', fontSize: '20px', letterSpacing: '1px', textTransform: 'uppercase', borderRight: '2px solid rgba(255,255,255,0.3)', paddingRight: '16px' }}>
-                        APNA LAKSHAY LIBRARY
+                        APNA LAKSHAY
                     </div>
                     <div>
-                        <div style={{ fontWeight: '800', fontSize: '15px' }}>{pattern.name} | CBT Interface</div>
+                        <div className="exam-title" style={{ fontWeight: '800', fontSize: '15px' }}>{pattern.name} | CBT</div>
                         <div style={{ fontSize: '11px', opacity: 0.7 }}>Candidate Mock Session</div>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div className="test-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <button onClick={() => setShowInfo(true)} title="Instructions" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                         <IoInformationCircleOutline size={20} />
                     </button>
@@ -658,7 +695,7 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
                     <div style={{ color: urgent ? '#fca5a5' : '#86efac', fontWeight: '800', fontSize: '18px', fontFamily: 'monospace', background: 'rgba(0,0,0,0.3)', padding: '6px 16px', borderRadius: '8px', border: urgent ? '1px solid #dc2626' : '1px solid transparent' }}>
                         ⏱ {fmtTime(timeLeft)}
                     </div>
-                    <button onClick={() => setShowSubmitModal(true)}
+                    <button className="submit-btn" onClick={() => setShowSubmitModal(true)}
                         style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 24px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(220,38,38,0.4)', transition: 'all 0.2s', textTransform: 'uppercase' }}
                     >SUBMIT EXAM</button>
                 </div>
@@ -682,7 +719,7 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', maxWidth: '1400px', margin: '0 auto', padding: '16px', gap: '16px', height: sectionIdsPresent.length > 1 ? 'calc(100vh - 120px)' : 'calc(100vh - 70px)' }}>
+            <div className="session-layout" style={{ display: 'flex', maxWidth: '1400px', margin: '0 auto', padding: '16px', gap: '16px', height: sectionIdsPresent.length > 1 ? 'calc(100vh - 120px)' : 'calc(100vh - 70px)' }}>
                 {/* Left: Question Area */}
                 <div style={{ flex: 1, minWidth: 0, background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     <div style={{ background: '#f8fafc', padding: '12px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -709,7 +746,7 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
                         </div>
                     </div>
 
-                    <div style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', flexWrap: 'wrap', background: '#f8fafc' }}>
+                    <div className="q-action-bar" style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', flexWrap: 'wrap', background: '#f8fafc' }}>
                         <button onClick={saveAndNext} style={btnStyle('#16a34a')}>SAVE & NEXT</button>
                         <button onClick={clearResponse} style={btnStyle('white', '#475569')}>CLEAR RESPONSE</button>
                         <button onClick={() => { setStatuses(p => ({ ...p, [current]: answers[current] !== undefined ? 'answered_marked' : 'marked' })); }} style={btnStyle('#ea580c')}>SAVE & MARK FOR REVIEW</button>
@@ -718,12 +755,18 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
 
                     <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
                         <button onClick={() => goTo(Math.max(0, current - 1))} disabled={current === 0} style={{ ...btnStyle('white', '#475569'), opacity: current === 0 ? 0.5 : 1 }}>&lt;&lt; BACK</button>
+                        {/* Mobile palette toggle */}
+                        <button
+                            className="palette-toggle-btn"
+                            onClick={() => setShowPalette(p => !p)}
+                            style={{ display: 'none', background: '#1a3a6a', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 14px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+                        >{showPalette ? 'Hide Panel' : 'Question Palette'}</button>
                         <button onClick={() => goTo(Math.max(initialQuestions.length - 1, current + 1))} disabled={current === initialQuestions.length - 1} style={{ ...btnStyle('white', '#475569'), opacity: current === initialQuestions.length - 1 ? 0.5 : 1 }}>NEXT &gt;&gt;</button>
                     </div>
                 </div>
 
                 {/* Right: Palette */}
-                <div style={{ width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className={`palette-panel${showPalette ? '' : ' palette-hidden'}`} style={{ width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     {/* Real User Profile */}
                     <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1029,22 +1072,23 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
     return (
         <div style={{ background: '#0b0f19', minHeight: '100vh', color: 'white', fontFamily: 'Inter, sans-serif' }}>
             <style>{DashboardCSS}</style>
+            <style>{MOBILE_CSS}</style>
 
             {/* Header */}
-            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.5)', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(10px)' }}>
+            <div className="result-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.5)', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(10px)' }}>
                 <div>
-                    <h1 style={{ fontSize: '24px', fontWeight: '900', margin: 0 }}><span className="g-text">Analytics Report</span></h1>
-                    <div style={{ color: '#94a3b8', fontSize: '13px', marginTop: '4px' }}>{pattern.name} — Full Simulation</div>
+                    <h1 style={{ fontSize: '22px', fontWeight: '900', margin: 0 }}><span className="g-text">Analytics Report</span></h1>
+                    <div style={{ color: '#94a3b8', fontSize: '13px', marginTop: '4px' }}>{pattern.name}</div>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="result-header-btns" style={{ display: 'flex', gap: '12px' }}>
                     <button onClick={onRetry} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Start New Test</button>
                     <Link to="/student"><button style={{ padding: '10px 20px', background: 'linear-gradient(to right, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Exit to Dashboard</button></Link>
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-6 py-8">
+            <div className="max-w-6xl mx-auto px-4 py-6">
                 {/* Top KPI Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)', gap: '24px', marginBottom: '24px' }}>
+                <div className="result-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)', gap: '24px', marginBottom: '24px' }}>
 
                     {/* Overall Score Circle */}
                     <div className="gl-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -1056,7 +1100,7 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                     </div>
 
                     {/* Stats Grid */}
-                    <div className="gl-card" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', alignItems: 'center' }}>
+                    <div className="gl-card result-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', alignItems: 'center' }}>
                         <div style={{ textAlign: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                             <div style={{ color: '#4ade80', fontSize: '36px', fontWeight: '900', marginBottom: '8px' }}>{correct}</div>
                             <div style={{ color: '#94a3b8', fontSize: '12px', textTransform: 'uppercase', fontWeight: '700' }}>Correct</div>
