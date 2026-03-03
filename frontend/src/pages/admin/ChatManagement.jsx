@@ -1,325 +1,231 @@
-
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoChatbubbles, IoPerson, IoTrash, IoBan, IoCheckmarkCircle, IoCloseCircle, IoEye, IoWarning, IoRefresh, IoArrowBack, IoSettings } from 'react-icons/io5';
+import {
+    IoChatbubbles, IoTrash, IoBan, IoCheckmarkCircle, IoCloseCircle,
+    IoEye, IoWarning, IoRefresh, IoArrowBack, IoSettings, IoPowerOutline,
+    IoGridOutline, IoPeopleOutline
+} from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Toast from '../../components/ui/Toast';
 import ChatMonitor from '../../components/admin/ChatMonitor';
 import StudentChatList from '../../components/admin/StudentChatList';
 
+const PAGE_BG = { background: '#050508' };
+
+const ROOM_TYPE_COLORS = {
+    public: 'from-blue-500 to-cyan-500',
+    group: 'from-indigo-500 to-purple-500',
+    private: 'from-rose-500 to-pink-500',
+};
+
 const ChatManagement = () => {
-    const navigate = useNavigate(); // For Back Button
+    const navigate = useNavigate();
     const [rooms, setRooms] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('rooms'); // 'rooms', 'users'
-    const [filter, setFilter] = useState('all'); // 'all', 'public', 'group', 'private'
+    const [activeTab, setActiveTab] = useState('rooms');
+    const [filter, setFilter] = useState('all');
     const [selectedRoom, setSelectedRoom] = useState(null);
     const [messages, setMessages] = useState([]);
     const [showMonitor, setShowMonitor] = useState(false);
-
-    // Global Settings State
     const [isGlobalChatEnabled, setIsGlobalChatEnabled] = useState(true);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
             const [roomsRes, usersRes, settingsRes] = await Promise.all([
                 api.get('/chat/admin/rooms'),
-                api.get('/chat/admin/users?filter=active_chat_only'), // Filter active users
-                api.get('/chat/admin/settings/chat_enabled') // Fetch current chat status
+                api.get('/chat/admin/users?filter=active_chat_only'),
+                api.get('/chat/admin/settings/chat_enabled')
             ]);
-
-            if (roomsRes.data.success) {
-                setRooms(roomsRes.data.rooms);
-            }
-            if (usersRes.data.success) {
-                setUsers(usersRes.data.students);
-            }
-
-            // Set initial chat enabled state from backend
-            if (settingsRes.data.success) {
-                setIsGlobalChatEnabled(settingsRes.data.value ?? true);
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-        } finally {
-            setLoading(false);
-        }
+            if (roomsRes.data.success) setRooms(roomsRes.data.rooms);
+            if (usersRes.data.success) setUsers(usersRes.data.students);
+            if (settingsRes.data.success) setIsGlobalChatEnabled(settingsRes.data.value ?? true);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
     const handleGlobalToggle = async () => {
-        try {
-            const newState = !isGlobalChatEnabled;
-            // Optimistic update
-            setIsGlobalChatEnabled(newState);
-
-            const response = await api.post('/chat/admin/global-settings', { enabled: newState });
-            if (response.data.success) {
-                showToast(response.data.message, 'success');
-            }
-        } catch (error) {
-            console.error('Global toggle error:', error);
-            setIsGlobalChatEnabled(!isGlobalChatEnabled); // Revert
-            showToast('Failed to toggle chat', 'error');
-        }
+        const newState = !isGlobalChatEnabled;
+        setIsGlobalChatEnabled(newState);
+        try { await api.post('/chat/admin/global-settings', { enabled: newState }); }
+        catch (e) { setIsGlobalChatEnabled(!newState); }
     };
 
     const handlePurgeAll = async () => {
-        if (!window.confirm('DANGER: This will delete ALL chat history for EVERYONE. This cannot be undone. Are you sure?')) return;
-
+        if (!window.confirm('DANGER: Delete ALL chat messages for everyone? This cannot be undone.')) return;
         try {
-            const response = await api.delete('/chat/admin/all-messages');
-            if (response.data.success) {
-                showToast(response.data.message, 'success');
-                // Refresh data
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Purge error:', error);
-            showToast('Failed to purge messages', 'error');
-        }
+            await api.delete('/chat/admin/all-messages');
+            fetchData();
+        } catch (e) { alert('Failed to purge messages'); }
+    };
+
+    const handleFactoryReset = async () => {
+        if (!window.confirm('⚠ FACTORY RESET: Delete ALL messages, rooms, and settings permanently?')) return;
+        if (!window.confirm('Last chance — this cannot be undone.')) return;
+        try { await api.delete('/chat/admin/factory-reset'); fetchData(); }
+        catch (e) { alert('Factory reset failed'); }
     };
 
     const handleDisableRoom = async (roomId) => {
         try {
-            const response = await api.patch(`/chat/admin/rooms/${roomId}/disable`);
-            if (response.data.success) {
-                setRooms(prev => prev.map(r => r._id === roomId ? response.data.room : r));
-                // Show toast
-            }
-        } catch (error) {
-            console.error('Disable room error:', error);
-        }
+            const res = await api.patch(`/chat/admin/rooms/${roomId}/disable`);
+            if (res.data.success) setRooms(prev => prev.map(r => r._id === roomId ? res.data.room : r));
+        } catch (e) { console.error(e); }
     };
 
     const handleDeleteRoom = async (roomId) => {
-        if (!window.confirm('Are you sure? This deletes all history permanently.')) return;
+        if (!window.confirm('Delete this room permanently?')) return;
         try {
-            const response = await api.delete(`/chat/admin/rooms/${roomId}`);
-            if (response.data.success) {
-                setRooms(prev => prev.filter(r => r._id !== roomId));
-                if (selectedRoom?._id === roomId) setShowMonitor(false);
-            }
-        } catch (error) {
-            console.error('Delete room error:', error);
-        }
-    };
-
-    const handleBlockUser = async (userId) => {
-        // Implementation for user blocking
-        // We might need a separate endpoint to fetch users first
+            await api.delete(`/chat/admin/rooms/${roomId}`);
+            setRooms(prev => prev.filter(r => r._id !== roomId));
+            if (selectedRoom?._id === roomId) setShowMonitor(false);
+        } catch (e) { console.error(e); }
     };
 
     const openMonitor = async (room) => {
-        setSelectedRoom(room);
-        setShowMonitor(true);
+        setSelectedRoom(room); setShowMonitor(true);
         try {
-            const response = await api.get(`/chat/admin/rooms/${room._id}/messages`);
-            if (response.data.success) {
-                setMessages(response.data.messages);
-            }
-        } catch (error) {
-            console.error('Load messages error:', error);
-        }
+            const res = await api.get(`/chat/admin/rooms/${room._id}/messages`);
+            if (res.data.success) setMessages(res.data.messages);
+        } catch (e) { console.error(e); }
     };
 
-    const handleFactoryReset = async () => {
-        const confirm1 = window.confirm('⚠ FACTORY RESET WARNING ⚠\n\nThis will Delete EVERYTHING:\n- All Messages\n- All Chat Rooms (Public/Group/Private)\n- All Group Settings\n\nAre you absolutely sure?');
-        if (!confirm1) return;
-
-        const confirm2 = window.confirm('Last Chance: This action cannot be undone. Type "RESET" to confirm.');
-        if (!confirm2) return;
-
-        try {
-            const response = await api.delete('/chat/admin/factory-reset');
-            if (response.data.success) {
-                showToast(response.data.message, 'success');
-                // Refresh data
-                fetchData();
-            }
-        } catch (error) {
-            console.error('Factory reset error:', error);
-            showToast('Failed to factory reset', 'error');
-        }
-    };
-
-    const getFilteredRooms = () => {
-        if (filter === 'all') return rooms;
-        return rooms.filter(room => room.type === filter);
-    };
-
-    const filteredRooms = getFilteredRooms();
-
-    // ... (rest of filtering logic) ...
+    const filteredRooms = filter === 'all' ? rooms : rooms.filter(r => r.type === filter);
 
     return (
-        <div className="p-6">
-            <div className="flex flex-col gap-6">
+        <div className="relative min-h-screen" style={PAGE_BG}>
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-violet-600/6 blur-3xl" />
+                <div className="absolute bottom-[5%] right-[-5%] w-[400px] h-[400px] rounded-full bg-fuchsia-600/6 blur-3xl" />
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <div className="flex justify-between items-center">
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
-                        <Button onClick={() => navigate('/admin/dashboard')} variant="secondary" className="p-2 rounded-full">
-                            <IoArrowBack size={24} />
-                        </Button>
-                        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                            <IoChatbubbles className="text-blue-500" />
-                            Discussion Management
-                        </h1>
-                    </div>
-                    <Button onClick={fetchData} variant="secondary" className="flex items-center gap-2">
-                        <IoRefresh /> Refresh
-                    </Button>
-                </div>
-
-                {/* Configuration Panel */}
-                <Card className="bg-gradient-to-r from-gray-800 to-gray-900 border-gray-700">
-                    <div className="p-4">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                            <IoSettings className="text-gray-400" />
-                            System Configuration
-                        </h3>
-                        <div className="flex flex-wrap gap-4">
-                            <div className="flex items-center gap-3">
-                                <div
-                                    onClick={handleGlobalToggle}
-                                    className={`w-16 h-8 rounded-full p-1 cursor-pointer transition-colors duration-300 ease-in-out ${isGlobalChatEnabled ? 'bg-green-500' : 'bg-red-500'}`}
-                                >
-                                    <div className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${isGlobalChatEnabled ? 'translate-x-8' : 'translate-x-0'}`}></div>
-                                </div>
-                                <span className={`font-semibold ${isGlobalChatEnabled ? 'text-green-400' : 'text-red-400'}`}>
-                                    {isGlobalChatEnabled ? 'Chat Enabled' : 'Chat Offline'}
-                                </span>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/admin')}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                            <IoArrowBack size={16} /> Back
+                        </motion.button>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <div className="p-1.5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg"><IoChatbubbles size={14} className="text-white" /></div>
+                                <span className="text-xs font-bold uppercase tracking-widest text-violet-400">Admin</span>
                             </div>
-
-                            <div className="w-px bg-gray-600 mx-2 hidden md:block"></div>
-
-                            <Button
-                                onClick={handlePurgeAll}
-                                className="bg-orange-600 hover:bg-orange-700 text-white min-w-[200px]"
-                            >
-                                <IoTrash className="inline mr-2" />
-                                Clear Messages Only
-                            </Button>
-
-                            <Button
-                                onClick={handleFactoryReset}
-                                className="bg-red-900 hover:bg-red-800 text-red-100 border border-red-500/50 min-w-[200px]"
-                            >
-                                <IoWarning className="inline mr-2" />
-                                FACTORY RESET ALL
-                            </Button>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white">Discussion Management</h1>
                         </div>
                     </div>
-                </Card>
+                    <motion.button whileHover={{ scale: 1.05 }} onClick={fetchData}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                        <IoRefresh size={16} /> Refresh
+                    </motion.button>
+                </motion.div>
 
-                {/* Main Tabs */}
-                <div className="flex gap-4 mb-6 border-b border-gray-700 pb-2">
-                    <button
-                        onClick={() => setActiveTab('rooms')}
-                        className={`px-4 py-2 rounded-t-lg font-bold transition-colors ${activeTab === 'rooms' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        Chat Rooms
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`px-4 py-2 rounded-t-lg font-bold transition-colors ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        User Management
-                    </button>
+                {/* Config Panel */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}
+                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-6">
+                    <div className="flex items-center gap-2 mb-4">
+                        <IoSettings size={16} className="text-gray-500" />
+                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">System Configuration</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {/* Global toggle */}
+                        <div className="flex items-center gap-3">
+                            <div onClick={handleGlobalToggle}
+                                className={`w-14 h-7 rounded-full p-0.5 cursor-pointer transition-colors duration-300 ${isGlobalChatEnabled ? 'bg-green-500' : 'bg-gray-700'}`}>
+                                <div className={`bg-white w-6 h-6 rounded-full shadow transition-transform duration-300 ${isGlobalChatEnabled ? 'translate-x-7' : 'translate-x-0'}`} />
+                            </div>
+                            <span className={`font-semibold text-sm ${isGlobalChatEnabled ? 'text-green-400' : 'text-red-400'}`}>
+                                {isGlobalChatEnabled ? 'Chat Enabled' : 'Chat Offline'}
+                            </span>
+                        </div>
+                        <div className="w-px h-6 bg-white/10 hidden sm:block" />
+                        <motion.button whileHover={{ scale: 1.04 }} onClick={handlePurgeAll}
+                            className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-xl text-sm font-semibold transition-all">
+                            <IoTrash size={14} /> Clear Messages Only
+                        </motion.button>
+                        <motion.button whileHover={{ scale: 1.04 }} onClick={handleFactoryReset}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 rounded-xl text-sm font-semibold transition-all">
+                            <IoWarning size={14} /> Factory Reset All
+                        </motion.button>
+                    </div>
+                </motion.div>
+
+                {/* Tabs */}
+                <div className="flex gap-2 mb-5">
+                    {[
+                        { key: 'rooms', label: 'Chat Rooms', icon: IoGridOutline },
+                        { key: 'users', label: 'User Management', icon: IoPeopleOutline },
+                    ].map(({ key, label, icon: Icon }) => (
+                        <button key={key} onClick={() => setActiveTab(key)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === key
+                                ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25'
+                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                            <Icon size={15} /> {label}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Room List & Sub-filters */}
+                {/* Room List */}
                 {activeTab === 'rooms' && (
                     <>
-                        {/* Filters */}
-                        <div className="flex gap-2 mb-6">
-                            {['all', 'public', 'group', 'private'].map(type => (
-                                <button
-                                    key={type}
-                                    onClick={() => setFilter(type)}
-                                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors capitalize ${filter === type
-                                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                                        : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600'
-                                        }`}
-                                >
-                                    {type}
+                        <div className="flex gap-2 mb-5 flex-wrap">
+                            {['all', 'public', 'group', 'private'].map(t => (
+                                <button key={t} onClick={() => setFilter(t)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all ${filter === t
+                                        ? 'bg-white/15 border border-white/20 text-white'
+                                        : 'bg-white/5 border border-white/10 text-gray-500 hover:bg-white/10'}`}>
+                                    {t}
                                 </button>
                             ))}
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {filteredRooms.map(room => (
-                                <Card key={room._id} className={`relative overflow-hidden ${room.isDisabled ? 'opacity-75 grayscale' : ''}`}>
-                                    {room.isDisabled && (
-                                        <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">DISABLED</div>
-                                    )}
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-white text-lg">
-                                                {room.type === 'private' ? 'Private Chat' : room.name}
-                                            </h3>
-                                            <p className="text-gray-400 text-sm">
-                                                {room.type === 'private'
-                                                    ? room.participants?.map(p => p.name).join(', ')
-                                                    : `${room.participants?.length || 0} members`}
-                                            </p>
+                        {loading ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {[...Array(6)].map((_, i) => <div key={i} className="bg-white/3 border border-white/8 rounded-2xl h-28 animate-pulse" />)}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {filteredRooms.map(room => (
+                                    <motion.div key={room._id} whileHover={{ y: -3 }}
+                                        className={`bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden ${room.isDisabled ? 'opacity-60' : ''}`}>
+                                        <div className={`h-px w-full bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-gray-500 to-slate-500'}`} />
+                                        <div className="p-4">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    {room.isDisabled && <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-bold mb-1 inline-block">DISABLED</span>}
+                                                    <h3 className="font-bold text-white text-sm truncate">{room.type === 'private' ? 'Private Chat' : room.name}</h3>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        {room.type === 'private' ? room.participants?.map(p => p.name).join(', ') : `${room.participants?.length || 0} members`}
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-1 shrink-0">
+                                                    <button onClick={() => openMonitor(room)} className="p-1.5 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all" title="View"><IoEye size={15} /></button>
+                                                    <button onClick={() => handleDisableRoom(room._id)} className={`p-1.5 rounded-lg transition-all ${room.isDisabled ? 'text-green-400 bg-green-500/10 hover:bg-green-500/20' : 'text-orange-400 bg-orange-500/10 hover:bg-orange-500/20'}`} title={room.isDisabled ? 'Enable' : 'Disable'}>
+                                                        {room.isDisabled ? <IoCheckmarkCircle size={15} /> : <IoBan size={15} />}
+                                                    </button>
+                                                    <button onClick={() => handleDeleteRoom(room._id)} className="p-1.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-all" title="Delete"><IoTrash size={15} /></button>
+                                                </div>
+                                            </div>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-2 inline-block capitalize bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-gray-500 to-slate-500'} bg-clip-text text-transparent border border-white/10`}>{room.type}</span>
                                         </div>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => openMonitor(room)}
-                                                className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/40"
-                                                title="View Messages"
-                                            >
-                                                <IoEye />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDisableRoom(room._id)}
-                                                className={`p-2 rounded ${room.isDisabled ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}`}
-                                                title={room.isDisabled ? "Enable" : "Disable"}
-                                            >
-                                                {room.isDisabled ? <IoCheckmarkCircle /> : <IoBan />}
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteRoom(room._id)}
-                                                className="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/40"
-                                                title="Delete Permanently"
-                                            >
-                                                <IoTrash />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
                     </>
                 )}
 
-                {/* Student List */}
                 {activeTab === 'users' && <StudentChatList />}
 
-                {/* Message Monitor Modal */}
+                {/* Monitor Modal */}
                 <AnimatePresence>
                     {showMonitor && selectedRoom && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50"
-                        >
-                            <ChatMonitor
-                                room={selectedRoom}
-                                messages={messages}
-                                onClose={() => setShowMonitor(false)}
-                                onDeleteMessage={(msgId) => setMessages(prev => prev.filter(m => m._id !== msgId))}
-                            />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50">
+                            <ChatMonitor room={selectedRoom} messages={messages} onClose={() => setShowMonitor(false)}
+                                onDeleteMessage={id => setMessages(prev => prev.filter(m => m._id !== id))} />
                         </motion.div>
                     )}
                 </AnimatePresence>

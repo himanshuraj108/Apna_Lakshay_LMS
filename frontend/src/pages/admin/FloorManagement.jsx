@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import useShifts from '../../hooks/useShifts'; // New hook
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Badge from '../../components/ui/Badge';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import useShifts from '../../hooks/useShifts';
+import Modal from '../../components/ui/Modal';
 import RoomGrid from '../../components/admin/RoomGrid';
 import AddSeatModal from '../../components/admin/AddSeatModal';
 import EditSeatModal from '../../components/admin/EditSeatModal';
@@ -13,11 +10,13 @@ import RoomLayoutModal from '../../components/admin/RoomLayoutModal';
 import UpdateRoomPricesModal from '../../components/admin/UpdateRoomPricesModal';
 import UpdateFloorPricesModal from '../../components/admin/UpdateFloorPricesModal';
 import api from '../../utils/api';
-import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoBedOutline, IoRefresh, IoAdd, IoTrash } from 'react-icons/io5';
+import { IoArrowBack, IoSaveOutline, IoSettingsOutline, IoDownload, IoRefresh, IoAdd, IoTrash, IoLayersOutline } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import Modal from '../../components/ui/Modal';
+
+const PAGE_BG = { background: '#050508' };
+const INPUT = 'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-700';
 
 // Add Room Modal Component
 const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
@@ -49,28 +48,21 @@ const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-gray-900 border border-white/10 rounded-xl p-6 w-full max-w-md">
-                <h3 className="text-xl font-bold mb-4">Add New Room</h3>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-sm text-gray-400 mb-1">Room Name</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="input w-full"
-                            placeholder="e.g. Study Hall A"
-                            required
-                        />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                className="bg-white/4 border border-white/10 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                <div className="h-px w-full bg-gradient-to-r from-blue-500 to-cyan-500 mb-5 -mt-1 -mx-0 rounded-t-2xl" />
+                <h3 className="text-lg font-black text-white mb-5">Add New Room</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Room Name</label>
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={INPUT} placeholder="e.g. Study Hall A" required />
                     </div>
-                    <div className="flex justify-end gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">
-                            {loading ? 'Creating...' : 'Create Room'}
-                        </button>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/25 disabled:opacity-50 transition-all">{loading ? 'Creating…' : 'Create Room'}</button>
                     </div>
                 </form>
-            </div>
+            </motion.div>
         </div>
     );
 };
@@ -102,39 +94,25 @@ const AddFloorModal = ({ isOpen, onClose, onAdd }) => {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <div className="bg-gray-900 border border-white/10 rounded-xl p-6 w-full max-w-md">
-                <h3 className="text-xl font-bold mb-4">Add New Floor</h3>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-sm text-gray-400 mb-1">Floor Name</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="input w-full"
-                            placeholder="e.g. Ground Floor"
-                            required
-                        />
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                className="bg-white/4 border border-white/10 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                <div className="h-px w-full bg-gradient-to-r from-indigo-500 to-purple-500 mb-5 -mt-1 rounded-t-2xl" />
+                <h3 className="text-lg font-black text-white mb-5">Add New Floor</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Floor Name</label>
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={INPUT} placeholder="e.g. Ground Floor" required />
                     </div>
-                    <div className="mb-4">
-                        <label className="block text-sm text-gray-400 mb-1">Floor Level (Number)</label>
-                        <input
-                            type="number"
-                            value={level}
-                            onChange={(e) => setLevel(e.target.value)}
-                            className="input w-full"
-                            placeholder="e.g. 0 for Ground, 1 for First"
-                            required
-                        />
+                    <div>
+                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Floor Level (Number)</label>
+                        <input type="number" value={level} onChange={(e) => setLevel(e.target.value)} className={INPUT} placeholder="e.g. 0 for Ground, 1 for First" required />
                     </div>
-                    <div className="flex justify-end gap-3">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">
-                            {loading ? 'Creating...' : 'Create Floor'}
-                        </button>
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all">{loading ? 'Creating…' : 'Create Floor'}</button>
                     </div>
                 </form>
-            </div>
+            </motion.div>
         </div>
     );
 };
@@ -371,178 +349,147 @@ const FloorManagement = () => {
     };
 
     return (
-        <div className="min-h-screen p-6 min-w-[1024px]">
-            <div className="max-w-7xl mx-auto">
-                <Link to="/admin">
-                    <Button variant="secondary" className="mb-6">
-                        <IoArrowBack className="inline mr-2" /> Back to Dashboard
-                    </Button>
-                </Link>
-
-                <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        Floor & Seat Management
-                    </h1>
-                    <Button variant="secondary" onClick={fetchFloors}>
-                        <IoRefresh className="inline mr-2" /> Refresh Data
-                    </Button>
-                </div>
+        <div className="relative min-h-screen" style={PAGE_BG}>
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-indigo-600/6 blur-3xl" />
+                <div className="absolute bottom-[5%] right-[-5%] w-[400px] h-[400px] rounded-full bg-blue-600/6 blur-3xl" />
+            </div>
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                        <Link to="/admin">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                <IoArrowBack size={16} /> Back
+                            </motion.button>
+                        </Link>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg"><IoLayersOutline size={14} className="text-white" /></div>
+                                <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Admin</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white">Floor & Seat Management</h1>
+                        </div>
+                    </div>
+                    <motion.button whileHover={{ scale: 1.05 }} onClick={fetchFloors}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                        <IoRefresh size={16} /> Refresh Data
+                    </motion.button>
+                </motion.div>
 
                 {loading ? (
-                    <SkeletonLoader type="card" count={3} />
+                    <div className="space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/3 rounded-2xl animate-pulse" />)}</div>
                 ) : (
                     <>
                         {/* Bulk Price Update */}
-                        <Card className="mb-6">
-                            <h3 className="text-xl font-bold mb-4">Bulk Price Update</h3>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                            className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-5">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Bulk Price Update</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
                                 {shifts.map(shift => (
                                     <div key={shift.id}>
-                                        <label className="block text-sm font-medium text-gray-400 mb-2">{shift.name} (₹)</label>
-                                        <input
-                                            type="number"
-                                            value={bulkPrices[shift.id] || ''}
+                                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">{shift.name} (₹)</label>
+                                        <input type="number" value={bulkPrices[shift.id] || ''}
                                             onChange={(e) => setBulkPrices({ ...bulkPrices, [shift.id]: parseInt(e.target.value) || 0 })}
-                                            className="input w-full"
-                                            placeholder="Price"
-                                        />
+                                            className={INPUT} placeholder="Price" />
                                     </div>
                                 ))}
-
-                                {/* Always allow Full Day update if needed, or maybe treat it as a shift? 
-                                    If 'full' is not in shifts list, we might want to keep it optionally. 
-                                    But for strict consistency, let's keep it if logic demands, otherwise assume shifts cover it. 
-                                    Let's keep 'Full Day' distinct if it's not a shift, ensuring backward compat.
-                                */}
-
-
-                                <Button onClick={handleBulkPriceUpdate} disabled={updating || shifts.length === 0} className="w-full">
-                                    <IoSaveOutline className="inline mr-2" /> Update All
-                                </Button>
+                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                    onClick={handleBulkPriceUpdate} disabled={updating || shifts.length === 0}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-40 transition-all">
+                                    <IoSaveOutline size={15} /> Update All
+                                </motion.button>
                             </div>
-                        </Card>
+                        </motion.div>
 
                         {/* Shift Filter & Floor Selector */}
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                            {/* Shift Filter */}
-                            <div className="flex items-center gap-3 bg-white/5 p-2 rounded-lg border border-white/10">
-                                <span className="text-sm font-medium text-gray-400 whitespace-nowrap px-2">View Shift:</span>
-                                <select
-                                    value={selectedShiftFilter}
-                                    onChange={(e) => setSelectedShiftFilter(e.target.value)}
-                                    className="bg-gray-900 border border-white/20 rounded px-3 py-1 text-sm outline-none focus:border-blue-500"
-                                >
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-5">
+                            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-xl">
+                                <span className="text-xs text-gray-500 whitespace-nowrap">Shift:</span>
+                                <select value={selectedShiftFilter} onChange={(e) => setSelectedShiftFilter(e.target.value)}
+                                    className="bg-transparent border-none text-sm text-white outline-none">
                                     <option value="">All / Overview</option>
-                                    {shifts.map(shift => (
-                                        <option key={shift.id} value={shift.id}>{shift.name} ({getShiftTimeRange(shift)})</option>
-                                    ))}
+                                    {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({getShiftTimeRange(s)})</option>)}
                                     <option value="full">Full Day Only</option>
                                 </select>
                             </div>
-
-                            {/* Floor Tabs */}
-                            <div className="flex gap-2 overflow-x-auto pb-2 flex-1 justify-end">
+                            <div className="flex gap-2 overflow-x-auto pb-1 flex-1 justify-end">
                                 {floors.map((floor, index) => (
-                                    <button
-                                        key={floor._id}
-                                        onClick={() => setSelectedFloor(index)}
-                                        className={`px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap text-sm ${selectedFloor === index
-                                            ? 'bg-gradient-primary shadow-lg'
-                                            : 'bg-white/10 hover:bg-white/20'
-                                            }`}
-                                    >
+                                    <button key={floor._id} onClick={() => setSelectedFloor(index)}
+                                        className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${selectedFloor === index ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg shadow-indigo-500/25' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
                                         {floor.name}
                                     </button>
                                 ))}
                             </div>
-                            <Button variant="primary" onClick={() => setAddFloorModal(true)} className="ml-2 whitespace-nowrap">
-                                <IoAdd className="inline" /> Floor
-                            </Button>
-                            <button
-                                onClick={() => handleDeleteFloor(floors[selectedFloor]._id)}
-                                className="ml-2 p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
-                                title="Delete Floor"
-                            >
-                                <IoTrash size={20} />
-                            </button>
+                            <motion.button whileHover={{ scale: 1.05 }} onClick={() => setAddFloorModal(true)}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-bold shadow-lg whitespace-nowrap">
+                                <IoAdd size={16} /> Floor
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleDeleteFloor(floors[selectedFloor]._id)}
+                                className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl transition-all" title="Delete Floor">
+                                <IoTrash size={18} />
+                            </motion.button>
                         </div>
 
                         {/* Floor Details */}
                         {floors[selectedFloor] && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold">Rooms</h3>
-                                    <button
+                            <div className="space-y-5">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Rooms</h3>
+                                    <motion.button whileHover={{ scale: 1.05 }}
                                         onClick={() => setAddRoomModal({ isOpen: true, floorId: floors[selectedFloor]._id })}
-                                        className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center gap-2"
-                                    >
-                                        <IoAdd size={20} /> Add Room
-                                    </button>
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/25 text-blue-400 rounded-xl text-sm font-semibold transition-all">
+                                        <IoAdd size={16} /> Add Room
+                                    </motion.button>
                                 </div>
 
                                 {floors[selectedFloor].rooms.map((room) => (
-                                    <Card key={room._id}>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <h2 className="text-2xl font-bold">{room.name}</h2>
-                                            <div className="flex gap-2 items-center">
-                                                <button
-                                                    onClick={() => handleDeleteRoom(room._id)}
-                                                    className="p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white"
-                                                    title="Delete Room"
-                                                >
-                                                    <IoTrash size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => setUpdateRoomPricesModal({ isOpen: true, room })}
-                                                    className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded-lg transition-colors text-sm font-semibold"
-                                                >
-                                                    Update Room Prices
-                                                </button>
-                                                <button
-                                                    onClick={() => setRoomLayoutModal({ isOpen: true, room })}
-                                                    className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm flex items-center gap-2"
-                                                >
-                                                    <IoSettingsOutline size={16} />
-                                                    Configure
-                                                </button>
-                                                <Badge variant="green">{room.seats.length} Seats</Badge>
+                                    <div key={room._id} className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                                        <div className="h-px bg-gradient-to-r from-blue-500/60 to-indigo-500/60" />
+                                        <div className="p-5">
+                                            <div className="flex justify-between items-center mb-5 flex-wrap gap-3">
+                                                <h2 className="text-lg font-black text-white">{room.name}</h2>
+                                                <div className="flex flex-wrap gap-2 items-center">
+                                                    <span className="text-[10px] bg-white/5 border border-white/10 text-gray-400 px-2.5 py-1 rounded-full font-bold">{room.seats.length} Seats</span>
+                                                    <button onClick={() => setUpdateRoomPricesModal({ isOpen: true, room })}
+                                                        className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-xs font-semibold transition-all">Update Prices</button>
+                                                    <button onClick={() => setRoomLayoutModal({ isOpen: true, room })}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-xl text-xs transition-all">
+                                                        <IoSettingsOutline size={13} /> Configure
+                                                    </button>
+                                                    <button onClick={() => handleDeleteRoom(room._id)}
+                                                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl transition-all" title="Delete Room">
+                                                        <IoTrash size={14} />
+                                                    </button>
+                                                </div>
                                             </div>
+                                            <RoomGrid
+                                                room={room}
+                                                onAddSeat={(wall) => handleAddSeat(wall, room._id, floors[selectedFloor]._id)}
+                                                onEditSeat={handleEditSeat}
+                                                onDeleteSeat={handleDeleteSeat}
+                                                onSeatClick={handleSeatClick}
+                                            />
                                         </div>
-
-                                        <div className="text-xs text-gray-500 mb-2">DEBUG: {room.seats?.length || 0} seats</div>
-                                        <RoomGrid
-                                            room={room}
-                                            onAddSeat={(wall) => handleAddSeat(wall, room._id, floors[selectedFloor]._id)}
-                                            onEditSeat={handleEditSeat}
-                                            onDeleteSeat={handleDeleteSeat}
-                                            onSeatClick={handleSeatClick}
-                                        />
-                                    </Card>
+                                    </div>
                                 ))}
 
                                 {/* Summary */}
-                                <Card>
-                                    <h3 className="text-xl font-bold mb-4">Floor Summary</h3>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="bg-white/5 rounded-lg p-4">
-                                            <p className="text-gray-400 text-sm">Total Seats</p>
-                                            <p className="text-3xl font-bold">{floors[selectedFloor].rooms.reduce((acc, room) => acc + room.seats.length, 0)}</p>
-                                        </div>
-                                        <div className="bg-white/5 rounded-lg p-4">
-                                            <p className="text-gray-400 text-sm">Occupied</p>
-                                            <p className="text-3xl font-bold text-red-400">
-                                                {floors[selectedFloor].rooms.reduce((acc, room) => acc + room.seats.filter(s => s.isOccupied).length, 0)}
-                                            </p>
-                                        </div>
-                                        <div className="bg-white/5 rounded-lg p-4">
-                                            <p className="text-gray-400 text-sm">Available</p>
-                                            <p className="text-3xl font-bold text-green-400">
-                                                {floors[selectedFloor].rooms.reduce((acc, room) => acc + room.seats.filter(s => !s.isOccupied).length, 0)}
-                                            </p>
-                                        </div>
+                                <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Floor Summary</h3>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {[
+                                            { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.length, 0), color: 'text-white' },
+                                            { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-400' },
+                                            { label: 'Available', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-400' },
+                                        ].map(({ label, value, color }) => (
+                                            <div key={label} className="bg-white/5 rounded-xl p-4">
+                                                <p className="text-xs text-gray-500 mb-1">{label}</p>
+                                                <p className={`text-3xl font-black ${color}`}>{value}</p>
+                                            </div>
+                                        ))}
                                     </div>
-                                </Card>
+                                </div>
                             </div>
                         )}
                     </>
@@ -569,21 +516,15 @@ const FloorManagement = () => {
 
                             </ul>
                         </div>
-                        <div className="flex justify-end gap-3">
-                            <Button
-                                variant="secondary"
-                                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-                                disabled={updating}
-                            >
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} disabled={updating}
+                                className="px-4 py-2 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all disabled:opacity-50">
                                 Cancel
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={executeBulkUpdate}
-                                disabled={updating}
-                            >
-                                {updating ? 'Updating...' : 'Confirm Update'}
-                            </Button>
+                            </button>
+                            <button onClick={executeBulkUpdate} disabled={updating}
+                                className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all">
+                                {updating ? 'Updating…' : 'Confirm Update'}
+                            </button>
                         </div>
                     </div>
                 </Modal>
@@ -668,28 +609,19 @@ const FloorManagement = () => {
                                 </div>
 
                                 {/* Download buttons (only for first card) */}
-                                <div className="flex flex-col sm:flex-row gap-4 w-full">
-                                    <Button
-                                        variant="secondary"
-                                        className="flex-1"
-                                        onClick={() => setShowIdCardModal(false)}
-                                    >
+                                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                                    <button onClick={() => setShowIdCardModal(false)}
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all">
                                         Close
-                                    </Button>
-                                    <Button
-                                        variant="primary"
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700"
-                                        onClick={handleDownloadPNG}
-                                    >
-                                        <IoDownload className="inline mr-2" /> Download PNG (First Card)
-                                    </Button>
-                                    <Button
-                                        variant="primary"
-                                        className="flex-1 bg-red-600 hover:bg-red-700"
-                                        onClick={handleDownloadPDF}
-                                    >
-                                        <IoDownload className="inline mr-2" /> Download PDF (First Card)
-                                    </Button>
+                                    </button>
+                                    <button onClick={handleDownloadPNG}
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2">
+                                        <IoDownload size={15} /> Download PNG
+                                    </button>
+                                    <button onClick={handleDownloadPDF}
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/25 transition-all flex items-center justify-center gap-2">
+                                        <IoDownload size={15} /> Download PDF
+                                    </button>
                                 </div>
                             </>
                         )}

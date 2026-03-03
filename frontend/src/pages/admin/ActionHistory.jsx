@@ -1,295 +1,179 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
-import Card from '../../components/ui/Card';
-import Badge from '../../components/ui/Badge';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import { Link } from 'react-router-dom';
-import Button from '../../components/ui/Button';
-import { FaHistory, FaSearch, FaFilter, FaCalendarAlt, FaUser, FaInfoCircle, FaTrash, FaEraser } from 'react-icons/fa';
-import { IoArrowBack } from 'react-icons/io5';
+import {
+    IoArrowBack, IoSearch, IoFilter, IoCalendarOutline,
+    IoPersonOutline, IoInformationCircleOutline, IoTrashOutline,
+    IoTimeOutline, IoChevronDownOutline
+} from 'react-icons/io5';
+
+const PAGE_BG = { background: '#050508' };
+const INPUT = "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 outline-none transition-all placeholder-gray-700";
+
+const ACTION_STYLES = {
+    student_created: { label: 'Student Created', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
+    student_updated: { label: 'Student Updated', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+    student_deleted_soft: { label: 'Soft Deleted', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+    student_deleted_hard: { label: 'Hard Deleted', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+    seat_assigned: { label: 'Seat Assigned', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+    seat_freed: { label: 'Seat Freed', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+    fee_marked_paid: { label: 'Fee Paid', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
+    request_approved: { label: 'Req. Approved', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
+    request_rejected: { label: 'Req. Rejected', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+    notification_sent: { label: 'Notif. Sent', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+    attendance_marked: { label: 'Attendance', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+};
 
 const ActionHistory = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({
-        startDate: '',
-        endDate: '',
-        action: '',
-        search: ''
-    });
+    const [filters, setFilters] = useState({ startDate: '', endDate: '', action: '', search: '' });
 
-    useEffect(() => {
-        fetchLogs();
-    }, [filters]);
+    useEffect(() => { fetchLogs(); }, [filters]);
 
     const fetchLogs = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const queryParams = new URLSearchParams();
-            if (filters.startDate) queryParams.append('startDate', filters.startDate);
-            if (filters.endDate) queryParams.append('endDate', filters.endDate);
-            if (filters.action) queryParams.append('action', filters.action);
-            if (filters.search) queryParams.append('search', filters.search);
-
-            const response = await api.get(`/admin/action-history?${queryParams.toString()}`);
-            if (response.data.success) {
-                setLogs(response.data.logs);
-            }
-        } catch (error) {
-            console.error('Error fetching action logs:', error);
-        } finally {
-            setLoading(false);
-        }
+            const q = new URLSearchParams();
+            if (filters.startDate) q.append('startDate', filters.startDate);
+            if (filters.endDate) q.append('endDate', filters.endDate);
+            if (filters.action) q.append('action', filters.action);
+            if (filters.search) q.append('search', filters.search);
+            const res = await api.get(`/admin/action-history?${q}`);
+            if (res.data.success) setLogs(res.data.logs);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to permanently delete this log entry?')) {
-            try {
-                const response = await api.delete(`/admin/action-history/${id}`);
-                if (response.data.success) {
-                    setLogs(prev => prev.filter(log => log._id !== id));
-                }
-            } catch (error) {
-                console.error('Error deleting log:', error);
-                alert('Failed to delete log entry');
-            }
-        }
+        if (!window.confirm('Delete this log entry permanently?')) return;
+        try {
+            await api.delete(`/admin/action-history/${id}`);
+            setLogs(prev => prev.filter(l => l._id !== id));
+        } catch (e) { alert('Failed to delete log'); }
     };
 
     const handleClearHistory = async () => {
-        if (window.confirm('WARNING: Are you sure you want to DELETE ALL action history logs? This cannot be undone.')) {
-            try {
-                const response = await api.delete('/admin/action-history/clear');
-                if (response.data.success) {
-                    setLogs([]);
-                    alert('All history cleared successfully');
-                }
-            } catch (error) {
-                console.error('Error clearing history:', error);
-                alert('Failed to clear history');
-            }
-        }
+        if (!window.confirm('Delete ALL action history? This cannot be undone.')) return;
+        try {
+            await api.delete('/admin/action-history/clear');
+            setLogs([]);
+        } catch (e) { alert('Failed to clear history'); }
     };
 
-
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
-        setFilters(prev => ({ ...prev, [name]: value }));
-    };
-
-    const getActionBadge = (action) => {
-        const styles = {
-            student_created: 'success',
-            student_updated: 'warning',
-            student_deleted_soft: 'warning',
-            student_deleted_hard: 'danger',
-            seat_assigned: 'purple',
-            seat_freed: 'warning',
-            fee_marked_paid: 'success',
-            request_approved: 'success',
-            request_rejected: 'danger',
-            notification_sent: 'info',
-            attendance_marked: 'primary'
-        };
-
-        const labels = {
-            student_created: 'Student Created',
-            student_updated: 'Student Updated',
-            student_deleted_soft: 'Soft Deleted',
-            student_deleted_hard: 'Hard Deleted',
-            seat_assigned: 'Seat Assigned',
-            seat_freed: 'Seat Freed',
-            fee_marked_paid: 'Fee Paid',
-            request_approved: 'Request Approved',
-            request_rejected: 'Request Rejected',
-            notification_sent: 'Notification Sent',
-            attendance_marked: 'Attendance Marked'
-        };
-
-        return <Badge variant={styles[action] || 'default'}>{labels[action] || action}</Badge>;
-    };
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+    const set = (k, v) => setFilters(p => ({ ...p, [k]: v }));
+    const fmt = (d) => new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div className="space-y-6 min-w-[1024px]">
-            <div className="flex justify-between items-center">
-                <div>
-                    <Link to="/admin">
-                        <Button variant="secondary" className="mb-4">
-                            <IoArrowBack className="inline mr-2" /> Back to Dashboard
-                        </Button>
-                    </Link>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
-                        Action History
-                    </h1>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="danger"
-                        onClick={handleClearHistory}
-                        className="flex items-center gap-2 bg-red-600/80 hover:bg-red-600 text-sm py-2"
-                        disabled={loading || logs.length === 0}
-                    >
-                        <FaTrash size={16} /> Clear All History
-                    </Button>
-                    <div className="text-gray-400 text-sm">
-                        Showing last 100 actions
-                    </div>
-                </div>
+        <div className="relative min-h-screen" style={PAGE_BG}>
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] left-[-6%] w-[500px] h-[500px] rounded-full bg-purple-600/6 blur-3xl" />
+                <div className="absolute bottom-[10%] right-[-6%] w-[400px] h-[400px] rounded-full bg-indigo-600/6 blur-3xl" />
             </div>
 
-            {/* Filters */}
-            <Card className="p-4">
-                <div className="grid grid-cols-4 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-400 flex items-center gap-2">
-                            <FaSearch /> Search
-                        </label>
-                        <input
-                            type="text"
-                            name="search"
-                            value={filters.search}
-                            onChange={handleFilterChange}
-                            placeholder="Search by name or details..."
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
-                        />
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+                {/* Header */}
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                        <Link to="/admin">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                <IoArrowBack size={16} /> Back
+                            </motion.button>
+                        </Link>
+                        <div>
+                            <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Admin</span>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white">Action History</h1>
+                        </div>
                     </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-400 flex items-center gap-2">
-                            <FaFilter /> Action Type
-                        </label>
-                        <select
-                            name="action"
-                            value={filters.action}
-                            onChange={handleFilterChange}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
-                        >
-                            <option value="">All Actions</option>
-                            <option value="student_created">Student Created</option>
-                            <option value="student_updated">Student Updated</option>
-                            <option value="seat_assigned">Seat Assigned</option>
-                            <option value="fee_marked_paid">Fee Paid</option>
-                            <option value="request_approved">Request Approved</option>
-                            <option value="notification_sent">Notification Sent</option>
-                        </select>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-600">Showing last 100 actions</span>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            onClick={handleClearHistory} disabled={loading || logs.length === 0}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold disabled:opacity-40 transition-all">
+                            <IoTrashOutline size={15} /> Clear All
+                        </motion.button>
                     </div>
+                </motion.div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-400 flex items-center gap-2">
-                            <FaCalendarAlt /> Start Date
-                        </label>
-                        <input
-                            type="date"
-                            name="startDate"
-                            value={filters.startDate}
-                            onChange={handleFilterChange}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
-                        />
+                {/* Filters */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
+                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div>
+                            <label className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1.5"><IoSearch size={10} /> Search</label>
+                            <input value={filters.search} onChange={e => set('search', e.target.value)} placeholder="Name or details…" className={INPUT} />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1.5"><IoFilter size={10} /> Action Type</label>
+                            <select value={filters.action} onChange={e => set('action', e.target.value)} className={INPUT} style={{ background: '#0d0d10' }}>
+                                <option value="">All Actions</option>
+                                {Object.entries(ACTION_STYLES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1.5"><IoCalendarOutline size={10} /> Start Date</label>
+                            <input type="date" value={filters.startDate} onChange={e => set('startDate', e.target.value)} className={INPUT} />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1.5"><IoCalendarOutline size={10} /> End Date</label>
+                            <input type="date" value={filters.endDate} onChange={e => set('endDate', e.target.value)} className={INPUT} />
+                        </div>
                     </div>
+                </motion.div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm text-gray-400 flex items-center gap-2">
-                            <FaCalendarAlt /> End Date
-                        </label>
-                        <input
-                            type="date"
-                            name="endDate"
-                            value={filters.endDate}
-                            onChange={handleFilterChange}
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
-                        />
-                    </div>
-                </div>
-            </Card>
-
-            {/* Logs Table */}
-            {loading ? (
-                <div className="space-y-4">
-                    {[1, 2, 3, 4, 5].map(i => <SkeletonLoader key={i} height="60px" />)}
-                </div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="text-gray-400 border-b border-white/10">
-                                <th className="p-4 font-medium">Time</th>
-                                <th className="p-4 font-medium">Admin</th>
-                                <th className="p-4 font-medium">Action</th>
-                                <th className="p-4 font-medium">Target</th>
-                                <th className="p-4 font-medium">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {logs.length > 0 ? (
-                                logs.map((log) => (
-                                    <motion.tr
-                                        key={log._id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="hover:bg-white/5 transition-colors"
-                                    >
-                                        <td className="p-4 text-sm text-gray-300">
-                                            {formatDate(log.createdAt)}
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-2 text-purple-300">
-                                                <FaUser className="text-xs" />
-                                                {log.adminName}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            {getActionBadge(log.action)}
-                                        </td>
-                                        <td className="p-4 text-gray-300">
-                                            {log.targetName || '-'}
-                                            {log.targetModel && (
-                                                <span className="text-xs text-gray-500 block">
-                                                    {log.targetModel}
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="p-4 text-gray-400 text-sm">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <div className="flex items-start gap-2 max-w-xs">
-                                                    <FaInfoCircle className="mt-1 flex-shrink-0 text-gray-500" />
-                                                    <span className="truncate hover:whitespace-normal transition-all duration-300">
-                                                        {log.details}
-                                                    </span>
-                                                </div>
-                                                <Button
-                                                    variant="danger"
-                                                    onClick={() => handleDelete(log._id)}
-                                                    className="!p-2 flex-shrink-0"
-                                                    title="Delete Log"
-                                                >
-                                                    <FaTrash size={14} />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </motion.tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colspan="5" className="p-8 text-center text-gray-400">
-                                        No actions found matching your criteria.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                {/* Table */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                    {loading ? (
+                        <div className="p-6 space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="h-12 bg-white/3 rounded-xl animate-pulse" />)}</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-white/8">
+                                        {['Time', 'Admin', 'Action', 'Target', 'Details', ''].map(h => (
+                                            <th key={h || 'del'} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-gray-500 text-left">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {logs.length === 0 ? (
+                                        <tr><td colSpan={6} className="py-12 text-center text-gray-500">No actions match your criteria</td></tr>
+                                    ) : logs.map(log => {
+                                        const a = ACTION_STYLES[log.action] || { label: log.action, color: 'text-gray-400 bg-white/5 border-white/10' };
+                                        return (
+                                            <motion.tr key={log._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                                className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                <td className="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap"><IoTimeOutline className="inline mr-1" size={12} />{fmt(log.createdAt)}</td>
+                                                <td className="px-5 py-3.5">
+                                                    <span className="flex items-center gap-1.5 text-purple-300 text-sm"><IoPersonOutline size={14} />{log.adminName}</span>
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${a.color}`}>{a.label}</span>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-sm text-gray-300">
+                                                    {log.targetName || '–'}
+                                                    {log.targetModel && <span className="text-[10px] text-gray-600 block">{log.targetModel}</span>}
+                                                </td>
+                                                <td className="px-5 py-3.5 max-w-xs">
+                                                    <span className="text-xs text-gray-500 line-clamp-2"><IoInformationCircleOutline className="inline mr-1" size={12} />{log.details}</span>
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleDelete(log._id)}
+                                                        className="p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all">
+                                                        <IoTrashOutline size={15} />
+                                                    </motion.button>
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </motion.div>
+            </div>
         </div>
     );
 };

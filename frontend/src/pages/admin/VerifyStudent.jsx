@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { motion } from 'framer-motion';
-import { FaCheckCircle, FaTimesCircle, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import { IoCheckmarkCircle, IoCloseCircle, IoAlertCircle, IoArrowBack } from 'react-icons/io5';
 
 const VerifyStudent = () => {
     const { id } = useParams();
@@ -12,179 +12,112 @@ const VerifyStudent = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
+        if (!id) return;
         const verifyStudent = async () => {
             try {
-                // In a real app, you might want a specific public endpoint or use the admin getStudentById
-                // For now, assuming admin is logged in or this is a public verification endpoint
-                // We'll use the existing admin endpoint. If checking as public, robust backend changes needed.
-                // Assuming Admin Scan context as requested.
-
-                const response = await api.get(`/admin/students/${id}`);
-                if (response.data.success) {
-                    setStudent(response.data.student);
-                } else {
-                    setError('Student not found');
-                }
-            } catch (err) {
-                console.error('Verification failed:', err);
-                setError(err.response?.data?.message || 'Verification Failed');
-            } finally {
-                setLoading(false);
-            }
+                const res = await api.get(`/admin/students/${id}`);
+                if (res.data.success) setStudent(res.data.student);
+                else setError('Student not found');
+            } catch (e) { setError(e.response?.data?.message || 'Verification Failed'); }
+            finally { setLoading(false); }
         };
-
-        if (id) {
-            verifyStudent();
-        }
+        verifyStudent();
     }, [id]);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-                <div className="text-center">
-                    <FaSpinner className="animate-spin text-4xl text-blue-500 mx-auto mb-4" />
-                    <p>Verifying Student Identity...</p>
-                </div>
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center" style={{ background: '#050508' }}>
+            <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                <p className="text-gray-500 text-sm">Verifying identity…</p>
             </div>
-        );
-    }
+        </div>
+    );
 
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white p-4">
-                <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="bg-red-500/10 border border-red-500/50 rounded-2xl p-8 max-w-md w-full text-center backdrop-blur-md"
-                >
-                    <FaTimesCircle className="text-6xl text-red-500 mx-auto mb-6" />
-                    <h1 className="text-3xl font-bold text-red-400 mb-2">Verification Failed</h1>
-                    <p className="text-gray-300 mb-6">{error}</p>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="bg-gray-800 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors"
-                    >
-                        Go Home
-                    </button>
-                </motion.div>
-            </div>
-        );
-    }
+    if (error) return (
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#050508' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                className="bg-red-500/8 border border-red-500/25 rounded-2xl p-8 max-w-md w-full text-center">
+                <IoCloseCircle size={56} className="text-red-400 mx-auto mb-4" />
+                <h1 className="text-2xl font-black text-red-400 mb-2">Verification Failed</h1>
+                <p className="text-gray-400 text-sm mb-6">{error}</p>
+                <button onClick={() => navigate('/')} className="px-6 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                    Go Home
+                </button>
+            </motion.div>
+        </div>
+    );
 
-    // Determine valid status
     const isPending = !student?.seat;
     const isInactive = !student?.isActive;
 
-    const getStatusTheme = () => {
-        if (isInactive) return {
-            color: 'red',
-            bgColor: 'bg-red-500',
-            shadow: 'shadow-red-500/30',
-            icon: <FaTimesCircle className="text-5xl text-white" />,
-            title: 'Inactive Member',
-            subtitle: 'Membership Expired or Disabled',
-            badge: 'bg-red-500/20 text-red-400 border border-red-500/30'
-        };
-        if (isPending) return {
-            color: 'yellow',
-            bgColor: 'bg-yellow-500',
-            shadow: 'shadow-yellow-500/30',
-            icon: <FaExclamationTriangle className="text-5xl text-white" />,
-            title: 'Pending Allocation',
-            subtitle: 'Waiting for Seat Assignment',
-            badge: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-        };
-        return {
-            color: 'green',
-            bgColor: 'bg-green-500',
-            shadow: 'shadow-green-500/30',
-            icon: <FaCheckCircle className="text-5xl text-white" />,
-            title: 'Verified Student',
-            subtitle: 'Official Apna Lakshay Member',
-            badge: 'bg-green-500/20 text-green-400 border border-green-500/30'
-        };
-    };
+    const THEME = isInactive
+        ? { icon: IoCloseCircle, iconColor: 'text-red-400', bg: 'from-red-600 to-rose-600', glow: 'rgba(239,68,68,0.35)', badge: 'text-red-400 bg-red-500/10 border-red-500/20', label: 'INACTIVE', title: 'Inactive Member', sub: 'Membership Expired or Disabled', orb1: 'bg-red-500/8', orb2: 'bg-orange-500/8' }
+        : isPending
+            ? { icon: IoAlertCircle, iconColor: 'text-yellow-400', bg: 'from-yellow-500 to-amber-500', glow: 'rgba(245,158,11,0.35)', badge: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20', label: 'PENDING', title: 'Pending Allocation', sub: 'Waiting for Seat Assignment', orb1: 'bg-yellow-500/8', orb2: 'bg-orange-500/8' }
+            : { icon: IoCheckmarkCircle, iconColor: 'text-green-400', bg: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.35)', badge: 'text-green-400 bg-green-500/10 border-green-500/20', label: 'ACTIVE', title: 'Verified Student', sub: 'Official Apna Lakshay Member', orb1: 'bg-blue-500/8', orb2: 'bg-purple-500/8' };
 
-    const theme = getStatusTheme();
+    const Icon = THEME.icon;
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4 relative overflow-hidden">
-            {/* Background Effects */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className={`absolute -top-[20%] -left-[20%] w-[50%] h-[50%] ${isInactive ? 'bg-red-500/20' : isPending ? 'bg-yellow-500/20' : 'bg-blue-500/20'} rounded-full blur-[100px]`}></div>
-                <div className={`absolute -bottom-[20%] -right-[20%] w-[50%] h-[50%] ${isInactive ? 'bg-orange-500/20' : isPending ? 'bg-orange-500/20' : 'bg-purple-500/20'} rounded-full blur-[100px]`}></div>
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: '#050508' }}>
+            <div className="fixed inset-0 pointer-events-none">
+                <div className={`absolute -top-[20%] -left-[20%] w-[50%] h-[50%] ${THEME.orb1} rounded-full blur-3xl`} />
+                <div className={`absolute -bottom-[20%] -right-[20%] w-[50%] h-[50%] ${THEME.orb2} rounded-full blur-3xl`} />
             </div>
 
-            <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 max-w-md w-full shadow-2xl relative z-10"
-            >
-                <div className="text-center mb-8">
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
-                        className={`w-24 h-24 ${theme.bgColor} rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${theme.shadow}`}
-                    >
-                        {theme.icon}
+            <motion.div initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 80 }}
+                className="bg-white/4 backdrop-blur-2xl border border-white/10 rounded-3xl p-7 max-w-md w-full relative z-10 shadow-2xl">
+
+                {/* Status header */}
+                <div className="text-center mb-7">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 180, damping: 12, delay: 0.15 }}
+                        className={`w-20 h-20 bg-gradient-to-br ${THEME.bg} rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl`}
+                        style={{ boxShadow: `0 0 40px 0 ${THEME.glow}` }}>
+                        <Icon size={40} className="text-white" />
                     </motion.div>
-                    <h1 className="text-3xl font-bold text-white mb-1">{theme.title}</h1>
-                    <p className={`font-medium tracking-wider uppercase text-sm opacity-80`} style={{ color: theme.color === 'yellow' ? '#facc15' : theme.color === 'red' ? '#f87171' : '#4ade80' }}>
-                        {theme.subtitle}
-                    </p>
+                    <h1 className="text-2xl font-black text-white mb-1">{THEME.title}</h1>
+                    <p className={`text-xs font-bold uppercase tracking-widest ${THEME.iconColor}`}>{THEME.sub}</p>
                 </div>
 
-                <div className="bg-black/20 rounded-xl p-6 mb-8 border border-white/5">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/20 bg-gray-700 shrink-0">
+                {/* Info card */}
+                <div className="bg-black/20 border border-white/5 rounded-2xl p-5 mb-6">
+                    <div className="flex items-center gap-4 mb-5">
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/15 bg-white/5 shrink-0">
                             {student?.profileImage ? (
-                                <img src={student.profileImage} alt={student?.name} className="w-full h-full object-cover" />
+                                <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full flex items-center justify-center text-xl font-bold text-gray-400">
+                                <div className="w-full h-full flex items-center justify-center text-2xl font-black text-gray-400">
                                     {student?.name?.charAt(0)}
                                 </div>
                             )}
                         </div>
-                        <div className="text-left">
-                            <h2 className="text-2xl font-bold text-white">{student?.name}</h2>
-                            <p className="text-blue-300 text-sm">{student?.email}</p>
+                        <div>
+                            <h2 className="text-xl font-black text-white">{student?.name}</h2>
+                            <p className="text-blue-300 text-xs">{student?.email}</p>
                         </div>
                     </div>
-
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-center py-2 border-b border-white/10">
-                            <span className="text-gray-400 text-sm">Status</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${theme.badge}`}>
-                                {isInactive ? 'INACTIVE' : isPending ? 'PENDING' : 'ACTIVE'}
-                            </span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-white/10">
-                            <span className="text-gray-400 text-sm">Seat Number</span>
-                            <span className="text-white font-mono font-bold">{student?.seat?.number || 'Not Assigned'}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-white/10">
-                            <span className="text-gray-400 text-sm">Membership ID</span>
-                            <span className="text-white font-mono text-xs">{student?._id?.toUpperCase()}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-white/10">
-                            <span className="text-gray-400 text-sm">Monthly Fee</span>
-                            <span className="text-white font-bold text-lg">₹{student?.seat?.price || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between items-center pt-2">
-                            <span className="text-gray-400 text-sm">Joined</span>
-                            <span className="text-white text-sm">{student?.createdAt ? new Date(student.createdAt).toLocaleDateString() : 'N/A'}</span>
-                        </div>
+                    <div className="space-y-2.5">
+                        {[
+                            { label: 'Status', value: <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${THEME.badge}`}>{THEME.label}</span> },
+                            { label: 'Seat Number', value: student?.seat?.number || 'Not Assigned' },
+                            { label: 'Membership ID', value: <span className="font-mono text-[10px]">{student?._id?.toUpperCase()}</span> },
+                            { label: 'Monthly Fee', value: `₹${student?.seat?.price || 'N/A'}` },
+                            { label: 'Joined', value: student?.createdAt ? new Date(student.createdAt).toLocaleDateString('en-IN') : 'N/A' },
+                        ].map(({ label, value }) => (
+                            <div key={label} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                                <span className="text-gray-500 text-xs">{label}</span>
+                                <span className="text-white text-sm font-medium">{value}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                <button
-                    onClick={() => navigate('/admin/dashboard')}
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-colors shadow-lg shadow-blue-600/20"
-                >
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                    onClick={() => navigate('/admin')}
+                    className={`w-full py-3 bg-gradient-to-r ${THEME.bg} text-white font-bold rounded-xl text-sm shadow-lg transition-all`}
+                    style={{ boxShadow: `0 6px 20px -4px ${THEME.glow}` }}>
                     Back to Dashboard
-                </button>
+                </motion.button>
             </motion.div>
         </div>
     );
