@@ -53,17 +53,163 @@ const QrKiosk = () => {
         // No auto-refresh (Manual only based on user request)
     }, []);
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         const canvas = document.getElementById('kiosk-qr');
-        if (canvas) {
-            const pngUrl = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-            let downloadLink = document.createElement("a");
-            downloadLink.href = pngUrl;
-            downloadLink.download = `kiosk_qr_${new Date().getTime()}.png`;
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        }
+        if (!canvas) return;
+
+        const { jsPDF } = await import('jspdf');
+
+        const qrDataUrl = canvas.toDataURL('image/png');
+
+        // A5 portrait (148 x 210 mm)
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+        const W = 148;
+        const H = 210;
+
+        // ── Background ──────────────────────────────────────────────
+        pdf.setFillColor(10, 12, 28);
+        pdf.rect(0, 0, W, H, 'F');
+
+        // ── Top accent bar ───────────────────────────────────────────
+        pdf.setFillColor(59, 130, 246);
+        pdf.rect(0, 0, W, 2, 'F');
+
+        // ── Decorative glow circles ──────────────────────────────────
+        pdf.setFillColor(59, 130, 246);
+        pdf.setGState(pdf.GState({ opacity: 0.07 }));
+        pdf.circle(-20, -20, 60, 'F');
+        pdf.setFillColor(168, 85, 247);
+        pdf.circle(W + 20, H + 20, 60, 'F');
+        pdf.setGState(pdf.GState({ opacity: 1 }));
+
+        // ── Title ────────────────────────────────────────────────────
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(22);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('Apna Lakshay Library', W / 2, 22, { align: 'center' });
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text('Smart Attendance System', W / 2, 29, { align: 'center' });
+
+        pdf.setDrawColor(255, 255, 255);
+        pdf.setLineWidth(0.2);
+        pdf.setGState(pdf.GState({ opacity: 0.15 }));
+        pdf.line(20, 33, W - 20, 33);
+        pdf.setGState(pdf.GState({ opacity: 1 }));
+
+        // ── "Mark Attendance here" headline ─────────────────────────
+        const headY = 38;
+        pdf.setFontSize(15);
+
+        const word1 = 'Mark ';
+        const word2 = 'Attendance';
+        const word3 = ' here';
+
+        pdf.setFont('helvetica', 'normal');
+        const w1 = pdf.getTextWidth(word1);
+        pdf.setFont('helvetica', 'bold');
+        const w2 = pdf.getTextWidth(word2);
+        pdf.setFont('helvetica', 'normal');
+        const w3 = pdf.getTextWidth(word3);
+
+        const totalW = w1 + w2 + w3;
+        const startX = (W - totalW) / 2;
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(word1, startX, headY);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(96, 165, 250);
+        pdf.text(word2, startX + w1, headY);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(word3, startX + w1 + w2, headY);
+
+        // ── Divider ──────────────────────────────────────────────────
+        pdf.setDrawColor(255, 255, 255);
+        pdf.setLineWidth(0.15);
+        pdf.setGState(pdf.GState({ opacity: 0.10 }));
+        pdf.line(30, headY + 5, W - 30, headY + 5);
+        pdf.setGState(pdf.GState({ opacity: 1 }));
+
+        // ── 4 numbered steps ─────────────────────────────────────────
+        const steps = [
+            { num: '1', title: 'Open Website', url: 'apnalakshay.com', desc: '' },
+            { num: '2', title: 'Scan QR Code', url: '', desc: 'Tap the scanner icon in the attendance section.' },
+            { num: '3', title: 'Tap Scanner', url: '', desc: 'Allow camera access and point it at the QR.' },
+            { num: '4', title: 'Scan & Done!', url: '', desc: 'Your attendance is marked automatically.' },
+        ];
+
+        let stepY = headY + 15;
+        const circleX = 22;
+        const textColX = 35;
+
+        steps.forEach((step) => {
+            // Filled circle badge
+            pdf.setFillColor(59, 130, 246);
+            pdf.setGState(pdf.GState({ opacity: 0.85 }));
+            pdf.circle(circleX, stepY - 1.5, 5, 'F');
+            pdf.setGState(pdf.GState({ opacity: 1 }));
+
+            // Number inside circle
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text(step.num, circleX, stepY - 0.2, { align: 'center' });
+
+            // Step title
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(10);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text(step.title, textColX, stepY - 1.5);
+
+            if (step.url) {
+                // Big violet URL on its own line below the title
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(18);
+                pdf.setTextColor(167, 139, 250);
+                pdf.text(step.url, textColX, stepY + 8);
+                stepY += 20;   // tighter advance for URL step
+            } else {
+                // Regular description
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.setTextColor(148, 163, 184);
+                pdf.text(step.desc, textColX, stepY + 3.5);
+                stepY += 14;   // tighter advance for regular steps
+            }
+        });
+
+        // ── QR Code card (bottom section) ────────────────────────────
+        const footerH = 6;
+        const qrSize = 52;          // smaller so it fits: stepY~130 + 10gap + 52 + 4pad + 6footer = ~202, OK
+        const qrX = (W - qrSize) / 2;
+        const qrY = stepY + 10;     // tight but visible gap
+
+        // Clamp: if QR would overflow, warn (shouldn't happen with size=60)
+        // White glow shadow
+        pdf.setFillColor(255, 255, 255);
+        pdf.setGState(pdf.GState({ opacity: 0.06 }));
+        pdf.roundedRect(qrX - 7, qrY - 7, qrSize + 14, qrSize + 14, 6, 6, 'F');
+        pdf.setGState(pdf.GState({ opacity: 1 }));
+
+        // White card
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8, 4, 4, 'F');
+
+        pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+        // ── Bottom accent bars only (no text footer) ─────────────────
+        pdf.setFillColor(59, 130, 246);
+        pdf.rect(0, H - 4, W, 2, 'F');
+        pdf.setFillColor(168, 85, 247);
+        pdf.rect(0, H - 2, W, 2, 'F');
+
+        pdf.save(`kiosk_qr_${new Date().getTime()}.pdf`);
     };
 
     return (
@@ -140,7 +286,7 @@ const QrKiosk = () => {
                                 className="w-full py-3 text-lg shadow-lg hover:shadow-gray-500/25"
                             >
                                 <IoDownload className="mr-2" />
-                                Download
+                                PDF
                             </Button>
                             <Button
                                 variant="primary"
