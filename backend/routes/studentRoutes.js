@@ -16,7 +16,8 @@ const {
     changePassword,
     getAvailableShifts,
     requestSeatChange,
-    markAttendanceByQr
+    markAttendanceByQr,
+    markSelfAttendance
 } = require('../controllers/studentController');
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
@@ -51,6 +52,7 @@ router.get('/seat', getMySeat);
 // Attendance
 router.get('/attendance', authorizeActive, getAttendance);
 router.post('/attendance/qr-scan', authorizeActive, markAttendanceByQr);
+router.post('/attendance/mark-self', authorizeActive, markSelfAttendance);
 
 // Fees
 router.get('/fees', getFees);

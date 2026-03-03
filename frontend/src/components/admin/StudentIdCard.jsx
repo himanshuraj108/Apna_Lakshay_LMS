@@ -119,8 +119,8 @@ const StudentIdCard = ({ student }) => {
                         <div className="text-left">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Joined Date</p>
                             <p className="font-medium text-gray-700 text-xs">
-                                {student.seatAssignedAt || student.seat?.assignedAt || student.createdAt
-                                    ? new Date(student.seatAssignedAt || student.seat?.assignedAt || student.createdAt).toLocaleDateString('en-GB', {
+                                {student.createdAt
+                                    ? new Date(student.createdAt).toLocaleDateString('en-GB', {
                                         day: '2-digit', month: 'short', year: '2-digit'
                                     })
                                     : 'N/A'

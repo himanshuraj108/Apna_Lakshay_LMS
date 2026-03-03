@@ -129,11 +129,15 @@ const AttendanceManagement = () => {
 
         setAttendance(prev => {
             const current = prev[studentId] || { status: 'absent', entryTime: '', exitTime: '', notes: '' };
+            const newStatus = current.status === 'present' ? 'absent' : 'present';
+
             return {
                 ...prev,
                 [studentId]: {
                     ...current,
-                    status: current.status === 'present' ? 'absent' : 'present'
+                    status: newStatus,
+                    entryTime: newStatus === 'absent' ? '' : current.entryTime,
+                    exitTime: newStatus === 'absent' ? '' : current.exitTime,
                 }
             };
         });
@@ -189,7 +193,7 @@ const AttendanceManagement = () => {
             const updated = { ...prev };
             Object.keys(updated).forEach(id => {
                 // Only mark students with seats (though absent is default/fine for no-seat too)
-                updated[id] = { ...updated[id], status: 'absent' };
+                updated[id] = { ...updated[id], status: 'absent', entryTime: '', exitTime: '' };
             });
             return updated;
         });
@@ -223,8 +227,24 @@ const AttendanceManagement = () => {
         }
     };
 
-    const presentCount = Object.values(attendance).filter(s => s?.status === 'present').length;
-    const absentCount = students.length - presentCount;
+    // Filter students so we don't show students who joined AFTER the selected date
+    const filteredStudents = students.filter(student => {
+        if (!student.createdAt) return true; // Legacy fallback
+        const admissionDate = new Date(student.createdAt);
+        admissionDate.setHours(0, 0, 0, 0);
+
+        const currentSelectedDate = new Date(selectedDate);
+        currentSelectedDate.setHours(0, 0, 0, 0);
+
+        return currentSelectedDate >= admissionDate;
+    });
+
+    const presentCount = Object.keys(attendance).filter(id => {
+        const studentInFiltered = filteredStudents.find(s => s._id === id);
+        return studentInFiltered && attendance[id]?.status === 'present';
+    }).length;
+
+    const absentCount = filteredStudents.length - presentCount;
 
     return (
         <div className="min-h-screen p-6">
@@ -323,13 +343,13 @@ const AttendanceManagement = () => {
                     <SkeletonLoader type="table" count={1} />
                 ) : (
                     <Card className="bg-transparent border-0 p-0 shadow-none">
-                        {students.length === 0 ? (
+                        {filteredStudents.length === 0 ? (
                             <div className="bg-gray-800 rounded-xl p-8 text-center border border-white/10">
-                                <p className="text-gray-400">No active students found</p>
+                                <p className="text-gray-400">No active students found for this date</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {students.map((student) => {
+                                {filteredStudents.map((student) => {
                                     const data = attendance[student._id] || { status: 'absent' };
                                     const isPresent = data.status === 'present';
                                     const hasSeat = !!student.seat;
@@ -360,15 +380,22 @@ const AttendanceManagement = () => {
                                                 <div className="flex-1">
                                                     <h3 className="font-bold text-lg text-white">{student.name}</h3>
                                                     <p className="text-sm text-gray-400">{student.email}</p>
-                                                    {student.seat ? (
-                                                        <Badge variant="blue" className="mt-2 text-xs">
-                                                            Seat: {student.seat.number}
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge variant="yellow" className="mt-2 text-xs animate-pulse">
-                                                            Pending Allocation ⚠️
-                                                        </Badge>
-                                                    )}
+                                                    <div className="flex gap-2 mt-2">
+                                                        {student.seat ? (
+                                                            <Badge variant="blue" className="text-xs">
+                                                                Seat: {student.seat.number}
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="yellow" className="text-xs animate-pulse">
+                                                                Pending Allocation ⚠️
+                                                            </Badge>
+                                                        )}
+                                                        {student.shift && (
+                                                            <Badge variant="purple" className="text-xs">
+                                                                {student.shift}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <div className={`rounded-full p-2 ${!hasSeat ? 'bg-yellow-500/20 text-yellow-400'
                                                     : isPresent ? 'bg-green-500/20 text-green-400'

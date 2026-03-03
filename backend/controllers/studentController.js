@@ -85,9 +85,12 @@ exports.getDashboard = async (req, res) => {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+        const studentJoinedDate = student.createdAt ? new Date(student.createdAt) : startOfMonth;
+        studentJoinedDate.setHours(0, 0, 0, 0);
+
         const attendanceRecords = await Attendance.find({
             student: studentId,
-            date: { $gte: startOfMonth, $lte: endOfMonth }
+            date: { $gte: studentJoinedDate, $lte: now }
         }).lean(); // Use lean() for faster query
 
         // Deduplicate attendance records (fix for multiple entries per day)
@@ -95,6 +98,11 @@ exports.getDashboard = async (req, res) => {
 
         attendanceRecords.forEach(record => {
             const dateKey = new Date(record.date).toDateString(); // Group by Calendar Day
+
+            // Do not count records before the student's admission date
+            const admissionDate = new Date(student.createdAt);
+            admissionDate.setHours(0, 0, 0, 0);
+            if (new Date(record.date) < admissionDate) return;
 
             if (!uniqueAttendanceMap.has(dateKey)) {
                 uniqueAttendanceMap.set(dateKey, record);
@@ -118,7 +126,22 @@ exports.getDashboard = async (req, res) => {
         const cleanAttendance = Array.from(uniqueAttendanceMap.values());
 
         const presentCount = cleanAttendance.filter(a => a.status === 'present').length;
-        const totalDays = cleanAttendance.length;
+
+        // Calculate true total working days possible for this student (Lifetime)
+        const calcStartDate = new Date(studentJoinedDate);
+        calcStartDate.setHours(0, 0, 0, 0);
+
+        // Upper bound is today
+        const calcEndDate = new Date(now.getTime());
+        calcEndDate.setHours(23, 59, 59, 999);
+
+        let totalDays = 0;
+        if (calcEndDate >= calcStartDate) {
+            // Difference in days (inclusive)
+            const diffTime = calcEndDate.getTime() - calcStartDate.getTime();
+            totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+
         const attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
         // Calculate Target Fee Month based on Rolling Cycle
@@ -297,10 +320,15 @@ exports.getAttendance = async (req, res) => {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-        // Get my attendance
+        // Get student to check admission date
+        const student = await User.findById(req.user.id).select('createdAt');
+        const admissionDate = new Date(student.createdAt);
+        admissionDate.setHours(0, 0, 0, 0);
+
+        // Get my ALL-TIME attendance
         const myAttendance = await Attendance.find({
             student: req.user.id,
-            date: { $gte: startOfMonth, $lte: endOfMonth }
+            date: { $gte: admissionDate, $lte: now }
         }).sort({ date: 1 });
 
         // Deduplicate attendance records (fix for multiple entries per day)
@@ -308,6 +336,9 @@ exports.getAttendance = async (req, res) => {
 
         myAttendance.forEach(record => {
             const dateKey = new Date(record.date).toDateString(); // Group by Calendar Day
+
+            // Do not count records before the student's admission date
+            if (new Date(record.date) < admissionDate) return;
 
             if (!uniqueAttendanceMap.has(dateKey)) {
                 uniqueAttendanceMap.set(dateKey, record);
@@ -332,20 +363,59 @@ exports.getAttendance = async (req, res) => {
         const cleanAttendance = Array.from(uniqueAttendanceMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
 
         const presentCount = cleanAttendance.filter(a => a.status === 'present').length;
-        const totalDays = cleanAttendance.length;
+
+        // Calculate true total working days possible for this student (Lifetime)
+        const calcStartDate = new Date(admissionDate);
+        calcStartDate.setHours(0, 0, 0, 0);
+
+        // Upper bound is today
+        const calcEndDate = new Date(now.getTime());
+        calcEndDate.setHours(23, 59, 59, 999);
+
+        let totalDays = 0;
+        if (calcEndDate >= calcStartDate) {
+            // Difference in days (inclusive)
+            const diffTime = calcEndDate.getTime() - calcStartDate.getTime();
+            totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        }
+
         const myPercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
         // Get all students' attendance for ranking
         const allStudents = await User.find({ role: 'student', isActive: true });
 
         const rankings = await Promise.all(allStudents.map(async (student) => {
-            const studentAttendance = await Attendance.find({
+            const admDate = new Date(student.createdAt);
+            admDate.setHours(0, 0, 0, 0);
+
+            let studentAttendance = await Attendance.find({
                 student: student._id,
-                date: { $gte: startOfMonth, $lte: endOfMonth }
+                date: { $gte: admDate, $lte: now }
             });
 
-            const studentPresent = studentAttendance.filter(a => a.status === 'present').length;
-            const studentTotal = studentAttendance.length;
+            // Deduplicate for ranking to prevent > 100% bug
+            const distinctDates = new Set();
+            studentAttendance.forEach(a => {
+                if (a.status === 'present') {
+                    distinctDates.add(new Date(a.date).toDateString());
+                }
+            });
+            const studentPresent = distinctDates.size;
+
+            // Calculate true total working days possible for this student this month
+            const calcStart = new Date(admDate);
+            calcStart.setHours(0, 0, 0, 0);
+
+            // Upper bound is today
+            const calcEnd = new Date(now.getTime());
+            calcEnd.setHours(23, 59, 59, 999);
+
+            let studentTotal = 0;
+            if (calcEnd >= calcStart) {
+                const diffTime = calcEnd.getTime() - calcStart.getTime();
+                studentTotal = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            }
+
             const percentage = studentTotal > 0 ? Math.round((studentPresent / studentTotal) * 100) : 0;
 
             return {
@@ -1195,6 +1265,124 @@ exports.markAttendanceByQr = async (req, res) => {
 
     } catch (error) {
         console.error('QR Scan Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Mark Attendance Self (No QR)
+// @route   POST /api/student/attendance/mark-self
+exports.markSelfAttendance = async (req, res) => {
+    try {
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+
+        const studentId = req.user.id;
+        const user = await User.findById(studentId);
+
+        if (!user.isActive) {
+            return res.status(403).json({ success: false, message: 'Your account is inactive.' });
+        }
+
+        const activeSession = await Attendance.findOne({
+            student: studentId, status: 'present', exitTime: null
+        }).sort({ date: -1 });
+
+        let attendance;
+        let message = '';
+        let type = '';
+        const now = getISTDate();
+
+        if (activeSession) {
+            attendance = activeSession;
+            const entryParts = attendance.entryTime.split(':');
+            const entryDate = new Date(attendance.date);
+            entryDate.setHours(parseInt(entryParts[0]), parseInt(entryParts[1]), 0);
+
+            const diffMs = now - entryDate;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 1) {
+                return res.status(400).json({ success: false, message: 'Wait 1 min before checking out.' });
+            }
+
+            attendance.exitTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            attendance.duration = diffMins;
+            await attendance.save();
+
+            const hours = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+            message = `Goodbye, ${user.name}! Exit marked. Duration: ${hours}h ${mins}m`;
+            type = 'exit';
+        } else {
+            const today = getISTDate();
+            today.setHours(0, 0, 0, 0);
+
+            const todayRecord = await Attendance.findOne({ student: studentId, date: today });
+            if (todayRecord && todayRecord.status === 'present' && todayRecord.exitTime) {
+                return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
+            }
+
+            const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            let shiftLabel = 'Self Marked';
+
+            // Check Shift Timing
+            const seat = await Seat.findOne({
+                'assignments.student': studentId,
+                'assignments.status': 'active'
+            }).populate('assignments.shift');
+
+            if (seat) {
+                const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+                if (assignment) {
+                    shiftLabel = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'Assigned');
+
+                    if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
+                        const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
+                        const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
+                        const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 30, 0, 0);
+                        const allowedEnd = getISTDate(); allowedEnd.setHours(eH, eM, 0, 0);
+
+                        if (allowedEnd < allowedStart) {
+                            if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
+                            else allowedEnd.setDate(allowedEnd.getDate() + 1);
+                        }
+                        if (now < allowedStart || now > allowedEnd) {
+                            return res.status(403).json({ success: false, message: `Entry allowed only 30 mins before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})` });
+                        }
+                    }
+                }
+            }
+
+            if (todayRecord) {
+                attendance = todayRecord;
+                attendance.status = 'present';
+                attendance.entryTime = entryTime;
+                attendance.exitTime = null;
+                attendance.duration = 0;
+                attendance.notes = `Self Checked In (was ${attendance.status})`;
+                await attendance.save();
+                message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
+            } else {
+                attendance = await Attendance.create({
+                    student: studentId,
+                    date: today,
+                    status: 'present',
+                    entryTime: entryTime,
+                    notes: `Self Checked In (${shiftLabel})`,
+                    markedBy: studentId,
+                    duration: 0
+                });
+                message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
+            }
+            type = 'entry';
+        }
+
+        res.status(200).json({ success: true, message, type, attendance });
+    } catch (error) {
+        console.error('Self Attendance Error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

@@ -34,7 +34,7 @@ const attendanceSchema = new mongoose.Schema({
     markedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        default: null   // optional — null for kiosk/self-scan, set for admin-marked
     },
     isActive: {
         type: Boolean,

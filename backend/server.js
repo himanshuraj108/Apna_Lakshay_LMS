@@ -143,8 +143,14 @@ app.set('io', io);
 // Initialize socket handlers
 socketHandler(io);
 
+// Initialize Scheduled Jobs
+const startCronJobs = require('./utils/cronJobs');
+
 // Start Server
 connectDB().then(() => {
+  // Start hourly/daily workers
+  startCronJobs();
+
   // Only listen if we are in a runtime that expects it (not Vercel serverless export)
   // However, for Render/VPS we MUST listen.
   // Standard Node pattern:

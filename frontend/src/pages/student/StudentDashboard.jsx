@@ -13,7 +13,7 @@ import {
     IoNewspaper, IoArrowForwardCircle,
     IoFlashOutline, IoStatsChartOutline, IoShieldCheckmarkOutline,
     IoDocumentTextOutline, IoSparklesOutline, IoLockClosedOutline,
-    IoLibraryOutline, IoAlertCircleOutline
+    IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoQrCode
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -187,10 +187,21 @@ const StudentDashboard = () => {
     const [showNewspaper, setShowNewspaper] = useState(false);
     const [showExamAlerts, setShowExamAlerts] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
+    const [showQuickAttendance, setShowQuickAttendance] = useState(false);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
 
+
+    useEffect(() => {
+        if (!loading) return; // Don't start timer if already loaded (or finished loading)
+
+        const timer = setTimeout(() => {
+            if (loading) setShowQuickAttendance(true);
+        }, 10000);
+
+        return () => clearTimeout(timer);
+    }, [loading]);
 
     useEffect(() => { fetchDashboardData(); }, []);
 
@@ -223,6 +234,20 @@ const StudentDashboard = () => {
         }
     };
 
+    const handleQuickAttendance = async () => {
+        try {
+            const res = await api.post('/student/attendance/mark-self');
+            if (res.data.success) {
+                setScanMessage({ type: 'success', text: res.data.message });
+                fetchDashboardData();
+                setTimeout(() => setScanMessage(null), 5000);
+            }
+        } catch (e) {
+            setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' });
+            setTimeout(() => setScanMessage(null), 5000);
+        }
+    };
+
     const attPct = dashboardData?.attendance?.percentage || 0;
     const attColor = attPct >= 75 ? 'from-green-400 to-emerald-500' : attPct >= 50 ? 'from-yellow-400 to-amber-500' : 'from-red-400 to-rose-500';
     const isActive = dashboardData ? dashboardData.isActive : user?.isActive;
@@ -231,11 +256,25 @@ const StudentDashboard = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen p-6">
+            <div className="min-h-screen p-6 relative flex flex-col pt-32">
                 <BackgroundOrbs />
-                <div className="relative z-10 max-w-6xl mx-auto">
+                <div className="relative z-10 max-w-6xl mx-auto w-full">
                     <SkeletonLoader type="card" count={4} />
+
+                    {/* Duplicate Scan Toast for Loading State */}
+                    <AnimatePresence>
+                        {scanMessage && (
+                            <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
+                                className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${scanMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
+                            >
+                                {scanMessage.type === 'success' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                                <p className="font-semibold text-sm">{scanMessage.text}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
+                {/* Mount the scanner in loading state too if triggered */}
+                {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
             </div>
         );
     }
@@ -246,6 +285,41 @@ const StudentDashboard = () => {
 
             {/* ── Modals ── */}
             <AnimatePresence>
+                {showQuickAttendance && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm text-center"
+                    >
+                        <div className="p-8 rounded-2xl border border-white/10 bg-gray-900 shadow-2xl max-w-sm w-full mx-auto relative overflow-hidden">
+                            <button
+                                onClick={() => setShowQuickAttendance(false)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                            >
+                                <IoCloseCircle size={24} />
+                            </button>
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-t-2xl" />
+                            <IoTimeOutline size={40} className="text-yellow-400 mx-auto mb-4 animate-pulse" />
+                            <h3 className="text-xl font-bold text-white mb-2">Network is slow?</h3>
+                            <p className="text-sm text-gray-400 mb-6">Open the scanner directly so you don't have to wait.</p>
+                            <button
+                                onClick={() => {
+                                    setShowQuickAttendance(false);
+                                    setShowScanner(true);
+                                }}
+                                className="w-full py-3.5 mb-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                            >
+                                <IoQrCode size={22} /> Open QR Scanner
+                            </button>
+                            <button
+                                onClick={() => setShowQuickAttendance(false)}
+                                className="w-full py-3 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                            >
+                                Continue to Dashboard
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+
                 {showIDCard && (
                     <IDCard
                         student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }}
