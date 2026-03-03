@@ -8,6 +8,7 @@ import {
     IoCalendarOutline, IoArrowDownCircleOutline
 } from 'react-icons/io5';
 import api from '../../utils/api';
+import { BooksNotesPageSkeleton } from '../../components/ui/SkeletonLoader';
 import Footer from '../../components/layout/Footer';
 
 const BG_STYLE = `
@@ -265,12 +266,7 @@ const NotesPage = () => {
                 </motion.form>
 
                 {/* Loading */}
-                {loading && (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <div className="w-12 h-12 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin" />
-                        <p className="text-gray-500 text-sm">Loading notes…</p>
-                    </div>
-                )}
+                {loading && <BooksNotesPageSkeleton variant="notes" />}
 
                 {/* Error */}
                 {error && !loading && (

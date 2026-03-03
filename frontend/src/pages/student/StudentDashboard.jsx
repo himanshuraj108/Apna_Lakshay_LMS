@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { DashboardSkeleton } from '../../components/ui/SkeletonLoader';
 import IDCard from '../../components/dashboard/IDCard';
 import api from '../../utils/api';
 import {
@@ -256,28 +256,28 @@ const StudentDashboard = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen p-6 relative flex flex-col pt-32">
+            <div className="relative min-h-screen" style={{ background: '#050508' }}>
                 <BackgroundOrbs />
-                <div className="relative z-10 max-w-6xl mx-auto w-full">
-                    <SkeletonLoader type="card" count={4} />
-
-                    {/* Duplicate Scan Toast for Loading State */}
-                    <AnimatePresence>
-                        {scanMessage && (
-                            <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-                                className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${scanMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
-                            >
-                                {scanMessage.type === 'success' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
-                                <p className="font-semibold text-sm">{scanMessage.text}</p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                <div className="relative z-10">
+                    <DashboardSkeleton />
                 </div>
-                {/* Mount the scanner in loading state too if triggered */}
+
+                {/* Scan toast can still show during loading */}
+                <AnimatePresence>
+                    {scanMessage && (
+                        <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
+                            className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${scanMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
+                        >
+                            {scanMessage.type === 'success' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                            <p className="font-semibold text-sm">{scanMessage.text}</p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
             </div>
         );
     }
+
 
     return (
         <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#050508' }}>
