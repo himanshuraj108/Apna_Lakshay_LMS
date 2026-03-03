@@ -83,7 +83,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color, glow, delay, to }) => 
 };
 
 // ─── Action Card ──────────────────────────────────────────────────────
-const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, badge }) => {
+const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, badge, live }) => {
     const inner = (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -96,6 +96,14 @@ const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, 
         >
             <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-0 group-hover:opacity-100 transition-opacity`} />
             <div className={`absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 blur-2xl transition-all duration-500`} />
+
+            {/* LIVE badge */}
+            {live && (
+                <span className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-red-500/15 border border-red-500/30 text-red-400 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
+                    LIVE
+                </span>
+            )}
 
             <div className={`relative shrink-0 p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform group-hover:scale-110 duration-300`} style={{ boxShadow: `0 8px 20px -4px ${glow}` }}>
                 <Icon size={22} className="text-white" />
@@ -118,7 +126,7 @@ const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, 
 };
 
 // ─── Learning Region Card ───────────────────────────────────────────────
-const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingSoon }) => {
+const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingSoon, newBeta }) => {
     const inner = (
         <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -132,16 +140,23 @@ const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingS
             <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${color} ${comingSoon ? 'opacity-30' : 'opacity-50 group-hover:opacity-100'
                 } transition-opacity`} />
 
+            {/* NEW badge */}
+            {newBeta && (
+                <span className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                    NEW
+                </span>
+            )}
+
             {/* glow blob */}
             {!comingSoon && (
                 <div className={`absolute -top-8 -right-8 w-28 h-28 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-15 blur-2xl transition-all duration-500`} />
             )}
 
-            {/* icon + coming-soon badge */}
+            {/* icon + badges */}
             <div className="relative">
                 <div
-                    className={`p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform duration-300 ${comingSoon ? '' : 'group-hover:scale-110'
-                        }`}
+                    className={`p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform duration-300 ${comingSoon ? '' : 'group-hover:scale-110'}`}
                     style={{ boxShadow: comingSoon ? 'none' : `0 8px 24px -4px ${glow}` }}
                 >
                     <Icon size={24} className="text-white" />
@@ -149,6 +164,11 @@ const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingS
                 {comingSoon && (
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 border border-white/10 rounded-full flex items-center justify-center">
                         <IoLockClosedOutline size={10} className="text-gray-300" />
+                    </span>
+                )}
+                {newBeta && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center text-white text-[11px] font-black border-2 border-gray-950">
+                        β
                     </span>
                 )}
             </div>
@@ -461,7 +481,7 @@ const StudentDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                        <ActionCard icon={IoScan} label="Scan Entry / Exit" desc="Mark attendance instantly" color="from-green-500 to-teal-500" glow="rgba(16,185,129,0.4)" delay={0.05} onClick={() => setShowScanner(true)} />
+                        <ActionCard icon={IoScan} label="Mark Attendance" desc="Scan QR to mark entry/exit" color="from-green-500 to-teal-500" glow="rgba(16,185,129,0.4)" delay={0.05} onClick={() => setShowScanner(true)} />
                         <ActionCard icon={IoIdCardOutline} label="Virtual ID Card" desc="View & download your card" color="from-indigo-500 to-purple-500" glow="rgba(99,102,241,0.4)" delay={0.1} onClick={() => setShowIDCard(true)} />
                         <ActionCard icon={IoChatbubblesOutline} label="Discussion Room" desc="Chat with fellow students" color="from-orange-500 to-red-500" glow="rgba(249,115,22,0.4)" delay={0.15} to="/student/chat" />
                         <ActionCard icon={IoNewspaper} label="Daily Newspaper" desc="Hindi & English papers" color="from-purple-500 to-violet-600" glow="rgba(168,85,247,0.4)" delay={0.2} onClick={() => setShowNewspaper(true)} />
@@ -470,7 +490,7 @@ const StudentDashboard = () => {
                         <ActionCard icon={IoHelpCircleOutline} label="Help & Support" desc="Report issues or get help" color="from-yellow-500 to-amber-500" glow="rgba(234,179,8,0.4)" delay={0.35} onClick={() => setShowSupportModal(true)}
                             badge={dashboardData?.requestsCount || 0}
                         />
-                        <ActionCard icon={IoAlertCircleOutline} label="Exam Alerts" desc="UPSC · SSC · IBPS · NTA live" color="from-orange-500 to-amber-400" glow="rgba(249,115,22,0.4)" delay={0.4} onClick={() => setShowExamAlerts(true)} />
+                        <ActionCard icon={IoAlertCircleOutline} label="Exam Alerts" desc="UPSC · SSC · IBPS · NTA live" color="from-orange-500 to-amber-400" glow="rgba(249,115,22,0.4)" delay={0.4} onClick={() => setShowExamAlerts(true)} live />
                     </div>
                 </motion.div>
 
@@ -516,6 +536,7 @@ const StudentDashboard = () => {
                             glow="rgba(245,158,11,0.45)"
                             delay={0.22}
                             to="/student/mock-test"
+                            newBeta
                         />
                     </div>
                 </motion.div>

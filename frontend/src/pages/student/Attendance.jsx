@@ -109,8 +109,9 @@ const Attendance = () => {
                     <div className="flex gap-3">
                         {user?.seat && (
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowScanner(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all">
-                                <IoScan size={16} /> Scan Entry/Exit
+                                className="relative flex items-center gap-2.5 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all">
+                                <span className="absolute inset-0 rounded-xl animate-pulse bg-white/5 pointer-events-none" />
+                                <IoScan size={18} /> Mark Attendance
                             </motion.button>
                         )}
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowAnalytics(!showAnalytics)}
