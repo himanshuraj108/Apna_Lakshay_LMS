@@ -118,7 +118,7 @@ Sends automated emails for:
 
 All emails are branded with premium HTML templates.
 
-## 🎨 UI/UX Highlights
+## UI/UX Highlights
 
 - **Premium Gradient Backgrounds**: Modern purple-to-pink gradients
 - **Glassmorphism**: Frosted glass effect cards
