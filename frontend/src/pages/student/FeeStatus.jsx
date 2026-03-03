@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { FeeStatusSkeleton } from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import { IoArrowBack, IoCash, IoTimeOutline, IoAlertCircleOutline, IoReceiptOutline, IoInformationCircleOutline, IoCheckmarkCircle } from 'react-icons/io5';
 
@@ -86,7 +86,7 @@ const FeeStatus = () => {
                     ))}
                 </div>
 
-                {loading ? <SkeletonLoader type="table" count={1} /> : (
+                {loading ? <FeeStatusSkeleton /> : (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
                         className="rounded-2xl border border-white/8 bg-white/3 backdrop-blur-xl p-6 mb-6">
                         <h2 className="text-xl font-bold mb-6 flex items-center gap-2">

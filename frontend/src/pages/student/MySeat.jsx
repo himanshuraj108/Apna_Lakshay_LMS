@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Badge from '../../components/ui/Badge';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { SeatSkeleton } from '../../components/ui/SkeletonLoader';
 import useShifts from '../../hooks/useShifts';
 import api from '../../utils/api';
 import { IoArrowBack, IoLocationOutline, IoTimeOutline, IoCash, IoCheckmarkCircle, IoSadOutline } from 'react-icons/io5';
@@ -44,9 +44,8 @@ const MySeat = () => {
         finally { setLoading(false); }
     };
 
-    if (loading) return (
-        <div className="min-h-screen p-6 bg-[#050508]"><div className="max-w-4xl mx-auto"><SkeletonLoader type="card" count={1} /></div></div>
-    );
+    if (loading) return <SeatSkeleton />;
+
 
     if (!seatData?.seat) return (
         <div className="min-h-screen text-white">

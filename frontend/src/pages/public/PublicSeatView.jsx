@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../../components/ui/Card';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { PublicSeatViewSkeleton } from '../../components/ui/SkeletonLoader';
 import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 import SeatDetailsModal from '../../components/student/SeatDetailsModal';
 import MaintenancePage from './MaintenancePage';
@@ -33,14 +33,14 @@ const PublicSeatView = () => {
     const handleSeatClick = (seat) => setSeatDetailsModal({ isOpen: true, seat });
 
     if (isMaintenance) return <MaintenancePage />;
+    if (loading) return <PublicSeatViewSkeleton />;
 
     return (
-        <div
-            className="min-h-screen p-6 min-w-[1280px] overflow-x-auto dark"
-            style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.09) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.07) 0%, transparent 55%), #030712' }}
-        >
+        <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto dark relative">
+            {/* ── Fixed full-screen background — blocks body CSS blobs ── */}
+            <div className="fixed inset-0 -z-10" style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.09) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.07) 0%, transparent 55%), #030712' }} />
             {/* Ambient blob */}
-            <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-600/8 blur-[140px] pointer-events-none" />
+            <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-600/8 blur-[140px] pointer-events-none -z-10" />
 
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
@@ -69,54 +69,48 @@ const PublicSeatView = () => {
                     </motion.button>
                 </Link>
 
-                {loading ? (
-                    <SkeletonLoader type="card" count={3} />
-                ) : (
-                    <>
-                        {/* Floor Selector */}
-                        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-                            {floors.map((floor, index) => (
-                                <button
-                                    key={floor._id}
-                                    onClick={() => setSelectedFloor(index)}
-                                    className={`px-6 py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap text-sm border ${selectedFloor === index
-                                            ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/25'
-                                            : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
-                                        }`}
-                                >
-                                    {floor.name}
-                                </button>
-                            ))}
-                        </div>
+                {/* Floor Selector */}
+                <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+                    {floors.map((floor, index) => (
+                        <button
+                            key={floor._id}
+                            onClick={() => setSelectedFloor(index)}
+                            className={`px-6 py-2.5 rounded-xl font-semibold transition-all whitespace-nowrap text-sm border ${selectedFloor === index
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/25'
+                                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                }`}
+                        >
+                            {floor.name}
+                        </button>
+                    ))}
+                </div>
 
-                        {/* Rooms */}
-                        {floors[selectedFloor] && (
-                            <div className="space-y-6">
-                                {floors[selectedFloor].rooms.map((room) => (
-                                    <Card key={room._id}>
-                                        <StudentRoomGrid room={room} onSeatClick={handleSeatClick} />
-                                    </Card>
-                                ))}
+                {/* Rooms */}
+                {floors[selectedFloor] && (
+                    <div className="space-y-6">
+                        {floors[selectedFloor].rooms.map((room) => (
+                            <Card key={room._id}>
+                                <StudentRoomGrid room={room} onSeatClick={handleSeatClick} />
+                            </Card>
+                        ))}
 
-                                {/* Floor Summary */}
-                                <div className="bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                                    <h3 className="text-lg font-bold text-white mb-5">Floor Summary</h3>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        {[
-                                            { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.length, 0), color: 'text-white' },
-                                            { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-400' },
-                                            { label: 'Available', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-400' },
-                                        ].map(({ label, value, color }) => (
-                                            <div key={label} className="bg-white/5 border border-white/8 rounded-xl p-4 text-center">
-                                                <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">{label}</p>
-                                                <p className={`text-3xl font-black ${color}`}>{value}</p>
-                                            </div>
-                                        ))}
+                        {/* Floor Summary */}
+                        <div className="bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold text-white mb-5">Floor Summary</h3>
+                            <div className="grid grid-cols-3 gap-4">
+                                {[
+                                    { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.length, 0), color: 'text-white' },
+                                    { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-400' },
+                                    { label: 'Available', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-400' },
+                                ].map(({ label, value, color }) => (
+                                    <div key={label} className="bg-white/5 border border-white/8 rounded-xl p-4 text-center">
+                                        <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">{label}</p>
+                                        <p className={`text-3xl font-black ${color}`}>{value}</p>
                                     </div>
-                                </div>
+                                ))}
                             </div>
-                        )}
-                    </>
+                        </div>
+                    </div>
                 )}
             </div>
 

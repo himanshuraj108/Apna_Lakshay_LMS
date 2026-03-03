@@ -1,159 +1,183 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoClose, IoTimeOutline, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoAlertCircleOutline } from 'react-icons/io5';
+import {
+    IoClose, IoTimeOutline, IoCheckmarkCircle, IoCloseCircle,
+    IoAlertCircleOutline, IoDocumentTextOutline, IoTrashOutline
+} from 'react-icons/io5';
 import api from '../../utils/api';
-import Badge from '../ui/Badge';
+
+const STATUS_MAP = {
+    approved: { label: 'Approved', color: 'bg-green-500/10 text-green-400 border-green-500/20' },
+    rejected: { label: 'Rejected', color: 'bg-red-500/10 text-red-400 border-red-500/20' },
+    withdrawn: { label: 'Withdrawn', color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' },
+    pending: { label: 'Pending', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+};
+
+const StatusPill = ({ status, type }) => {
+    const s = STATUS_MAP[status] || STATUS_MAP.pending;
+    const label = status === 'approved' && type === 'support' ? 'Solved' : s.label;
+    return (
+        <span className={`inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${s.color}`}>
+            {label}
+        </span>
+    );
+};
+
+const StatusIcon = ({ status }) => {
+    if (status === 'approved') return <IoCheckmarkCircle size={18} className="text-green-400 shrink-0" />;
+    if (status === 'rejected' || status === 'withdrawn') return <IoCloseCircle size={18} className="text-red-400 shrink-0" />;
+    return <IoTimeOutline size={18} className="text-amber-400 shrink-0" />;
+};
 
 const RequestHistoryModal = ({ isOpen, onClose }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (isOpen) {
-            fetchRequests();
-        }
+        if (isOpen) fetchRequests();
     }, [isOpen]);
 
     const fetchRequests = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/student/request');
-            setRequests(response.data.requests);
-        } catch (error) {
-            console.error('Error fetching requests:', error);
-        } finally {
-            setLoading(false);
-        }
+            const res = await api.get('/student/request');
+            setRequests(res.data.requests);
+        } catch { /* silent */ }
+        finally { setLoading(false); }
     };
 
-    const getStatusBadge = (status, type) => {
-        switch (status) {
-            case 'approved':
-                return <Badge variant="green">{type === 'support' ? 'Solved' : 'Approved'}</Badge>;
-            case 'rejected': return <Badge variant="red">Rejected</Badge>;
-            case 'withdrawn': return <Badge variant="gray">Withdrawn</Badge>;
-            default: return <Badge variant="yellow">Pending</Badge>;
-        }
-    };
-
-    const getIcon = (status) => {
-        switch (status) {
-            case 'approved': return <IoCheckmarkCircleOutline className="text-green-500 text-xl" />;
-            case 'rejected': return <IoCloseCircleOutline className="text-red-500 text-xl" />;
-            case 'withdrawn': return <IoCloseCircleOutline className="text-gray-500 text-xl" />;
-            default: return <IoTimeOutline className="text-yellow-500 text-xl" />;
-        }
+    const withdraw = async (id) => {
+        try {
+            await api.put(`/student/request/${id}/withdraw`);
+            fetchRequests();
+        } catch { alert('Failed to withdraw request'); }
     };
 
     if (!isOpen) return null;
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                onClick={onClose}
+            >
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.93, y: 20 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="bg-gray-900 border border-gray-800 rounded-2xl p-6 max-w-2xl w-full h-[80vh] flex flex-col shadow-2xl relative overflow-hidden"
+                    exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                    className="relative w-full max-w-2xl h-[78vh] flex flex-col rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+                    style={{ background: 'linear-gradient(160deg, rgba(13,13,22,0.99) 0%, rgba(18,18,30,0.99) 100%)' }}
+                    onClick={e => e.stopPropagation()}
                 >
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
+                    {/* Top accent */}
+                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 via-cyan-400 to-teal-400" />
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-14 bg-blue-500/8 blur-2xl pointer-events-none" />
 
-                    <button
-                        onClick={onClose}
-                        className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors"
-                    >
-                        <IoClose size={24} />
-                    </button>
-
-                    <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                            <IoTimeOutline className="text-blue-500" />
-                            Request History
-                        </h2>
-                        <p className="text-sm text-gray-400">Track the status of your submitted requests</p>
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 pt-7 pb-4 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
+                                <IoDocumentTextOutline size={18} className="text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-white">Request History</h2>
+                                <p className="text-xs text-gray-500">Track your submitted requests</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white transition-all"
+                        >
+                            <IoClose size={18} />
+                        </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-                        {loading ? (
-                            <div className="text-center py-10 text-gray-500">Loading requests...</div>
-                        ) : requests.length === 0 ? (
-                            <div className="text-center py-20 flex flex-col items-center">
-                                <IoAlertCircleOutline className="text-gray-600 text-4xl mb-4" />
-                                <p className="text-gray-400">No requests found</p>
+                    <div className="mx-6 h-px bg-white/6 mb-1 shrink-0" />
+
+                    {/* Scrollable content */}
+                    <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+                        {loading && (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3">
+                                <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+                                <p className="text-sm text-gray-500">Loading requests…</p>
                             </div>
-                        ) : (
-                            requests.map((request) => (
-                                <div key={request._id} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-3">
-                                            {getIcon(request.status)}
-                                            <div>
-                                                <h3 className="font-semibold text-white capitalize flex items-center gap-2">
-                                                    {request.type === 'seat_change' ? 'Seat Change' : request.type} Request
-                                                </h3>
-                                                <p className="text-xs text-gray-500">
-                                                    {new Date(request.createdAt).toLocaleDateString()} at {new Date(request.createdAt).toLocaleTimeString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {getStatusBadge(request.status, request.type)}
-                                    </div>
+                        )}
 
-                                    <div className="ml-8 space-y-2">
-                                        {request.requestedData?.category && (
-                                            <p className="text-sm text-gray-300">
-                                                <span className="text-gray-500 mr-2">Category:</span>
-                                                <span className="capitalize">{request.requestedData.category}</span>
+                        {!loading && requests.length === 0 && (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3">
+                                <IoAlertCircleOutline size={32} className="text-gray-600" />
+                                <p className="text-gray-500 text-sm">No requests found</p>
+                            </div>
+                        )}
+
+                        {!loading && requests.map((req, i) => (
+                            <motion.div
+                                key={req._id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.04 }}
+                                className="bg-white/3 border border-white/8 rounded-xl p-4 hover:bg-white/5 transition-all"
+                            >
+                                {/* Top row */}
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="flex items-center gap-2.5">
+                                        <StatusIcon status={req.status} />
+                                        <div>
+                                            <p className="text-sm font-semibold text-white capitalize">
+                                                {req.type === 'seat_change' ? 'Seat Change' : req.type} Request
                                             </p>
-                                        )}
-                                        {request.requestedData?.message && (
-                                            <div className="bg-black/30 p-3 rounded-lg text-sm text-gray-300">
-                                                {request.requestedData.message}
-                                            </div>
-                                        )}
-                                        {/* Seat Change Specifics */}
-                                        {request.type === 'seat_change' && (
-                                            <div className="text-sm text-gray-300 bg-black/30 p-3 rounded-lg">
-                                                <p>Reason: {request.requestedData.reason}</p>
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    Requested: Seat {request.requestedData.seatNumber} ({request.requestedData.room})
-                                                </p>
-                                            </div>
-                                        )}
+                                            <p className="text-[11px] text-gray-500">
+                                                {new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} at {new Date(req.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </div>
                                     </div>
+                                    <StatusPill status={req.status} type={req.type} />
+                                </div>
 
-                                    {/* Withdraw Button for Pending Requests */}
-                                    {request.status === 'pending' && (
-                                        <div className="mt-3 ml-8">
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        await api.put(`/student/request/${request._id}/withdraw`);
-                                                        fetchRequests(); // Refresh list
-                                                    } catch (err) {
-                                                        console.error('Failed to withdraw request', err);
-                                                        alert('Failed to withdraw request');
-                                                    }
-                                                }}
-                                                className="text-xs text-red-400 hover:text-red-300 underline underline-offset-2 flex items-center gap-1"
-                                            >
-                                                <IoCloseCircleOutline /> Withdraw Ticket
-                                            </button>
+                                {/* Details */}
+                                <div className="ml-7 space-y-2">
+                                    {req.requestedData?.category && (
+                                        <p className="text-xs text-gray-400">
+                                            <span className="text-gray-600 mr-1">Category:</span>
+                                            <span className="text-gray-300 capitalize">{req.requestedData.category}</span>
+                                        </p>
+                                    )}
+                                    {req.requestedData?.message && (
+                                        <div className="bg-black/25 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-400">
+                                            {req.requestedData.message}
                                         </div>
                                     )}
-
-                                    {request.adminResponse && (
-                                        <div className="mt-4 ml-8 border-l-2 border-blue-500 pl-4 py-2 bg-blue-500/10 rounded-r-lg">
-                                            <p className="text-xs text-blue-400 font-bold mb-1">ADMIN RESPONSE</p>
-                                            <p className="text-sm text-white">{request.adminResponse}</p>
+                                    {req.type === 'seat_change' && (
+                                        <div className="bg-black/25 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-400">
+                                            <p>Reason: {req.requestedData?.reason}</p>
+                                            <p className="text-gray-600 mt-0.5">Seat {req.requestedData?.seatNumber} · {req.requestedData?.room}</p>
                                         </div>
+                                    )}
+                                    {req.adminResponse && (
+                                        <div className="border-l-2 border-blue-500/50 pl-3 py-1.5 bg-blue-500/5 rounded-r-lg">
+                                            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Admin Response</p>
+                                            <p className="text-xs text-gray-300">{req.adminResponse}</p>
+                                        </div>
+                                    )}
+                                    {req.status === 'pending' && (
+                                        <button
+                                            onClick={() => withdraw(req._id)}
+                                            className="flex items-center gap-1.5 text-xs text-red-400/70 hover:text-red-400 transition-colors mt-1"
+                                        >
+                                            <IoTrashOutline size={13} /> Withdraw Ticket
+                                        </button>
                                     )}
                                 </div>
-                            ))
-                        )}
+                            </motion.div>
+                        ))}
                     </div>
                 </motion.div>
-            </div>
+            </motion.div>
         </AnimatePresence>
     );
 };

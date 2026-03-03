@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { AdminDashboardSkeleton } from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import {
     IoSchool, IoCalendarOutline, IoCashOutline, IoBedOutline, IoDocumentTextOutline,
@@ -197,7 +197,7 @@ const AdminDashboard = () => {
 
                     {/* Stats Cards */}
                     {loading ? (
-                        <SkeletonLoader type="card" count={4} />
+                        <AdminDashboardSkeleton />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <Card delay={0}>

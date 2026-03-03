@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { AttendanceSkeleton } from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import {
     IoArrowBack, IoCalendar, IoCheckmarkCircle, IoCloseCircle,
@@ -77,11 +77,8 @@ const Attendance = () => {
         }
     };
 
-    if (loading) return (
-        <div className="min-h-screen p-6 bg-[#050508]">
-            <div className="max-w-6xl mx-auto"><SkeletonLoader type="card" count={3} /></div>
-        </div>
-    );
+    if (loading) return <AttendanceSkeleton />;
+
 
     const { myAttendance = [], summary = {}, rankings = [] } = attendanceData || {};
     const totalMinutes = myAttendance.reduce((acc, curr) => acc + (curr.duration || 0), 0);

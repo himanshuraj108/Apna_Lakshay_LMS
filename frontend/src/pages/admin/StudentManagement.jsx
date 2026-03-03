@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { AdminTableSkeleton } from '../../components/ui/SkeletonLoader';
 import Badge from '../../components/ui/Badge';
 import api from '../../utils/api';
 import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh } from 'react-icons/io5';

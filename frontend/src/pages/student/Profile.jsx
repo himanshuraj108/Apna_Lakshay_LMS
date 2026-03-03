@@ -5,7 +5,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
+import SkeletonLoader, { ProfileSkeleton } from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api, { BASE_URL } from '../../utils/api';
 import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark } from 'react-icons/io5';
@@ -160,14 +160,9 @@ const Profile = () => {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen p-6" style={{ background: '#050508' }}>
-                <div className="max-w-4xl mx-auto">
-                    <SkeletonLoader type="card" count={2} />
-                </div>
-            </div>
-        );
+        return <ProfileSkeleton />;
     }
+
 
     // ─── derived ──────────────────────────────────────────────────────
     const memberStatus = !profile?.isActive ? 'inactive' : !profile?.seat ? 'pending' : 'active';
