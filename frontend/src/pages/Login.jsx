@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
+import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
 
 const Login = () => {
     useMobileViewport();
@@ -272,6 +273,9 @@ const Login = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Attendance floating button — visible to students on login screen */}
+            <AttendanceFloatingBtn />
         </div>
     );
 };

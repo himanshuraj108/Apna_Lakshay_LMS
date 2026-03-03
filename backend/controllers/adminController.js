@@ -1560,6 +1560,18 @@ exports.markAttendance = async (req, res) => {
                 updateData.isActive = false;
             }
 
+            // Fetch student to check registration date (admission date)
+            const student = await User.findById(studentId).select('createdAt');
+            if (!student) return null; // Skip if student not found
+
+            const admissionDate = new Date(student.createdAt);
+            admissionDate.setHours(0, 0, 0, 0);
+
+            // Do not allow marking attendance BEFORE admission date
+            if (attendanceDate < admissionDate) {
+                return null; // Skip marking attendance
+            }
+
             return await Attendance.findOneAndUpdate(
                 { student: studentId, date: attendanceDate },
                 updateData,
@@ -1595,11 +1607,18 @@ exports.getAttendance = async (req, res) => {
         const attendance = await Attendance.find({
             date: { $gte: date, $lt: nextDay }
         })
-            .populate('student', 'name email')
+            .populate('student', 'name email createdAt') // Add createdAt to check admission date
             .populate('markedBy', 'name');
 
-        // Filter out orphaned records
-        const filteredAttendance = attendance.filter(record => record.student);
+        // Filter out orphaned records AND records before the student's admission date
+        const filteredAttendance = attendance.filter(record => {
+            if (!record.student) return false;
+
+            const admissionDate = new Date(record.student.createdAt);
+            admissionDate.setHours(0, 0, 0, 0);
+
+            return record.date >= admissionDate;
+        });
 
         res.status(200).json({
             success: true,

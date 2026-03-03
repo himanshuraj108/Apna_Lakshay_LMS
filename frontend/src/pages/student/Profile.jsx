@@ -355,9 +355,9 @@ const Profile = () => {
                         <InfoRow icon={IoLocation} label="Address" value={profile?.address || 'Not provided'} color="text-orange-400" />
                         <InfoRow icon={IoBedOutline} label="Seat Number" value={profile?.seatNumber || 'Not Assigned'} color="text-cyan-400" />
                         <InfoRow icon={IoCalendar} label="Member Since"
-                            value={profile?.seatAssignedAt
-                                ? new Date(profile.seatAssignedAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
-                                : 'Not assigned yet'
+                            value={profile?.createdAt
+                                ? new Date(profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
+                                : 'Not available'
                             } color="text-pink-400"
                         />
                     </motion.div>

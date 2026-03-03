@@ -365,3 +365,218 @@ exports.resetPassword = async (req, res) => {
         });
     }
 };
+
+// @desc  Check if phone number belongs to a student (gates QR scanner)
+// @route POST /api/auth/check-phone  (public)
+exports.checkPhone = async (req, res) => {
+    try {
+        const { mobile } = req.body;
+        const user = await User.findOne({ mobile: mobile?.trim(), role: 'student' });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'No student found with this phone number' });
+        }
+        if (!user.isActive) {
+            return res.status(403).json({ success: false, message: 'Membership expired. Please contact admin.' });
+        }
+        res.status(200).json({ success: true, message: 'Phone verified' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc  Mark attendance via phone number + kiosk QR token (public — no auth needed)
+// @route POST /api/auth/kiosk-attendance
+exports.markKioskAttendancePublic = async (req, res) => {
+    try {
+        const { mobile, kioskToken } = req.body;
+        if (!mobile || !kioskToken) {
+            return res.status(400).json({ success: false, message: 'Phone number and kiosk token are required' });
+        }
+
+        // 1. Validate kiosk QR token
+        const SystemSetting = require('../models/SystemSetting');
+        const setting = await SystemSetting.findOne({ key: 'attendance_qr_token' });
+        if (!setting || setting.value !== kioskToken) {
+            return res.status(401).json({ success: false, message: 'Invalid QR code. Please scan the correct kiosk QR.' });
+        }
+
+        // 2. Find student by mobile
+        const student = await User.findOne({ mobile: mobile.trim(), role: 'student' })
+            .populate({ path: 'seat', populate: { path: 'room floor assignments.shift' } });
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'No student found with this phone number' });
+        }
+        if (!student.isActive) {
+            return res.status(403).json({ success: false, message: 'Membership expired. Please contact admin.' });
+        }
+
+        // 3. Build seat/shift info
+        let seatInfo = 'No Seat', shiftInfo = 'N/A';
+        if (student.seat && student.seat.assignments) {
+            const asgn = student.seat.assignments.find(a =>
+                a.student.toString() === student._id.toString() && a.status === 'active'
+            );
+            if (asgn) {
+                seatInfo = `${student.seat.number}`;
+                shiftInfo = asgn.shift?.name || asgn.legacyShift || (asgn.type === 'full_day' ? 'Full Day' : 'N/A');
+            }
+        }
+
+        // 4. Mark attendance (toggle check-in / check-out)
+        const Attendance = require('../models/Attendance');
+        const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const today = new Date(now); today.setHours(0, 0, 0, 0);
+
+        const existingActive = await Attendance.findOne({ student: student._id, date: today, isActive: true });
+        const existingAny = await Attendance.findOne({ student: student._id, date: today });
+
+        let type = 'check-in', record;
+
+        if (existingActive) {
+            // Student is currently checked in -> mark checkout
+            const [h1, m1] = existingActive.entryTime.split(':').map(Number);
+            const [h2, m2] = currentTime.split(':').map(Number);
+            existingActive.exitTime = currentTime;
+            existingActive.isActive = false;
+            existingActive.duration = Math.max(0, (h2 * 60 + m2) - (h1 * 60 + m1));
+            await existingActive.save();
+            type = 'check-out'; record = existingActive;
+        } else if (existingAny && existingAny.status === 'absent') {
+            // Student was marked absent by admin, override with present check-in
+            existingAny.status = 'present';
+            existingAny.entryTime = currentTime;
+            existingAny.isActive = true;
+            existingAny.markedBy = student._id;
+            await existingAny.save();
+        } else if (existingAny) {
+            // Student checked in and out already today
+            return res.status(400).json({ success: false, message: 'You have already marked your attendance for today.' });
+        } else {
+            // Initial check-in for the day
+            record = await Attendance.create({
+                student: student._id, date: today,
+                entryTime: currentTime, status: 'present',
+                isActive: true, markedBy: student._id  // student self-marks via kiosk
+            });
+        }
+
+        res.status(200).json({
+            success: true, type,
+            message: type === 'check-in' ? `Welcome, ${student.name}! ✅` : `Goodbye, ${student.name}! 👋`,
+            time: currentTime,
+            student: {
+                _id: student._id, name: student.name,
+                email: student.email, mobile: student.mobile,
+                profileImage: student.profileImage,
+                seat: seatInfo, shift: shiftInfo
+            }
+        });
+    } catch (error) {
+        console.error('Public Kiosk Attendance Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Send OTP to student's email by phone number (for quick attendance login)
+// @route   POST /api/auth/send-otp-phone
+exports.sendOtpByPhone = async (req, res) => {
+    try {
+        const { mobile } = req.body;
+        if (!mobile) {
+            return res.status(400).json({ success: false, message: 'Phone number is required' });
+        }
+
+        const user = await User.findOne({ mobile: mobile.trim(), role: 'student' });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'No student found with this phone number' });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({ success: false, message: 'Your membership is inactive. Please contact admin.' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        user.resetPasswordOTP = otp;
+        user.resetPasswordOTPExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+        await user.save({ validateBeforeSave: false });
+
+        try {
+            const { sendOTPEmail } = require('../services/emailService');
+            await sendOTPEmail(user.name, user.email, otp);
+        } catch (emailErr) {
+            console.error('OTP email failed:', emailErr.message);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `OTP sent to your registered email`,
+            email: user.email.replace(/(.{2}).*(@.*)/, '$1***$2'), // Masked email for display
+            ...(process.env.NODE_ENV !== 'production' && { debug_otp: otp })
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Verify OTP and auto-login student (for quick attendance flow)
+// @route   POST /api/auth/verify-otp-login
+exports.verifyOtpAndAutoLogin = async (req, res) => {
+    try {
+        const { mobile, otp } = req.body;
+
+        const user = await User.findOne({
+            mobile: mobile.trim(),
+            role: 'student',
+            resetPasswordOTP: otp,
+            resetPasswordOTPExpire: { $gt: Date.now() }
+        }).select('+password');
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        // Clear OTP
+        user.resetPasswordOTP = undefined;
+        user.resetPasswordOTPExpire = undefined;
+        await user.save({ validateBeforeSave: false });
+
+        // Fetch last known password from PasswordLog
+        const PasswordLog = require('../models/PasswordLog');
+        const lastLog = await PasswordLog.findOne({ user: user._id }).sort({ createdAt: -1 });
+        const plainPassword = lastLog ? lastLog.newPassword : null;
+
+        // Send credentials email
+        try {
+            const { sendCredentialsEmail } = require('../services/emailService');
+            await sendCredentialsEmail(user.name, user.email, plainPassword || '(check with admin)');
+        } catch (emailErr) {
+            console.error('Credentials email failed:', emailErr.message);
+        }
+
+        // Generate JWT token for immediate login
+        const token = user.generateToken();
+
+        res.status(200).json({
+            success: true,
+            token,
+            password: plainPassword, // Sent once for the popup display
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isActive: user.isActive,
+                profileImage: user.profileImage,
+                registrationSource: user.registrationSource,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
