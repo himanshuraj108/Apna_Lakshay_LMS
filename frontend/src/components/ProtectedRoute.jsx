@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PWAInstallPrompt from './ui/PWAInstallPrompt';
 
 const ProtectedRoute = ({ children, adminOnly = false, requireSeat = false }) => {
     const { user, loading, isAdmin } = useAuth();
@@ -32,7 +33,12 @@ const ProtectedRoute = ({ children, adminOnly = false, requireSeat = false }) =>
         }
     }
 
-    return children;
+    return (
+        <>
+            {children}
+            <PWAInstallPrompt />
+        </>
+    );
 };
 
 export default ProtectedRoute;
