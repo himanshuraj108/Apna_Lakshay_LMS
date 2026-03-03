@@ -211,7 +211,33 @@ const StudentDashboard = () => {
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [isStandalone, setIsStandalone] = useState(true);
 
+    useEffect(() => {
+        const checkStandalone = () => {
+            setIsStandalone(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone);
+        };
+        checkStandalone();
+
+        const handleBeforeInstall = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') setDeferredPrompt(null);
+        } else {
+            alert("To install the app on your device, use your browser's 'Add to Home Screen' or 'Install' option.");
+        }
+    };
 
     useEffect(() => {
         if (!loading) return; // Don't start timer if already loaded (or finished loading)
@@ -432,6 +458,29 @@ const StudentDashboard = () => {
                         </Link>
                     </div>
                 </motion.div>
+
+                {/* Install App Banner (only when not installed) */}
+                {!isStandalone && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/20 backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-4"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400">
+                                <IoArrowForwardCircle size={22} className="rotate-90" />
+                            </div>
+                            <div>
+                                <p className="text-white font-bold text-sm">Install App for Better Experience</p>
+                                <p className="text-gray-400 text-xs mt-0.5">Quick access, offline support, and full screen mode.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleInstallClick}
+                            className="shrink-0 w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-500/25 active:scale-95"
+                        >
+                            Install Now
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* ── Stats Grid ── */}
                 <div className="grid grid-cols-2 gap-4 mb-8">

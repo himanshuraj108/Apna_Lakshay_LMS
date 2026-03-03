@@ -1,281 +1,205 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import SkeletonLoader from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
 import {
-    IoArrowBack,
-    IoAnalytics,
-    IoDownload,
-    IoPeople,
-    IoTime,
-    IoTrendingUp,
-    IoCalendar,
-    IoDocumentTextOutline
+    IoArrowBack, IoAnalyticsOutline, IoDownload,
+    IoPeopleOutline, IoTimeOutline, IoTrendingUpOutline,
+    IoCalendarOutline
 } from 'react-icons/io5';
-import jsPDF from 'jspdf';
+
+const PAGE_BG = { background: '#050508' };
 
 const AnalyticsDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [analytics, setAnalytics] = useState(null);
-    const [period, setPeriod] = useState('week'); // week, month
+    const [period, setPeriod] = useState('week');
     const [error, setError] = useState(null);
 
-
-    useEffect(() => {
-        fetchAnalytics();
-    }, [period]);
+    useEffect(() => { fetchAnalytics(); }, [period]);
 
     const fetchAnalytics = async () => {
+        setLoading(true); setError(null);
         try {
-            setLoading(true);
-            setError(null);
-            const response = await api.get(`/admin/analytics?period=${period}`);
-            setAnalytics(response.data.analytics);
-        } catch (error) {
-            console.error('Analytics error:', error);
-            setError('Failed to load analytics data');
-        } finally {
-            setLoading(false);
-        }
+            const res = await api.get(`/admin/analytics?period=${period}`);
+            setAnalytics(res.data.analytics);
+        } catch (e) { setError('Failed to load analytics data'); }
+        finally { setLoading(false); }
     };
-
-    if (loading) return <div className="p-6"><SkeletonLoader type="card" count={3} /></div>;
-
-    if (error || !analytics) return (
-        <div className="p-6">
-            <Card className="bg-red-500/10 border border-red-500/50 p-6 text-center">
-                <p className="text-red-400 mb-4">{error || 'No analytics data available'}</p>
-                <Button onClick={fetchAnalytics}>Retry</Button>
-            </Card>
-        </div>
-    );
-
-    const {
-        activeCount,
-        dailyTrends,
-        peakHours,
-        topStudents
-    } = analytics;
-
-    // Helper for Custom Charts
-    const maxDayValue = Math.max(...dailyTrends.map(d => d.presentCount), 1);
-    const maxPeakValue = Math.max(...peakHours.map(d => d.count), 1);
 
     const formatHour = (hour) => {
         const h = parseInt(hour);
         if (isNaN(h)) return hour;
-        if (h === 0) return '12 AM';
-        if (h === 12) return '12 PM';
-        if (h > 12) return `${h - 12} PM`;
-        return `${h} AM`;
+        if (h === 0) return '12 AM'; if (h === 12) return '12 PM';
+        return h > 12 ? `${h - 12} PM` : `${h} AM`;
     };
 
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center" style={PAGE_BG}>
+            <div className="grid grid-cols-2 gap-4 w-full max-w-7xl px-6">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/3 rounded-2xl animate-pulse" />)}
+            </div>
+        </div>
+    );
+
+    if (error || !analytics) return (
+        <div className="min-h-screen flex items-center justify-center" style={PAGE_BG}>
+            <div className="text-center">
+                <p className="text-red-400 mb-4">{error || 'No analytics data'}</p>
+                <button onClick={fetchAnalytics} className="px-4 py-2 bg-white/5 border border-white/10 text-gray-300 rounded-xl">Retry</button>
+            </div>
+        </div>
+    );
+
+    const { activeCount, dailyTrends, peakHours, topStudents } = analytics;
+    const maxDayValue = Math.max(...dailyTrends.map(d => d.presentCount), 1);
+    const maxPeakValue = Math.max(...peakHours.map(d => d.count), 1);
+    const avgDuration = Math.round(dailyTrends.reduce((a, c) => a + (c.avgDuration || 0), 0) / (dailyTrends.length || 1));
+    const peakHour = peakHours.length > 0 ? formatHour(peakHours.sort((a, b) => b.count - a.count)[0]._id) : 'N/A';
+    const totalVisits = dailyTrends.reduce((a, c) => a + c.presentCount, 0);
+
+    const STAT_CARDS = [
+        { label: 'Live Occupancy', value: activeCount, sub: 'Students inside now', icon: IoPeopleOutline, color: 'from-blue-500 to-cyan-500', glow: 'rgba(59,130,246,0.3)' },
+        { label: 'Avg. Duration', value: `${avgDuration}m`, sub: 'Per session average', icon: IoTimeOutline, color: 'from-purple-500 to-violet-500', glow: 'rgba(139,92,246,0.3)' },
+        { label: 'Peak Hour', value: peakHour, sub: 'Most busy time (30d)', icon: IoTrendingUpOutline, color: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)' },
+        { label: 'Total Visits', value: totalVisits, sub: 'In selected period', icon: IoCalendarOutline, color: 'from-orange-400 to-amber-500', glow: 'rgba(245,158,11,0.3)' },
+    ];
+
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
+        <div className="relative min-h-screen" style={PAGE_BG}>
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600/6 blur-3xl" />
+                <div className="absolute bottom-[5%] left-[-5%] w-[400px] h-[400px] rounded-full bg-purple-600/6 blur-3xl" />
+            </div>
+
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+                {/* Header */}
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                         <Link to="/admin/attendance">
-                            <Button variant="secondary" className="!p-3">
-                                <IoArrowBack size={20} />
-                            </Button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                <IoArrowBack size={16} /> Back
+                            </motion.button>
                         </Link>
-                        <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                            Analytics Dashboard
-                        </h1>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg"><IoAnalyticsOutline size={14} className="text-white" /></div>
+                                <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white">Analytics Dashboard</h1>
+                        </div>
                     </div>
-
                     <div className="flex gap-2">
-                        <Button
-                            variant={period === 'week' ? 'primary' : 'secondary'}
-                            onClick={() => setPeriod('week')}
-                        >
-                            Last 7 Days
-                        </Button>
-                        <Button
-                            variant={period === 'month' ? 'primary' : 'secondary'}
-                            onClick={() => setPeriod('month')}
-                        >
-                            Last 30 Days
-                        </Button>
+                        {['week', 'month'].map(p => (
+                            <button key={p} onClick={() => setPeriod(p)}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${period === p
+                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
+                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400'}`}>
+                                {p === 'week' ? 'Last 7 Days' : 'Last 30 Days'}
+                            </button>
+                        ))}
                     </div>
+                </motion.div>
+
+                {/* Stat Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {STAT_CARDS.map(({ label, value, sub, icon: Icon, color, glow }, i) => (
+                        <motion.div key={label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+                            className="relative bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 overflow-hidden group">
+                            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60 group-hover:opacity-100 transition-opacity`} />
+                            <div className={`p-2 rounded-xl bg-gradient-to-br ${color} w-fit mb-3`} style={{ boxShadow: `0 6px 20px -4px ${glow}` }}>
+                                <Icon size={16} className="text-white" />
+                            </div>
+                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+                            <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent`}>{value}</p>
+                            <p className="text-[10px] text-gray-600 mt-1">{sub}</p>
+                        </motion.div>
+                    ))}
                 </div>
 
-                {/* Metrics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <Card className="bg-gradient-to-br from-blue-900/50 to-blue-800/20 border-blue-500/30">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-blue-200 text-sm mb-1">Live Occupancy</p>
-                                <h3 className="text-4xl font-bold text-white">{activeCount}</h3>
-                            </div>
-                            <div className="p-3 bg-blue-500/20 rounded-lg text-blue-400">
-                                <IoPeople size={24} />
-                            </div>
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+                    {/* Attendance Trend */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
+                        className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
+                        <div className="flex items-center gap-2 mb-5">
+                            <IoAnalyticsOutline size={16} className="text-blue-400" />
+                            <h3 className="font-bold text-white text-sm">Attendance Trends</h3>
                         </div>
-                        <p className="text-xs text-blue-300 mt-4">Students inside now</p>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/20 border-purple-500/30">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-purple-200 text-sm mb-1">Avg Duration</p>
-                                <h3 className="text-3xl font-bold text-white">
-                                    {Math.round(dailyTrends.reduce((acc, curr) => acc + (curr.avgDuration || 0), 0) / (dailyTrends.length || 1))}m
-                                </h3>
-                            </div>
-                            <div className="p-3 bg-purple-500/20 rounded-lg text-purple-400">
-                                <IoTime size={24} />
-                            </div>
-                        </div>
-                        <p className="text-xs text-purple-300 mt-4">Per session average</p>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-green-900/50 to-green-800/20 border-green-500/30">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-green-200 text-sm mb-1">Peak Hour</p>
-                                <h3 className="text-3xl font-bold text-white">
-                                    {peakHours.length > 0
-                                        ? formatHour(peakHours.sort((a, b) => b.count - a.count)[0]._id)
-                                        : 'N/A'}
-                                </h3>
-                            </div>
-                            <div className="p-3 bg-green-500/20 rounded-lg text-green-400">
-                                <IoTrendingUp size={24} />
-                            </div>
-                        </div>
-                        <p className="text-xs text-green-300 mt-4">Most busy time (30d)</p>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-orange-900/50 to-orange-800/20 border-orange-500/30">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-orange-200 text-sm mb-1">Total Visits</p>
-                                <h3 className="text-3xl font-bold text-white">
-                                    {dailyTrends.reduce((acc, curr) => acc + curr.presentCount, 0)}
-                                </h3>
-                            </div>
-                            <div className="p-3 bg-orange-500/20 rounded-lg text-orange-400">
-                                <IoCalendar size={24} />
-                            </div>
-                        </div>
-                        <p className="text-xs text-orange-300 mt-4">In selected period</p>
-                    </Card>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    {/* Attendance Trend Chart */}
-                    <Card>
-                        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                            <IoAnalytics className="text-blue-400" /> Attendance Trends
-                        </h3>
-                        <div className="h-64 flex items-end gap-2">
+                        <div className="h-48 flex items-end gap-1">
                             {dailyTrends.map((day, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
-                                    {/* Tooltip */}
-                                    <div className="absolute -top-12 bg-gray-800 text-xs p-2 rounded opacity-0 group-hover:opacity-100 transition shadow-lg border border-white/10 whitespace-nowrap z-10">
+                                <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
+                                    <div className="absolute -top-10 bg-gray-900 border border-white/10 text-xs p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl">
                                         {day._id}: {day.presentCount} students
-                                        <br />
-                                        Avg: {Math.round(day.avgDuration)} mins
                                     </div>
-
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${(day.presentCount / maxDayValue) * 100}%` }}
-                                        transition={{ duration: 0.5, delay: i * 0.05 }}
-                                        className="w-full bg-blue-500/50 hover:bg-blue-400 rounded-t-lg relative"
-                                    >
-                                        <div
-                                            className="absolute bottom-0 w-full bg-purple-500/30"
-                                            style={{ height: `${Math.min(day.avgDuration / 2, 100)}%` }} // Overlay avg duration roughly
-                                        ></div>
-                                    </motion.div>
-                                    <span className="text-[10px] text-gray-500 rotate-0 truncate w-full text-center">
-                                        {new Date(day._id).getDate()}
-                                    </span>
+                                    <motion.div initial={{ height: 0 }} animate={{ height: `${(day.presentCount / maxDayValue) * 100}%` }}
+                                        transition={{ duration: 0.5, delay: i * 0.04 }}
+                                        className="w-full bg-gradient-to-t from-blue-600/70 to-blue-400/50 hover:from-blue-500/90 hover:to-blue-400/70 rounded-t-lg transition-colors" />
+                                    <span className="text-[9px] text-gray-600">{new Date(day._id).getDate()}</span>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex items-center gap-4 justify-center mt-4 text-xs text-gray-400">
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500/50 rounded"></div> Count</div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 bg-purple-500/30 rounded"></div> Duration</div>
-                        </div>
-                    </Card>
+                    </motion.div>
 
-                    {/* Peak Hours Chart */}
-                    <Card>
-                        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                            <IoTime className="text-green-400" /> Peak Hours (Last 30 Days)
-                        </h3>
-                        <div className="h-64 flex flex-col justify-end space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                    {/* Peak Hours */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
+                        className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
+                        <div className="flex items-center gap-2 mb-5">
+                            <IoTimeOutline size={16} className="text-green-400" />
+                            <h3 className="font-bold text-white text-sm">Peak Hours (Last 30 Days)</h3>
+                        </div>
+                        <div className="space-y-2 h-48 overflow-y-auto pr-1">
                             {peakHours.map((hour, i) => (
                                 <div key={i} className="flex items-center gap-3">
-                                    <span className="text-sm font-mono text-gray-400 w-16">{formatHour(hour._id)}</span>
-                                    <div className="flex-1 h-8 bg-gray-800/50 rounded-full overflow-hidden relative">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${(hour.count / maxPeakValue) * 100}%` }}
-                                            transition={{ duration: 0.8 }}
-                                            className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full flex items-center justify-end pr-2"
-                                        >
-                                            <span className="text-xs font-bold text-black">{hour.count}</span>
+                                    <span className="text-xs font-mono text-gray-500 w-14 shrink-0">{formatHour(hour._id)}</span>
+                                    <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden">
+                                        <motion.div initial={{ width: 0 }} animate={{ width: `${(hour.count / maxPeakValue) * 100}%` }}
+                                            transition={{ duration: 0.8, delay: i * 0.03 }}
+                                            className="h-full bg-gradient-to-r from-green-600 to-emerald-400 rounded-full flex items-center justify-end pr-2">
+                                            <span className="text-[9px] font-bold text-black">{hour.count}</span>
                                         </motion.div>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </Card>
+                    </motion.div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Top Students */}
-                    <Card className="lg:col-span-2">
-                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                            <IoTrendingUp className="text-yellow-400" /> Top Students (Study Hours)
-                        </h3>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="border-b border-white/10 text-left text-sm text-gray-400">
-                                        <th className="p-3">Rank</th>
-                                        <th className="p-3">Student</th>
-                                        <th className="p-3">Days</th>
-                                        <th className="p-3 text-right">Total Hours</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {topStudents.map((student, i) => (
-                                        <tr key={i} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                                            <td className="p-3">
-                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${i === 0 ? 'bg-yellow-500 text-black' :
-                                                    i === 1 ? 'bg-gray-400 text-black' :
-                                                        i === 2 ? 'bg-orange-500 text-black' :
-                                                            'bg-gray-800 text-gray-400'
-                                                    }`}>
-                                                    {i + 1}
-                                                </span>
-                                            </td>
-                                            <td className="p-3">
-                                                <p className="font-bold text-sm">{student.name}</p>
-                                                <p className="text-xs text-gray-500">{student.email}</p>
-                                            </td>
-                                            <td className="p-3 text-sm">{student.daysPresent}</td>
-                                            <td className="p-3 text-right font-mono font-bold text-purple-400">
-                                                {Math.floor(student.totalDuration / 60)}h {student.totalDuration % 60}m
-                                            </td>
-                                        </tr>
+                {/* Top Students */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}
+                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-white/8 flex items-center gap-2">
+                        <IoTrendingUpOutline size={16} className="text-yellow-400" />
+                        <h3 className="font-bold text-white text-sm">Top Students — Study Hours</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-white/5">
+                                    {['Rank', 'Student', 'Days', 'Total Hours'].map(h => (
+                                        <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${h === 'Total Hours' ? 'text-right' : 'text-left'}`}>{h}</th>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
-
-
-                </div>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {topStudents.map((s, i) => (
+                                    <tr key={i} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                        <td className="px-5 py-3">
+                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-black ${i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-gray-400 text-black' : i === 2 ? 'bg-orange-500 text-black' : 'bg-white/5 text-gray-500'}`}>{i + 1}</span>
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <p className="font-semibold text-white text-sm">{s.name}</p>
+                                            <p className="text-xs text-gray-600">{s.email}</p>
+                                        </td>
+                                        <td className="px-5 py-3 text-sm text-gray-300">{s.daysPresent}</td>
+                                        <td className="px-5 py-3 text-right font-mono font-bold text-purple-400">{Math.floor(s.totalDuration / 60)}h {s.totalDuration % 60}m</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </motion.div>
             </div>
         </div>
     );

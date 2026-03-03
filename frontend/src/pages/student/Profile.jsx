@@ -12,6 +12,7 @@ import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, 
 import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import CombinedSeatShiftModal from '../../components/student/CombinedSeatShiftModal';
+import MotivationBanner from '../../components/student/MotivationBanner';
 import useShifts from '../../hooks/useShifts';
 
 
@@ -243,8 +244,11 @@ const Profile = () => {
                     className="glass-card relative rounded-2xl overflow-hidden mb-6"
                 >
                     {/* Gradient banner */}
-                    <div className="h-28 bg-gradient-to-br from-violet-600/30 via-indigo-600/20 to-blue-600/30 relative">
+                    <div className="min-h-[7rem] bg-gradient-to-br from-violet-600/30 via-indigo-600/20 to-blue-600/30 relative flex flex-col justify-center">
                         <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(139,92,246,0.3), transparent 60%), radial-gradient(circle at 70% 50%, rgba(59,130,246,0.2), transparent 60%)' }} />
+                        <div className="relative z-10 w-full pl-36 pr-6 py-4">
+                            <MotivationBanner />
+                        </div>
                     </div>
 
                     <div className="px-6 pb-6">
@@ -543,7 +547,7 @@ const Profile = () => {
             <CombinedSeatShiftModal isOpen={showCombinedChangeModal} onClose={() => setShowCombinedChangeModal(false)} currentSeat={profile?.seat}
                 onSuccess={() => { setShowCombinedChangeModal(false); fetchProfile(); setSuccess('Combined request submitted!'); setTimeout(() => setSuccess(''), 3000); }}
             />
-        </div>
+        </div >
     );
 };
 

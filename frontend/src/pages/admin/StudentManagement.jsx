@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
-import SkeletonLoader, { AdminTableSkeleton } from '../../components/ui/SkeletonLoader';
-import Badge from '../../components/ui/Badge';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import useShifts from '../../hooks/useShifts';
 
-import { useSearchParams } from 'react-router-dom';
+const PAGE_BG = { background: '#050508' };
+const INPUT = 'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-700';
+const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all';
+const BTN_SECONDARY = 'px-4 py-2.5 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all disabled:opacity-50';
+const BTN_DANGER = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all';
 
 const StudentManagement = () => {
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
@@ -37,7 +37,8 @@ const StudentManagement = () => {
         address: '',
         password: '',
         confirmPassword: '',
-        systemMode: mode
+        systemMode: mode,
+        joinedAt: new Date().toISOString().split('T')[0] // Default to today
     });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
@@ -253,7 +254,8 @@ const StudentManagement = () => {
             email: '',
             mobile: '',
             address: '',
-            password: password
+            password: password,
+            joinedAt: new Date().toISOString().split('T')[0] // Default to today
         });
         setShowModal(true);
     };
@@ -648,363 +650,211 @@ const StudentManagement = () => {
     const filteredStudents = getFilteredStudents();
 
     return (
-        <div className="min-h-screen p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
+        <div className="relative min-h-screen" style={PAGE_BG}>
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600/6 blur-3xl" />
+                <div className="absolute bottom-[5%] left-[-5%] w-[400px] h-[400px] rounded-full bg-indigo-600/6 blur-3xl" />
+            </div>
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+                {/* Header */}
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
                         <Link to="/admin">
-                            <Button variant="secondary">
-                                <IoArrowBack className="inline mr-2" /> Back to Dashboard
-                            </Button>
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                <IoArrowBack size={16} /> Back
+                            </motion.button>
                         </Link>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg"><IoPeopleOutline size={14} className="text-white" /></div>
+                                <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black text-white">Student Management</h1>
+                        </div>
                     </div>
-                    <div className="flex gap-3">
-                        <Button
-                            variant="danger"
-                            onClick={handleResetAllQrs}
-                            className="flex items-center gap-2 bg-red-600/80 hover:bg-red-600 text-sm"
-                        >
-                            <IoRefresh size={18} /> Reset All QRs
-                        </Button>
-                        <Button variant="primary" onClick={openAddModal}>
-                            <IoAdd className="inline mr-2" size={20} /> Add Student
-                        </Button>
+                    <div className="flex gap-2 flex-wrap">
+                        <motion.button whileHover={{ scale: 1.03 }} onClick={handleResetAllQrs}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all">
+                            <IoRefresh size={16} /> Reset All QRs
+                        </motion.button>
+                        <motion.button whileHover={{ scale: 1.03 }} onClick={openAddModal}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25">
+                            <IoAdd size={16} /> Add Student
+                        </motion.button>
                     </div>
-                </div>
-
-                <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-8">
-                    Student Management
-                </h1>
+                </motion.div>
 
                 {/* Tab Navigation */}
-                <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
-                    <button
-                        onClick={() => setActiveTab('all')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'all'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        All Students ({students.length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('admin')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'admin'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        Admin Registered ({students.filter(s => ((s.registrationSource === 'admin' || !s.registrationSource) && s.isActive)).length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('self')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'self'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        Self Registered ({students.filter(s => (s.registrationSource === 'self' && s.isActive)).length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('active')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'active'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        Active ({students.filter(s => s.isActive).length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('pending')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'pending'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        Pending Allocation ({students.filter(s => (!getStudentSeat(s._id) && s.isActive)).length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('inactive')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'inactive'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        Inactive ({students.filter(s => !s.isActive).length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('id-cards')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'id-cards'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        <IoIdCard className="inline mr-2" size={18} />
-                        ID Cards
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('history')}
-                        className={`px-6 py-3 rounded-lg font-semibold transition-all whitespace-nowrap ${activeTab === 'history'
-                            ? 'bg-gradient-primary shadow-lg'
-                            : 'bg-white/10 hover:bg-white/20'
-                            }`}
-                    >
-                        <IoTrash className="inline mr-2" size={18} />
-                        Deleted History
-                    </button>
+                <div className="flex gap-2 mb-5 overflow-x-auto pb-1 flex-wrap">
+                    {[
+                        { id: 'all', label: `All (${students.length})` },
+                        { id: 'admin', label: `Admin Reg. (${students.filter(s => ((s.registrationSource === 'admin' || !s.registrationSource) && s.isActive)).length})` },
+                        { id: 'self', label: `Self Reg. (${students.filter(s => s.registrationSource === 'self' && s.isActive).length})` },
+                        { id: 'active', label: `Active (${students.filter(s => s.isActive).length})` },
+                        { id: 'pending', label: `Pending (${students.filter(s => !getStudentSeat(s._id) && s.isActive).length})` },
+                        { id: 'inactive', label: `Inactive (${students.filter(s => !s.isActive).length})` },
+                        { id: 'id-cards', label: 'ID Cards', icon: <IoIdCard size={13} /> },
+                        { id: 'history', label: 'Deleted', icon: <IoTrash size={13} /> },
+                    ].map(tab => (
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
+                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
+                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                            {tab.icon}{tab.label}
+                        </button>
+                    ))}
                     {activeTab === 'history' && (
-                        <div className="ml-auto">
-                            <Button
-                                variant="danger"
-                                onClick={handleClearArchives}
-                                className="flex items-center gap-2 bg-red-600/80 hover:bg-red-600 text-sm px-4 py-2"
-                                disabled={archivedStudents.length === 0}
-                            >
-                                <IoTrash size={16} /> Clear All Archives
-                            </Button>
-                        </div>
+                        <motion.button whileHover={{ scale: 1.03 }} onClick={handleClearArchives}
+                            disabled={archivedStudents.length === 0}
+                            className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all disabled:opacity-40">
+                            <IoTrash size={13} /> Clear All
+                        </motion.button>
                     )}
                 </div>
 
+                {/* Alerts */}
                 {success && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-green-500/20 border border-green-500/50 text-green-400 p-4 rounded-lg mb-6"
-                    >
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-green-500/10 border border-green-500/25 text-green-400 px-4 py-3 rounded-xl mb-5 text-sm">
                         {success}
                     </motion.div>
                 )}
-
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-500/20 border border-red-500/50 text-red-400 p-4 rounded-lg mb-6"
-                    >
+                {error && !showDeleteModal && !showResetPasswordModal && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl mb-5 text-sm">
                         {error}
                     </motion.div>
                 )}
 
                 {loading ? (
-                    <SkeletonLoader type="table" count={1} />
+                    <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-white/3 rounded-xl animate-pulse" />)}</div>
                 ) : (
                     <>
                         {activeTab === 'id-cards' ? (
                             <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] gap-8">
-                                {/* Shift filter header */}
                                 {shiftFilter && (
-                                    <div className="col-span-full bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-4 flex justify-between items-center">
-                                        <p className="text-purple-300 font-medium">
+                                    <div className="col-span-full bg-purple-500/10 border border-purple-500/25 rounded-xl p-4 mb-2 flex justify-between items-center">
+                                        <p className="text-purple-300 text-sm font-medium">
                                             Showing students for: <span className="text-white font-bold">
                                                 {shifts.find(s => s._id === shiftFilter)?.name || 'Selected Shift'}
                                             </span>
                                         </p>
-                                        <Button
-                                            variant="secondary"
-                                            onClick={() => window.location.href = '/admin/students?tab=id-cards'}
-                                            className="bg-white/10 hover:bg-white/20"
-                                        >
-                                            View All Students
-                                        </Button>
+                                        <button onClick={() => window.location.href = '/admin/students?tab=id-cards'}
+                                            className={BTN_SECONDARY}>View All</button>
                                     </div>
                                 )}
                                 {(() => {
-                                    // Filter students: active and optionally by shift
-                                    const filteredStudents = students.filter(s => {
+                                    const filtered = students.filter(s => {
                                         if (!s.isActive) return false;
                                         if (shiftFilter && !hasShiftAssignment(s._id, shiftFilter)) return false;
                                         return true;
                                     });
-
-                                    return filteredStudents.length === 0 ? (
-                                        <div className="col-span-full text-center p-12 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-gray-400 text-lg">
-                                                {shiftFilter
-                                                    ? 'No students found for this shift.'
-                                                    : 'No active students found to generate ID cards.'}
-                                            </p>
+                                    return filtered.length === 0 ? (
+                                        <div className="col-span-full text-center p-12 bg-white/3 rounded-2xl border border-white/8">
+                                            <p className="text-gray-500">{shiftFilter ? 'No students found for this shift.' : 'No active students found.'}</p>
                                         </div>
-                                    ) : (
-                                        filteredStudents.map(student => (
-                                            <div key={student._id} className="flex justify-center p-4">
-                                                <StudentIdCard
-                                                    student={{
-                                                        ...student,
-                                                        seatNumber: getStudentSeat(student._id)
-                                                    }}
-                                                />
-                                            </div>
-                                        ))
-                                    );
+                                    ) : filtered.map(student => (
+                                        <div key={student._id} className="flex justify-center p-4">
+                                            <StudentIdCard student={{ ...student, seatNumber: getStudentSeat(student._id) }} />
+                                        </div>
+                                    ));
                                 })()}
                             </div>
                         ) : activeTab === 'history' ? (
-                            <Card>
+                            <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                                <div className="h-px bg-gradient-to-r from-red-500/60 to-orange-500/60" />
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="border-b border-white/10">
-                                                <th className="text-left p-4">Name</th>
-                                                <th className="text-left p-4">Email</th>
-                                                <th className="text-left p-4">Joined</th>
-                                                <th className="text-left p-4">Deleted At</th>
-                                                <th className="text-right p-4">Actions</th>
+                                            <tr className="border-b border-white/8">
+                                                {['Name', 'Email', 'Joined', 'Deleted At', 'Actions'].map((h, i) => (
+                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 4 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                ))}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {archivedStudents.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="5" className="text-center p-8 text-gray-400">
-                                                        No deleted students found.
+                                                <tr><td colSpan="5" className="text-center p-8 text-gray-600 text-sm">No deleted students found.</td></tr>
+                                            ) : archivedStudents.map(student => (
+                                                <tr key={student._id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                    <td className="px-5 py-3.5 font-medium text-sm text-white">{student.name}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-gray-400">{student.email}</td>
+                                                    <td className="px-5 py-3.5 text-xs text-gray-500">{new Date(student.joinedAt).toLocaleDateString()}</td>
+                                                    <td className="px-5 py-3.5 text-xs text-red-400">{new Date(student.deletedAt).toLocaleDateString()}</td>
+                                                    <td className="px-5 py-3.5 text-right">
+                                                        <button onClick={() => handleViewArchive(student._id)}
+                                                            className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-xs font-medium mr-2 hover:bg-blue-500/20 transition-all">View Report</button>
+                                                        <button onClick={() => handleDeleteArchive(student._id)}
+                                                            className="p-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-all"><IoTrash size={14} /></button>
                                                     </td>
                                                 </tr>
-                                            ) : (
-                                                archivedStudents.map((student) => (
-                                                    <tr key={student._id} className="border-b border-white/5 hover:bg-white/5">
-                                                        <td className="p-4">{student.name}</td>
-                                                        <td className="p-4">{student.email}</td>
-                                                        <td className="p-4">
-                                                            {new Date(student.joinedAt).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="p-4 text-red-400">
-                                                            {new Date(student.deletedAt).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="p-4 text-right">
-                                                            <button
-                                                                onClick={() => handleViewArchive(student._id)}
-                                                                className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30 transition shadow-sm mr-2"
-                                                                title="View Report"
-                                                            >
-                                                                View Report
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeleteArchive(student._id)}
-                                                                className="px-3 py-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30 transition shadow-sm"
-                                                                title="Delete Permanently"
-                                                            >
-                                                                <IoTrash size={16} />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
-                            </Card>
+                            </div>
                         ) : (
-                            <Card>
+                            <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                                <div className="h-px bg-gradient-to-r from-blue-500/60 to-indigo-500/60" />
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr className="border-b border-white/10">
-                                                <th className="text-left p-4">Name</th>
-                                                <th className="text-left p-4">Email</th>
-                                                <th className="text-left p-4">Shift</th>
-                                                <th className="text-left p-4">Status</th>
-                                                <th className="text-left p-4">Created</th>
-                                                <th className="text-right p-4">Actions</th>
+                                            <tr className="border-b border-white/8">
+                                                {['Name', 'Email', 'Shift', 'Status', 'Created', 'Actions'].map((h, i) => (
+                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 5 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                ))}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filteredStudents.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="5" className="text-center p-8 text-gray-400">
-                                                        {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
-                                                        {activeTab === 'active' && 'No active students found.'}
-                                                        {activeTab === 'inactive' && 'No inactive students found.'}
+                                                <tr><td colSpan="6" className="text-center p-10 text-gray-600 text-sm">
+                                                    {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
+                                                    {activeTab === 'active' && 'No active students found.'}
+                                                    {activeTab === 'inactive' && 'No inactive students found.'}
+                                                    {activeTab === 'pending' && 'No students pending allocation.'}
+                                                </td></tr>
+                                            ) : filteredStudents.map(student => (
+                                                <tr key={student._id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                    <td className="px-5 py-3.5 font-semibold text-sm text-white">{student.name}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-gray-400">{student.email}</td>
+                                                    <td className="px-5 py-3.5 text-sm">
+                                                        {(() => {
+                                                            const s = getStudentShifts(student._id);
+                                                            if (!s && student.isActive) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
+                                                            return <span className="text-gray-400 text-xs">{s || 'N/A'}</span>;
+                                                        })()}
                                                     </td>
-                                                </tr>
-                                            ) : (
-                                                filteredStudents.map((student) => (
-                                                    <tr key={student._id} className="border-b border-white/5 hover:bg-white/5">
-                                                        <td className="p-4">{student.name}</td>
-                                                        <td className="p-4">{student.email}</td>
-                                                        <td className="p-4">
-                                                            {(() => {
-                                                                const shifts = getStudentShifts(student._id);
-                                                                if (!shifts && student.isActive) {
-                                                                    return <Badge variant="yellow">Pending Allocation</Badge>;
-                                                                }
-                                                                return shifts || 'N/A';
-                                                            })()}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {(() => {
-                                                                const hasSeat = getStudentSeat(student._id);
-                                                                const hasShifts = getStudentShifts(student._id);
-
-                                                                if (student.isActive && (!hasSeat || !hasShifts)) {
-                                                                    return <Badge variant="yellow">Pending Allocation</Badge>;
-                                                                }
-
-                                                                return (
-                                                                    <Badge variant={student.isActive ? 'green' : 'red'}>
-                                                                        {student.isActive ? 'Active' : 'Inactive'}
-                                                                    </Badge>
-                                                                );
-                                                            })()}
-                                                        </td>
-                                                        <td className="p-4">
-                                                            {new Date(student.createdAt).toLocaleDateString()}
-                                                        </td>
-                                                        <td className="p-4 text-right space-x-2">
+                                                    <td className="px-5 py-3.5">
+                                                        {(() => {
+                                                            const hasSeat = getStudentSeat(student._id);
+                                                            const hasShifts = getStudentShifts(student._id);
+                                                            if (student.isActive && (!hasSeat || !hasShifts)) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
+                                                            return <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${student.isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{student.isActive ? 'Active' : 'Inactive'}</span>;
+                                                        })()}
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-5 py-3.5 text-right">
+                                                        <div className="flex items-center justify-end gap-3">
                                                             {student.isActive ? (
                                                                 <>
-                                                                    <button
-                                                                        onClick={() => openIdCardModal(student)}
-                                                                        className="text-purple-400 hover:text-purple-300 transition-colors"
-                                                                        title="Show ID Card"
-                                                                    >
-                                                                        <IoIdCard size={20} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => openSeatAssignModal(student)}
-                                                                        className="text-green-400 hover:text-green-300 transition-colors"
-                                                                        title="Assign Seat"
-                                                                    >
-                                                                        <IoBedOutline size={20} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => openResetPasswordModal(student)}
-                                                                        className="text-yellow-400 hover:text-yellow-300 transition-colors"
-                                                                        title="Reset Password"
-                                                                    >
-                                                                        <IoKey size={20} />
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => openEditModal(student)}
-                                                                        className="text-blue-400 hover:text-blue-300 transition-colors"
-                                                                        title="Edit"
-                                                                    >
-                                                                        <IoPencil size={20} />
-                                                                    </button>
+                                                                    <button onClick={() => openIdCardModal(student)} className="text-purple-400 hover:text-purple-300 transition-colors" title="Show ID Card"><IoIdCard size={18} /></button>
+                                                                    <button onClick={() => openSeatAssignModal(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Assign Seat"><IoBedOutline size={18} /></button>
+                                                                    <button onClick={() => openResetPasswordModal(student)} className="text-yellow-400 hover:text-yellow-300 transition-colors" title="Reset Password"><IoKey size={18} /></button>
+                                                                    <button onClick={() => openEditModal(student)} className="text-blue-400 hover:text-blue-300 transition-colors" title="Edit"><IoPencil size={18} /></button>
                                                                 </>
                                                             ) : (
-                                                                <button
-                                                                    onClick={() => handleReactivate(student)}
-                                                                    className="text-green-400 hover:text-green-300 transition-colors mr-2"
-                                                                    title="Reactivate Student"
-                                                                >
-                                                                    <IoRefresh size={20} />
-                                                                </button>
+                                                                <button onClick={() => handleReactivate(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Reactivate"><IoRefresh size={18} /></button>
                                                             )}
-                                                            <button
-                                                                onClick={() => openDeleteModal(student)}
-                                                                className="text-red-400 hover:text-red-300 transition-colors"
-                                                                title={student.isActive ? "Remove Student" : "Delete Permanently"}
-                                                            >
-                                                                <IoTrash size={20} />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))
-                                            )}
+                                                            <button onClick={() => openDeleteModal(student)} className="text-red-400 hover:text-red-300 transition-colors" title="Delete"><IoTrash size={18} /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
                                         </tbody>
                                     </table>
                                 </div>
-                            </Card>
+                            </div>
                         )}
                     </>
                 )}
@@ -1026,28 +876,14 @@ const StudentManagement = () => {
                                         }}
                                     />
                                 </div>
-                                <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full">
-                                    <Button
-                                        variant="secondary"
-                                        className="flex-1"
-                                        onClick={() => setShowIdCardModal(false)}
-                                    >
-                                        Close
-                                    </Button>
-                                    <Button
-                                        variant="primary"
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700"
-                                        onClick={handleDownloadPNG}
-                                    >
-                                        <IoDownload className="inline mr-2" /> PNG
-                                    </Button>
-                                    <Button
-                                        variant="primary"
-                                        className="flex-1 bg-red-600 hover:bg-red-700"
-                                        onClick={handleDownloadPDF}
-                                    >
-                                        <IoDownload className="inline mr-2" /> PDF
-                                    </Button>
+                                <div className="mt-5 flex flex-col sm:flex-row gap-3 w-full">
+                                    <button onClick={() => setShowIdCardModal(false)} className={BTN_SECONDARY + ' flex-1'}>Close</button>
+                                    <button onClick={handleDownloadPNG} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/20">
+                                        <IoDownload size={14} /> PNG
+                                    </button>
+                                    <button onClick={handleDownloadPDF} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20">
+                                        <IoDownload size={14} /> PDF
+                                    </button>
                                 </div>
                             </>
                         )}
@@ -1067,7 +903,7 @@ const StudentManagement = () => {
                                 type="text"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="input"
+                                className={INPUT}
                                 required
                             />
                         </div>
@@ -1077,7 +913,7 @@ const StudentManagement = () => {
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="input"
+                                className={INPUT}
                                 required
                             />
                         </div>
@@ -1090,7 +926,7 @@ const StudentManagement = () => {
                                     const val = e.target.value.replace(/\D/g, '');
                                     if (val.length <= 10) setFormData({ ...formData, mobile: val });
                                 }}
-                                className="input"
+                                className={INPUT}
                                 placeholder="Enter 10-digit mobile number"
                                 pattern="[0-9]{10}"
                                 required
@@ -1101,54 +937,45 @@ const StudentManagement = () => {
                             <textarea
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                className="input min-h-[80px]"
+                                className={INPUT + ' min-h-[80px]'}
                                 placeholder="Enter student address"
                             />
                         </div>
 
                         {!editMode && (
                             <div className="space-y-1">
-                                <label className="block text-sm font-medium mb-1">Generated Password</label>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Generated Password</label>
                                 <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={formData.password}
-                                        readOnly
-                                        className="input flex-1 bg-gray-700/50 cursor-not-allowed font-mono text-center tracking-wider"
-                                        placeholder="Generating..."
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                                            let password = '';
-                                            for (let i = 0; i < 8; i++) {
-                                                password += charset.charAt(Math.floor(Math.random() * charset.length));
-                                            }
-                                            setFormData({ ...formData, password: password });
-                                        }}
-                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors font-medium"
-                                    >
+                                    <input type="text" value={formData.password} readOnly
+                                        className={INPUT + ' flex-1 cursor-not-allowed font-mono text-center tracking-wider opacity-70'}
+                                        placeholder="Generating..." />
+                                    <button type="button" onClick={() => {
+                                        const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                                        let password = '';
+                                        for (let i = 0; i < 8; i++) { password += charset.charAt(Math.floor(Math.random() * charset.length)); }
+                                        setFormData({ ...formData, password: password });
+                                    }} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-xl transition-colors font-medium">
                                         Regenerate
                                     </button>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-1">
-                                    This password will be sent to the student via email.
-                                </p>
+                                <p className="text-xs text-gray-600 mt-1">This password will be sent to the student via email.</p>
                             </div>
                         )}
-                        <div className="flex gap-4">
-                            <Button type="submit" variant="primary" className="flex-1">
-                                {editMode ? 'Update Student' : 'Create Student'}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => setShowModal(false)}
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
+                        {!editMode && (
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Registration Date</label>
+                                <input type="date" value={formData.joinedAt}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
+                                    className={INPUT}
+                                    style={{ colorScheme: 'dark' }}
+                                />
+                                <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
+                            </div>
+                        )}
+                        <div className="flex gap-3">
+                            <button type="submit" className={BTN_PRIMARY + ' flex-1'}>{editMode ? 'Update Student' : 'Create Student'}</button>
+                            <button type="button" onClick={() => setShowModal(false)} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
                         </div>
                         {!editMode && !formData.password && (
                             <p className="text-sm text-gray-400">
@@ -1170,7 +997,7 @@ const StudentManagement = () => {
                             <select
                                 value={seatFormData.seatId}
                                 onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
-                                className="input"
+                                className={INPUT}
                             >
                                 <option value="">Choose a seat...</option>
                                 {availableSeats.length === 0 ? (
@@ -1196,7 +1023,7 @@ const StudentManagement = () => {
                             <select
                                 value={seatFormData.shift}
                                 onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
-                                className="input"
+                                className={INPUT}
                             >
                                 <option value="">Select shift...</option>
                                 {(() => {
@@ -1227,7 +1054,7 @@ const StudentManagement = () => {
                                 type="number"
                                 value={seatFormData.negotiatedPrice}
                                 onChange={(e) => setSeatFormData({ ...seatFormData, negotiatedPrice: e.target.value })}
-                                className="input"
+                                className={INPUT}
                                 placeholder="Leave empty for base price"
                             />
                             <p className="text-sm text-gray-400 mt-1">
@@ -1235,32 +1062,12 @@ const StudentManagement = () => {
                             </p>
                         </div>
 
-                        <div className="flex gap-4">
-                            <Button
-                                type="submit"
-                                variant="success"
-                                className="flex-1"
-                                disabled={availableSeats.length === 0 || assigningSeat}
-                            >
-                                {assigningSeat ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                                        Assigning...
-                                    </>
-                                ) : (
-                                    <>
-                                        <IoBedOutline className="inline mr-2" /> Assign Seat
-                                    </>
-                                )}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => setShowSeatModal(false)}
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
+                        <div className="flex gap-3">
+                            <button type="submit" disabled={availableSeats.length === 0 || assigningSeat}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold shadow-lg shadow-green-500/20 disabled:opacity-50">
+                                {assigningSeat ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Assigning...</>) : (<><IoBedOutline size={15} /> Assign Seat</>)}
+                            </button>
+                            <button type="button" onClick={() => setShowSeatModal(false)} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
                         </div>
                     </form>
                 </Modal>
@@ -1350,7 +1157,7 @@ const StudentManagement = () => {
                                 type="password"
                                 value={deletePassword}
                                 onChange={(e) => setDeletePassword(e.target.value)}
-                                className="input"
+                                className={INPUT}
                                 placeholder="Admin password"
                                 required
                                 autoFocus
@@ -1361,26 +1168,11 @@ const StudentManagement = () => {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-4">
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                className="flex-1 bg-red-600 hover:bg-red-700"
-                                disabled={deleteLoading || !deletePassword}
-                            >
-                                {deleteLoading ? 'Processing...' : (
-                                    selectedStudent?.isActive && !hardDelete ? 'Remove Student' : 'Delete Permanently'
-                                )}
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => setShowDeleteModal(false)}
-                                className="flex-1"
-                                disabled={deleteLoading}
-                            >
-                                Cancel
-                            </Button>
+                        <div className="flex gap-3">
+                            <button type="submit" disabled={deleteLoading || !deletePassword} className={BTN_DANGER + ' flex-1'}>
+                                {deleteLoading ? 'Processing...' : (selectedStudent?.isActive && !hardDelete ? 'Remove Student' : 'Delete Permanently')}
+                            </button>
+                            <button type="button" onClick={() => setShowDeleteModal(false)} disabled={deleteLoading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
                         </div>
                     </form>
                 </Modal>
@@ -1415,25 +1207,10 @@ const StudentManagement = () => {
                         )}
 
                         <div className="flex gap-3">
-                            <Button
-                                variant="secondary"
-                                onClick={() => {
-                                    setShowResetPasswordModal(false);
-                                    setSelectedStudent(null);
-                                    setError('');
-                                }}
-                                className="flex-1"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={handleResetPassword}
-                                disabled={resetPasswordLoading}
-                                className="flex-1"
-                            >
+                            <button onClick={() => { setShowResetPasswordModal(false); setSelectedStudent(null); setError(''); }} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
+                            <button onClick={handleResetPassword} disabled={resetPasswordLoading} className={BTN_PRIMARY + ' flex-1'}>
                                 {resetPasswordLoading ? 'Resetting...' : 'Reset & Send Email'}
-                            </Button>
+                            </button>
                         </div>
                     </div>
                 </Modal>
@@ -1495,7 +1272,7 @@ const StudentManagement = () => {
                                                 <span>{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-mono">₹{fee.amount}</span>
-                                                    <Badge variant={fee.status === 'paid' ? 'green' : 'yellow'}>{fee.status}</Badge>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${fee.status === 'paid' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'}`}>{fee.status}</span>
                                                 </div>
                                             </div>
                                         ))
@@ -1513,7 +1290,7 @@ const StudentManagement = () => {
                                         selectedArchive.attendance.slice(0, 20).map((att, idx) => (
                                             <div key={idx} className="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
                                                 <span>{new Date(att.date).toLocaleDateString()}</span>
-                                                <Badge variant={att.status === 'present' ? 'green' : 'red'}>{att.status}</Badge>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${att.status === 'present' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{att.status}</span>
                                             </div>
                                         ))
                                     )}
@@ -1521,13 +1298,13 @@ const StudentManagement = () => {
                             </div>
 
                             <div className="flex justify-end">
-                                <Button variant="secondary" onClick={() => setShowArchiveModal(false)}>Close Report</Button>
+                                <button onClick={() => setShowArchiveModal(false)} className={BTN_SECONDARY}>Close Report</button>
                             </div>
                         </div>
                     )}
                 </Modal>
             </div>
-        </div >
+        </div>
     );
 };
 

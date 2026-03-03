@@ -691,7 +691,7 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, systemMode = 'custom', studentId } = req.body;
+        const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt } = req.body;
 
         // Use provided password or generate one
         let password = req.body.password;
@@ -699,7 +699,7 @@ exports.createStudent = async (req, res) => {
             password = generatePassword();
         }
 
-        const student = await User.create({
+        const studentData = {
             name,
             email,
             mobile,
@@ -711,7 +711,16 @@ exports.createStudent = async (req, res) => {
             registrationSource: 'admin',
             studentId: studentId || undefined, // Allow empty/null
             createdBy: req.user.id
-        });
+        };
+
+        // Allow admin to set a custom registration date
+        if (joinedAt) {
+            studentData.createdAt = new Date(joinedAt);
+        }
+
+        const student = new User(studentData);
+        if (joinedAt) student.createdAt = new Date(joinedAt); // Force override Mongoose default
+        await student.save();
 
         // Send credentials email
         try {
