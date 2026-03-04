@@ -285,7 +285,7 @@ const Attendance = () => {
                                             cardStyle = 'bg-amber-500/5 border-amber-500/15 hover:border-amber-500/30';
                                             iconStyle = 'bg-amber-500/20 text-amber-400';
                                             badgeStyle = 'bg-amber-500/20 text-amber-400';
-                                            badgeText = 'HOLIDAY';
+                                            badgeText = holidayFestivalName.toUpperCase();
                                         } else if (record.status === 'present' || attendedOnHoliday) {
                                             cardStyle = 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5';
                                             iconStyle = 'bg-green-500/20 text-green-400';
