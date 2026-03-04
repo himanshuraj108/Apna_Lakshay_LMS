@@ -13,7 +13,8 @@ import {
     IoNewspaper, IoArrowForwardCircle,
     IoFlashOutline, IoStatsChartOutline, IoShieldCheckmarkOutline,
     IoDocumentTextOutline, IoSparklesOutline, IoLockClosedOutline,
-    IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoQrCode
+    IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoQrCode,
+    IoLocation
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -195,6 +196,84 @@ const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingS
     return !comingSoon && to ? <Link to={to} className="block">{inner}</Link> : inner;
 };
 
+// ─── Premium Floating Attendance Button ──────────────────────────────────
+const FloatingAttendanceBtn = ({ loading, onClick }) => (
+    <motion.button
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 120, delay: 0.2 }}
+        whileHover={!loading ? { scale: 1.05, y: -2 } : {}}
+        whileTap={!loading ? { scale: 0.96 } : {}}
+        onClick={onClick}
+        disabled={loading}
+        className={`fixed bottom-8 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl font-bold text-white text-sm shadow-2xl transition-all ${loading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+            }`}
+        style={{
+            background: loading
+                ? 'rgba(75,85,99,0.85)'
+                : 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(20,184,166,0.95))',
+            backdropFilter: 'blur(16px)',
+            boxShadow: loading ? 'none' : '0 8px 32px rgba(16,185,129,0.45), 0 0 0 1px rgba(255,255,255,0.1)',
+            border: '1px solid rgba(255,255,255,0.15)',
+        }}
+    >
+        {/* Pulse ring */}
+        {!loading && (
+            <span
+                className="absolute inset-0 rounded-2xl"
+                style={{
+                    background: 'rgba(16,185,129,0.3)',
+                    animation: 'pulse-ring 2.4s ease-out infinite',
+                    pointerEvents: 'none',
+                }}
+            />
+        )}
+        <div className={`relative flex items-center justify-center w-8 h-8 rounded-xl ${loading ? 'bg-gray-600' : 'bg-white/20'
+            }`}>
+            {loading
+                ? <IoTimeOutline size={18} className="animate-spin text-white" />
+                : <IoScan size={18} className="text-white" />
+            }
+        </div>
+        <div className="flex flex-col items-start leading-none">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-white/70 font-semibold mb-0.5">Mark</span>
+            <span className="text-base font-black tracking-wide">{loading ? 'Checking...' : 'Attendance'}</span>
+        </div>
+    </motion.button>
+);
+
+// ─── Location denial modal ────────────────────────────────────────────────
+const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-gray-900 border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden"
+        >
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white z-10"><IoCloseCircle size={24} /></button>
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-2xl" />
+            <div className="text-center mb-6 mt-2">
+                <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
+                    <IoAlertCircleOutline className="text-amber-500 text-4xl" />
+                </div>
+                <h3 className="text-white font-bold text-xl">Location Access Needed</h3>
+                <p className="text-gray-400 text-sm mt-3 leading-relaxed">Your attendance needs your location. Click <span className="text-amber-400 font-semibold">Enable Location</span> and allow access in the browser prompt that appears.</p>
+            </div>
+            <button
+                onClick={onEnable}
+                disabled={enabling}
+                className={`w-full py-3.5 mb-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${enabling
+                    ? 'bg-gray-600 cursor-not-allowed opacity-70'
+                    : 'bg-gradient-to-r from-green-500 to-teal-500 hover:opacity-90 shadow-lg shadow-green-500/30'
+                    }`}
+            >
+                {enabling ? <><IoTimeOutline size={18} className="animate-spin" /> Requesting...</> : <><IoLocation size={18} /> Enable Location</>}
+            </button>
+            <button onClick={onClose} className="w-full py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-300 hover:bg-white/5 rounded-xl transition-all">
+                Dismiss
+            </button>
+        </motion.div>
+    </div>
+);
+
 // ─── Main Dashboard ───────────────────────────────────────────────────
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
@@ -207,22 +286,11 @@ const StudentDashboard = () => {
     const [showNewspaper, setShowNewspaper] = useState(false);
     const [showExamAlerts, setShowExamAlerts] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
-    const [showQuickAttendance, setShowQuickAttendance] = useState(false);
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [loadingScanner, setLoadingScanner] = useState(false);
+    const [enablingLocation, setEnablingLocation] = useState(false);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
-
-
-    useEffect(() => {
-        if (!loading) return; // Don't start timer if already loaded (or finished loading)
-
-        const timer = setTimeout(() => {
-            setShowQuickAttendance(true);
-        }, 3000);
-
-        return () => clearTimeout(timer);
-    }, [loading]);
 
     useEffect(() => { fetchDashboardData(); }, []);
 
@@ -281,6 +349,22 @@ const StudentDashboard = () => {
             }
         } finally {
             setLoadingScanner(false);
+        }
+    };
+
+    const handleEnableLocation = async () => {
+        setEnablingLocation(true);
+        try {
+            // Re-trigger browser prompt if possible or at least check again
+            await getLocation();
+            // If we got here, permission was granted!
+            setShowLocationPrompt(false);
+            setShowScanner(true);
+        } catch (err) {
+            setScanMessage({ type: 'error', text: 'Location still denied. Please check site settings.' });
+            setTimeout(() => setScanMessage(null), 5000);
+        } finally {
+            setEnablingLocation(false);
         }
     };
 
@@ -371,46 +455,7 @@ const StudentDashboard = () => {
                     <DashboardSkeleton />
                 </div>
 
-                {/* Network slow popup — shown during skeleton loading */}
-                <AnimatePresence>
-                    {showQuickAttendance && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm text-center"
-                        >
-                            <div className="p-8 rounded-2xl border border-white/10 bg-gray-900 shadow-2xl max-w-sm w-full mx-auto relative overflow-hidden">
-                                <button
-                                    onClick={() => setShowQuickAttendance(false)}
-                                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-                                >
-                                    <IoCloseCircle size={24} />
-                                </button>
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-t-2xl" />
-                                <IoTimeOutline size={40} className="text-yellow-400 mx-auto mb-4 animate-pulse" />
-                                <h3 className="text-xl font-bold text-white mb-2">Network is slow?</h3>
-                                <p className="text-sm text-gray-400 mb-6">Open the scanner directly so you don't have to wait.</p>
-                                <button
-                                    onClick={() => {
-                                        setShowQuickAttendance(false);
-                                        handleOpenScanner();
-                                    }}
-                                    disabled={loadingScanner}
-                                    className={`w-full py-3.5 mb-3 bg-gradient-to-r ${loadingScanner ? 'from-gray-500 to-gray-600 cursor-not-allowed' : 'from-green-500 to-teal-500 hover:opacity-90'} rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-opacity`}
-                                >
-                                    {loadingScanner ? <span className="animate-pulse">Checking Location...</span> : <><IoQrCode size={22} /> Mark Attendance</>}
-                                </button>
-                                <button
-                                    onClick={() => setShowQuickAttendance(false)}
-                                    className="w-full py-3 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-                                >
-                                    Continue to Dashboard
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Scan toast can still show during loading */}
+                {/* Scan toast during loading */}
                 <AnimatePresence>
                     {scanMessage && (
                         <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
@@ -421,7 +466,18 @@ const StudentDashboard = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Always-visible premium floating Attendance button */}
+                <FloatingAttendanceBtn loading={loadingScanner} onClick={handleOpenScanner} />
+
                 {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
+                {showLocationPrompt && (
+                    <LocationPromptModal
+                        onClose={() => setShowLocationPrompt(false)}
+                        onEnable={handleEnableLocation}
+                        enabling={enablingLocation}
+                    />
+                )}
             </div>
         );
     }
@@ -433,56 +489,12 @@ const StudentDashboard = () => {
 
             {/* ── Modals ── */}
             <AnimatePresence>
-                {showQuickAttendance && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm text-center"
-                    >
-                        <div className="p-8 rounded-2xl border border-white/10 bg-gray-900 shadow-2xl max-w-sm w-full mx-auto relative overflow-hidden">
-                            <button
-                                onClick={() => setShowQuickAttendance(false)}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-                            >
-                                <IoCloseCircle size={24} />
-                            </button>
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-t-2xl" />
-                            <IoTimeOutline size={40} className="text-yellow-400 mx-auto mb-4 animate-pulse" />
-                            <h3 className="text-xl font-bold text-white mb-2">Network is slow?</h3>
-                            <p className="text-sm text-gray-400 mb-6">Open the scanner directly so you don't have to wait.</p>
-                            <button
-                                onClick={() => {
-                                    setShowQuickAttendance(false);
-                                    setShowScanner(true);
-                                }}
-                                className="w-full py-3.5 mb-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                            >
-                                <IoQrCode size={22} /> Mark Attendance
-                            </button>
-                            <button
-                                onClick={() => setShowQuickAttendance(false)}
-                                className="w-full py-3 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-                            >
-                                Continue to Dashboard
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
                 {showLocationPrompt && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-gray-900 border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
-                            <button onClick={() => setShowLocationPrompt(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><IoCloseCircle size={24} /></button>
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-2xl" />
-                            <div className="text-center mb-5 mt-2">
-                                <IoAlertCircleOutline className="text-amber-500 text-6xl mx-auto mb-3 animate-pulse" />
-                                <h3 className="text-white font-bold text-xl">Location Access Needed</h3>
-                                <p className="text-gray-400 text-sm mt-3">Admin has enabled location restrictions. Please allow location access in your browser settings to mark attendance via QR scan.</p>
-                            </div>
-                            <button onClick={() => setShowLocationPrompt(false)} className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">
-                                I Understand
-                            </button>
-                        </motion.div>
-                    </div>
+                    <LocationPromptModal
+                        onClose={() => setShowLocationPrompt(false)}
+                        onEnable={handleEnableLocation}
+                        enabling={enablingLocation}
+                    />
                 )}
 
                 {showIDCard && (
@@ -693,19 +705,8 @@ const StudentDashboard = () => {
                 <Footer />
             </div>
 
-            {/* ── Floating scan button ── */}
-            <motion.button
-                whileHover={{ scale: 1.12 }}
-                whileTap={{ scale: 0.92 }}
-                onClick={handleOpenScanner}
-                disabled={loadingScanner}
-                className={`fixed bottom-8 right-8 z-50 w-16 h-16 flex items-center justify-center rounded-full text-white shadow-2xl ${loadingScanner ? 'opacity-70 cursor-not-allowed bg-gray-600' : ''}`}
-                style={loadingScanner ? {} : { background: 'linear-gradient(135deg, #10b981, #14b8a6)', boxShadow: '0 8px 32px rgba(16,185,129,0.5)' }}
-            >
-                {/* Pulse ring */}
-                {!loadingScanner && <span className="absolute inset-0 rounded-full bg-green-500 opacity-40" style={{ animation: 'pulse-ring 2s ease-out infinite' }} />}
-                {loadingScanner ? <IoTimeOutline size={28} className="animate-spin" /> : <IoScan size={28} />}
-            </motion.button>
+            {/* ── Floating Attendance Button (always visible) ── */}
+            <FloatingAttendanceBtn loading={loadingScanner} onClick={handleOpenScanner} />
         </div>
     );
 };
