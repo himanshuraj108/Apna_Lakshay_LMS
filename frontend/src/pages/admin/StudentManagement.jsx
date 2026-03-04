@@ -3,10 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import useShifts from '../../hooks/useShifts';
 
 const PAGE_BG = { background: '#050508' };
@@ -355,6 +356,134 @@ const StudentManagement = () => {
         }
     };
 
+    const getStudentFee = (student) => {
+        if (student.currentFee != null) {
+            return `Rs. ${student.currentFee}`;
+        }
+
+        const studentId = student._id;
+        if (!floors || floors.length === 0) return 'N/A';
+        for (const floor of floors) {
+            if (!floor.rooms) continue;
+            for (const room of floor.rooms) {
+                if (!room.seats) continue;
+                for (const seat of room.seats) {
+                    if (seat.assignments && seat.assignments.length > 0) {
+                        const activeAssignment = seat.assignments.find(a =>
+                            a.status === 'active' &&
+                            (typeof a.student === 'object' ? a.student._id : a.student) === studentId
+                        );
+                        if (activeAssignment) {
+                            if (activeAssignment.negotiatedPrice) {
+                                return `Rs. ${activeAssignment.negotiatedPrice}`;
+                            } else {
+                                // Find base price based on shift type
+                                const shiftId = typeof activeAssignment.shift === 'object' ? activeAssignment.shift._id : activeAssignment.shift;
+                                if (shiftId === 'full_day' || activeAssignment.type === 'full_day' || activeAssignment.legacyShift === 'full') {
+                                    return `Rs. ${seat.basePrices?.full || 1200} (Base)`;
+                                } else {
+                                    return `Rs. ${seat.basePrices?.half || 700} (Base)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return 'N/A';
+    };
+
+    const generateStudentTablePDF = () => {
+        const doc = new jsPDF('landscape');
+        const dateStr = new Date().toLocaleDateString('en-GB');
+
+        let tabTitle = 'All Students';
+        switch (activeTab) {
+            case 'active': tabTitle = 'Active Students'; break;
+            case 'inactive': tabTitle = 'Inactive Students'; break;
+            case 'pending': tabTitle = 'Pending Seat Assignment'; break;
+            case 'admin': tabTitle = 'Admin Registered Students'; break;
+            case 'self': tabTitle = 'Self Registered Students'; break;
+            case 'history': tabTitle = 'Deleted Student Archives'; break;
+        }
+
+        doc.setFontSize(16);
+        doc.text(`${tabTitle} Report - ${dateStr}`, 14, 15);
+
+        if (activeTab === 'history') {
+            const tableColumn = ["Name", "Email", "Joined Date", "Deleted Date"];
+            const tableRows = [];
+
+            archivedStudents.forEach(student => {
+                tableRows.push([
+                    student.name,
+                    student.email || 'N/A',
+                    new Date(student.joinedAt).toLocaleDateString('en-GB'),
+                    new Date(student.deletedAt).toLocaleDateString('en-GB')
+                ]);
+            });
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 20,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [63, 81, 181] }
+            });
+            doc.save(`Archived_Students_${dateStr}.pdf`);
+            return;
+        }
+
+        const tableColumn = ["S.No", "Name", "Mobile", "Email", "Status", "Seat", "Shift", "Fee", "Joined", "Address"];
+        const tableRows = [];
+
+        filteredStudents.forEach((student, index) => {
+            const hasSeat = getStudentSeat(student._id);
+            const hasShifts = getStudentShifts(student._id);
+            let statusStr = student.isActive ? 'Active' : 'Inactive';
+            if (student.isActive && (!hasSeat || !hasShifts)) {
+                statusStr = 'Pending';
+            }
+
+            tableRows.push([
+                index + 1,
+                student.name,
+                student.mobile ? String(student.mobile) : 'N/A',
+                student.email || 'N/A',
+                statusStr,
+                hasSeat || 'N/A',
+                hasShifts || 'N/A',
+                getStudentFee(student),
+                new Date(student.createdAt).toLocaleDateString('en-GB'),
+                student.address || 'N/A'
+            ]);
+        });
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 20,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [63, 81, 181] },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 4) {
+                    if (data.cell.raw === 'Active') {
+                        data.cell.styles.textColor = [34, 197, 94]; // Green
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'Inactive') {
+                        data.cell.styles.textColor = [239, 68, 68]; // Red
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'Pending') {
+                        data.cell.styles.textColor = [234, 179, 8]; // Yellow
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        doc.save(`Student_Report_${tabTitle.replace(/\s+/g, '_')}_${dateStr}.pdf`);
+    };
+
     const handleViewArchive = async (archiveId) => {
         try {
             const response = await api.get(`/admin/archives/${archiveId}`);
@@ -625,6 +754,34 @@ const StudentManagement = () => {
         return assignedShifts.length > 0 ? assignedShifts.join(', ') : null;
     };
 
+    const getShiftPriceForSeat = (seatId, shiftId) => {
+        if (!seatId || !floors || floors.length === 0) return shiftId === 'full' ? 1200 : 800;
+
+        let foundSeat = null;
+        for (const floor of floors) {
+            for (const room of floor.rooms || []) {
+                const seat = room.seats?.find(s => s._id === seatId);
+                if (seat) {
+                    foundSeat = seat;
+                    break;
+                }
+            }
+            if (foundSeat) break;
+        }
+
+        if (!foundSeat) return shiftId === 'full' ? 1200 : 800;
+
+        if (shiftId === 'full' || shiftId === 'full_day') {
+            return foundSeat.basePrices?.full || 1200;
+        }
+
+        if (foundSeat.shiftPrices && foundSeat.shiftPrices[shiftId]) {
+            return foundSeat.shiftPrices[shiftId];
+        }
+
+        return foundSeat.basePrices?.day || foundSeat.basePrices?.half || 800;
+    };
+
     // Filter students based on active tab
     const getFilteredStudents = () => {
         switch (activeTab) {
@@ -674,6 +831,10 @@ const StudentManagement = () => {
                         </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
+                        <motion.button whileHover={{ scale: 1.03 }} onClick={generateStudentTablePDF}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-semibold transition-all">
+                            <IoDownloadOutline size={16} /> Export PDF
+                        </motion.button>
                         <motion.button whileHover={{ scale: 1.03 }} onClick={handleResetAllQrs}
                             className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all">
                             <IoRefresh size={16} /> Reset All QRs
@@ -801,8 +962,8 @@ const StudentManagement = () => {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-white/8">
-                                                {['Name', 'Email', 'Shift', 'Status', 'Created', 'Actions'].map((h, i) => (
-                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 5 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                {['Name', 'Email', 'Shift', 'Status', 'Created', 'Fee', 'Actions'].map((h, i) => (
+                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 6 ? 'text-right' : 'text-left'}`}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
@@ -834,6 +995,7 @@ const StudentManagement = () => {
                                                         })()}
                                                     </td>
                                                     <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
+                                                    <td className="px-5 py-3.5 text-xs font-bold text-emerald-400">{getStudentFee(student)}</td>
                                                     <td className="px-5 py-3.5 text-right">
                                                         <div className="flex items-center justify-end gap-3">
                                                             {student.isActive ? (
@@ -992,6 +1154,17 @@ const StudentManagement = () => {
                     title={`Assign Seat to ${selectedStudent?.name}`}
                 >
                     <form onSubmit={handleSeatAssignment} className="space-y-4">
+                        {/* Selected Student Details */}
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                {selectedStudent?.name?.charAt(0)?.toUpperCase() || 'S'}
+                            </div>
+                            <div className="min-w-0">
+                                <h4 className="text-white font-bold truncate">{selectedStudent?.name}</h4>
+                                <p className="text-gray-400 text-sm truncate">{selectedStudent?.email}</p>
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium mb-2">Select Seat</label>
                             <select
@@ -999,13 +1172,13 @@ const StudentManagement = () => {
                                 onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
                                 className={INPUT}
                             >
-                                <option value="">Choose a seat...</option>
+                                <option value="" className="bg-[#050508]">Choose a seat...</option>
                                 {availableSeats.length === 0 ? (
-                                    <option disabled>No available seats</option>
+                                    <option disabled className="bg-[#050508]">No available seats</option>
                                 ) : (
                                     availableSeats.map(seat => (
-                                        <option key={seat._id} value={seat._id}>
-                                            {seat.displayName} - ₹{seat.basePrices?.full || 1200}
+                                        <option key={seat._id} value={seat._id} className="bg-[#050508]">
+                                            {seat.displayName}
                                             {seat.isFullyBooked ? ' (Fully Booked)' : seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
                                         </option>
                                     ))
@@ -1025,18 +1198,18 @@ const StudentManagement = () => {
                                 onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
                                 className={INPUT}
                             >
-                                <option value="">Select shift...</option>
+                                <option value="" className="bg-[#050508]">Select shift...</option>
                                 {(() => {
                                     const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
                                     return availableShifts.map(shift => (
-                                        <option key={shift.id} value={shift.id}>
-                                            {shift.name} ({getShiftTimeRange(shift)}) - ₹{shift.id === 'full' ? '1200' : '800'}
+                                        <option key={shift.id} value={shift.id} className="bg-[#050508]">
+                                            {shift.name} ({getShiftTimeRange(shift)})
                                         </option>
                                     ));
                                 })()}
                                 {!isCustom && !shifts.some(s => s.id === 'full') &&
                                     (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
-                                        <option value="full">Full Day (9 AM - 9 PM) - ₹1200</option>
+                                        <option value="full" className="bg-[#050508]">Full Day (9 AM - 9 PM)</option>
                                     )}
                             </select>
                             {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (

@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
 import {
     IoArrowBack, IoCash, IoCashOutline, IoCheckmarkCircle, IoCloseCircle,
-    IoTimeOutline, IoAlertCircleOutline, IoFilterOutline
+    IoTimeOutline, IoAlertCircleOutline, IoFilterOutline, IoDownloadOutline
 } from 'react-icons/io5';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const PAGE_BG = { background: '#050508' };
 
@@ -54,6 +56,56 @@ const FeeManagement = () => {
         paid: 'text-green-400 bg-green-500/10 border-green-500/20',
         pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
         overdue: 'text-red-400 bg-red-500/10 border-red-500/20',
+    };
+
+    const generateFeeTablePDF = () => {
+        const doc = new jsPDF('landscape');
+
+        doc.setFontSize(22);
+        doc.setTextColor(40);
+        doc.text('Fee Management Report', 14, 22);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, 14, 30);
+        doc.text(`Filter Applied: ${filter.toUpperCase()}`, 14, 36);
+        doc.text(`Total Records: ${filteredFees.length}`, 14, 42);
+
+        const tableColumn = ["Student Name", "Email", "Billing Cycle", "Amount", "Due Date", "Status", "Paid Date"];
+        const tableRows = [];
+
+        filteredFees.forEach(fee => {
+            const cycleStart = new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+            const cycleEnd = new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
+
+            const feeData = [
+                fee.student?.name || 'Unknown',
+                fee.student?.email || 'N/A',
+                `${cycleStart} - ${cycleEnd}`,
+                `Rs. ${fee.amount}`,
+                new Date(fee.dueDate).toLocaleDateString('en-IN'),
+                fee.status.toUpperCase(),
+                fee.status === 'paid' && fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : '-'
+            ];
+
+            tableRows.push(feeData);
+        });
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 50,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            columnStyles: {
+                3: { halign: 'right', fontStyle: 'bold' },
+                5: { halign: 'center', fontStyle: 'bold' }
+            }
+        });
+
+        doc.save(`Fee_Report_${filter}_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     return (
@@ -108,16 +160,27 @@ const FeeManagement = () => {
                     ))}
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="flex gap-2 mb-5 flex-wrap">
-                    {TABS.map(t => (
-                        <button key={t.key} onClick={() => setFilter(t.key)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${filter === t.key
-                                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/25'
-                                : 'bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400'}`}>
-                            {t.label} <span className="opacity-70">({t.count})</span>
-                        </button>
-                    ))}
+                {/* Filter Tabs and Actions */}
+                <div className="flex justify-between items-center mb-5 flex-wrap gap-4">
+                    <div className="flex gap-2 flex-wrap">
+                        {TABS.map(t => (
+                            <button key={t.key} onClick={() => setFilter(t.key)}
+                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${filter === t.key
+                                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/25'
+                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400'}`}>
+                                {t.label} <span className="opacity-70">({t.count})</span>
+                            </button>
+                        ))}
+                    </div>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={generateFeeTablePDF}
+                        disabled={filteredFees.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <IoDownloadOutline size={18} /> Download PDF
+                    </motion.button>
                 </div>
 
                 {/* Table */}

@@ -4,7 +4,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import {
     IoClose, IoPhonePortrait, IoQrCode, IoCheckmarkCircle,
-    IoWarning, IoKeypad, IoLogIn, IoTime, IoMail
+    IoWarning, IoKeypad, IoLogIn, IoTime, IoMail, IoLocationOutline, IoWarningOutline
 } from 'react-icons/io5';
 import CredentialPopup from './CredentialPopup';
 import { useNavigate } from 'react-router-dom';
@@ -61,7 +61,7 @@ export default function AttendanceFloatingBtn() {
         setLoading(true);
         try {
             // Verify phone exists in DB before opening scanner
-            await axios.post(`${API}/api/auth/check-phone`, { mobile });
+            await axios.post(`${API} /api/auth / check - phone`, { mobile });
             setStep(STEPS.SCANNING); // Only open scanner if phone is valid
         } catch (err) {
             setError(err.response?.data?.message || 'Phone number not found. Please check and try again.');
@@ -103,11 +103,33 @@ export default function AttendanceFloatingBtn() {
         return () => { cancelled = true; stopScanner(); };
     }, [step]);
 
+    // ── Get current GPS location ─────────────────────────────────────────
+    const getLocation = () =>
+        new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser.'));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                () => reject(new Error('Location access denied. Please allow location to mark attendance.')),
+                { timeout: 10000, maximumAge: 0 }
+            );
+        });
+
     // ── Mark attendance via API ────────────────────────────────────
     const markAttendance = async (kioskToken) => {
         setLoading(true);
         try {
-            const res = await axios.post(`${API}/api/auth/kiosk-attendance`, { mobile, kioskToken });
+            let coords = {};
+            try { coords = await getLocation(); }
+            catch (geoErr) {
+                setError(geoErr.message);
+                setStep(STEPS.PHONE); // go back
+                return;
+            }
+
+            const res = await axios.post(`${API} /api/auth / kiosk - attendance`, { mobile, kioskToken, ...coords });
             setScanResult(res.data);
             setStep(STEPS.SUCCESS);
         } catch (err) {
@@ -124,7 +146,7 @@ export default function AttendanceFloatingBtn() {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post(`${API}/api/auth/send-otp-phone`, { mobile });
+            const res = await axios.post(`${API} /api/auth / send - otp - phone`, { mobile });
             setMaskedEmail(res.data.maskedEmail || '');
             setDebugOtp(res.data.debug_otp || ''); // shown as hint in dev mode
             setStep(STEPS.OTP);
@@ -142,7 +164,7 @@ export default function AttendanceFloatingBtn() {
         setError('');
         setLoading(true);
         try {
-            const res = await axios.post(`${API}/api/auth/verify-otp-login`, { mobile, otp });
+            const res = await axios.post(`${API} /api/auth / verify - otp - login`, { mobile, otp });
             const { token, user, password } = res.data;
 
             // Store in localStorage (same shape as normal login)
@@ -265,7 +287,12 @@ export default function AttendanceFloatingBtn() {
                                 {/* ── STEP: Phone ── */}
                                 {step === STEPS.PHONE && (
                                     <form onSubmit={handlePhone} className="space-y-4">
-                                        <p className="text-gray-400 text-sm text-center mb-4">Enter your registered phone number to scan the attendance QR</p>
+                                        <div className="text-center mb-4">
+                                            <p className="text-gray-400 text-sm">Enter your registered phone number to scan the attendance QR</p>
+                                            <p className="text-orange-400 text-xs mt-1.5 font-medium tracking-wide bg-orange-500/10 py-1 px-2 rounded-lg inline-block border border-orange-500/20">
+                                                <IoTime className="inline mr-1" size={14} /> Entry allowed 1:30 hr before shift
+                                            </p>
+                                        </div>
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
                                             <div className="relative">
@@ -296,7 +323,7 @@ export default function AttendanceFloatingBtn() {
                                             <div id="qr-attendance-reader" style={{ width: '100%' }} />
                                             {/* Corner markers */}
                                             {[['top-2 left-2', 'border-t-2 border-l-2'], ['top-2 right-2', 'border-t-2 border-r-2'], ['bottom-2 left-2', 'border-b-2 border-l-2'], ['bottom-2 right-2', 'border-b-2 border-r-2']].map(([pos, cls]) => (
-                                                <div key={pos} className={`absolute ${pos} w-6 h-6 ${cls} border-green-400`} />
+                                                <div key={pos} className={`absolute ${pos} w - 6 h - 6 ${cls} border - green - 400`} />
                                             ))}
                                         </div>
                                         {loading && (
@@ -313,7 +340,7 @@ export default function AttendanceFloatingBtn() {
                                     <div className="text-center space-y-4">
                                         {/* Avatar / icon */}
                                         <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center text-3xl"
-                                            style={{ background: scanResult.type === 'check-in' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#2563eb,#1d4ed8)', boxShadow: `0 0 30px ${scanResult.type === 'check-in' ? 'rgba(22,163,74,0.4)' : 'rgba(37,99,235,0.4)'}` }}>
+                                            style={{ background: scanResult.type === 'check-in' ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#2563eb,#1d4ed8)', boxShadow: `0 0 30px ${scanResult.type === 'check-in' ? 'rgba(22,163,74,0.4)' : 'rgba(37,99,235,0.4)'} ` }}>
                                             {scanResult.type === 'check-in' ? '✅' : '👋'}
                                         </div>
                                         <div>

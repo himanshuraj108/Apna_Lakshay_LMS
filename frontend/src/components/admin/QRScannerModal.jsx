@@ -150,51 +150,66 @@ const QRScannerModal = ({ onClose }) => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
-            <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full shadow-2xl relative border border-white/10">
+            <div className="bg-[#050508] rounded-3xl p-6 max-w-[340px] w-full shadow-2xl relative border border-white/10 overflow-hidden mx-auto my-auto max-h-[90vh] flex flex-col">
+                {/* Background glow effects */}
+                <div className="absolute -top-32 -right-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-30"
+                    className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all z-30"
                 >
-                    <FaTimes size={24} />
+                    <FaTimes size={16} />
                 </button>
 
-                <h2 className="text-2xl font-bold text-white text-center mb-6">QR Scanner</h2>
+                <div className="flex flex-col items-center justify-center gap-2 mb-6 relative z-10">
+                    <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl shadow-lg shadow-blue-500/20 mb-2">
+                        <FaCamera className="text-white text-xl" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white tracking-tight">QR Scanner</h2>
+                </div>
 
                 {/* Mode Toggles */}
-                <div className="flex bg-gray-800 rounded-lg p-1 mb-6">
+                <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 mb-6 relative z-10 backdrop-blur-md">
                     <button
                         onClick={() => setMode('check-in')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${mode === 'check-in' ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'check-in'
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
-                        <FaSignInAlt /> In
+                        <FaSignInAlt size={16} /> In
                     </button>
                     <button
                         onClick={() => setMode('check-out')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${mode === 'check-out' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'check-out'
+                            ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
-                        <FaSignOutAlt /> Out
+                        <FaSignOutAlt size={16} /> Out
                     </button>
                     <button
                         onClick={() => setMode('verify')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${mode === 'verify' ? 'bg-blue-500 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'verify'
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
-                        <FaUserCheck /> Verify
+                        <FaUserCheck size={16} /> Verify
                     </button>
                 </div>
 
                 {/* Scanner Area */}
-                <div className="relative overflow-hidden rounded-xl bg-black aspect-square mb-6 border border-white/20">
+                <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0f] w-full aspect-square max-h-[260px] max-w-[260px] mx-auto mb-6 border-2 border-white/5 group shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] z-10 transition-colors flex items-center justify-center">
                     {!cameraError ? (
-                        <div id="reader" className="w-full h-full object-cover"></div>
+                        <div id="reader" className="w-[105%] h-[105%] flex items-center justify-center object-cover [&_video]:object-cover [&_video]:rounded-2xl [&_video]:!w-full [&_video]:!h-full"></div>
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-center p-4">
-                            <div className="text-center">
-                                <FaCamera className="mx-auto text-red-500 mb-2" size={32} />
-                                <p className="text-red-400">{cameraError}</p>
-                                <p className="text-gray-500 text-sm mt-2">Please allow camera access in your browser settings.</p>
+                            <div className="bg-red-500/10 border border-red-500/20 backdrop-blur-md rounded-2xl p-6 shadow-xl w-full max-w-[280px]">
+                                <FaCamera className="mx-auto text-red-500 mb-4" size={40} />
+                                <p className="text-red-400 font-bold mb-2">{cameraError}</p>
+                                <p className="text-gray-500 text-xs">Please allow camera access in your browser settings to scan QR Codes.</p>
                             </div>
                         </div>
                     )}
@@ -203,54 +218,59 @@ const QRScannerModal = ({ onClose }) => {
                     <AnimatePresence>
                         {scanResult && (
                             <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
+                                initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0 }}
-                                className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md ${scanResult.type === 'success' && modeRef.current === 'check-in'
-                                    ? 'bg-green-500/80 text-white'
-                                    : 'bg-red-500/80 text-white'
+                                className={`absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xl ${scanResult.type === 'success' && modeRef.current === 'check-in'
+                                    ? 'bg-green-500/30 border-4 border-green-500/50'
+                                    : scanResult.type === 'success' && modeRef.current === 'check-out'
+                                        ? 'bg-red-500/30 border-4 border-red-500/50'
+                                        : 'bg-red-500/30 border-4 border-red-500/50'
                                     }`}
                             >
-                                <div className="bg-white rounded-full p-4 mb-4 shadow-lg">
+                                <div className={`rounded-3xl p-5 mb-5 shadow-2xl backdrop-blur-xl border border-white/20 ${scanResult.type === 'success' ? 'bg-gradient-to-br from-green-400 to-emerald-600' : 'bg-gradient-to-br from-red-400 to-rose-600'}`}>
                                     {scanResult.type === 'success' ? (
-                                        <FaSignInAlt size={32} className="text-green-500" />
+                                        <FaSignInAlt size={40} className="text-white drop-shadow-md" />
                                     ) : (
-                                        <FaTimes size={32} className="text-red-500" />
+                                        <FaTimes size={40} className="text-white drop-shadow-md" />
                                     )}
                                 </div>
-                                <h3 className="text-2xl font-bold mb-2">
+                                <h3 className="text-3xl font-black mb-3 text-white drop-shadow-lg">
                                     {scanResult.type === 'success' ? 'Success!' : 'Error'}
                                 </h3>
-                                <p className="font-medium text-lg mb-2 shadow-black drop-shadow-md">{scanResult.message}</p>
+                                <p className="font-bold text-lg mb-4 text-white/90 drop-shadow-md px-4">{scanResult.message}</p>
                                 {scanResult.studentName && (
-                                    <Badge variant="success" className="mt-2 bg-white text-green-700">{scanResult.studentName}</Badge>
+                                    <div className="px-5 py-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-xl text-white font-bold tracking-wide shadow-xl">
+                                        {scanResult.studentName}
+                                    </div>
                                 )}
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* Scanning Line Animation */}
+                    {/* Scanning Line Animation overlay */}
                     {!scanResult && !cameraError && (
                         <motion.div
-                            className="absolute top-0 left-0 w-full h-0.5 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)] z-10"
-                            animate={{ top: ['10%', '90%', '10%'] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                            className="absolute left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_25px_rgba(59,130,246,0.8)] z-10 opacity-70"
+                            animate={{ top: ['5%', '95%', '5%'] }}
+                            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
                         />
                     )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-3 relative z-10 w-full">
                     <input
                         type="text"
-                        placeholder="Manual Student ID..."
+                        placeholder="Or scan/type ID here..."
                         value={manualId}
                         onChange={(e) => setManualId(e.target.value.toUpperCase())}
                         onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
-                        className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:bg-white/10 outline-none transition-all font-medium"
                     />
                     <button
                         onClick={handleManualSubmit}
-                        className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+                        disabled={!manualId.trim() || isProcessing}
+                        className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 disabled:from-blue-500/50 disabled:to-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-bold tracking-wide shadow-lg shadow-blue-500/25 transition-all outline-none focus:ring-2 focus:ring-blue-500/50"
                     >
                         Go
                     </button>
