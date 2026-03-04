@@ -61,7 +61,7 @@ export default function AttendanceFloatingBtn() {
         setLoading(true);
         try {
             // Verify phone exists in DB before opening scanner
-            await axios.post(`${API} /api/auth / check - phone`, { mobile });
+            await axios.post(`${API}/api/auth/check-phone`, { mobile });
             setStep(STEPS.SCANNING); // Only open scanner if phone is valid
         } catch (err) {
             setError(err.response?.data?.message || 'Phone number not found. Please check and try again.');
@@ -129,7 +129,7 @@ export default function AttendanceFloatingBtn() {
                 return;
             }
 
-            const res = await axios.post(`${API} /api/auth / kiosk - attendance`, { mobile, kioskToken, ...coords });
+            const res = await axios.post(`${API}/api/auth/kiosk-attendance`, { mobile, kioskToken, ...coords });
             setScanResult(res.data);
             setStep(STEPS.SUCCESS);
         } catch (err) {
@@ -146,7 +146,7 @@ export default function AttendanceFloatingBtn() {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post(`${API} /api/auth / send - otp - phone`, { mobile });
+            const res = await axios.post(`${API}/api/auth/send-otp-phone`, { mobile });
             setMaskedEmail(res.data.maskedEmail || '');
             setDebugOtp(res.data.debug_otp || ''); // shown as hint in dev mode
             setStep(STEPS.OTP);
@@ -164,7 +164,7 @@ export default function AttendanceFloatingBtn() {
         setError('');
         setLoading(true);
         try {
-            const res = await axios.post(`${API} /api/auth / verify - otp - login`, { mobile, otp });
+            const res = await axios.post(`${API}/api/auth/verify-otp-login`, { mobile, otp });
             const { token, user, password } = res.data;
 
             // Store in localStorage (same shape as normal login)
