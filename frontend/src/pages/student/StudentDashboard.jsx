@@ -364,7 +364,7 @@ const StudentDashboard = () => {
                                     }}
                                     className="w-full py-3.5 mb-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                                 >
-                                    <IoQrCode size={22} /> Open QR Scanner
+                                    <IoQrCode size={22} /> Mark Attendance
                                 </button>
                                 <button
                                     onClick={() => setShowQuickAttendance(false)}
@@ -423,7 +423,7 @@ const StudentDashboard = () => {
                                 }}
                                 className="w-full py-3.5 mb-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
                             >
-                                <IoQrCode size={22} /> Open QR Scanner
+                                <IoQrCode size={22} /> Mark Attendance
                             </button>
                             <button
                                 onClick={() => setShowQuickAttendance(false)}
