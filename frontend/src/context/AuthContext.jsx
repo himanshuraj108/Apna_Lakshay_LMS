@@ -51,9 +51,23 @@ export const AuthProvider = ({ children }) => {
             const response = await api.post('/auth/login', { email, password });
             const { token, user: userData } = response.data;
 
+            // Save basic user first so the token is available for the next call
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
+
+            // Immediately fetch full profile (includes seat, seatNumber, shift etc.)
+            // so ProtectedRoute doesn't incorrectly redirect to /pending-allocation
+            try {
+                const meRes = await api.get('/auth/me');
+                if (meRes.data.success) {
+                    const fullUser = meRes.data.user;
+                    localStorage.setItem('user', JSON.stringify(fullUser));
+                    setUser(fullUser);
+                }
+            } catch (_) {
+                // Non-critical: if /me fails, basic userData is still usable
+            }
 
             return { success: true };
         } catch (error) {
