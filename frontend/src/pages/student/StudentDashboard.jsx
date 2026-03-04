@@ -208,6 +208,8 @@ const StudentDashboard = () => {
     const [showExamAlerts, setShowExamAlerts] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
     const [showQuickAttendance, setShowQuickAttendance] = useState(false);
+    const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+    const [loadingScanner, setLoadingScanner] = useState(false);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
@@ -251,6 +253,36 @@ const StudentDashboard = () => {
                 { timeout: 10000, maximumAge: 0 }
             );
         });
+
+    const handleOpenScanner = async () => {
+        setLoadingScanner(true);
+        try {
+            let isLocationRequired = true;
+            try {
+                const settingsRes = await api.get('/public/settings');
+                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
+                    isLocationRequired = false;
+                }
+            } catch (err) {
+                console.warn('Failed to fetch public settings for location requirements');
+            }
+
+            if (isLocationRequired) {
+                // Pre-check location permission and fetch location before showing scanner
+                try {
+                    await getLocation();
+                    setShowScanner(true);
+                } catch (geoErr) {
+                    // Location denied or unavailable
+                    setShowLocationPrompt(true);
+                }
+            } else {
+                setShowScanner(true);
+            }
+        } finally {
+            setLoadingScanner(false);
+        }
+    };
 
     const handleQrScan = async (token) => {
         setShowScanner(false);
@@ -360,11 +392,12 @@ const StudentDashboard = () => {
                                 <button
                                     onClick={() => {
                                         setShowQuickAttendance(false);
-                                        setShowScanner(true);
+                                        handleOpenScanner();
                                     }}
-                                    className="w-full py-3.5 mb-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                                    disabled={loadingScanner}
+                                    className={`w-full py-3.5 mb-3 bg-gradient-to-r ${loadingScanner ? 'from-gray-500 to-gray-600 cursor-not-allowed' : 'from-green-500 to-teal-500 hover:opacity-90'} rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-opacity`}
                                 >
-                                    <IoQrCode size={22} /> Mark Attendance
+                                    {loadingScanner ? <span className="animate-pulse">Checking Location...</span> : <><IoQrCode size={22} /> Mark Attendance</>}
                                 </button>
                                 <button
                                     onClick={() => setShowQuickAttendance(false)}
@@ -433,6 +466,23 @@ const StudentDashboard = () => {
                             </button>
                         </div>
                     </motion.div>
+                )}
+
+                {showLocationPrompt && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-gray-900 border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+                            <button onClick={() => setShowLocationPrompt(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><IoCloseCircle size={24} /></button>
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-2xl" />
+                            <div className="text-center mb-5 mt-2">
+                                <IoAlertCircleOutline className="text-amber-500 text-6xl mx-auto mb-3 animate-pulse" />
+                                <h3 className="text-white font-bold text-xl">Location Access Needed</h3>
+                                <p className="text-gray-400 text-sm mt-3">Admin has enabled location restrictions. Please allow location access in your browser settings to mark attendance via QR scan.</p>
+                            </div>
+                            <button onClick={() => setShowLocationPrompt(false)} className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">
+                                I Understand
+                            </button>
+                        </motion.div>
+                    </div>
                 )}
 
                 {showIDCard && (
@@ -577,7 +627,7 @@ const StudentDashboard = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                        <ActionCard icon={IoScan} label="Mark Attendance" desc="Scan QR to mark entry/exit" color="from-green-500 to-teal-500" glow="rgba(16,185,129,0.4)" delay={0.05} onClick={() => setShowScanner(true)} />
+                        <ActionCard icon={IoScan} label="Mark Attendance" desc={loadingScanner ? "Checking Location..." : "Scan QR to mark entry/exit"} color="from-green-500 to-teal-500" glow="rgba(16,185,129,0.4)" delay={0.05} onClick={handleOpenScanner} />
                         <ActionCard icon={IoIdCardOutline} label="Virtual ID Card" desc="View & download your card" color="from-indigo-500 to-purple-500" glow="rgba(99,102,241,0.4)" delay={0.1} onClick={() => setShowIDCard(true)} />
                         <ActionCard icon={IoChatbubblesOutline} label="Discussion Room" desc="Chat with fellow students" color="from-orange-500 to-red-500" glow="rgba(249,115,22,0.4)" delay={0.15} to="/student/chat" />
                         <ActionCard icon={IoNewspaper} label="Daily Newspaper" desc="Hindi & English papers" color="from-purple-500 to-violet-600" glow="rgba(168,85,247,0.4)" delay={0.2} onClick={() => setShowNewspaper(true)} />
@@ -647,13 +697,14 @@ const StudentDashboard = () => {
             <motion.button
                 whileHover={{ scale: 1.12 }}
                 whileTap={{ scale: 0.92 }}
-                onClick={() => setShowScanner(true)}
-                className="fixed bottom-8 right-8 z-50 w-16 h-16 flex items-center justify-center rounded-full text-white shadow-2xl"
-                style={{ background: 'linear-gradient(135deg, #10b981, #14b8a6)', boxShadow: '0 8px 32px rgba(16,185,129,0.5)' }}
+                onClick={handleOpenScanner}
+                disabled={loadingScanner}
+                className={`fixed bottom-8 right-8 z-50 w-16 h-16 flex items-center justify-center rounded-full text-white shadow-2xl ${loadingScanner ? 'opacity-70 cursor-not-allowed bg-gray-600' : ''}`}
+                style={loadingScanner ? {} : { background: 'linear-gradient(135deg, #10b981, #14b8a6)', boxShadow: '0 8px 32px rgba(16,185,129,0.5)' }}
             >
                 {/* Pulse ring */}
-                <span className="absolute inset-0 rounded-full bg-green-500 opacity-40" style={{ animation: 'pulse-ring 2s ease-out infinite' }} />
-                <IoScan size={28} />
+                {!loadingScanner && <span className="absolute inset-0 rounded-full bg-green-500 opacity-40" style={{ animation: 'pulse-ring 2s ease-out infinite' }} />}
+                {loadingScanner ? <IoTimeOutline size={28} className="animate-spin" /> : <IoScan size={28} />}
             </motion.button>
         </div>
     );

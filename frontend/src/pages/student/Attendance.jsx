@@ -6,7 +6,7 @@ import api from '../../utils/api';
 import {
     IoArrowBack, IoCalendar, IoCheckmarkCircle, IoCloseCircle,
     IoTimeOutline, IoHourglassOutline, IoDocumentTextOutline,
-    IoAnalytics, IoScan, IoTrophyOutline, IoFlameOutline
+    IoAnalytics, IoScan, IoTrophyOutline, IoFlameOutline, IoAlertCircleOutline
 } from 'react-icons/io5';
 import { motion, AnimatePresence } from 'framer-motion';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
@@ -48,8 +48,54 @@ const Attendance = () => {
     const [showAnalytics, setShowAnalytics] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
     const [scanMessage, setScanMessage] = useState(null);
+    const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+    const [loadingScanner, setLoadingScanner] = useState(false);
 
     useEffect(() => { fetchAttendance(); }, []);
+
+    // ── Get current GPS location ─────────────────────────────────────────
+    const getLocation = () =>
+        new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser.'));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                () => reject(new Error('Location access denied. Please allow location to mark attendance.')),
+                { timeout: 10000, maximumAge: 0 }
+            );
+        });
+
+    const handleOpenScanner = async () => {
+        setLoadingScanner(true);
+        try {
+            let isLocationRequired = true;
+            try {
+                const settingsRes = await api.get('/public/settings');
+                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
+                    isLocationRequired = false;
+                }
+            } catch (err) {
+                console.warn('Failed to fetch public settings for location requirements');
+            }
+
+            if (isLocationRequired) {
+                // Pre-check location permission and fetch location before showing scanner
+                try {
+                    await getLocation();
+                    setShowScanner(true);
+                } catch (geoErr) {
+                    // Location denied or unavailable
+                    setShowLocationPrompt(true);
+                }
+            } else {
+                setShowScanner(true);
+            }
+        } finally {
+            setLoadingScanner(false);
+        }
+    };
 
     const fetchAttendance = async () => {
         try {
@@ -108,10 +154,10 @@ const Attendance = () => {
                     </div>
                     <div className="flex gap-3">
                         {user?.seat && (
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowScanner(true)}
-                                className="relative flex items-center gap-2.5 px-5 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all">
-                                <span className="absolute inset-0 rounded-xl animate-pulse bg-white/5 pointer-events-none" />
-                                <IoScan size={18} /> Mark Attendance
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleOpenScanner} disabled={loadingScanner}
+                                className={`relative flex items-center gap-2.5 px-5 py-3 bg-gradient-to-r ${loadingScanner ? 'from-gray-500 to-gray-600 cursor-not-allowed' : 'from-purple-600 to-indigo-600 hover:shadow-purple-500/50'} text-white rounded-xl text-sm font-bold shadow-lg shadow-purple-500/30 transition-all`}>
+                                {!loadingScanner && <span className="absolute inset-0 rounded-xl animate-pulse bg-white/5 pointer-events-none" />}
+                                {loadingScanner ? <IoTimeOutline size={18} className="animate-spin" /> : <IoScan size={18} />} Mark Attendance
                             </motion.button>
                         )}
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowAnalytics(!showAnalytics)}
@@ -134,6 +180,23 @@ const Attendance = () => {
                 </AnimatePresence>
 
                 {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
+
+                {showLocationPrompt && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-gray-900 border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+                            <button onClick={() => setShowLocationPrompt(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><IoCloseCircle size={24} /></button>
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-t-2xl" />
+                            <div className="text-center mb-5 mt-2">
+                                <IoAlertCircleOutline className="text-amber-500 text-6xl mx-auto mb-3 animate-pulse" />
+                                <h3 className="text-white font-bold text-xl">Location Access Needed</h3>
+                                <p className="text-gray-400 text-sm mt-3">Admin has enabled location restrictions. Please allow location access in your browser settings to mark attendance via QR scan.</p>
+                            </div>
+                            <button onClick={() => setShowLocationPrompt(false)} className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">
+                                I Understand
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
 
                 {/* Summary Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -210,50 +273,75 @@ const Attendance = () => {
                                     {myAttendance.slice().reverse().map((record, idx) => {
                                         const isHoliday = record.status === 'present' && record.notes?.startsWith('Holiday - ');
                                         const holidayFestivalName = isHoliday ? record.notes.replace('Holiday - ', '') : null;
+                                        const attendedOnHoliday = isHoliday && record.entryTime != null;
+
+                                        // Determine styling based on attendance and holiday status
+                                        let cardStyle = '';
+                                        let iconStyle = '';
+                                        let badgeStyle = '';
+                                        let badgeText = '';
+
+                                        if (isHoliday && !attendedOnHoliday) {
+                                            cardStyle = 'bg-amber-500/5 border-amber-500/15 hover:border-amber-500/30';
+                                            iconStyle = 'bg-amber-500/20 text-amber-400';
+                                            badgeStyle = 'bg-amber-500/20 text-amber-400';
+                                        } else if (record.status === 'present') {
+                                            cardStyle = 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5';
+                                            iconStyle = 'bg-green-500/20 text-green-400';
+                                            badgeStyle = 'bg-green-500/20 text-green-400';
+                                            badgeText = 'PRESENT';
+                                        } else {
+                                            cardStyle = 'bg-red-500/5 border-red-500/15 hover:border-red-500/30';
+                                            iconStyle = 'bg-red-500/20 text-red-400';
+                                            badgeStyle = 'bg-red-500/20 text-red-400';
+                                            badgeText = 'ABSENT';
+                                        }
+
+
                                         return (
                                             <motion.div key={record._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-                                                className={`p-4 rounded-xl border transition-all ${record.status === 'present'
-                                                    ? 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5'
-                                                    : 'bg-red-500/5 border-red-500/15'}`}>
+                                                className={`p-4 rounded-xl border transition-all ${cardStyle}`}>
                                                 <div className="flex flex-col md:flex-row md:items-center gap-4">
                                                     <div className="flex items-center gap-3 min-w-[180px]">
-                                                        <div className={`p-2.5 rounded-xl ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                            {record.status === 'present' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                                                        <div className={`p-2.5 rounded-xl ${iconStyle}`}>
+                                                            {isHoliday && !attendedOnHoliday ? <IoCalendar size={22} /> : record.status === 'present' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-white">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                                {isHoliday ? (
-                                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 uppercase tracking-widest">
-                                                                        HOLIDAY
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                                        {record.status.toUpperCase()}
+                                                                {(!isHoliday || attendedOnHoliday) && (
+                                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${badgeStyle}`}>
+                                                                        {badgeText}
                                                                     </span>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    {isHoliday ? (
-                                                        <div className="flex items-center gap-2 text-sm bg-amber-500/8 border border-amber-500/15 px-3 py-1.5 rounded-lg text-amber-300">
-                                                            <span className="font-semibold">{holidayFestivalName}</span>
-                                                        </div>
-                                                    ) : record.status === 'present' && (
-                                                        <div className="flex flex-wrap gap-3 text-sm flex-1">
-                                                            {[
-                                                                { icon: <IoTimeOutline className="text-green-400" />, label: 'Entry', value: record.entryTime || '--:--' },
-                                                                { icon: <IoTimeOutline className="text-red-400" />, label: 'Exit', value: record.exitTime || '--:--' },
-                                                                { icon: <IoHourglassOutline className="text-yellow-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' }
-                                                            ].map(({ icon, label, value }) => (
-                                                                <div key={label} className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/8 text-gray-300">
-                                                                    {icon}
-                                                                    <span className="text-gray-500 text-xs uppercase">{label}</span>
-                                                                    <span className="font-mono font-bold text-white">{value}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+
+                                                    {/* Detail Section */}
+                                                    <div className="flex flex-wrap items-center gap-3 text-sm flex-1">
+                                                        {record.status === 'present' && (attendedOnHoliday || !isHoliday) && (
+                                                            <>
+                                                                {[
+                                                                    { icon: <IoTimeOutline className="text-green-400" />, label: 'Entry', value: record.entryTime || '--:--' },
+                                                                    { icon: <IoTimeOutline className="text-red-400" />, label: 'Exit', value: record.exitTime || '--:--' },
+                                                                    { icon: <IoHourglassOutline className="text-yellow-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' }
+                                                                ].map(({ icon, label, value }) => (
+                                                                    <div key={label} className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/8 text-gray-300">
+                                                                        {icon}
+                                                                        <span className="text-gray-500 text-xs uppercase">{label}</span>
+                                                                        <span className="font-mono font-bold text-white">{value}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </>
+                                                        )}
+                                                        {isHoliday && (
+                                                            <div className={`flex items-center gap-2 text-sm bg-amber-500/8 border border-amber-500/15 px-3 py-1.5 rounded-lg text-amber-300 ${isHoliday && !attendedOnHoliday ? 'flex-1' : ''}`}>
+                                                                <span className="font-semibold">{holidayFestivalName}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
                                                     {!isHoliday && record.notes && (
                                                         <div className="hidden md:flex items-start gap-2 text-sm text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg ml-auto">
                                                             <IoDocumentTextOutline className="mt-0.5 shrink-0" />
@@ -309,11 +397,11 @@ const Attendance = () => {
                                     </table>
                                 </div>
                             </div>
-                        </motion.div>
+                        </motion.div >
                     )}
-                </AnimatePresence>
-            </div>
-        </div>
+                </AnimatePresence >
+            </div >
+        </div >
     );
 };
 
