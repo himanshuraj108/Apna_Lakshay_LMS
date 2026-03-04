@@ -40,7 +40,7 @@ exports.declareHoliday = async (req, res) => {
                         $set: {
                             student: s._id,
                             date: holidayDate,
-                            status: 'present',
+                            status: 'holiday',
                             notes: noteText,
                             entryTime: null,
                             exitTime: null,

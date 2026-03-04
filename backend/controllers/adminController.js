@@ -1692,10 +1692,10 @@ exports.getMonthlyAttendance = async (req, res) => {
             }
 
             const day = new Date(record.date).getDate();
-            report[sId].days[day] = record.status === 'present' ? 'P' : 'A';
+            report[sId].days[day] = record.status === 'present' ? 'P' : record.status === 'holiday' ? 'H' : 'A';
 
             report[sId].totalDays++;
-            if (record.status === 'present') report[sId].present++;
+            if (record.status === 'present' || record.status === 'holiday') report[sId].present++;
             if (record.status === 'absent') report[sId].absent++;
         });
 
@@ -1739,10 +1739,10 @@ exports.getYearlyAttendance = async (req, res) => {
 
             const mIdx = new Date(record.date).getMonth();
             if (!report[sId].months[mIdx]) report[sId].months[mIdx] = { P: 0, A: 0 };
-            report[sId].months[mIdx][record.status === 'present' ? 'P' : 'A']++;
+            report[sId].months[mIdx][(record.status === 'present' || record.status === 'holiday') ? 'P' : 'A']++;
 
             report[sId].totalDays++;
-            if (record.status === 'present') report[sId].present++;
+            if (record.status === 'present' || record.status === 'holiday') report[sId].present++;
             if (record.status === 'absent') report[sId].absent++;
         });
 

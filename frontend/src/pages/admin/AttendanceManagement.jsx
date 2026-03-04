@@ -109,7 +109,7 @@ const AttendanceManagement = () => {
         if (!s?.seat) return;
         setAttendance(prev => {
             const cur = prev[id] || { status: 'absent', entryTime: '', exitTime: '', notes: '' };
-            const next = cur.status === 'present' ? 'absent' : 'present';
+            const next = cur.status === 'present' ? 'absent' : cur.status === 'holiday' ? 'present' : 'present';
             return { ...prev, [id]: { ...cur, status: next, entryTime: next === 'absent' ? '' : cur.entryTime, exitTime: next === 'absent' ? '' : cur.exitTime } };
         });
     };
@@ -161,7 +161,7 @@ const AttendanceManagement = () => {
                 }
             }
 
-            const status = data.status === 'present' ? 'P' : 'A';
+            const status = data.status === 'present' ? 'P' : data.status === 'holiday' ? 'H' : 'A';
             const entry = data.entryTime || '-';
             const exit = data.exitTime || '-';
             const distance = data.distanceMeters ? `${data.distanceMeters}m` : '-';
@@ -200,6 +200,9 @@ const AttendanceManagement = () => {
                 if (data.section === 'body' && data.column.index === 5) {
                     if (data.cell.raw === 'P') {
                         data.cell.styles.textColor = [34, 197, 94]; // Green-500
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'H') {
+                        data.cell.styles.textColor = [245, 158, 11]; // Amber-500
                         data.cell.styles.fontStyle = 'bold';
                     } else if (data.cell.raw === 'A') {
                         data.cell.styles.textColor = [239, 68, 68]; // Red-500
@@ -256,6 +259,8 @@ const AttendanceManagement = () => {
                     if (data.section === 'body') {
                         if (data.column.index >= 2 && data.column.index < 2 + daysInMonth) {
                             if (data.cell.raw === 'P') { data.cell.styles.textColor = [34, 197, 94]; data.cell.styles.fontStyle = 'bold'; }
+                            if (data.cell.raw === 'P') { data.cell.styles.textColor = [34, 197, 94]; data.cell.styles.fontStyle = 'bold'; }
+                            if (data.cell.raw === 'H') { data.cell.styles.textColor = [245, 158, 11]; data.cell.styles.fontStyle = 'bold'; }
                             if (data.cell.raw === 'A') { data.cell.styles.textColor = [239, 68, 68]; data.cell.styles.fontStyle = 'bold'; }
                         }
                     }
@@ -326,7 +331,8 @@ const AttendanceManagement = () => {
         return sel >= admission;
     });
     const presentCount = Object.keys(attendance).filter(id => filteredStudents.find(s => s._id === id) && attendance[id]?.status === 'present').length;
-    const absentCount = filteredStudents.length - presentCount;
+    const holidayCount = Object.keys(attendance).filter(id => filteredStudents.find(s => s._id === id) && attendance[id]?.status === 'holiday').length;
+    const absentCount = filteredStudents.length - presentCount - holidayCount;
 
     // Check if selected date is a declared holiday
     const selectedHoliday = holidays.find(h => {
@@ -419,6 +425,10 @@ const AttendanceManagement = () => {
                                 <span className="text-xs text-gray-500 uppercase tracking-widest">Present</span>
                                 <span className="text-2xl font-black text-green-400">{presentCount}</span>
                             </div>
+                            <div className="bg-amber-500/8 border border-amber-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between">
+                                <span className="text-xs text-gray-500 uppercase tracking-widest">Holiday</span>
+                                <span className="text-2xl font-black text-amber-400">{holidayCount}</span>
+                            </div>
                             <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between">
                                 <span className="text-xs text-gray-500 uppercase tracking-widest">Absent</span>
                                 <span className="text-2xl font-black text-red-400">{absentCount}</span>
@@ -470,10 +480,10 @@ const AttendanceManagement = () => {
                             return (
                                 <motion.div key={student._id}
                                     initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                                    className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${!hasSeat ? 'border-yellow-500/25 bg-yellow-500/5' : isPresent ? 'border-green-500/30 bg-green-500/5' : 'border-white/8 bg-white/3'}`}
+                                    className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${!hasSeat ? 'border-yellow-500/25 bg-yellow-500/5' : isPresent ? 'border-green-500/30 bg-green-500/5' : data.status === 'holiday' ? 'border-amber-500/30 bg-amber-500/5' : 'border-white/8 bg-white/3'}`}
                                 >
                                     <div
-                                        className={`p-4 flex items-start justify-between cursor-pointer ${!hasSeat ? 'hover:bg-yellow-500/8' : isPresent ? 'hover:bg-green-500/8' : 'hover:bg-white/5'}`}
+                                        className={`p-4 flex items-start justify-between cursor-pointer ${!hasSeat ? 'hover:bg-yellow-500/8' : isPresent ? 'hover:bg-green-500/8' : data.status === 'holiday' ? 'hover:bg-amber-500/8' : 'hover:bg-white/5'}`}
                                         onClick={() => !hasSeat ? navigate('/admin/students?tab=pending') : toggleStatus(student._id)}
                                     >
                                         <div className="flex-1">
@@ -487,12 +497,12 @@ const AttendanceManagement = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className={`p-2 rounded-xl ${!hasSeat ? 'bg-yellow-500/15 text-yellow-400' : isPresent ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
-                                            {!hasSeat ? <IoBedOutline size={20} /> : isPresent ? <IoCheckmarkCircle size={20} /> : <IoCloseCircle size={20} />}
+                                        <div className={`p-2 rounded-xl ${!hasSeat ? 'bg-yellow-500/15 text-yellow-400' : isPresent ? 'bg-green-500/15 text-green-400' : data.status === 'holiday' ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`}>
+                                            {!hasSeat ? <IoBedOutline size={20} /> : isPresent ? <IoCheckmarkCircle size={20} /> : data.status === 'holiday' ? <IoSparkles size={20} /> : <IoCloseCircle size={20} />}
                                         </div>
                                     </div>
                                     <AnimatePresence>
-                                        {isPresent && hasSeat && (
+                                        {(isPresent || data.status === 'holiday') && hasSeat && (
                                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-white/8 bg-black/20">
                                                 <div className="p-4 space-y-3">
                                                     {['entryTime', 'exitTime'].map(field => (
@@ -520,9 +530,14 @@ const AttendanceManagement = () => {
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                    {!isPresent && hasSeat && (
+                                    {!isPresent && data.status !== 'holiday' && hasSeat && (
                                         <div className="px-4 py-2 bg-red-500/5 border-t border-red-500/10 text-center">
                                             <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Marked Absent</span>
+                                        </div>
+                                    )}
+                                    {data.status === 'holiday' && hasSeat && (
+                                        <div className="px-4 py-2 bg-amber-500/5 border-t border-amber-500/10 text-center">
+                                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Holiday</span>
                                         </div>
                                     )}
                                     {!hasSeat && (
