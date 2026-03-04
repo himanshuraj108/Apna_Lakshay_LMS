@@ -216,8 +216,8 @@ const StudentDashboard = () => {
         if (!loading) return; // Don't start timer if already loaded (or finished loading)
 
         const timer = setTimeout(() => {
-            if (loading) setShowQuickAttendance(true);
-        }, 10000);
+            setShowQuickAttendance(true);
+        }, 3000);
 
         return () => clearTimeout(timer);
     }, [loading]);
@@ -338,6 +338,44 @@ const StudentDashboard = () => {
                 <div className="relative z-10">
                     <DashboardSkeleton />
                 </div>
+
+                {/* Network slow popup — shown during skeleton loading */}
+                <AnimatePresence>
+                    {showQuickAttendance && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm text-center"
+                        >
+                            <div className="p-8 rounded-2xl border border-white/10 bg-gray-900 shadow-2xl max-w-sm w-full mx-auto relative overflow-hidden">
+                                <button
+                                    onClick={() => setShowQuickAttendance(false)}
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <IoCloseCircle size={24} />
+                                </button>
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-t-2xl" />
+                                <IoTimeOutline size={40} className="text-yellow-400 mx-auto mb-4 animate-pulse" />
+                                <h3 className="text-xl font-bold text-white mb-2">Network is slow?</h3>
+                                <p className="text-sm text-gray-400 mb-6">Open the scanner directly so you don't have to wait.</p>
+                                <button
+                                    onClick={() => {
+                                        setShowQuickAttendance(false);
+                                        setShowScanner(true);
+                                    }}
+                                    className="w-full py-3.5 mb-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                                >
+                                    <IoQrCode size={22} /> Open QR Scanner
+                                </button>
+                                <button
+                                    onClick={() => setShowQuickAttendance(false)}
+                                    className="w-full py-3 text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                                >
+                                    Continue to Dashboard
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Scan toast can still show during loading */}
                 <AnimatePresence>
