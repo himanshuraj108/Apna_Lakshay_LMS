@@ -167,12 +167,12 @@ exports.getDashboard = async (req, res) => {
                 const existing = uniqueAttendanceMap.get(dateKey);
 
                 // Conflict resolution strategy (Same as getAttendance):
-                // 1. Prefer 'present' over 'absent'
-                if (existing.status !== 'present' && record.status === 'present') {
+                // 1. Prefer 'present'/'holiday' over 'absent'
+                if (existing.status !== 'present' && existing.status !== 'holiday' && (record.status === 'present' || record.status === 'holiday')) {
                     uniqueAttendanceMap.set(dateKey, record);
                 }
                 // 2. If both present, prefer the one with longer duration
-                else if (existing.status === 'present' && record.status === 'present') {
+                else if ((existing.status === 'present' || existing.status === 'holiday') && (record.status === 'present' || record.status === 'holiday')) {
                     if ((record.duration || 0) > (existing.duration || 0)) {
                         uniqueAttendanceMap.set(dateKey, record);
                     }
@@ -182,7 +182,7 @@ exports.getDashboard = async (req, res) => {
 
         const cleanAttendance = Array.from(uniqueAttendanceMap.values());
 
-        const presentCount = cleanAttendance.filter(a => a.status === 'present').length;
+        const presentCount = cleanAttendance.filter(a => a.status === 'present' || a.status === 'holiday').length;
 
         // Calculate true total working days possible for this student (Lifetime)
         const calcStartDate = new Date(studentJoinedDate);
@@ -403,12 +403,12 @@ exports.getAttendance = async (req, res) => {
                 const existing = uniqueAttendanceMap.get(dateKey);
 
                 // Conflict resolution strategy:
-                // 1. Prefer 'present' over 'absent'
-                if (existing.status !== 'present' && record.status === 'present') {
+                // 1. Prefer 'present'/'holiday' over 'absent'
+                if (existing.status !== 'present' && existing.status !== 'holiday' && (record.status === 'present' || record.status === 'holiday')) {
                     uniqueAttendanceMap.set(dateKey, record);
                 }
-                // 2. If both present, prefer the one with longer duration or valid entry/exit
-                else if (existing.status === 'present' && record.status === 'present') {
+                // 2. If both present/holiday, prefer the one with longer duration or valid entry/exit
+                else if ((existing.status === 'present' || existing.status === 'holiday') && (record.status === 'present' || record.status === 'holiday')) {
                     if ((record.duration || 0) > (existing.duration || 0)) {
                         uniqueAttendanceMap.set(dateKey, record);
                     }
@@ -419,7 +419,7 @@ exports.getAttendance = async (req, res) => {
         // Use deduplicated list for response and stats
         const cleanAttendance = Array.from(uniqueAttendanceMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        const presentCount = cleanAttendance.filter(a => a.status === 'present').length;
+        const presentCount = cleanAttendance.filter(a => a.status === 'present' || a.status === 'holiday').length;
 
         // Calculate true total working days possible for this student (Lifetime)
         const calcStartDate = new Date(admissionDate);
@@ -453,7 +453,7 @@ exports.getAttendance = async (req, res) => {
             // Deduplicate for ranking to prevent > 100% bug
             const distinctDates = new Set();
             studentAttendance.forEach(a => {
-                if (a.status === 'present') {
+                if (a.status === 'present' || a.status === 'holiday') {
                     distinctDates.add(new Date(a.date).toDateString());
                 }
             });

@@ -271,8 +271,8 @@ const Attendance = () => {
                                         <div className="text-center py-12 text-gray-500">No attendance records yet</div>
                                     )}
                                     {myAttendance.slice().reverse().map((record, idx) => {
-                                        const isHoliday = record.status === 'present' && record.notes?.startsWith('Holiday - ');
-                                        const holidayFestivalName = isHoliday ? record.notes.replace('Holiday - ', '') : null;
+                                        const isHoliday = record.status === 'holiday' || (record.status === 'present' && record.notes?.startsWith('Holiday - '));
+                                        const holidayFestivalName = isHoliday && record.notes ? record.notes.replace('Holiday - ', '') : 'Holiday';
                                         const attendedOnHoliday = isHoliday && record.entryTime != null;
 
                                         // Determine styling based on attendance and holiday status
@@ -285,7 +285,8 @@ const Attendance = () => {
                                             cardStyle = 'bg-amber-500/5 border-amber-500/15 hover:border-amber-500/30';
                                             iconStyle = 'bg-amber-500/20 text-amber-400';
                                             badgeStyle = 'bg-amber-500/20 text-amber-400';
-                                        } else if (record.status === 'present') {
+                                            badgeText = 'HOLIDAY';
+                                        } else if (record.status === 'present' || attendedOnHoliday) {
                                             cardStyle = 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5';
                                             iconStyle = 'bg-green-500/20 text-green-400';
                                             badgeStyle = 'bg-green-500/20 text-green-400';
@@ -304,12 +305,12 @@ const Attendance = () => {
                                                 <div className="flex flex-col md:flex-row md:items-center gap-4">
                                                     <div className="flex items-center gap-3 min-w-[180px]">
                                                         <div className={`p-2.5 rounded-xl ${iconStyle}`}>
-                                                            {isHoliday && !attendedOnHoliday ? <IoCalendar size={22} /> : record.status === 'present' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                                                            {isHoliday && !attendedOnHoliday ? <IoCalendar size={22} /> : (record.status === 'present' || attendedOnHoliday) ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
                                                         </div>
                                                         <div>
                                                             <p className="font-bold text-white">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
                                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                                {(!isHoliday || attendedOnHoliday) && (
+                                                                {badgeText && (
                                                                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${badgeStyle}`}>
                                                                         {badgeText}
                                                                     </span>
@@ -320,7 +321,7 @@ const Attendance = () => {
 
                                                     {/* Detail Section */}
                                                     <div className="flex flex-wrap items-center gap-3 text-sm flex-1">
-                                                        {record.status === 'present' && (attendedOnHoliday || !isHoliday) && (
+                                                        {(record.status === 'present' || attendedOnHoliday) && (
                                                             <>
                                                                 {[
                                                                     { icon: <IoTimeOutline className="text-green-400" />, label: 'Entry', value: record.entryTime || '--:--' },
