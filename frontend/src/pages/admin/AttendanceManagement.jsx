@@ -6,7 +6,8 @@ import {
     IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoSave,
     IoTimeOutline, IoDocumentTextOutline, IoFlashOutline,
     IoBarChartOutline, IoRefresh, IoArrowForward, IoBedOutline,
-    IoCalendarOutline, IoPeopleOutline, IoDownloadOutline
+    IoCalendarOutline, IoPeopleOutline, IoDownloadOutline,
+    IoSparkles, IoTrashOutline
 } from 'react-icons/io5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,8 +28,11 @@ const AttendanceManagement = () => {
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
+    const [holidays, setHolidays] = useState([]);
+    const [showHolidayModal, setShowHolidayModal] = useState(false);
+    const [holidayName, setHolidayName] = useState('');
 
-    useEffect(() => { fetchStudents(); }, []);
+    useEffect(() => { fetchStudents(); fetchHolidays(); }, []);
     useEffect(() => { if (students.length > 0) loadAttendance(); }, [selectedDate, students]);
 
     const fetchStudents = async () => {
@@ -59,6 +63,45 @@ const AttendanceManagement = () => {
                 setAttendance(init);
             }
         } catch (e) { console.log('No attendance for this date'); }
+    };
+
+    const fetchHolidays = async () => {
+        try {
+            const res = await api.get('/admin/holidays');
+            setHolidays(res.data.holidays || []);
+        } catch (e) { console.error('Failed to load holidays'); }
+    };
+
+    const declareHoliday = async () => {
+        if (!holidayName.trim()) { setError('Please enter a festival name'); return; }
+        setSaving(true); setError(''); setSuccess('');
+        try {
+            await api.post('/admin/holidays', { date: selectedDate, name: holidayName.trim() });
+            setSuccess(`Holiday "${holidayName.trim()}" declared for ${selectedDate}!`);
+            setHolidayName('');
+            setShowHolidayModal(false);
+            setTimeout(() => setSuccess(''), 4000);
+            fetchHolidays();
+            loadAttendance();
+        } catch (e) {
+            setError(e.response?.data?.message || 'Failed to declare holiday');
+            setTimeout(() => setError(''), 4000);
+        } finally { setSaving(false); }
+    };
+
+    const removeHoliday = async (id, name) => {
+        if (!window.confirm(`Remove holiday "${name}"? This will revert attendance for that date.`)) return;
+        setSaving(true);
+        try {
+            await api.delete(`/admin/holidays/${id}`);
+            setSuccess(`Holiday "${name}" removed.`);
+            setTimeout(() => setSuccess(''), 4000);
+            fetchHolidays();
+            loadAttendance();
+        } catch (e) {
+            setError(e.response?.data?.message || 'Failed to remove holiday');
+            setTimeout(() => setError(''), 4000);
+        } finally { setSaving(false); }
     };
 
     const toggleStatus = (id) => {
@@ -285,6 +328,13 @@ const AttendanceManagement = () => {
     const presentCount = Object.keys(attendance).filter(id => filteredStudents.find(s => s._id === id) && attendance[id]?.status === 'present').length;
     const absentCount = filteredStudents.length - presentCount;
 
+    // Check if selected date is a declared holiday
+    const selectedHoliday = holidays.find(h => {
+        const hDate = new Date(h.date); hDate.setHours(0, 0, 0, 0);
+        const selDate = new Date(selectedDate); selDate.setHours(0, 0, 0, 0);
+        return hDate.getTime() === selDate.getTime();
+    });
+
     return (
         <div className="relative min-h-screen" style={PAGE_BG}>
             <div className="fixed inset-0 pointer-events-none z-0">
@@ -341,6 +391,12 @@ const AttendanceManagement = () => {
                         <button onClick={markAllAbsent} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCloseCircle size={15} /> All Absent</button>
                     </div>
 
+                    {selectedHoliday && (
+                        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 px-4 py-3 rounded-xl mb-5 text-sm font-medium">
+                            <IoSparkles size={18} /> Today is a declared holiday: {selectedHoliday.name}
+                        </motion.div>
+                    )}
+
                     <div className="flex items-center justify-between mb-4 mt-2">
                         <div className="flex gap-2 flex-wrap">
                             <button onClick={generatePDF} className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-medium transition-all">
@@ -351,6 +407,9 @@ const AttendanceManagement = () => {
                             </button>
                             <button onClick={generateYearlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
                                 <IoDownloadOutline size={16} /> Yearly Report
+                            </button>
+                            <button onClick={() => setShowHolidayModal(true)} className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-xl text-sm font-medium transition-all">
+                                <IoSparkles size={16} /> Declare Holiday
                             </button>
                         </div>
                     </div>
@@ -371,6 +430,26 @@ const AttendanceManagement = () => {
                         </motion.button>
                     </div>
                 </motion.div>
+
+                {/* Declared Holidays List */}
+                {holidays.length > 0 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-amber-500/5 border border-amber-500/15 rounded-2xl p-4 mb-6">
+                        <p className="text-amber-400 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <IoSparkles size={13} /> Declared Holidays
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            {holidays.map(h => (
+                                <div key={h._id} className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
+                                    <span className="text-amber-300 font-semibold">{h.name}</span>
+                                    <span className="text-gray-600 text-xs">{new Date(h.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                    <button onClick={() => removeHoliday(h._id, h.name)} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
+                                        <IoTrashOutline size={13} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Student Grid */}
                 {loading ? (
@@ -458,6 +537,69 @@ const AttendanceManagement = () => {
                     </div>
                 )}
             </div>
+
+            {/* Holiday Declaration Modal */}
+            <AnimatePresence>
+                {showHolidayModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+                        style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+                        onClick={e => e.target === e.currentTarget && setShowHolidayModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                            className="w-full max-w-md rounded-2xl border border-amber-500/20 overflow-hidden"
+                            style={{ background: 'linear-gradient(135deg, #0f172a 0%, #0a0c1c 100%)' }}
+                        >
+                            <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-orange-500" />
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                                            <IoSparkles size={16} className="text-amber-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-bold text-sm">Declare Holiday</p>
+                                            <p className="text-gray-500 text-xs">{selectedDate}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => { setShowHolidayModal(false); setHolidayName(''); }}
+                                        className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-all">
+                                        <IoCloseCircle size={20} />
+                                    </button>
+                                </div>
+                                <p className="text-gray-400 text-sm mb-4">
+                                    All active students will be automatically marked <span className="text-green-400 font-semibold">Present</span> with this holiday name.
+                                </p>
+                                <div className="mb-4">
+                                    <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Festival Name</label>
+                                    <input
+                                        value={holidayName}
+                                        onChange={e => setHolidayName(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && declareHoliday()}
+                                        placeholder="e.g. Holi, Diwali, Republic Day…"
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-amber-500/50 transition-all"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="flex gap-3">
+                                    <button onClick={declareHoliday} disabled={saving || !holidayName.trim()}
+                                        className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2 transition-all">
+                                        {saving
+                                            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            : <><IoSparkles size={15} /> Declare Holiday</>}
+                                    </button>
+                                    <button onClick={() => { setShowHolidayModal(false); setHolidayName(''); }}
+                                        className="px-4 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:bg-white/10 transition-all">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

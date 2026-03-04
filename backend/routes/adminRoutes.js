@@ -55,6 +55,9 @@ const {
 // Settings come from settingsController
 const { getSettings, updateSettings } = require('../controllers/settingsController');
 
+// Holiday controller
+const { declareHoliday, getHolidays, deleteHoliday } = require('../controllers/holidayController');
+
 const {
     addSeat,
     deleteSeat,
@@ -162,5 +165,11 @@ router.delete('/shifts/:id', deleteShift);
 router.route('/settings')
     .get(getSettings)
     .put(updateSettings);
+
+// Holiday Management
+router.route('/holidays')
+    .get(getHolidays)
+    .post(declareHoliday);
+router.delete('/holidays/:id', deleteHoliday);
 
 module.exports = router;

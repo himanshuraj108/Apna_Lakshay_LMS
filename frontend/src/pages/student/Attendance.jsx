@@ -207,47 +207,63 @@ const Attendance = () => {
                                     {myAttendance.length === 0 && (
                                         <div className="text-center py-12 text-gray-500">No attendance records yet</div>
                                     )}
-                                    {myAttendance.slice().reverse().map((record, idx) => (
-                                        <motion.div key={record._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
-                                            className={`p-4 rounded-xl border transition-all ${record.status === 'present'
-                                                ? 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5'
-                                                : 'bg-red-500/5 border-red-500/15'}`}>
-                                            <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                                <div className="flex items-center gap-3 min-w-[180px]">
-                                                    <div className={`p-2.5 rounded-xl ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                        {record.status === 'present' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-white">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
-                                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                            {record.status.toUpperCase()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                {record.status === 'present' && (
-                                                    <div className="flex flex-wrap gap-3 text-sm flex-1">
-                                                        {[
-                                                            { icon: <IoTimeOutline className="text-green-400" />, label: 'Entry', value: record.entryTime || '--:--' },
-                                                            { icon: <IoTimeOutline className="text-red-400" />, label: 'Exit', value: record.exitTime || '--:--' },
-                                                            { icon: <IoHourglassOutline className="text-yellow-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' }
-                                                        ].map(({ icon, label, value }) => (
-                                                            <div key={label} className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/8 text-gray-300">
-                                                                {icon}
-                                                                <span className="text-gray-500 text-xs uppercase">{label}</span>
-                                                                <span className="font-mono font-bold text-white">{value}</span>
+                                    {myAttendance.slice().reverse().map((record, idx) => {
+                                        const isHoliday = record.status === 'present' && record.notes?.startsWith('Holiday - ');
+                                        const holidayFestivalName = isHoliday ? record.notes.replace('Holiday - ', '') : null;
+                                        return (
+                                            <motion.div key={record._id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
+                                                className={`p-4 rounded-xl border transition-all ${record.status === 'present'
+                                                    ? 'bg-white/3 border-white/8 hover:border-green-500/30 hover:bg-green-500/5'
+                                                    : 'bg-red-500/5 border-red-500/15'}`}>
+                                                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                                    <div className="flex items-center gap-3 min-w-[180px]">
+                                                        <div className={`p-2.5 rounded-xl ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                            {record.status === 'present' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-white">{new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                {isHoliday ? (
+                                                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 uppercase tracking-widest">
+                                                                        HOLIDAY
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${record.status === 'present' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                                        {record.status.toUpperCase()}
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        ))}
+                                                        </div>
                                                     </div>
-                                                )}
-                                                {record.notes && (
-                                                    <div className="hidden md:flex items-start gap-2 text-sm text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg ml-auto">
-                                                        <IoDocumentTextOutline className="mt-0.5 shrink-0" />
-                                                        <p className="italic max-w-[140px] truncate">"{record.notes}"</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                                    {isHoliday ? (
+                                                        <div className="flex items-center gap-2 text-sm bg-amber-500/8 border border-amber-500/15 px-3 py-1.5 rounded-lg text-amber-300">
+                                                            <span className="font-semibold">{holidayFestivalName}</span>
+                                                        </div>
+                                                    ) : record.status === 'present' && (
+                                                        <div className="flex flex-wrap gap-3 text-sm flex-1">
+                                                            {[
+                                                                { icon: <IoTimeOutline className="text-green-400" />, label: 'Entry', value: record.entryTime || '--:--' },
+                                                                { icon: <IoTimeOutline className="text-red-400" />, label: 'Exit', value: record.exitTime || '--:--' },
+                                                                { icon: <IoHourglassOutline className="text-yellow-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' }
+                                                            ].map(({ icon, label, value }) => (
+                                                                <div key={label} className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/8 text-gray-300">
+                                                                    {icon}
+                                                                    <span className="text-gray-500 text-xs uppercase">{label}</span>
+                                                                    <span className="font-mono font-bold text-white">{value}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {!isHoliday && record.notes && (
+                                                        <div className="hidden md:flex items-start gap-2 text-sm text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg ml-auto">
+                                                            <IoDocumentTextOutline className="mt-0.5 shrink-0" />
+                                                            <p className="italic max-w-[140px] truncate">"{record.notes}"</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
