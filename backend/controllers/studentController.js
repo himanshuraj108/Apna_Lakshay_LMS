@@ -1176,7 +1176,7 @@ exports.markAttendanceByQr = async (req, res) => {
         }
 
         // ── Geo-Fence Check ──────────────────────────────────────────────
-        const { error: geoError, distance: geoDistance } = checkGeoFence(latitude, longitude);
+        const { error: geoError, distance: geoDistance } = await checkGeoFence(latitude, longitude);
         if (geoError) {
             return res.status(403).json({ success: false, message: geoError });
         }
@@ -1195,11 +1195,12 @@ exports.markAttendanceByQr = async (req, res) => {
         }
 
         // 1. Check for an OPEN/ACTIVE session first (Check-out priority)
-        // Find any present record that has no exit time
+        // Find any present record that has no exit time but HAS an entry time
         const activeSession = await Attendance.findOne({
             student: studentId,
             status: 'present',
-            exitTime: null
+            exitTime: null,
+            entryTime: { $ne: null }
         }).sort({ date: -1 }); // Get the most recent one
 
         let attendance;
@@ -1293,15 +1294,17 @@ exports.markAttendanceByQr = async (req, res) => {
             }
 
             if (todayRecord) {
-                // Convert absent to present or reset? 
-                // If status was absent, we overwrite. If it was half-filled? The logic above (activeSession) prevents getting here if it was open.
-                // So here it's either absent or we are forcing an overwrite (clean slate).
+                // Preserve holiday notes if present
+                const existingNotes = todayRecord.notes || '';
+                const isHoliday = existingNotes.startsWith('Holiday - ');
+                const baseShiftLabel = isHoliday ? existingNotes : `Marked via Kiosk QR (was ${todayRecord.status})`;
+
                 attendance = todayRecord;
                 attendance.status = 'present';
                 attendance.entryTime = entryTime;
                 attendance.exitTime = null;
                 attendance.duration = 0;
-                attendance.notes = `Marked via Kiosk QR (was ${attendance.status})`;
+                attendance.notes = isHoliday ? existingNotes : baseShiftLabel;
                 if (geoDistance !== null) attendance.distanceMeters = geoDistance;
                 await attendance.save();
                 message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
@@ -1360,7 +1363,10 @@ exports.markSelfAttendance = async (req, res) => {
         }
 
         const activeSession = await Attendance.findOne({
-            student: studentId, status: 'present', exitTime: null
+            student: studentId,
+            status: 'present',
+            exitTime: null,
+            entryTime: { $ne: null }
         }).sort({ date: -1 });
 
         let attendance;
@@ -1430,12 +1436,17 @@ exports.markSelfAttendance = async (req, res) => {
             }
 
             if (todayRecord) {
+                // Preserve holiday notes if present
+                const existingNotes = todayRecord.notes || '';
+                const isHoliday = existingNotes.startsWith('Holiday - ');
+                const baseShiftLabel = isHoliday ? existingNotes : `Self Checked In (was ${todayRecord.status})`;
+
                 attendance = todayRecord;
                 attendance.status = 'present';
                 attendance.entryTime = entryTime;
                 attendance.exitTime = null;
                 attendance.duration = 0;
-                attendance.notes = `Self Checked In (was ${attendance.status})`;
+                attendance.notes = isHoliday ? existingNotes : baseShiftLabel;
                 if (geoDistance !== null) attendance.distanceMeters = geoDistance;
                 await attendance.save();
                 message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
