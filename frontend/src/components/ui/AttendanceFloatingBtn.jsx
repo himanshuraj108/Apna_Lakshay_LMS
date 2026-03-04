@@ -12,8 +12,8 @@ import { BASE_URL } from '../../utils/api';
 
 const API = BASE_URL; // e.g. http://localhost:5000
 
-// Steps: closed → phone → scanning → success → (otp) → done
-const STEPS = { CLOSED: 'closed', PHONE: 'phone', SCANNING: 'scanning', SUCCESS: 'success', OTP: 'otp', DONE: 'done' };
+// Steps: closed → phone → location (optional) → scanning → success → (otp) → done
+const STEPS = { CLOSED: 'closed', PHONE: 'phone', LOCATION: 'location', SCANNING: 'scanning', SUCCESS: 'success', OTP: 'otp', DONE: 'done' };
 
 export default function AttendanceFloatingBtn() {
     const [step, setStep] = useState(STEPS.CLOSED);
@@ -22,6 +22,7 @@ export default function AttendanceFloatingBtn() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [scanResult, setScanResult] = useState(null);   // { name, type, time, message }
+    const [coords, setCoords] = useState(null); // Optional cached location
     const [maskedEmail, setMaskedEmail] = useState('');
     const [debugOtp, setDebugOtp] = useState('');       // shown in dev if email fails
     const [credentials, setCredentials] = useState(null); // { user, password }
@@ -62,7 +63,20 @@ export default function AttendanceFloatingBtn() {
         try {
             // Verify phone exists in DB before opening scanner
             await axios.post(`${API}/api/auth/check-phone`, { mobile });
-            setStep(STEPS.SCANNING); // Only open scanner if phone is valid
+
+            // Check if location is required by admin
+            try {
+                const settingsRes = await axios.get(`${API}/api/public/settings`);
+                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
+                    setStep(STEPS.SCANNING); // Skip location step
+                } else {
+                    setStep(STEPS.LOCATION); // Require location first
+                }
+            } catch (err) {
+                console.warn('Failed to fetch public settings for location requirements');
+                setStep(STEPS.LOCATION); // Default to requiring location on failure
+            }
+
         } catch (err) {
             setError(err.response?.data?.message || 'Phone number not found. Please check and try again.');
         } finally {
@@ -121,15 +135,7 @@ export default function AttendanceFloatingBtn() {
     const markAttendance = async (kioskToken) => {
         setLoading(true);
         try {
-            let coords = {};
-            try { coords = await getLocation(); }
-            catch (geoErr) {
-                setError(geoErr.message);
-                setStep(STEPS.PHONE); // go back
-                return;
-            }
-
-            const res = await axios.post(`${API}/api/auth/kiosk-attendance`, { mobile, kioskToken, ...coords });
+            const res = await axios.post(`${API}/api/auth/kiosk-attendance`, { mobile, kioskToken, ...(coords || {}) });
             setScanResult(res.data);
             setStep(STEPS.SUCCESS);
         } catch (err) {
@@ -253,6 +259,7 @@ export default function AttendanceFloatingBtn() {
                                     <div className="flex items-center gap-2.5">
                                         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#16a34a,#15803d)' }}>
                                             {step === STEPS.PHONE && <IoPhonePortrait size={18} className="text-white" />}
+                                            {step === STEPS.LOCATION && <IoLocationOutline size={18} className="text-white" />}
                                             {step === STEPS.SCANNING && <IoQrCode size={18} className="text-white" />}
                                             {step === STEPS.SUCCESS && <IoCheckmarkCircle size={18} className="text-white" />}
                                             {step === STEPS.OTP && <IoKeypad size={18} className="text-white" />}
@@ -260,6 +267,7 @@ export default function AttendanceFloatingBtn() {
                                         <div>
                                             <p className="text-white font-bold text-sm">
                                                 {step === STEPS.PHONE && 'Mark Attendance'}
+                                                {step === STEPS.LOCATION && 'Location Access Required'}
                                                 {step === STEPS.SCANNING && 'Scan Kiosk QR'}
                                                 {step === STEPS.SUCCESS && 'Attendance Marked!'}
                                                 {step === STEPS.OTP && 'Verify & Login'}
@@ -310,6 +318,47 @@ export default function AttendanceFloatingBtn() {
                                             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><IoQrCode size={16} /> Open Scanner</>}
                                         </button>
                                     </form>
+                                )}
+
+                                {/* ── STEP: Location ── */}
+                                {step === STEPS.LOCATION && (
+                                    <div className="space-y-4">
+                                        <div className="text-center mb-4">
+                                            <div className="w-16 h-16 mx-auto bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mb-4 border border-blue-500/20">
+                                                <IoLocationOutline size={32} />
+                                            </div>
+                                            <p className="text-white font-bold text-lg mb-2">Enable Location Services</p>
+                                            <p className="text-gray-400 text-sm">
+                                                To ensure you are at the library, we need to verify your current location before proceeding to the QR scanner.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                setError('');
+                                                setLoading(true);
+                                                try {
+                                                    const fetchedCoords = await getLocation();
+                                                    setCoords(fetchedCoords);
+                                                    setStep(STEPS.SCANNING);
+                                                } catch (err) {
+                                                    // Check if it's a permission denied error
+                                                    if (err.message.toLowerCase().includes('denied')) {
+                                                        setError('Location was denied. Please enable location in your browser settings, then try again.');
+                                                    } else {
+                                                        setError(err.message);
+                                                    }
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
+                                            disabled={loading}
+                                            className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                            style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', boxShadow: '0 4px 20px rgba(59,130,246,0.3)' }}>
+                                            {loading
+                                                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                : <><IoLocationOutline size={16} /> Allow Location Access</>}
+                                        </button>
+                                    </div>
                                 )}
 
                                 {/* ── STEP: Scanning ── */}

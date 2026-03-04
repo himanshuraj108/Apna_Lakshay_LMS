@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const publicController = require('../controllers/publicController');
+const { getPublicSettings } = require('../controllers/settingsController');
 
 // Public seat view
 router.get('/seats', publicController.getSeats);
@@ -9,5 +10,8 @@ router.post('/register', publicController.registerStudent);
 
 // Public shifts for configuration reading
 router.get('/shifts', publicController.getShifts);
+
+// Public settings (location, system status, etc.)
+router.get('/settings', getPublicSettings);
 
 module.exports = router;

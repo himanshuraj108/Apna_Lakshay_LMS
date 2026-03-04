@@ -9,7 +9,8 @@ exports.getSettings = async (req, res) => {
         if (!settings) {
             settings = await Settings.create({
                 shiftMode: 'default',
-                systemStatus: 'active'
+                systemStatus: 'active',
+                locationAttendance: true
             });
         }
 
@@ -31,24 +32,39 @@ exports.getSettings = async (req, res) => {
 // @route   PUT /api/admin/settings
 exports.updateSettings = async (req, res) => {
     try {
-        const { shiftMode, systemStatus, activeModes } = req.body;
+        const { shiftMode, systemStatus, activeModes, locationAttendance } = req.body;
 
         let settings = await Settings.findOne();
 
-        if (!settings) {
-            settings = new Settings({
-                shiftMode: shiftMode || 'default',
-                activeModes: activeModes || { default: true, custom: false },
-                systemStatus: systemStatus || 'active'
-            });
-        } else {
-            if (shiftMode) settings.shiftMode = shiftMode;
-            if (activeModes) settings.activeModes = activeModes;
-            if (systemStatus) settings.systemStatus = systemStatus;
+        // Build update object dynamically
+        const updateFields = {};
+        if (shiftMode !== undefined) updateFields.shiftMode = shiftMode;
+        if (activeModes !== undefined) updateFields.activeModes = activeModes;
+        if (systemStatus !== undefined) updateFields.systemStatus = systemStatus;
+
+        // Strict boolean coercion for locationAttendance
+        if (locationAttendance !== undefined) {
+            const coerced = locationAttendance === 'true' ? true : (locationAttendance === 'false' ? false : !!locationAttendance);
+            updateFields.locationAttendance = coerced;
         }
 
-        settings.updatedBy = req.user._id;
-        await settings.save();
+        updateFields.updatedBy = req.user._id;
+
+        if (!settings) {
+            settings = await Settings.create({
+                shiftMode: shiftMode || 'default',
+                activeModes: activeModes || { default: true, custom: false },
+                systemStatus: systemStatus || 'active',
+                locationAttendance: locationAttendance !== undefined ? locationAttendance : true,
+                updatedBy: req.user._id
+            });
+        } else {
+            settings = await Settings.findOneAndUpdate(
+                {},
+                { $set: updateFields },
+                { new: true, runValidators: true }
+            );
+        }
 
         res.status(200).json({
             success: true,
@@ -69,12 +85,13 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance');
 
         if (!settings) {
             settings = {
                 shiftMode: 'default',
-                systemStatus: 'active'
+                systemStatus: 'active',
+                locationAttendance: true
             };
         }
 

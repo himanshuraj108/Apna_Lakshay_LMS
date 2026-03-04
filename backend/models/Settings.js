@@ -15,6 +15,10 @@ const settingsSchema = new mongoose.Schema({
         enum: ['active', 'maintenance'],
         default: 'active'
     },
+    locationAttendance: {
+        type: Boolean,
+        default: true
+    },
     libraryName: { type: String, default: 'Library Management System' },
     address: { type: String, default: '' },
     contactNumber: { type: String, default: '' },

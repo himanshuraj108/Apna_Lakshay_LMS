@@ -44,9 +44,6 @@ const {
     createShift,
     updateShift,
     deleteShift,
-    // Settings
-    getSettings,
-    updateSettings,
     fixSeatOccupancy,
     // QR Kiosk
     generateQrToken,
@@ -54,6 +51,9 @@ const {
     resetAllQrTokens,
     markAttendanceByQrAdmin
 } = require('../controllers/adminController');
+
+// Settings come from settingsController
+const { getSettings, updateSettings } = require('../controllers/settingsController');
 
 const {
     addSeat,
