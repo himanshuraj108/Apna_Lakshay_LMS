@@ -496,6 +496,24 @@ exports.getStudents = async (req, res) => {
             .lean() // Use lean for performance and easier modification
             .sort({ createdAt: -1 });
 
+        // Get latest fee for all fetched students
+        const studentIds = students.map(s => s._id);
+        const latestFees = await Fee.aggregate([
+            { $match: { student: { $in: studentIds } } },
+            { $sort: { year: -1, month: -1, createdAt: -1 } },
+            {
+                $group: {
+                    _id: '$student',
+                    amount: { $first: '$amount' }
+                }
+            }
+        ]);
+
+        const feeMap = {};
+        latestFees.forEach(f => {
+            feeMap[f._id.toString()] = f.amount;
+        });
+
         // Transform students to include resolved shift info and ensure registrationSource
         const studentsWithShift = students.map(student => {
             let shiftInfo = null;
@@ -524,7 +542,8 @@ exports.getStudents = async (req, res) => {
                 ...student,
                 shift: shiftInfo,
                 shiftDetails, // New field containing time info
-                registrationSource: student.registrationSource || 'admin' // Default for existing students
+                registrationSource: student.registrationSource || 'admin', // Default for existing students
+                currentFee: feeMap[student._id.toString()] || null
             };
         });
 
@@ -1639,6 +1658,100 @@ exports.getAttendance = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// Get monthly attendance report
+exports.getMonthlyAttendance = async (req, res) => {
+    try {
+        const year = parseInt(req.params.year);
+        const month = parseInt(req.params.month); // 1-12
+
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 1);
+
+        const attendance = await Attendance.find({
+            date: { $gte: startOfMonth, $lt: endOfMonth }
+        }).populate('student', 'name email mobile createdAt');
+
+        // Group by student
+        const report = {};
+
+        attendance.forEach(record => {
+            if (!record.student) return;
+            const sId = record.student._id.toString();
+
+            if (!report[sId]) {
+                report[sId] = {
+                    student: record.student,
+                    totalDays: 0,
+                    present: 0,
+                    absent: 0,
+                    days: {}
+                };
+            }
+
+            const day = new Date(record.date).getDate();
+            report[sId].days[day] = record.status === 'present' ? 'P' : 'A';
+
+            report[sId].totalDays++;
+            if (record.status === 'present') report[sId].present++;
+            if (record.status === 'absent') report[sId].absent++;
+        });
+
+        res.status(200).json({
+            success: true,
+            report: Object.values(report)
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// Get yearly attendance report
+exports.getYearlyAttendance = async (req, res) => {
+    try {
+        const year = parseInt(req.params.year);
+
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year + 1, 0, 1);
+
+        const attendance = await Attendance.find({
+            date: { $gte: startOfYear, $lt: endOfYear }
+        }).populate('student', 'name email mobile createdAt');
+
+        // Group by student
+        const report = {};
+
+        attendance.forEach(record => {
+            if (!record.student) return;
+            const sId = record.student._id.toString();
+
+            if (!report[sId]) {
+                report[sId] = {
+                    student: record.student,
+                    totalDays: 0,
+                    present: 0,
+                    absent: 0,
+                    months: {}
+                };
+            }
+
+            const mIdx = new Date(record.date).getMonth();
+            if (!report[sId].months[mIdx]) report[sId].months[mIdx] = { P: 0, A: 0 };
+            report[sId].months[mIdx][record.status === 'present' ? 'P' : 'A']++;
+
+            report[sId].totalDays++;
+            if (record.status === 'present') report[sId].present++;
+            if (record.status === 'absent') report[sId].absent++;
+        });
+
+        res.status(200).json({
+            success: true,
+            report: Object.values(report)
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 

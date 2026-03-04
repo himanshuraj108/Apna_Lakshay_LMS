@@ -6,8 +6,10 @@ import {
     IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoSave,
     IoTimeOutline, IoDocumentTextOutline, IoFlashOutline,
     IoBarChartOutline, IoRefresh, IoArrowForward, IoBedOutline,
-    IoCalendarOutline, IoPeopleOutline
+    IoCalendarOutline, IoPeopleOutline, IoDownloadOutline
 } from 'react-icons/io5';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 
 const PAGE_BG = { background: '#050508' };
@@ -100,6 +102,180 @@ const AttendanceManagement = () => {
         finally { setSaving(false); }
     };
 
+    const generatePDF = () => {
+        const doc = new jsPDF();
+        const tableColumn = ["S.No", "Name", "Phone", "Seat", "Shift", "Status", "Entry", "Exit", "Dist (m)"];
+        const tableRows = [];
+
+        filteredStudents.forEach((student, index) => {
+            const data = attendance[student._id] || { status: 'absent' };
+
+            let shiftStr = "N/A";
+            if (student.seat && student.seat.assignments) {
+                const activeAsgn = student.seat.assignments.find(a => a.student === student._id && a.status === 'active');
+                if (activeAsgn) {
+                    shiftStr = activeAsgn.shift ? activeAsgn.shift.name : (activeAsgn.legacyShift || 'N/A');
+                }
+            }
+
+            const status = data.status === 'present' ? 'P' : 'A';
+            const entry = data.entryTime || '-';
+            const exit = data.exitTime || '-';
+            const distance = data.distanceMeters ? `${data.distanceMeters}m` : '-';
+
+            const rowData = [
+                index + 1,
+                student.name,
+                student.mobile ? String(student.mobile) : (student.email || 'N/A'),
+                student.seat ? student.seat.number : 'Pending',
+                shiftStr,
+                status,
+                entry,
+                exit,
+                distance
+            ];
+            tableRows.push(rowData);
+        });
+
+        const dateStr = new Date(selectedDate).toLocaleDateString('en-GB');
+        doc.setFontSize(16);
+        doc.text(`Daily Attendance Report - ${dateStr}`, 14, 15);
+
+        // Add Current Attendance Dashboard summary
+        doc.setFontSize(10);
+        const totalSelected = presentCount + absentCount;
+        const currentPercentage = totalSelected > 0 ? ((presentCount / totalSelected) * 100).toFixed(1) : 0;
+        doc.text(`Total Present: ${presentCount}   |   Total Absent: ${absentCount}   |   Overall Attendance: ${currentPercentage}%`, 14, 22);
+
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 28,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [63, 81, 181] },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 5) {
+                    if (data.cell.raw === 'P') {
+                        data.cell.styles.textColor = [34, 197, 94]; // Green-500
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'A') {
+                        data.cell.styles.textColor = [239, 68, 68]; // Red-500
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+
+        doc.save(`Attendance_Report_${selectedDate}.pdf`);
+    };
+
+    const generateMonthlyPDF = async () => {
+        try {
+            const dateObj = new Date(selectedDate);
+            const year = dateObj.getFullYear();
+            const month = dateObj.getMonth() + 1;
+
+            setSaving(true);
+            const res = await api.get(`/admin/attendance/monthly/${year}/${month}`);
+            const reportData = res.data.report;
+
+            const doc = new jsPDF('landscape');
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const daysColumns = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
+            const tableColumn = ["S.No", "Name", ...daysColumns, "P", "A", "%"];
+            const tableRows = [];
+
+            reportData.forEach((data, index) => {
+                const presentAmt = data.present || 0;
+                const totalAmt = data.totalDays || 1;
+                const percentage = ((presentAmt / totalAmt) * 100).toFixed(0) + '%';
+
+                const row = [index + 1, data.student.name || 'Unknown'];
+                for (let d = 1; d <= daysInMonth; d++) {
+                    row.push(data.days?.[d] || '-');
+                }
+                row.push(data.present, data.absent, percentage);
+                tableRows.push(row);
+            });
+
+            const monthName = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+            doc.setFontSize(16);
+            doc.text(`Monthly Attendance Report - ${monthName}`, 14, 15);
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 20,
+                styles: { fontSize: 7, cellPadding: 1 },
+                headStyles: { fillColor: [63, 81, 181], halign: 'center' },
+                columnStyles: { 0: { halign: 'center' }, 1: { minCellWidth: 20 } },
+                didParseCell: (data) => {
+                    if (data.section === 'body') {
+                        if (data.column.index >= 2 && data.column.index < 2 + daysInMonth) {
+                            if (data.cell.raw === 'P') { data.cell.styles.textColor = [34, 197, 94]; data.cell.styles.fontStyle = 'bold'; }
+                            if (data.cell.raw === 'A') { data.cell.styles.textColor = [239, 68, 68]; data.cell.styles.fontStyle = 'bold'; }
+                        }
+                    }
+                }
+            });
+
+            doc.save(`Monthly_Attendance_${monthName.replace(' ', '_')}.pdf`);
+        } catch (e) {
+            setError(e.response?.data?.message || 'Failed to generate monthly report');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const generateYearlyPDF = async () => {
+        try {
+            const dateObj = new Date(selectedDate);
+            const year = dateObj.getFullYear();
+
+            setSaving(true);
+            const res = await api.get(`/admin/attendance/yearly/${year}`);
+            const reportData = res.data.report;
+
+            const doc = new jsPDF('landscape');
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const tableColumn = ["S.No", "Name", ...monthNames, "Total P", "Total A", "%"];
+            const tableRows = [];
+
+            reportData.forEach((data, index) => {
+                const presentAmt = data.present || 0;
+                const totalAmt = data.totalDays || 1;
+                const percentage = ((presentAmt / totalAmt) * 100).toFixed(0) + '%';
+
+                const row = [index + 1, data.student.name || 'Unknown'];
+                for (let m = 0; m < 12; m++) {
+                    const monthData = data.months?.[m];
+                    row.push(monthData ? monthData.P : '-');
+                }
+                row.push(data.present, data.absent, percentage);
+                tableRows.push(row);
+            });
+
+            doc.setFontSize(16);
+            doc.text(`Yearly Attendance Report - ${year}`, 14, 15);
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 20,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [63, 81, 181] }
+            });
+
+            doc.save(`Yearly_Attendance_${year}.pdf`);
+        } catch (e) {
+            setError(e.response?.data?.message || 'Failed to generate yearly report');
+            setTimeout(() => setError(''), 3000);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const filteredStudents = students.filter(s => {
         if (!s.createdAt) return true;
         const admission = new Date(s.createdAt); admission.setHours(0, 0, 0, 0);
@@ -163,6 +339,20 @@ const AttendanceManagement = () => {
                         <button onClick={loadAttendance} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all mt-5"><IoRefresh size={15} /> Refresh</button>
                         <button onClick={markAllPresent} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCheckmarkCircle size={15} /> All Present</button>
                         <button onClick={markAllAbsent} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCloseCircle size={15} /> All Absent</button>
+                    </div>
+
+                    <div className="flex items-center justify-between mb-4 mt-2">
+                        <div className="flex gap-2 flex-wrap">
+                            <button onClick={generatePDF} className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-medium transition-all">
+                                <IoDownloadOutline size={16} /> Daily Report
+                            </button>
+                            <button onClick={generateMonthlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
+                                <IoDownloadOutline size={16} /> Monthly Report
+                            </button>
+                            <button onClick={generateYearlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
+                                <IoDownloadOutline size={16} /> Yearly Report
+                            </button>
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex-1 grid grid-cols-2 gap-3">

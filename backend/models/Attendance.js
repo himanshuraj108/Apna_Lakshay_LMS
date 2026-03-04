@@ -43,6 +43,10 @@ const attendanceSchema = new mongoose.Schema({
     lateEntry: {
         type: Boolean,
         default: false
+    },
+    distanceMeters: {
+        type: Number,
+        default: null
     }
 }, {
     timestamps: true

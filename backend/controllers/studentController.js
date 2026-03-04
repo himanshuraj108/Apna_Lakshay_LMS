@@ -8,6 +8,49 @@ const multer = require('multer');
 const { storage } = require('../config/cloudinary');
 const SystemSetting = require('../models/SystemSetting');
 
+// ─── Geo-Fence Helpers ────────────────────────────────────────────────────
+// Haversine formula: returns distance in metres between two lat/lng points
+const haversineDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371000; // Earth radius in metres
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+// Returns an object { error: string|null, distance: number|null }
+const checkGeoFence = (latitude, longitude) => {
+    const libLat = parseFloat(process.env.LIBRARY_LAT);
+    const libLng = parseFloat(process.env.LIBRARY_LNG);
+    const radiusM = parseFloat(process.env.LIBRARY_RADIUS_M) || 100;
+
+    console.log(`[GEO-FENCE] Config: LAT=${libLat}, LNG=${libLng}, RADIUS=${radiusM}`);
+    console.log(`[GEO-FENCE] Received: LAT=${latitude}, LNG=${longitude}`);
+
+    // If coordinates not configured in .env, skip the check (dev mode)
+    if (isNaN(libLat) || isNaN(libLng)) {
+        console.log('[GEO-FENCE] Skipped: .env coordinates not set or invalid');
+        return { error: null, distance: null };
+    }
+
+    if (latitude == null || longitude == null) {
+        console.log('[GEO-FENCE] Failed: No location provided by frontend');
+        return { error: 'Location access is required to mark attendance. Please enable location and try again.', distance: null };
+    }
+
+    const dist = haversineDistance(parseFloat(latitude), parseFloat(longitude), libLat, libLng);
+    console.log(`[GEO-FENCE] Calculated Distance: ${dist} metres`);
+
+    if (dist > radiusM) {
+        return { error: `You are too far from the library (${Math.round(dist)}m away). You must be within ${radiusM}m to mark attendance.`, distance: Math.round(dist) };
+    }
+    return { error: null, distance: Math.round(dist) };
+};
+
 // @desc    Get student dashboard data
 // @route   GET /api/student/dashboard
 exports.getDashboard = async (req, res) => {
@@ -1105,7 +1148,7 @@ exports.requestSeatChange = async (req, res) => {
 // @route   POST /api/student/attendance/qr-scan
 exports.markAttendanceByQr = async (req, res) => {
     try {
-        const { qrToken } = req.body;
+        const { qrToken, latitude, longitude } = req.body;
 
         // Helper to get India Standard Time (UTC+5:30)
         const getISTDate = () => {
@@ -1116,6 +1159,12 @@ exports.markAttendanceByQr = async (req, res) => {
 
         if (!qrToken) {
             return res.status(400).json({ success: false, message: 'Invalid QR Code' });
+        }
+
+        // ── Geo-Fence Check ──────────────────────────────────────────────
+        const { error: geoError, distance: geoDistance } = checkGeoFence(latitude, longitude);
+        if (geoError) {
+            return res.status(403).json({ success: false, message: geoError });
         }
 
         // Verify Token
@@ -1210,7 +1259,7 @@ exports.markAttendanceByQr = async (req, res) => {
                         const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
 
                         const allowedStart = getISTDate();
-                        allowedStart.setHours(sH, sM - 30, 0, 0);
+                        allowedStart.setHours(sH, sM - 90, 0, 0); // 1 hour 30 mins before
                         const allowedEnd = getISTDate();
                         allowedEnd.setHours(eH, eM, 0, 0);
 
@@ -1222,7 +1271,7 @@ exports.markAttendanceByQr = async (req, res) => {
                         if (now < allowedStart || now > allowedEnd) {
                             return res.status(403).json({
                                 success: false,
-                                message: `Entry allowed only 30 mins before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
+                                message: `Entry allowed only 1:30 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
                             });
                         }
                     }
@@ -1239,6 +1288,7 @@ exports.markAttendanceByQr = async (req, res) => {
                 attendance.exitTime = null;
                 attendance.duration = 0;
                 attendance.notes = `Marked via Kiosk QR (was ${attendance.status})`;
+                if (geoDistance !== null) attendance.distanceMeters = geoDistance;
                 await attendance.save();
                 message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
             } else {
@@ -1249,7 +1299,8 @@ exports.markAttendanceByQr = async (req, res) => {
                     entryTime: entryTime,
                     notes: `Marked via Kiosk QR (${shiftLabel})`,
                     markedBy: studentId,
-                    duration: 0
+                    duration: 0,
+                    distanceMeters: geoDistance !== null ? geoDistance : undefined
                 });
                 message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
             }
@@ -1273,11 +1324,19 @@ exports.markAttendanceByQr = async (req, res) => {
 // @route   POST /api/student/attendance/mark-self
 exports.markSelfAttendance = async (req, res) => {
     try {
+        const { latitude, longitude } = req.body;
+
         const getISTDate = () => {
             const d = new Date();
             const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
             return new Date(utc + (3600000 * 5.5));
         };
+
+        // ── Geo-Fence Check ──────────────────────────────────────────────
+        const { error: geoError, distance: geoDistance } = checkGeoFence(latitude, longitude);
+        if (geoError) {
+            return res.status(403).json({ success: false, message: geoError });
+        }
 
         const studentId = req.user.id;
         const user = await User.findById(studentId);
@@ -1342,7 +1401,7 @@ exports.markSelfAttendance = async (req, res) => {
                     if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
                         const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
                         const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
-                        const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 30, 0, 0);
+                        const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 90, 0, 0); // 1 hour 30 mins before
                         const allowedEnd = getISTDate(); allowedEnd.setHours(eH, eM, 0, 0);
 
                         if (allowedEnd < allowedStart) {
@@ -1350,7 +1409,7 @@ exports.markSelfAttendance = async (req, res) => {
                             else allowedEnd.setDate(allowedEnd.getDate() + 1);
                         }
                         if (now < allowedStart || now > allowedEnd) {
-                            return res.status(403).json({ success: false, message: `Entry allowed only 30 mins before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})` });
+                            return res.status(403).json({ success: false, message: `Entry allowed only 1:30 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})` });
                         }
                     }
                 }
@@ -1363,6 +1422,7 @@ exports.markSelfAttendance = async (req, res) => {
                 attendance.exitTime = null;
                 attendance.duration = 0;
                 attendance.notes = `Self Checked In (was ${attendance.status})`;
+                if (geoDistance !== null) attendance.distanceMeters = geoDistance;
                 await attendance.save();
                 message = `Welcome back, ${user.name}! Entry marked at ${attendance.entryTime}`;
             } else {
@@ -1373,7 +1433,8 @@ exports.markSelfAttendance = async (req, res) => {
                     entryTime: entryTime,
                     notes: `Self Checked In (${shiftLabel})`,
                     markedBy: studentId,
-                    duration: 0
+                    duration: 0,
+                    distanceMeters: geoDistance !== null ? geoDistance : undefined
                 });
                 message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
             }

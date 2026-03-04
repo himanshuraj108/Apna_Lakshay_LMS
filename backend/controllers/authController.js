@@ -388,10 +388,46 @@ exports.checkPhone = async (req, res) => {
 // @route POST /api/auth/kiosk-attendance
 exports.markKioskAttendancePublic = async (req, res) => {
     try {
-        const { mobile, kioskToken } = req.body;
+        const { mobile, kioskToken, latitude, longitude } = req.body;
         if (!mobile || !kioskToken) {
             return res.status(400).json({ success: false, message: 'Phone number and kiosk token are required' });
         }
+
+        // --- Geo-Fence Validation ---
+        const libLat = parseFloat(process.env.LIBRARY_LAT);
+        const libLng = parseFloat(process.env.LIBRARY_LNG);
+        const radiusM = parseFloat(process.env.LIBRARY_RADIUS_M) || 100;
+
+        let geoDistance = null;
+
+        console.log(`[GEO-FENCE KIOSK] Config: LAT=${libLat}, LNG=${libLng}, RADIUS=${radiusM}`);
+        console.log(`[GEO-FENCE KIOSK] Received: LAT=${latitude}, LNG=${longitude}`);
+
+        // If coordinates are configured in .env, enforce the check
+        if (!isNaN(libLat) && !isNaN(libLng)) {
+            if (latitude == null || longitude == null) {
+                console.log('[GEO-FENCE KIOSK] Blocked: No latitude/longitude provided');
+                return res.status(400).json({ success: false, message: 'Location access is required to mark attendance. Please enable location and try again.' });
+            }
+
+            // Haversine formula
+            const toRad = x => (x * Math.PI) / 180;
+            const R = 6371e3; // Earth radius in meters
+            const dLat = toRad(libLat - parseFloat(latitude));
+            const dLon = toRad(libLng - parseFloat(longitude));
+            const lat1Rad = toRad(parseFloat(latitude));
+            const lat2Rad = toRad(libLat);
+
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1Rad) * Math.cos(lat2Rad);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            geoDistance = Math.round(R * c);
+
+            if (geoDistance > radiusM) {
+                return res.status(403).json({ success: false, message: `You are too far from the library (${geoDistance}m away). You must be within ${radiusM}m to mark attendance.` });
+            }
+        }
+        // ----------------------------
 
         // 1. Validate kiosk QR token
         const SystemSetting = require('../models/SystemSetting');
@@ -449,6 +485,7 @@ exports.markKioskAttendancePublic = async (req, res) => {
             existingAny.entryTime = currentTime;
             existingAny.isActive = true;
             existingAny.markedBy = student._id;
+            if (geoDistance !== null) existingAny.distanceMeters = geoDistance;
             await existingAny.save();
         } else if (existingAny) {
             // Student checked in and out already today
@@ -458,7 +495,8 @@ exports.markKioskAttendancePublic = async (req, res) => {
             record = await Attendance.create({
                 student: student._id, date: today,
                 entryTime: currentTime, status: 'present',
-                isActive: true, markedBy: student._id  // student self-marks via kiosk
+                isActive: true, markedBy: student._id,  // student self-marks via kiosk
+                distanceMeters: geoDistance !== null ? geoDistance : undefined
             });
         }
 

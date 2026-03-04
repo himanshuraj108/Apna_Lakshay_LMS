@@ -18,6 +18,8 @@ const {
     assignSeat,
     markAttendance,
     getAttendance,
+    getMonthlyAttendance,
+    getYearlyAttendance,
     quickCheckIn,
     quickCheckOut,
     getActiveStudents,
@@ -116,6 +118,8 @@ router.post('/fix-seats', fixSeatOccupancy);
 
 // Attendance
 router.post('/attendance', markAttendance);
+router.get('/attendance/monthly/:year/:month', getMonthlyAttendance);
+router.get('/attendance/yearly/:year', getYearlyAttendance);
 router.get('/attendance/:date', getAttendance);
 router.post('/attendance/check-in', quickCheckIn);
 router.post('/attendance/check-out', quickCheckOut);

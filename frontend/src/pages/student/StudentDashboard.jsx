@@ -238,10 +238,31 @@ const StudentDashboard = () => {
 
     const handleLogout = () => { logout(); navigate('/login'); };
 
+    // ── Get current GPS location ─────────────────────────────────────────
+    const getLocation = () =>
+        new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocation is not supported by your browser.'));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                () => reject(new Error('Location access denied. Please allow location to mark attendance.')),
+                { timeout: 10000, maximumAge: 0 }
+            );
+        });
+
     const handleQrScan = async (token) => {
         setShowScanner(false);
         try {
-            const res = await api.post('/student/attendance/qr-scan', { qrToken: token });
+            let coords = {};
+            try { coords = await getLocation(); }
+            catch (geoErr) {
+                setScanMessage({ type: 'error', text: geoErr.message });
+                setTimeout(() => setScanMessage(null), 6000);
+                return;
+            }
+            const res = await api.post('/student/attendance/qr-scan', { qrToken: token, ...coords });
             if (res.data.success) {
                 setScanMessage({ type: 'success', text: res.data.message });
                 fetchDashboardData();
@@ -249,13 +270,20 @@ const StudentDashboard = () => {
             }
         } catch (e) {
             setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' });
-            setTimeout(() => setScanMessage(null), 5000);
+            setTimeout(() => setScanMessage(null), 6000);
         }
     };
 
     const handleQuickAttendance = async () => {
         try {
-            const res = await api.post('/student/attendance/mark-self');
+            let coords = {};
+            try { coords = await getLocation(); }
+            catch (geoErr) {
+                setScanMessage({ type: 'error', text: geoErr.message });
+                setTimeout(() => setScanMessage(null), 6000);
+                return;
+            }
+            const res = await api.post('/student/attendance/mark-self', coords);
             if (res.data.success) {
                 setScanMessage({ type: 'success', text: res.data.message });
                 fetchDashboardData();
@@ -263,7 +291,7 @@ const StudentDashboard = () => {
             }
         } catch (e) {
             setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' });
-            setTimeout(() => setScanMessage(null), 5000);
+            setTimeout(() => setScanMessage(null), 6000);
         }
     };
 
