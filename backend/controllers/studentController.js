@@ -7,6 +7,7 @@ const Request = require('../models/Request');
 const multer = require('multer');
 const { storage } = require('../config/cloudinary');
 const SystemSetting = require('../models/SystemSetting');
+const Holiday = require('../models/Holiday');
 
 // ─── Geo-Fence Helpers ────────────────────────────────────────────────────
 // Haversine formula: returns distance in metres between two lat/lng points
@@ -502,8 +503,10 @@ exports.getAttendance = async (req, res) => {
             };
         });
 
+        // Fetch all holidays to include in response (so frontend can cross-reference)
+        const holidays = await Holiday.find().select('name date').lean();
+
         res.status(200).json({
-            success: true,
             success: true,
             myAttendance: cleanAttendance,
             summary: {
@@ -511,7 +514,8 @@ exports.getAttendance = async (req, res) => {
                 total: totalDays,
                 percentage: myPercentage
             },
-            rankings: rankedStudents
+            rankings: rankedStudents,
+            holidays
         });
     } catch (error) {
         res.status(500).json({
@@ -1248,11 +1252,13 @@ exports.markAttendanceByQr = async (req, res) => {
                 date: today
             });
 
+            // If it's a holiday, we ALLOW them to mark entry.
+            // If it's present and already exited, we block.
             if (todayRecord && todayRecord.status === 'present' && todayRecord.exitTime) {
                 return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
             }
 
-            // Create new Entry or Update Absent Record
+            // Create new Entry or Update Absent/Holiday Record
             const now = getISTDate();
             const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             let shiftLabel = 'N/A';
@@ -1400,6 +1406,8 @@ exports.markSelfAttendance = async (req, res) => {
             today.setHours(0, 0, 0, 0);
 
             const todayRecord = await Attendance.findOne({ student: studentId, date: today });
+            // If it's a holiday, we ALLOW them to mark entry.
+            // If it's present and already exited, we block.
             if (todayRecord && todayRecord.status === 'present' && todayRecord.exitTime) {
                 return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
             }

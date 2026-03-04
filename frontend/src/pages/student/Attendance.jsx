@@ -126,7 +126,19 @@ const Attendance = () => {
     if (loading) return <AttendanceSkeleton />;
 
 
-    const { myAttendance = [], summary = {}, rankings = [] } = attendanceData || {};
+    const { myAttendance = [], summary = {}, rankings = [], holidays = [] } = attendanceData || {};
+
+    // Returns holiday name if a given date is a declared holiday, else null
+    const getHolidayForDate = (dateStr) => {
+        const d = new Date(dateStr);
+        d.setHours(0, 0, 0, 0);
+        const h = holidays.find(h => {
+            const hd = new Date(h.date);
+            hd.setHours(0, 0, 0, 0);
+            return hd.getTime() === d.getTime();
+        });
+        return h ? h.name : null;
+    };
     const totalMinutes = myAttendance.reduce((acc, curr) => acc + (curr.duration || 0), 0);
     const totalHrs = Math.floor(totalMinutes / 60);
     const totalMins = totalMinutes % 60;
@@ -271,9 +283,11 @@ const Attendance = () => {
                                         <div className="text-center py-12 text-gray-500">No attendance records yet</div>
                                     )}
                                     {myAttendance.slice().reverse().map((record, idx) => {
-                                        const isHoliday = record.status === 'holiday' || (record.status === 'present' && record.notes?.startsWith('Holiday - '));
-                                        const holidayFestivalName = isHoliday && record.notes ? record.notes.replace('Holiday - ', '') : 'Holiday';
-                                        const attendedOnHoliday = isHoliday && record.entryTime != null;
+                                        // Cross-reference holidays list for reliable holiday name lookup
+                                        const holidayName = getHolidayForDate(record.date);
+                                        const isHoliday = record.status === 'holiday' || !!holidayName;
+                                        const holidayFestivalName = holidayName || (record.notes?.startsWith('Holiday - ') ? record.notes.replace('Holiday - ', '') : 'Holiday');
+                                        const attendedOnHoliday = isHoliday && !!record.entryTime;
 
                                         // Determine styling based on attendance and holiday status
                                         let cardStyle = '';
@@ -338,6 +352,7 @@ const Attendance = () => {
                                                         )}
                                                         {isHoliday && (
                                                             <div className={`flex items-center gap-2 text-sm bg-amber-500/8 border border-amber-500/15 px-3 py-1.5 rounded-lg text-amber-300 ${isHoliday && !attendedOnHoliday ? 'flex-1' : ''}`}>
+                                                                <IoCalendar className="text-amber-400 opacity-70" />
                                                                 <span className="font-semibold">{holidayFestivalName}</span>
                                                             </div>
                                                         )}
