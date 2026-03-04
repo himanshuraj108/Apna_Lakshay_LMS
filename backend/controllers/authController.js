@@ -394,37 +394,49 @@ exports.markKioskAttendancePublic = async (req, res) => {
         }
 
         // --- Geo-Fence Validation ---
-        const libLat = parseFloat(process.env.LIBRARY_LAT);
-        const libLng = parseFloat(process.env.LIBRARY_LNG);
-        const radiusM = parseFloat(process.env.LIBRARY_RADIUS_M) || 100;
+        const Settings = require('../models/Settings');
+        let settings;
+        try {
+            settings = await Settings.findOne().select('locationAttendance');
+        } catch (err) {
+            console.error('[GEO-FENCE KIOSK] Error fetching settings:', err);
+        }
 
         let geoDistance = null;
 
-        console.log(`[GEO-FENCE KIOSK] Config: LAT=${libLat}, LNG=${libLng}, RADIUS=${radiusM}`);
-        console.log(`[GEO-FENCE KIOSK] Received: LAT=${latitude}, LNG=${longitude}`);
+        if (settings && settings.locationAttendance === false) {
+            console.log('[GEO-FENCE KIOSK] Skipped: locationAttendance is disabled in admin settings');
+        } else {
+            const libLat = parseFloat(process.env.LIBRARY_LAT);
+            const libLng = parseFloat(process.env.LIBRARY_LNG);
+            const radiusM = parseFloat(process.env.LIBRARY_RADIUS_M) || 100;
 
-        // If coordinates are configured in .env, enforce the check
-        if (!isNaN(libLat) && !isNaN(libLng)) {
-            if (latitude == null || longitude == null) {
-                console.log('[GEO-FENCE KIOSK] Blocked: No latitude/longitude provided');
-                return res.status(400).json({ success: false, message: 'Location access is required to mark attendance. Please enable location and try again.' });
-            }
+            console.log(`[GEO-FENCE KIOSK] Config: LAT=${libLat}, LNG=${libLng}, RADIUS=${radiusM}`);
+            console.log(`[GEO-FENCE KIOSK] Received: LAT=${latitude}, LNG=${longitude}`);
 
-            // Haversine formula
-            const toRad = x => (x * Math.PI) / 180;
-            const R = 6371e3; // Earth radius in meters
-            const dLat = toRad(libLat - parseFloat(latitude));
-            const dLon = toRad(libLng - parseFloat(longitude));
-            const lat1Rad = toRad(parseFloat(latitude));
-            const lat2Rad = toRad(libLat);
+            // If coordinates are configured in .env, enforce the check
+            if (!isNaN(libLat) && !isNaN(libLng)) {
+                if (latitude == null || longitude == null) {
+                    console.log('[GEO-FENCE KIOSK] Blocked: No latitude/longitude provided');
+                    return res.status(400).json({ success: false, message: 'Location access is required to mark attendance. Please enable location and try again.' });
+                }
 
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1Rad) * Math.cos(lat2Rad);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            geoDistance = Math.round(R * c);
+                // Haversine formula
+                const toRad = x => (x * Math.PI) / 180;
+                const R = 6371e3; // Earth radius in meters
+                const dLat = toRad(libLat - parseFloat(latitude));
+                const dLon = toRad(libLng - parseFloat(longitude));
+                const lat1Rad = toRad(parseFloat(latitude));
+                const lat2Rad = toRad(libLat);
 
-            if (geoDistance > radiusM) {
-                return res.status(403).json({ success: false, message: `You are too far from the library (${geoDistance}m away). You must be within ${radiusM}m to mark attendance.` });
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1Rad) * Math.cos(lat2Rad);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                geoDistance = Math.round(R * c);
+
+                if (geoDistance > radiusM) {
+                    return res.status(403).json({ success: false, message: `You are too far from the library (${geoDistance}m away). You must be within ${radiusM}m to mark attendance.` });
+                }
             }
         }
         // ----------------------------

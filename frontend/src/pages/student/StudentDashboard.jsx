@@ -255,13 +255,28 @@ const StudentDashboard = () => {
     const handleQrScan = async (token) => {
         setShowScanner(false);
         try {
-            let coords = {};
-            try { coords = await getLocation(); }
-            catch (geoErr) {
-                setScanMessage({ type: 'error', text: geoErr.message });
-                setTimeout(() => setScanMessage(null), 6000);
-                return;
+            // Check if location is required by admin
+            let isLocationRequired = true;
+            try {
+                const settingsRes = await api.get('/public/settings');
+                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
+                    isLocationRequired = false;
+                }
+            } catch (err) {
+                console.warn('Failed to fetch public settings for location requirements');
             }
+
+            let coords = {};
+            if (isLocationRequired) {
+                try {
+                    coords = await getLocation();
+                } catch (geoErr) {
+                    setScanMessage({ type: 'error', text: geoErr.message });
+                    setTimeout(() => setScanMessage(null), 6000);
+                    return;
+                }
+            }
+
             const res = await api.post('/student/attendance/qr-scan', { qrToken: token, ...coords });
             if (res.data.success) {
                 setScanMessage({ type: 'success', text: res.data.message });
@@ -276,13 +291,28 @@ const StudentDashboard = () => {
 
     const handleQuickAttendance = async () => {
         try {
-            let coords = {};
-            try { coords = await getLocation(); }
-            catch (geoErr) {
-                setScanMessage({ type: 'error', text: geoErr.message });
-                setTimeout(() => setScanMessage(null), 6000);
-                return;
+            // Check if location is required by admin
+            let isLocationRequired = true;
+            try {
+                const settingsRes = await api.get('/public/settings');
+                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
+                    isLocationRequired = false;
+                }
+            } catch (err) {
+                console.warn('Failed to fetch public settings for location requirements');
             }
+
+            let coords = {};
+            if (isLocationRequired) {
+                try {
+                    coords = await getLocation();
+                } catch (geoErr) {
+                    setScanMessage({ type: 'error', text: geoErr.message });
+                    setTimeout(() => setScanMessage(null), 6000);
+                    return;
+                }
+            }
+
             const res = await api.post('/student/attendance/mark-self', coords);
             if (res.data.success) {
                 setScanMessage({ type: 'success', text: res.data.message });

@@ -8,7 +8,7 @@ import {
     IoSchool, IoCalendarOutline, IoCashOutline, IoBedOutline,
     IoNotificationsOutline, IoLogOut, IoScanOutline, IoTimeOutline, IoKey,
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
-    IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower
+    IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
@@ -44,10 +44,20 @@ const AdminDashboard = () => {
         try {
             const currentModes = settings.activeModes || { default: true, custom: false };
             const newModes = { ...currentModes, [mode]: !currentModes[mode] };
-            setSettings({ ...settings, activeModes: newModes });
-            await api.put('/admin/settings', { activeModes: newModes });
-            fetchSettings();
-        } catch (e) { fetchSettings(); }
+            const res = await api.put('/admin/settings', { activeModes: newModes });
+            if (res.data.settings) setSettings(res.data.settings);
+            else await fetchSettings();
+        } catch (e) { await fetchSettings(); }
+    };
+
+    const handleToggleLocation = async () => {
+        try {
+            const currentSetting = settings.locationAttendance !== undefined ? settings.locationAttendance : true;
+            const newSetting = !currentSetting;
+            const res = await api.put('/admin/settings', { locationAttendance: newSetting });
+            if (res.data.settings) setSettings(res.data.settings);
+            else await fetchSettings();
+        } catch (e) { await fetchSettings(); }
     };
 
     const fetchDashboardStats = async (mode = 'default') => {
@@ -112,6 +122,22 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            onClick={() => handleToggleMode('custom')}
+                            title="Toggle Maintenance Mode"
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border ${settings?.activeModes?.custom
+                                ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'}`}>
+                            <IoPower size={18} /> {settings?.activeModes?.custom ? 'Maintenance ON' : 'System Active'}
+                        </motion.button>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                            onClick={handleToggleLocation}
+                            title="Toggle Location Requirement"
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border ${(settings?.locationAttendance !== false)
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
+                                : 'bg-gray-500/10 text-gray-400 border-gray-500/20 hover:bg-gray-500/20'}`}>
+                            <IoLocationOutline size={18} /> {(settings?.locationAttendance !== false) ? 'Location ON' : 'Location OFF'}
+                        </motion.button>
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                             onClick={() => setShowScanner(true)}
                             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-500/25 transition-all">
                             <IoScanOutline size={18} /> Scan ID
@@ -122,27 +148,6 @@ const AdminDashboard = () => {
                             <IoLogOut size={18} /> Logout
                         </motion.button>
                     </div>
-                </motion.div>
-
-                {/* Maintenance Toggle */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                    className="admin-glass rounded-2xl p-5 mb-8 flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2.5 rounded-xl ${settings?.activeModes?.custom ? 'bg-green-500/15 text-green-400' : 'bg-gray-500/15 text-gray-400'}`}>
-                            <IoPower size={20} />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-white text-sm">Server Maintenance Mode</h2>
-                            <p className="text-xs text-gray-500">Students see a maintenance page when enabled</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => handleToggleMode('custom')}
-                        className={`px-5 py-2 rounded-xl font-bold text-sm transition-all ${settings?.activeModes?.custom
-                            ? 'bg-green-500 text-white shadow-lg shadow-green-500/30'
-                            : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
-                        {settings?.activeModes?.custom ? 'ENABLED' : 'DISABLED'}
-                    </button>
                 </motion.div>
 
                 {/* Stat Cards */}

@@ -23,7 +23,21 @@ const haversineDistance = (lat1, lng1, lat2, lng2) => {
 };
 
 // Returns an object { error: string|null, distance: number|null }
-const checkGeoFence = (latitude, longitude) => {
+const checkGeoFence = async (latitude, longitude) => {
+    // First check if location attendance is required by the admin
+    const SystemSetting = require('../models/SystemSetting');
+    const Settings = require('../models/Settings');
+
+    try {
+        const settings = await Settings.findOne().select('locationAttendance');
+        if (settings && settings.locationAttendance === false) {
+            console.log('[GEO-FENCE] Skipped: locationAttendance is disabled in admin settings');
+            return { error: null, distance: null };
+        }
+    } catch (err) {
+        console.error('[GEO-FENCE] Error fetching settings:', err);
+    }
+
     const libLat = parseFloat(process.env.LIBRARY_LAT);
     const libLng = parseFloat(process.env.LIBRARY_LNG);
     const radiusM = parseFloat(process.env.LIBRARY_RADIUS_M) || 100;
@@ -1333,7 +1347,7 @@ exports.markSelfAttendance = async (req, res) => {
         };
 
         // ── Geo-Fence Check ──────────────────────────────────────────────
-        const { error: geoError, distance: geoDistance } = checkGeoFence(latitude, longitude);
+        const { error: geoError, distance: geoDistance } = await checkGeoFence(latitude, longitude);
         if (geoError) {
             return res.status(403).json({ success: false, message: geoError });
         }

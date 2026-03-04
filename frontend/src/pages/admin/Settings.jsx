@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
-import { IoSettings, IoPower, IoTime, IoSave, IoCheckmarkCircle } from 'react-icons/io5';
+import { IoSettings, IoPower, IoTime, IoSave, IoCheckmarkCircle, IoLocationOutline } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 
 const PAGE_BG = { background: '#050508' };
 const INPUT = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 outline-none transition-all";
 
 const Settings = () => {
-    const [settings, setSettings] = useState({ shiftMode: 'default', systemStatus: 'active' });
+    const [settings, setSettings] = useState({ shiftMode: 'default', systemStatus: 'active', locationAttendance: true });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
@@ -88,6 +88,29 @@ const Settings = () => {
                                 {s}
                             </button>
                         ))}
+                    </div>
+                </motion.div>
+
+                {/* Additional Settings Row */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {/* Location Attendance Toggle */}
+                    <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2.5 rounded-xl ${settings.locationAttendance !== false ? 'bg-blue-500/15 text-blue-400' : 'bg-gray-500/15 text-gray-400'}`}>
+                                <IoLocationOutline size={20} />
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-white text-sm">Location Attendance</h2>
+                                <p className="text-xs text-gray-500 leading-snug max-w-[200px]">Require students to be physically present at the library to mark attendance.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleSave({ ...settings, locationAttendance: settings.locationAttendance === false ? true : false })}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${settings.locationAttendance !== false ? 'bg-blue-500 shadow-lg shadow-blue-500/25' : 'bg-gray-600'}`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${settings.locationAttendance !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
                     </div>
                 </motion.div>
 
