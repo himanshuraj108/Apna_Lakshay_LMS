@@ -119,7 +119,7 @@ const QrKiosk = () => {
 
         const steps = [
             { num: '1', title: 'Open Website', url: 'apnalakshay.com', desc: '' },
-            { num: '2', title: 'Click on Mark Attendance', url: '', desc: 'Find the scanner icon to open camera.' },
+            { num: '2', title: 'Click on Mark Attendance', url: '', desc: 'Find scanner icon to open camera. Open location (if required).' },
             { num: '3', title: 'Scan QR Code', url: '', desc: 'Allow camera access and point it at the QR.' },
             { num: '4', title: 'Scan & Done!', url: '', desc: 'Your attendance is marked automatically.' },
         ];
@@ -163,6 +163,35 @@ const QrKiosk = () => {
         pdf.setFillColor(255, 255, 255);
         pdf.roundedRect(qrX - 4, qrY - 4, qrSize + 8, qrSize + 8, 4, 4, 'F');
         pdf.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(18);
+
+        // ENTRY text (Green)
+        const textY = qrY + (qrSize / 2) + 2;
+        const arrowY = textY + 4;
+
+        pdf.setTextColor(34, 197, 94); // Tailwind green-500
+        pdf.text('ENTRY', qrX - 12, textY, { align: 'right' });
+
+        // Green Arrow (pointing right)
+        pdf.setDrawColor(34, 197, 94); // green-500
+        pdf.setFillColor(34, 197, 94);
+        pdf.setLineWidth(0.8);
+        pdf.line(qrX - 25, arrowY, qrX - 15, arrowY); // line body
+        pdf.triangle(qrX - 12, arrowY, qrX - 15, arrowY - 2, qrX - 15, arrowY + 2, 'F'); // arrow head
+
+        // EXIT text (Red)
+        pdf.setTextColor(239, 68, 68); // Tailwind red-500
+        pdf.text('EXIT', qrX + qrSize + 12, textY, { align: 'left' });
+
+        // Red Arrow (pointing left)
+        pdf.setDrawColor(239, 68, 68); // red-500
+        pdf.setFillColor(239, 68, 68);
+        pdf.setLineWidth(0.8);
+        pdf.line(qrX + qrSize + 25, arrowY, qrX + qrSize + 15, arrowY); // line body
+        pdf.triangle(qrX + qrSize + 12, arrowY, qrX + qrSize + 15, arrowY - 2, qrX + qrSize + 15, arrowY + 2, 'F'); // arrow head
+
         pdf.setFillColor(59, 130, 246);
         pdf.rect(0, H - 4, W, 2, 'F');
         pdf.setFillColor(168, 85, 247);
