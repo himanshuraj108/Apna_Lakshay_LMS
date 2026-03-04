@@ -289,9 +289,6 @@ export default function AttendanceFloatingBtn() {
                                     <form onSubmit={handlePhone} className="space-y-4">
                                         <div className="text-center mb-4">
                                             <p className="text-gray-400 text-sm">Enter your registered phone number to scan the attendance QR</p>
-                                            <p className="text-orange-400 text-xs mt-1.5 font-medium tracking-wide bg-orange-500/10 py-1 px-2 rounded-lg inline-block border border-orange-500/20">
-                                                <IoTime className="inline mr-1" size={14} /> Entry allowed 1:30 hr before shift
-                                            </p>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Phone Number</label>
