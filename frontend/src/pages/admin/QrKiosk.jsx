@@ -4,6 +4,7 @@ import api from '../../utils/api';
 import { Link } from 'react-router-dom';
 import { IoRefresh, IoDownload, IoArrowBack, IoWifiOutline, IoTimeOutline } from 'react-icons/io5';
 import { motion } from 'framer-motion';
+import html2canvas from 'html2canvas';
 
 const PAGE_BG = { background: '#050508' };
 
@@ -43,13 +44,39 @@ const QrKiosk = () => {
         fetchQrToken();
     }, []);
 
-    const handleDownload = async () => {
+    const handleDownload = async (lang = 'en') => {
         const canvas = document.getElementById('kiosk-qr');
         if (!canvas) return;
         const { jsPDF } = await import('jspdf');
         const qrDataUrl = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
         const W = 148, H = 210;
+
+        if (lang === 'hi') {
+            const template = document.getElementById('hindi-pdf-template');
+            if (template) {
+                const qrImg = document.getElementById('hindi-template-qr');
+                if (qrImg) qrImg.src = qrDataUrl;
+
+                template.style.left = '0';
+
+                try {
+                    const canvasHtml = await html2canvas(template, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#0a0c1c'
+                    });
+                    const imgData = canvasHtml.toDataURL('image/jpeg', 0.95);
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+                    pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
+                    pdf.save(`kiosk_qr_hi_${new Date().getTime()}.pdf`);
+                } finally {
+                    template.style.left = '-9999px';
+                }
+                return;
+            }
+        }
+
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
 
         pdf.setFillColor(10, 12, 28);
         pdf.rect(0, 0, W, H, 'F');
@@ -294,13 +321,21 @@ const QrKiosk = () => {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                                onClick={handleDownload}
-                                disabled={loading || !qrData}
-                                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all disabled:opacity-40">
-                                <IoDownload size={16} /> Download PDF
-                            </motion.button>
+                        <div className="flex flex-col gap-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                    onClick={() => handleDownload('en')}
+                                    disabled={loading || !qrData}
+                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all disabled:opacity-40">
+                                    <IoDownload size={16} /> PDF (EN)
+                                </motion.button>
+                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                    onClick={() => handleDownload('hi')}
+                                    disabled={loading || !qrData}
+                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all disabled:opacity-40">
+                                    <IoDownload size={16} /> PDF (HI)
+                                </motion.button>
+                            </div>
                             <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                 onClick={() => fetchQrToken(true)}
                                 disabled={loading}
@@ -313,6 +348,93 @@ const QrKiosk = () => {
                     </div>
                 </div>
             </motion.div>
+
+            {/* Hidden A5 Template for Hindi PDF - dimensions: 559.37x793.7 (scaled to 559x794 to simulate A5 at 96dpi) */}
+            <div id="hindi-pdf-template" className="absolute left-[-9999px] top-0 w-[559px] h-[794px] overflow-hidden" style={{ backgroundColor: '#0a0c1c', fontFamily: 'helvetica, sans-serif' }}>
+                {/* Background elements */}
+                <div className="absolute top-0 left-0 w-[559px] h-[8px] bg-[#3b82f6]"></div>
+                <div className="absolute rounded-full bg-[#3b82f6]" style={{ width: 453, height: 453, left: -302, top: -302, opacity: 0.07 }}></div>
+                <div className="absolute rounded-full bg-[#a855f7]" style={{ width: 453, height: 453, left: 409, top: 643, opacity: 0.07 }}></div>
+
+                {/* Header Texts */}
+                <div className="absolute w-full text-center" style={{ top: 55 }}>
+                    <span style={{ fontSize: 29, fontWeight: 'bold', color: '#fff' }}>Apna Lakshay Library</span>
+                </div>
+                <div className="absolute w-full text-center" style={{ top: 95 }}>
+                    <span style={{ fontSize: 12, color: '#94a3b8' }}>स्मार्ट उपस्थिति प्रणाली</span>
+                </div>
+
+                {/* Header Line */}
+                <div className="absolute bg-white" style={{ top: 124, left: 75, width: 409, height: 1, opacity: 0.15 }}></div>
+
+                {/* Mark Attendance */}
+                <div className="absolute w-full flex justify-center items-baseline gap-2" style={{ top: 145 }}>
+                    <span style={{ fontSize: 20, color: '#fff' }}>यहाँ</span>
+                    <span style={{ fontSize: 35, fontWeight: 'bold', color: '#60a5fa' }}>उपस्थिति</span>
+                    <span style={{ fontSize: 20, color: '#fff' }}>दर्ज करें</span>
+                </div>
+
+                {/* Sub header line */}
+                <div className="absolute bg-white" style={{ top: 200, left: 113, width: 333, height: 1, opacity: 0.10 }}></div>
+
+                {/* Steps */}
+                {[
+                    { num: '1', title: 'वेबसाइट खोलें', url: 'apnalakshay.com', desc: '', y: 61 },
+                    { num: '2', title: '"Mark Attendance" पर क्लिक करें', url: '', desc: 'कैमरा खोलने के लिए स्कैनर आइकन खोजें। (यदि आवश्यक हो तो लोकेशन खोलें)', y: 81 },
+                    { num: '3', title: 'QR कोड स्कैन करें', url: '', desc: 'कैमरे की अनुमति दें और इसे QR पर इंगित करें।', y: 95 },
+                    { num: '4', title: 'स्कैन और पूरा!', url: '', desc: 'आपकी उपस्थिति स्वचालित रूप से दर्ज हो गई है।', y: 109 },
+                ].map((step, idx) => {
+                    const stepYPx = step.y * 3.78;
+                    return (
+                        <div key={idx}>
+                            <div className="absolute rounded-full bg-[#3b82f6] flex items-center justify-center text-white"
+                                style={{ width: 38, height: 38, left: 64, top: stepYPx - 25, opacity: 0.85, fontSize: 12, fontWeight: 'bold' }}>
+                                {step.num}
+                            </div>
+                            <div className="absolute" style={{ left: 132, top: stepYPx - 20 }}>
+                                <span style={{ fontSize: 14, fontWeight: 'bold', color: '#fff' }}>{step.title}</span>
+                            </div>
+                            {step.url ? (
+                                <div className="absolute" style={{ left: 132, top: stepYPx + 6 }}>
+                                    <span style={{ fontSize: 24, fontWeight: 'bold', color: '#a78bfa' }}>{step.url}</span>
+                                </div>
+                            ) : (
+                                <div className="absolute" style={{ left: 132, top: stepYPx + 1, width: 350 }}>
+                                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{step.desc}</span>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {/* QR Box */}
+                <div className="absolute bg-white rounded-xl" style={{ left: 155, top: 476, width: 248, height: 248, opacity: 0.06 }}></div>
+                <div className="absolute bg-white rounded-lg flex items-center justify-center p-2" style={{ left: 166, top: 487, width: 226, height: 226 }}>
+                    <img id="hindi-template-qr" src="" style={{ width: 196, height: 196 }} alt="QR" />
+                </div>
+
+                {/* Entry / Exit Tags */}
+                <div className="absolute" style={{ right: 559 - 136, top: 584, textAlign: 'right' }}>
+                    <span style={{ fontSize: 24, fontWeight: 'bold', color: '#22c55e' }}>ENTRY</span>
+                </div>
+                <svg className="absolute" style={{ left: 81, top: 616, width: 55, height: 16 }} viewBox="0 0 55 16">
+                    <line x1="0" y1="8" x2="44" y2="8" stroke="#22c55e" strokeWidth="3.2" />
+                    <polygon points="44,0 55,8 44,16" fill="#22c55e" />
+                </svg>
+
+                <div className="absolute" style={{ left: 423, top: 584 }}>
+                    <span style={{ fontSize: 24, fontWeight: 'bold', color: '#ef4444' }}>EXIT</span>
+                </div>
+                <svg className="absolute" style={{ left: 423, top: 616, width: 55, height: 16 }} viewBox="0 0 55 16">
+                    <line x1="11" y1="8" x2="55" y2="8" stroke="#ef4444" strokeWidth="3.2" />
+                    <polygon points="11,0 0,8 11,16" fill="#ef4444" />
+                </svg>
+
+                {/* Bottom borders */}
+                <div className="absolute bottom-[8px] left-0 w-[559px] h-[8px] bg-[#3b82f6]"></div>
+                <div className="absolute bottom-0 left-0 w-[559px] h-[8px] bg-[#a855f7]"></div>
+            </div>
+
         </div>
     );
 };
