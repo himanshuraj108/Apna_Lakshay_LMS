@@ -141,9 +141,22 @@ const EXAM_ALIASES = {
 };
 
 // ─── Groq API Call ───────────────────────────────────────────────────
-const callGroq = (messages) => {
+const FALLBACK_GROQ_KEYS = [
+    process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3
+].filter(Boolean);
+
+const getGroqKeys = () => {
+    const keys = [];
+    if (process.env.GROQ_API_KEY) keys.push(process.env.GROQ_API_KEY);
+    keys.push(...FALLBACK_GROQ_KEYS);
+    return [...new Set(keys)];
+};
+
+let currentGroqKeyIndex = 0;
+
+const callGroqSingle = (messages, apiKey) => {
     return new Promise((resolve, reject) => {
-        const apiKey = process.env.GROQ_API_KEY;
         const body = JSON.stringify({
             model: GROQ_MODEL,
             messages,
@@ -168,9 +181,17 @@ const callGroq = (messages) => {
             let data = '';
             res.on('data', chunk => (data += chunk));
             res.on('end', () => {
+                if (res.statusCode === 429) {
+                    return reject(new Error('rate_limit'));
+                }
                 try {
                     const parsed = JSON.parse(data);
-                    if (parsed.error) return reject(new Error(parsed.error.message || JSON.stringify(parsed.error)));
+                    if (parsed.error) {
+                        if (parsed.error.message && parsed.error.message.toLowerCase().includes('rate limit')) {
+                            return reject(new Error('rate_limit'));
+                        }
+                        return reject(new Error(parsed.error.message || JSON.stringify(parsed.error)));
+                    }
                     const text = parsed?.choices?.[0]?.message?.content || '';
                     resolve(text);
                 } catch { reject(new Error('Invalid Groq response')); }
@@ -181,6 +202,30 @@ const callGroq = (messages) => {
         req.write(body);
         req.end();
     });
+};
+
+const callGroq = async (messages) => {
+    const keys = getGroqKeys();
+    if (keys.length === 0) throw new Error('No Groq API keys available');
+
+    let lastError = null;
+
+    for (let i = 0; i < keys.length; i++) {
+        const keyIndex = (currentGroqKeyIndex + i) % keys.length;
+        const apiKey = keys[keyIndex];
+        try {
+            const result = await callGroqSingle(messages, apiKey);
+            // Save the working key index for subsequent requests
+            currentGroqKeyIndex = keyIndex;
+            return result;
+        } catch (error) {
+            lastError = error;
+            console.error(`Groq API key index ${keyIndex} failed:`, error.message);
+            // Try next key in the loop
+        }
+    }
+
+    throw lastError || new Error('All Groq API keys failed');
 };
 
 // ─── Extract JSON from model response ────────────────────────────────
