@@ -292,7 +292,35 @@ const StudentDashboard = () => {
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
-    useEffect(() => { fetchDashboardData(); }, []);
+    // ── Settings cache key ───────────────────────────────────────────────
+    const SETTINGS_KEY = 'lms_location_required';
+
+    // ── Read cached location setting synchronously (no network needed) ───
+    const getLocationRequired = () => {
+        try {
+            const cached = localStorage.getItem(SETTINGS_KEY);
+            if (cached !== null) return cached === 'true';
+        } catch (_) { }
+        return true; // safe default: require location
+    };
+
+    // ── Background-refresh settings cache (never blocks the UI) ──────────
+    const loadSettingsCache = async () => {
+        try {
+            const res = await api.get('/public/settings');
+            if (res.data.success) {
+                const required = res.data.settings.locationAttendance !== false;
+                localStorage.setItem(SETTINGS_KEY, String(required));
+            }
+        } catch (_) {
+            // silently ignore — old cached value stays
+        }
+    };
+
+    useEffect(() => {
+        fetchDashboardData();
+        loadSettingsCache(); // refresh cache in background, never blocks
+    }, []);
 
     useEffect(() => {
         if (dashboardData?.feeReminder?.show) setShowFeeReminder(true);
@@ -323,32 +351,23 @@ const StudentDashboard = () => {
         });
 
     const handleOpenScanner = async () => {
-        setLoadingScanner(true);
-        try {
-            let isLocationRequired = true;
-            try {
-                const settingsRes = await api.get('/public/settings');
-                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
-                    isLocationRequired = false;
-                }
-            } catch (err) {
-                console.warn('Failed to fetch public settings for location requirements');
-            }
+        // Read setting from cache instantly — no network call, works even if server is down
+        const isLocationRequired = getLocationRequired();
 
-            if (isLocationRequired) {
-                // Pre-check location permission and fetch location before showing scanner
-                try {
-                    await getLocation();
-                    setShowScanner(true);
-                } catch (geoErr) {
-                    // Location denied or unavailable
-                    setShowLocationPrompt(true);
-                }
-            } else {
+        if (isLocationRequired) {
+            // Only show "Checking..." while geolocation (browser API) runs — typically <1s
+            setLoadingScanner(true);
+            try {
+                await getLocation();
                 setShowScanner(true);
+            } catch (geoErr) {
+                setShowLocationPrompt(true);
+            } finally {
+                setLoadingScanner(false);
             }
-        } finally {
-            setLoadingScanner(false);
+        } else {
+            // Location not required — open scanner instantly, no loading state
+            setShowScanner(true);
         }
     };
 
@@ -371,16 +390,8 @@ const StudentDashboard = () => {
     const handleQrScan = async (token) => {
         setShowScanner(false);
         try {
-            // Check if location is required by admin
-            let isLocationRequired = true;
-            try {
-                const settingsRes = await api.get('/public/settings');
-                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
-                    isLocationRequired = false;
-                }
-            } catch (err) {
-                console.warn('Failed to fetch public settings for location requirements');
-            }
+            // Read from cache — no blocking API call needed here either
+            const isLocationRequired = getLocationRequired();
 
             let coords = {};
             if (isLocationRequired) {
@@ -407,16 +418,8 @@ const StudentDashboard = () => {
 
     const handleQuickAttendance = async () => {
         try {
-            // Check if location is required by admin
-            let isLocationRequired = true;
-            try {
-                const settingsRes = await api.get('/public/settings');
-                if (settingsRes.data.success && settingsRes.data.settings.locationAttendance === false) {
-                    isLocationRequired = false;
-                }
-            } catch (err) {
-                console.warn('Failed to fetch public settings for location requirements');
-            }
+            // Read from cache — no blocking API call
+            const isLocationRequired = getLocationRequired();
 
             let coords = {};
             if (isLocationRequired) {
