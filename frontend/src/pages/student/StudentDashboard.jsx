@@ -8,13 +8,12 @@ import api from '../../utils/api';
 import {
     IoBedOutline, IoCalendarOutline, IoCashOutline,
     IoBookOutline, IoNotificationsOutline, IoPersonOutline,
-    IoIdCardOutline, IoScan, IoCheckmarkCircle, IoCloseCircle,
+    IoIdCardOutline, IoScan, IoCloseCircle,
     IoChatbubblesOutline, IoHelpCircleOutline,
     IoNewspaper, IoArrowForwardCircle,
-    IoFlashOutline, IoStatsChartOutline, IoShieldCheckmarkOutline,
-    IoDocumentTextOutline, IoSparklesOutline, IoLockClosedOutline,
-    IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoQrCode,
-    IoLocation
+    IoFlashOutline, IoSparklesOutline, IoLockClosedOutline,
+    IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoDocumentTextOutline,
+    IoLocation, IoLogInOutline, IoLogOutOutline, IoTimerOutline, IoInformationCircleOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -274,6 +273,145 @@ const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
     </div>
 );
 
+// ─── Attendance Result Popup Card ─────────────────────────────────────
+const AttendanceResultCard = ({ result, onClose }) => {
+    const isEntry = result.type === 'entry';
+    const isAlreadyMarked = result.type === 'already_marked';
+    const att = result.attendance || {};
+
+    // Determine Theme Colors based on type
+    let bgGradient = 'linear-gradient(145deg, #0a1424 0%, #0d1f38 100%)'; // default blue (exit)
+    let borderColor = 'rgba(99,102,241,0.3)';
+    let accentBar = 'bg-gradient-to-r from-indigo-400 to-blue-400';
+    let glowColor = '#818cf8';
+    let iconBg = 'linear-gradient(135deg, #6366f1, #3b82f6)';
+    let iconShadow = '0 8px 24px rgba(99,102,241,0.4)';
+    let textColor = '#818cf8';
+    let chipBg = 'rgba(99,102,241,0.1)';
+    let chipBorder = 'rgba(99,102,241,0.25)';
+
+    if (isEntry) {
+        bgGradient = 'linear-gradient(145deg, #0a1f14 0%, #0d2b1c 100%)';
+        borderColor = 'rgba(52,211,153,0.3)';
+        accentBar = 'bg-gradient-to-r from-emerald-400 to-teal-400';
+        glowColor = '#34d399';
+        iconBg = 'linear-gradient(135deg, #10b981, #14b8a6)';
+        iconShadow = '0 8px 24px rgba(16,185,129,0.4)';
+        textColor = '#34d399';
+        chipBg = 'rgba(16,185,129,0.1)';
+        chipBorder = 'rgba(16,185,129,0.25)';
+    } else if (isAlreadyMarked) {
+        bgGradient = 'linear-gradient(145deg, #261704 0%, #301f08 100%)';
+        borderColor = 'rgba(245,158,11,0.3)';
+        accentBar = 'bg-gradient-to-r from-amber-400 to-orange-400';
+        glowColor = '#fcd34d';
+        iconBg = 'linear-gradient(135deg, #f59e0b, #ea580c)';
+        iconShadow = '0 8px 24px rgba(245,158,11,0.4)';
+        textColor = '#fbbf24';
+        chipBg = 'rgba(245,158,11,0.1)';
+        chipBorder = 'rgba(245,158,11,0.25)';
+    }
+
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.85, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border"
+                style={{ background: bgGradient, borderColor }}
+            >
+                {/* Top accent bar */}
+                <div className={`h-1 w-full ${accentBar}`} />
+
+                {/* Glow orb */}
+                <div
+                    className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl opacity-20 pointer-events-none"
+                    style={{ background: glowColor }}
+                />
+
+                <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-4 mb-5">
+                        <div
+                            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                            style={{ background: iconBg, boxShadow: iconShadow }}
+                        >
+                            {isEntry ? <IoLogInOutline size={28} className="text-white" />
+                                : isAlreadyMarked ? <IoInformationCircleOutline size={28} className="text-white" />
+                                    : <IoLogOutOutline size={28} className="text-white" />
+                            }
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: textColor }}>
+                                {isEntry ? 'Entry Marked' : isAlreadyMarked ? 'Already Marked' : 'Exit Marked'}
+                            </p>
+                            <h3 className="text-white font-black text-xl leading-tight">
+                                {isEntry ? 'Welcome In' : isAlreadyMarked ? 'Attendance Complete' : 'See You Next Time'}
+                            </h3>
+                        </div>
+                    </div>
+
+                    {/* Info rows */}
+                    <div className="space-y-2.5 mb-5">
+                        {isAlreadyMarked && (
+                            <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                                You have already completed your attendance for today. You can't mark attendance again.
+                            </p>
+                        )}
+                        {att.entryTime && (
+                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                                <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Entry Time</span>
+                                <span className="text-sm font-bold text-emerald-400">{att.entryTime}</span>
+                            </div>
+                        )}
+                        {(!isEntry) && att.exitTime && (
+                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                                <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Exit Time</span>
+                                <span className="text-sm font-bold text-red-400">{att.exitTime}</span>
+                            </div>
+                        )}
+                        {(!isEntry) && att.duration > 0 && (
+                            <div
+                                className="flex items-center justify-between rounded-xl px-4 py-2.5 border"
+                                style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}
+                            >
+                                <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider" style={{ color: '#818cf8' }}>
+                                    <IoTimerOutline size={14} /> Duration
+                                </span>
+                                <span className="text-sm font-black" style={{ color: '#a5b4fc' }}>
+                                    {Math.floor(att.duration / 60)}h {att.duration % 60}m
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Status chip */}
+                    <div className="flex items-center gap-2 mb-5">
+                        <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
+                            style={{ background: chipBg, borderColor: chipBorder, color: textColor }}
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: textColor }} />
+                            {isAlreadyMarked ? 'Record retrieved' : 'Attendance saved to records'}
+                        </span>
+                    </div>
+
+                    {/* Dismiss button */}
+                    <button
+                        onClick={onClose}
+                        className="w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-95"
+                        style={{ background: iconBg, boxShadow: iconShadow }}
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
 // ─── Main Dashboard ───────────────────────────────────────────────────
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
@@ -285,7 +423,8 @@ const StudentDashboard = () => {
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [showNewspaper, setShowNewspaper] = useState(false);
     const [showExamAlerts, setShowExamAlerts] = useState(false);
-    const [scanMessage, setScanMessage] = useState(null);
+    const [scanMessage, setScanMessage] = useState(null);       // error toasts only
+    const [attendanceResult, setAttendanceResult] = useState(null); // entry/exit popup
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [loadingScanner, setLoadingScanner] = useState(false);
     const [enablingLocation, setEnablingLocation] = useState(false);
@@ -406,9 +545,9 @@ const StudentDashboard = () => {
 
             const res = await api.post('/student/attendance/qr-scan', { qrToken: token, ...coords });
             if (res.data.success) {
-                setScanMessage({ type: 'success', text: res.data.message });
+                // Show rich popup card instead of a simple toast
+                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
                 fetchDashboardData();
-                setTimeout(() => setScanMessage(null), 5000);
             }
         } catch (e) {
             setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' });
@@ -434,9 +573,9 @@ const StudentDashboard = () => {
 
             const res = await api.post('/student/attendance/mark-self', coords);
             if (res.data.success) {
-                setScanMessage({ type: 'success', text: res.data.message });
+                // Show rich popup card
+                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
                 fetchDashboardData();
-                setTimeout(() => setScanMessage(null), 5000);
             }
         } catch (e) {
             setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' });
@@ -458,13 +597,13 @@ const StudentDashboard = () => {
                     <DashboardSkeleton />
                 </div>
 
-                {/* Scan toast during loading */}
+                {/* Error toast during loading */}
                 <AnimatePresence>
                     {scanMessage && (
                         <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-                            className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${scanMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
+                            className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md bg-red-500/10 border-red-500/20 text-red-400"
                         >
-                            {scanMessage.type === 'success' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                            <IoCloseCircle size={22} />
                             <p className="font-semibold text-sm">{scanMessage.text}</p>
                         </motion.div>
                     )}
@@ -481,6 +620,16 @@ const StudentDashboard = () => {
                         enabling={enablingLocation}
                     />
                 )}
+
+                {/* Entry / Exit result popup */}
+                <AnimatePresence>
+                    {attendanceResult && (
+                        <AttendanceResultCard
+                            result={attendanceResult}
+                            onClose={() => setAttendanceResult(null)}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         );
     }
@@ -534,15 +683,25 @@ const StudentDashboard = () => {
             <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
             <ExamAlertsModal isOpen={showExamAlerts} onClose={() => setShowExamAlerts(false)} />
 
-            {/* Scan toast */}
+            {/* Error toast (scan failures only) */}
             <AnimatePresence>
                 {scanMessage && (
                     <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 40 }}
-                        className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md ${scanMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
+                        className="fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl border shadow-2xl backdrop-blur-md bg-red-500/10 border-red-500/20 text-red-400"
                     >
-                        {scanMessage.type === 'success' ? <IoCheckmarkCircle size={22} /> : <IoCloseCircle size={22} />}
+                        <IoCloseCircle size={22} />
                         <p className="font-semibold text-sm">{scanMessage.text}</p>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Entry / Exit result popup */}
+            <AnimatePresence>
+                {attendanceResult && (
+                    <AttendanceResultCard
+                        result={attendanceResult}
+                        onClose={() => setAttendanceResult(null)}
+                    />
                 )}
             </AnimatePresence>
 
