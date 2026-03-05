@@ -130,7 +130,7 @@ All emails are branded with premium HTML templates.
   - 🟡 Yellow: Due Soon / Pending
 - **Fully Responsive**: Desktop, Tablet, Mobile
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lms/
