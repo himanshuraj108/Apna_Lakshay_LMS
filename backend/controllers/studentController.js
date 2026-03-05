@@ -1253,9 +1253,14 @@ exports.markAttendanceByQr = async (req, res) => {
             });
 
             // If it's a holiday, we ALLOW them to mark entry.
-            // If it's present and already exited, we block.
+            // If it's present and already exited, we show already marked popup.
             if (todayRecord && todayRecord.status === 'present' && todayRecord.exitTime) {
-                return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
+                return res.status(200).json({
+                    success: true,
+                    type: 'already_marked',
+                    message: 'Attendance already completed for today.',
+                    attendance: todayRecord
+                });
             }
 
             // Create new Entry or Update Absent/Holiday Record
@@ -1407,9 +1412,14 @@ exports.markSelfAttendance = async (req, res) => {
 
             const todayRecord = await Attendance.findOne({ student: studentId, date: today });
             // If it's a holiday, we ALLOW them to mark entry.
-            // If it's present and already exited, we block.
+            // If it's present and already exited, we show already marked popup.
             if (todayRecord && todayRecord.status === 'present' && todayRecord.exitTime) {
-                return res.status(400).json({ success: false, message: 'Attendance already completed for today.' });
+                return res.status(200).json({
+                    success: true,
+                    type: 'already_marked',
+                    message: 'Attendance already completed for today.',
+                    attendance: todayRecord
+                });
             }
 
             const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
