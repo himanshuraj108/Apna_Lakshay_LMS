@@ -60,7 +60,7 @@ const PwaInstallBanner = () => {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 100, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="fixed bottom-0 sm:bottom-6 left-0 sm:left-auto sm:right-6 w-full sm:w-[380px] z-[9999] p-4 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
+                    className="fixed bottom-0 sm:bottom-6 left-0 sm:left-6 w-full sm:w-[380px] z-[9999] p-4 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
                 >
                     <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-3xl p-6 shadow-2xl shadow-orange-500/30 relative overflow-hidden w-full max-w-sm mx-auto border border-white/15 pointer-events-auto">
                         <button onClick={() => setShowInstallBanner(false)}
