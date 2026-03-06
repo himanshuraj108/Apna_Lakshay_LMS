@@ -107,6 +107,11 @@ exports.login = async (req, res) => {
             }
         }
 
+        // Update login status
+        user.isLoggedIn = true;
+        user.lastLogin = new Date();
+        await user.save({ validateBeforeSave: false });
+
         // Generate token
         const token = user.generateToken();
 
@@ -227,7 +232,19 @@ exports.getMe = async (req, res) => {
 
 // @desc    Logout user
 // @route   POST /api/auth/logout
-exports.logout = (req, res) => {
+exports.logout = async (req, res) => {
+    try {
+        if (req.user) {
+            const SessionUser = require('../models/User');
+            await SessionUser.findByIdAndUpdate(req.user.id, {
+                isLoggedIn: false,
+                lastActive: new Date()
+            });
+        }
+    } catch (error) {
+        console.error('Logout tracking error:', error);
+    }
+
     res.status(200).json({
         success: true,
         message: 'Logged out successfully'
@@ -606,6 +623,11 @@ exports.verifyOtpAndAutoLogin = async (req, res) => {
         } catch (emailErr) {
             console.error('Credentials email failed:', emailErr.message);
         }
+
+        // Update login tracking
+        user.isLoggedIn = true;
+        user.lastLogin = new Date();
+        await user.save({ validateBeforeSave: false });
 
         // Generate JWT token for immediate login
         const token = user.generateToken();

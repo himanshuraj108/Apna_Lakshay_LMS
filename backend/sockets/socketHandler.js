@@ -166,8 +166,19 @@ module.exports = (io) => {
         });
 
         // Disconnect
-        socket.on('disconnect', () => {
-
+        socket.on('disconnect', async () => {
+            try {
+                // Check if user has other active connections
+                const userSockets = await io.in(`user:${socket.user._id}`).fetchSockets();
+                if (userSockets.length === 0) {
+                    // All connections closed, explicitly set offline timestamp
+                    await User.findByIdAndUpdate(socket.user._id, {
+                        lastActive: new Date()
+                    });
+                }
+            } catch (error) {
+                console.error('Socket disconnect error:', error);
+            }
         });
     });
 };

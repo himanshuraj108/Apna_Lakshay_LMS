@@ -479,7 +479,7 @@ const StudentManagement = () => {
             return;
         }
 
-        const tableColumn = ["S.No", "Name", "Mobile", "Email", "Status", "Seat", "Shift", "Fee", "Joined", "Address"];
+        const tableColumn = ["S.No", "Name", "Mobile", "Email", "Status", "Presence", "Seat", "Shift", "Fee", "Joined", "Address"];
         const tableRows = [];
 
         filteredStudents.forEach((student, index) => {
@@ -496,6 +496,7 @@ const StudentManagement = () => {
                 student.mobile ? String(student.mobile) : 'N/A',
                 student.email || 'N/A',
                 statusStr,
+                `${student.isOnline ? 'Online' : 'Offline'} / ${student.isLoggedIn ? 'In' : 'Out'}`,
                 hasSeat || 'N/A',
                 hasShifts || 'N/A',
                 getStudentFee(student),
@@ -1007,14 +1008,14 @@ const StudentManagement = () => {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-white/8">
-                                                {['Name', 'Email', 'Shift', 'Status', 'Created', 'Fee', 'Actions'].map((h, i) => (
-                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 6 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                {['Name', 'Email', 'Shift', 'Status', 'Presence', 'Created', 'Fee', 'Actions'].map((h, i) => (
+                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 7 ? 'text-right' : 'text-left'}`}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filteredStudents.length === 0 ? (
-                                                <tr><td colSpan="6" className="text-center p-10 text-gray-600 text-sm">
+                                                <tr><td colSpan="8" className="text-center p-10 text-gray-600 text-sm">
                                                     {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
                                                     {activeTab === 'active' && 'No active students found.'}
                                                     {activeTab === 'inactive' && 'No inactive students found.'}
@@ -1038,6 +1039,22 @@ const StudentManagement = () => {
                                                             if (student.isActive && (!hasSeat || !hasShifts)) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
                                                             return <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${student.isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{student.isActive ? 'Active' : 'Inactive'}</span>;
                                                         })()}
+                                                    </td>
+                                                    <td className="px-5 py-3.5">
+                                                        <div className="flex flex-col gap-1.5">
+                                                            <div className="flex items-center gap-1.5" title={student.lastActive ? `Last Active: ${new Date(student.lastActive).toLocaleString()}` : 'Online status'}>
+                                                                <span className={`w-2 h-2 rounded-full ${student.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-500'}`} />
+                                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isOnline ? 'text-green-400' : 'text-gray-400'}`}>
+                                                                    {student.isOnline ? 'Online' : 'Offline'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5" title={student.lastLogin ? `Last Login: ${new Date(student.lastLogin).toLocaleString()}` : 'Login status'}>
+                                                                <span className={`w-2 h-2 rounded-full ${student.isLoggedIn ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'bg-gray-600'}`} />
+                                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isLoggedIn ? 'text-blue-400' : 'text-gray-500'}`}>
+                                                                    {student.isLoggedIn ? 'Logged In' : 'Logged Out'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                     <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
                                                     <td className="px-5 py-3.5 text-xs font-bold text-emerald-400">{getStudentFee(student)}</td>
