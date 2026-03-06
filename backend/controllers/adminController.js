@@ -774,9 +774,13 @@ exports.createStudent = async (req, res) => {
 // Update student
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, isActive, studentId } = req.body;
+        const { name, email, mobile, address, isActive, studentId, joinedAt } = req.body;
 
         const updateData = { name, email, mobile, address, isActive, studentId };
+
+        if (joinedAt) {
+            updateData.createdAt = new Date(joinedAt);
+        }
 
         // Remove undefined fields
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
@@ -1365,8 +1369,8 @@ exports.assignSeat = async (req, res) => {
 
         // Check availability logic for DYNAMIC SHIFTS (only if seat is being assigned/changed)
         if (seatId && shift) {
-            // 1. Is the seat blocked by a full-day assignment?
-            const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+            // 1. Is the seat blocked by a full-day assignment from ANOTHER student?
+            const activeAssignments = seat.assignments.filter(a => a.status === 'active' && a.student.toString() !== studentId.toString());
             const isFullyBlocked = activeAssignments.some(a => a.type === 'full_day');
 
             if (isFullyBlocked) {
