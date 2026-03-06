@@ -85,6 +85,11 @@ const getBooks = async (req, res) => {
         const url = `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(searchQ)}&maxResults=${maxResults}&printType=books&langRestrict=${lang}&key=${apiKey}`;
 
         const result = await fetchBooks(url);
+
+        if (result.error) {
+            throw new Error(result.error.message || 'Unknown Google Books API error');
+        }
+
         const books = (result.items || []).map(formatBook);
 
         cache[cacheKey] = { data: books, time: Date.now() };
