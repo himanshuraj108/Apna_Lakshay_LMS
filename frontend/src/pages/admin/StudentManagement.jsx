@@ -152,11 +152,28 @@ const StudentManagement = () => {
         e.preventDefault();
         setError('');
         setSuccess('');
+        setLoading(true);
 
         try {
             if (editMode) {
                 await api.put(`/admin/students/${selectedStudent._id}`, formData);
-                setSuccess('Student updated successfully');
+
+                // If shift was changed, and they have a seat, attempt to assign the new shift
+                if (formData.shift && formData.seatId) {
+                    try {
+                        await api.post('/admin/seats/assign', {
+                            seatId: formData.seatId,
+                            studentId: selectedStudent._id,
+                            shift: formData.shift,
+                            negotiatedPrice: formData.negotiatedPrice ? Number(formData.negotiatedPrice) : undefined
+                        });
+                    } catch (seatErr) {
+                        console.error('Failed to update seat shift during edit', seatErr);
+                        setError('Student info updated, but ' + (seatErr.response?.data?.message || 'failed to update shift automatically. Please use the Assign Seat button.'));
+                    }
+                }
+
+                if (!error) setSuccess('Student updated successfully');
             } else {
                 const response = await api.post('/admin/students', formData);
                 setSuccess(`Student created! Temporary password: ${response.data.student.tempPassword}`);
@@ -168,6 +185,8 @@ const StudentManagement = () => {
             setTimeout(() => setSuccess(''), 5000);
         } catch (error) {
             setError(error.response?.data?.message || 'Operation failed');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -288,7 +307,33 @@ const StudentManagement = () => {
     const openEditModal = (student) => {
         setEditMode(true);
         setSelectedStudent(student);
-        setFormData({ name: student.name, email: student.email, mobile: student.mobile || '', address: student.address || '' });
+
+        let shiftId = '';
+        let negotiatedPrice = '';
+        if (student.seat && student.seat.assignments) {
+            const assignment = student.seat.assignments.find(a =>
+                a.status === 'active' && a.student === student._id
+            );
+            if (assignment && assignment.shift) {
+                shiftId = typeof assignment.shift === 'object' ? assignment.shift._id : assignment.shift;
+            } else if (assignment && assignment.legacyShift === 'full' || assignment?.type === 'full_day') {
+                shiftId = 'full';
+            }
+            if (assignment && assignment.negotiatedPrice !== undefined) {
+                negotiatedPrice = assignment.negotiatedPrice;
+            }
+        }
+
+        setFormData({
+            name: student.name,
+            email: student.email,
+            mobile: student.mobile || '',
+            address: student.address || '',
+            joinedAt: student.createdAt ? new Date(student.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            shift: shiftId,
+            negotiatedPrice: negotiatedPrice,
+            seatId: getStudentSeat(student._id) ? student.seat._id : '' // Needed for assignSeat
+        });
         setShowModal(true);
     };
 
@@ -1123,21 +1168,55 @@ const StudentManagement = () => {
                                 <p className="text-xs text-gray-600 mt-1">This password will be sent to the student via email.</p>
                             </div>
                         )}
-                        {!editMode && (
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Registration Date</label>
-                                <input type="date" value={formData.joinedAt}
-                                    max={new Date().toISOString().split('T')[0]}
-                                    onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
-                                    className={INPUT}
-                                    style={{ colorScheme: 'dark' }}
-                                />
-                                <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">Registration Date</label>
+                            <input type="date" value={formData.joinedAt}
+                                max={new Date().toISOString().split('T')[0]}
+                                onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
+                                className={INPUT}
+                                style={{ colorScheme: 'dark' }}
+                            />
+                            <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
+                        </div>
+                        {editMode && formData.seatId && (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Shift</label>
+                                    <select
+                                        value={formData.shift}
+                                        onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
+                                        className={INPUT}
+                                    >
+                                        <option value="" className="bg-[#050508]">No shift assigned</option>
+                                        {shifts.map(shift => (
+                                            <option key={shift.id} value={shift.id} className="bg-[#050508]">
+                                                {shift.name} ({getShiftTimeRange(shift)})
+                                            </option>
+                                        ))}
+                                        {!isCustom && !shifts.some(s => s.id === 'full') && (
+                                            <option value="full" className="bg-[#050508]">Full Day (9 AM - 9 PM)</option>
+                                        )}
+                                    </select>
+                                    <p className="text-xs text-gray-600 mt-1">Change the shift for the student's currently assigned seat. If they don't have a seat yet, use the Assign Seat button instead.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Negotiated Price (Optional)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.negotiatedPrice}
+                                        onChange={(e) => setFormData({ ...formData, negotiatedPrice: e.target.value })}
+                                        className={INPUT}
+                                        placeholder="Leave empty for base price"
+                                    />
+                                    <p className="text-xs text-gray-600 mt-1">Override the base price for this shift. Leave empty to use default pricing.</p>
+                                </div>
                             </div>
                         )}
                         <div className="flex gap-3">
-                            <button type="submit" className={BTN_PRIMARY + ' flex-1'}>{editMode ? 'Update Student' : 'Create Student'}</button>
-                            <button type="button" onClick={() => setShowModal(false)} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
+                            <button type="submit" disabled={loading} className={BTN_PRIMARY + ' flex-1'}>
+                                {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Student' : 'Create Student')}
+                            </button>
+                            <button type="button" onClick={() => setShowModal(false)} disabled={loading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
                         </div>
                         {!editMode && !formData.password && (
                             <p className="text-sm text-gray-400">
