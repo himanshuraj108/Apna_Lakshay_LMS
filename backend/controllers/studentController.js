@@ -1285,7 +1285,7 @@ exports.markAttendanceByQr = async (req, res) => {
                         const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
 
                         const allowedStart = getISTDate();
-                        allowedStart.setHours(sH, sM - 90, 0, 0); // 1 hour 30 mins before
+                        allowedStart.setHours(sH, sM - 180, 0, 0); // 3 hours before
                         const allowedEnd = getISTDate();
                         allowedEnd.setHours(eH, eM, 0, 0);
 
@@ -1297,7 +1297,7 @@ exports.markAttendanceByQr = async (req, res) => {
                         if (now < allowedStart || now > allowedEnd) {
                             return res.status(403).json({
                                 success: false,
-                                message: `Entry allowed only 1:30 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
+                                message: `Entry allowed only 3:00 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
                             });
                         }
                     }
@@ -1439,7 +1439,7 @@ exports.markSelfAttendance = async (req, res) => {
                     if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
                         const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
                         const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
-                        const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 90, 0, 0); // 1 hour 30 mins before
+                        const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 180, 0, 0); // 3 hours before
                         const allowedEnd = getISTDate(); allowedEnd.setHours(eH, eM, 0, 0);
 
                         if (allowedEnd < allowedStart) {
@@ -1447,7 +1447,7 @@ exports.markSelfAttendance = async (req, res) => {
                             else allowedEnd.setDate(allowedEnd.getDate() + 1);
                         }
                         if (now < allowedStart || now > allowedEnd) {
-                            return res.status(403).json({ success: false, message: `Entry allowed only 1:30 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})` });
+                            return res.status(403).json({ success: false, message: `Entry allowed only 3:00 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})` });
                         }
                     }
                 }
