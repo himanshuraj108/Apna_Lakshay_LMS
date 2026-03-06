@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { useEffect, lazy, Suspense, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { useSocket } from './hooks/useSocket';
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -120,6 +121,9 @@ function App() {
     const { user, loading, systemStatus } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Initialize global socket connection for online status tracking
+    useSocket(!!user);
 
     // Global Maintenance Check
     useEffect(() => {
