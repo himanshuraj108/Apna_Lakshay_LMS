@@ -243,27 +243,7 @@ const NotesPage = () => {
                     ))}
                 </motion.div>
 
-                {/* Custom exam input */}
-                <motion.form initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
-                    onSubmit={e => { e.preventDefault(); if (customExam.trim()) { setSearch(''); fetchNotes(customExam.trim(), activeCategory, lang); } }}
-                    className="flex gap-2 mb-6"
-                >
-                    <input
-                        value={customExam}
-                        onChange={e => setCustomExam(e.target.value)}
-                        placeholder="Can't find your exam? Type it here e.g. CAPF, CLAT, CDS…"
-                        className="flex-1 px-4 py-2.5 bg-white/3 border border-dashed border-white/10 rounded-xl text-white text-xs placeholder-gray-600 focus:outline-none focus:border-violet-500/40 transition-all"
-                    />
-                    <motion.button type="submit" whileTap={{ scale: 0.95 }}
-                        className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity shrink-0"
-                    >Search</motion.button>
-                    {customExam && (
-                        <motion.button type="button" whileTap={{ scale: 0.95 }}
-                            onClick={() => { setCustomExam(''); fetchNotes('', activeCategory, lang); }}
-                            className="px-3 py-2.5 bg-white/5 border border-white/10 text-gray-400 hover:text-white text-xs rounded-xl transition-all"
-                        >✕</motion.button>
-                    )}
-                </motion.form>
+
 
                 {/* Loading */}
                 {loading && <BooksNotesPageSkeleton variant="notes" />}
