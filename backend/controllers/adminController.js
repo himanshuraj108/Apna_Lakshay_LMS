@@ -514,6 +514,7 @@ exports.getStudents = async (req, res) => {
             feeMap[f._id.toString()] = f.amount;
         });
 
+        const io = req.app.get('io');
         // Transform students to include resolved shift info and ensure registrationSource
         const studentsWithShift = students.map(student => {
             let shiftInfo = null;
@@ -538,12 +539,21 @@ exports.getStudents = async (req, res) => {
                     }
                 }
             }
+
+            // Calculate online status
+            const userRoom = io ? io.sockets.adapter.rooms.get(`user:${student._id}`) : null;
+            const isOnline = userRoom ? userRoom.size > 0 : false;
+
             return {
                 ...student,
                 shift: shiftInfo,
                 shiftDetails, // New field containing time info
                 registrationSource: student.registrationSource || 'admin', // Default for existing students
-                currentFee: feeMap[student._id.toString()] || null
+                currentFee: feeMap[student._id.toString()] || null,
+                isOnline,
+                isLoggedIn: student.isLoggedIn || false,
+                lastLogin: student.lastLogin || null,
+                lastActive: student.lastActive || null
             };
         });
 
@@ -691,11 +701,19 @@ exports.getStudent = async (req, res) => {
             }
         }
 
+        const io = req.app.get('io');
+        const userRoom = io ? io.sockets.adapter.rooms.get(`user:${student._id}`) : null;
+        const isOnline = userRoom ? userRoom.size > 0 : false;
+
         res.status(200).json({
             success: true,
             student: {
                 ...student, // It is already lean object
-                seat: seatData
+                seat: seatData,
+                isOnline,
+                isLoggedIn: student.isLoggedIn || false,
+                lastLogin: student.lastLogin || null,
+                lastActive: student.lastActive || null
             }
         });
     } catch (error) {

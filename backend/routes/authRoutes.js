@@ -16,7 +16,11 @@ const { protect } = require('../middleware/auth');
 
 // Public routes
 router.post('/login', login);
-router.post('/logout', logout);
+
+// Protected routes
+router.post('/logout', protect, logout);
+router.get('/me', protect, getMe);
+
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', resetPassword);
@@ -26,8 +30,5 @@ router.post('/check-phone', checkPhone);
 router.post('/kiosk-attendance', markKioskAttendancePublic);
 router.post('/send-otp-phone', sendOtpByPhone);
 router.post('/verify-otp-login', verifyOtpAndAutoLogin);
-
-// Protected routes
-router.get('/me', protect, getMe);
 
 module.exports = router;

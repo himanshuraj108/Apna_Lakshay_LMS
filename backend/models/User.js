@@ -109,6 +109,18 @@ const userSchema = new mongoose.Schema({
     resetPasswordOTPExpire: {
         type: Date,
         select: false
+    },
+    isLoggedIn: {
+        type: Boolean,
+        default: false
+    },
+    lastLogin: {
+        type: Date,
+        default: null
+    },
+    lastActive: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
