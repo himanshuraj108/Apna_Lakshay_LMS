@@ -7,6 +7,13 @@ import ScrollToTop from './components/ScrollToTop';
 import App from './App';
 import './index.css';
 
+// Capture PWA install prompt synchronously before React renders
+window.deferredPwaPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.deferredPwaPrompt = e;
+});
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <BrowserRouter>

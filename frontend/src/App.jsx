@@ -3,6 +3,7 @@ import { useEffect, lazy, Suspense, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSocket } from './hooks/useSocket';
+import PwaInstallBanner from './components/ui/PwaInstallBanner';
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -199,6 +200,7 @@ function App() {
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
+            <PwaInstallBanner />
         </Suspense>
     );
 }
