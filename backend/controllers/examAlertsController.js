@@ -92,6 +92,10 @@ const getExamAlerts = async (req, res) => {
         allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
         allItems = allItems.slice(0, 50);
 
+        if (allItems.length === 0) {
+            throw new Error('Failed to fetch alerts from news sources');
+        }
+
         cache = allItems;
         cacheTime = Date.now();
 
