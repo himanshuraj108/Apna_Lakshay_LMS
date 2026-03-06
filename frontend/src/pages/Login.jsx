@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff } from 'react-icons/io5';
+import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoDownload, IoClose, IoEye, IoEyeOff, IoLocationOutline } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
 
@@ -81,21 +81,23 @@ const Login = () => {
             <div className="fixed top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-orange-600/10 blur-[130px] pointer-events-none" />
             <div className="fixed bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-red-600/8 blur-[120px] pointer-events-none" />
 
-            {/* View Seats Floating Button (desktop) */}
-            <Link to="/public-seats" className="hidden lg:block fixed top-8 right-8 z-50 w-max">
-                <motion.button
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1, boxShadow: ["0px 0px 0px rgba(249,115,22,0)", "0px 0px 22px rgba(249,115,22,0.5)", "0px 0px 0px rgba(249,115,22,0)"] }}
-                    transition={{ scale: { duration: 0.5 }, opacity: { duration: 0.5 }, boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" } }}
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-3 px-7 py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 rounded-full text-white shadow-2xl shadow-orange-500/30 border border-white/15 backdrop-blur-md group font-bold tracking-wide text-sm"
-                >
-                    <IoGridOutline size={20} className="animate-pulse" />
-                    VIEW SEATS
-                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
-                </motion.button>
-            </Link>
+            {/* Top Right Floating Buttons (desktop) */}
+            <div className="hidden lg:flex fixed top-8 right-8 z-50 gap-4">
+                <Link to="/public-seats">
+                    <motion.button
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1, boxShadow: ["0px 0px 0px rgba(249,115,22,0)", "0px 0px 22px rgba(249,115,22,0.5)", "0px 0px 0px rgba(249,115,22,0)"] }}
+                        transition={{ scale: { duration: 0.5 }, opacity: { duration: 0.5 }, boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" } }}
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-3 px-7 py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 rounded-full text-white shadow-2xl shadow-orange-500/30 border border-white/15 backdrop-blur-md group font-bold tracking-wide text-sm"
+                    >
+                        <IoGridOutline size={20} className="animate-pulse" />
+                        VIEW SEATS
+                        <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
+                    </motion.button>
+                </Link>
+            </div>
 
             {/* Card */}
             <motion.div
@@ -105,6 +107,15 @@ const Login = () => {
                 className="w-full max-w-md relative z-10"
             >
                 <div className="relative bg-white/4 backdrop-blur-2xl border border-white/10 rounded-3xl p-7 md:p-9 shadow-2xl shadow-black/60">
+
+                    {/* Location Button In Card */}
+                    <a href={import.meta.env.VITE_LIBRARY_LOCATION_URL || '#'} target="_blank" rel="noopener noreferrer"
+                        className="absolute top-5 right-5 p-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2 group z-20"
+                        title="Library Location"
+                    >
+                        <IoLocationOutline size={18} className="group-hover:scale-110 transition-transform" />
+                        <span className="text-[10px] font-bold tracking-wider hidden sm:block pr-1">LOCATION</span>
+                    </a>
 
                     {/* Brand */}
                     <div className="text-center mb-7">
@@ -121,18 +132,21 @@ const Login = () => {
                         <div className="h-px w-20 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent mx-auto mt-4" />
                     </div>
 
-                    {/* Mobile View Seats */}
-                    <div className="lg:hidden mb-6">
-                        <Link to="/public-seats" className="w-full">
-                            <motion.button
-                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 border border-orange-500/25 rounded-xl text-orange-300 font-semibold text-sm transition-all group"
-                            >
-                                <IoGridOutline size={18} />
-                                VIEW AVAILABLE SEATS
-                                <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} />
-                            </motion.button>
-                        </Link>
+                    {/* Quick Access Links */}
+                    <div className="flex flex-col gap-3 mb-6">
+                        {/* Mobile View Seats */}
+                        <div className="lg:hidden">
+                            <Link to="/public-seats" className="w-full block">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                    className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 border border-orange-500/25 rounded-xl text-orange-300 font-semibold text-sm transition-all group"
+                                >
+                                    <IoGridOutline size={18} />
+                                    VIEW AVAILABLE SEATS
+                                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} />
+                                </motion.button>
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="mb-7 text-center">
