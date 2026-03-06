@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { IoArrowBack, IoMail, IoCall, IoLocation, IoTime } from 'react-icons/io5';
+import { IoArrowBack, IoMail, IoCall, IoLocation, IoTime, IoShieldCheckmark } from 'react-icons/io5';
 import { Link } from 'react-router-dom';
 import Footer from '../../components/layout/Footer';
 
@@ -41,12 +41,23 @@ const ContactAdmin = () => {
                                 <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
                                     <IoLocation size={24} />
                                 </div>
-                                <div>
+                                <div className="w-full">
                                     <h3 className="text-white font-medium mb-1">Visit Us</h3>
-                                    <p className="text-sm text-gray-400">
+                                    <p className="text-sm text-gray-400 mb-4">
                                         Basbariya Chawk Near Nahar<br />
                                         Sitamarhi, Bihar - 843302
                                     </p>
+
+                                    <a href={import.meta.env.VITE_LIBRARY_LOCATION_URL || '#'} target="_blank" rel="noopener noreferrer" className="block w-full">
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            className="w-full flex items-center justify-center gap-3 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl text-white font-bold shadow-lg shadow-blue-500/25 transition-all group border border-blue-400/30 text-sm"
+                                        >
+                                            <IoShieldCheckmark size={20} className="text-blue-200" />
+                                            CHECK IN LOCATION
+                                        </motion.button>
+                                    </a>
                                 </div>
                             </div>
 
