@@ -153,7 +153,7 @@ lms/
     └── index.html       # Entry HTML
 ```
 
-## 🔒 Security Features
+## Security Features
 
 - JWT token-based authentication
 - Password hashing with bcrypt
