@@ -263,3 +263,100 @@ exports.registerStudent = async (req, res) => {
         });
     }
 };
+
+// @desc    Get office/security attendance (Public Read-Only View)
+// @route   GET /api/public/office/attendance/:date
+exports.getOfficeAttendance = async (req, res) => {
+    try {
+        const date = new Date(req.params.date);
+        date.setHours(0, 0, 0, 0);
+
+        const nextDay = new Date(date);
+        nextDay.setDate(date.getDate() + 1);
+
+        const Attendance = require('../models/Attendance');
+        const User = require('../models/User');
+
+        // Fetch all active students and populate seat and shift info
+        const activeStudents = await User.find({ role: 'student', isActive: true })
+            .populate({
+                path: 'seat',
+                populate: {
+                    path: 'assignments.shift',
+                    model: 'Shift'
+                }
+            })
+            .select('name email mobile profileImage createdAt address seat isActive registrationSource');
+
+        // Use range query to get actual attendance records
+        const attendance = await Attendance.find({
+            date: { $gte: date, $lt: nextDay }
+        })
+            .populate({
+                path: 'student',
+                select: 'name email mobile profileImage createdAt address seat isActive registrationSource',
+                populate: {
+                    path: 'seat',
+                    populate: {
+                        path: 'assignments.shift',
+                        model: 'Shift'
+                    }
+                }
+            })
+            .populate('markedBy', 'name');
+
+        // Filter out orphaned records AND records before the student's admission date
+        let filteredAttendance = attendance.filter(record => {
+            if (!record.student) return false;
+
+            const admissionDate = new Date(record.student.createdAt);
+            admissionDate.setHours(0, 0, 0, 0);
+
+            return record.date >= admissionDate;
+        });
+
+        // Map active shift data and synthesize records for all active students
+        const processedRecords = activeStudents.map(student => {
+            const stuData = student.toObject();
+
+            // Find active shift
+            if (stuData.seat && stuData.seat.assignments) {
+                const activeAssignment = stuData.seat.assignments.find(a => a.student.toString() === stuData._id.toString() && a.status === 'active');
+                if (activeAssignment) {
+                    stuData.shift = activeAssignment.shift || activeAssignment.legacyShift;
+                }
+            }
+
+            // Find if this student has an attendance record today
+            const existingRecord = filteredAttendance.find(r => r.student._id.toString() === stuData._id.toString());
+
+            if (existingRecord) {
+                return {
+                    ...existingRecord.toObject(),
+                    student: stuData
+                };
+            } else {
+                return {
+                    _id: 'unmarked-' + stuData._id,
+                    student: stuData,
+                    status: 'not marked',
+                    entryTime: '',
+                    exitTime: '',
+                    date: date,
+                    notes: ''
+                };
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            attendance: processedRecords
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};

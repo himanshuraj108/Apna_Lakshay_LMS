@@ -820,11 +820,24 @@ exports.updateStudent = async (req, res) => {
             }
         }
 
-        const student = await User.findByIdAndUpdate(
-            req.params.id,
-            updateData,
-            { new: true, runValidators: true }
-        );
+        let student;
+        if (joinedAt) {
+            // Mongoose prevents updating timestamps when timestamps=true is on the schema.
+            // When explicitly updating joinedAt, bypass timestamps via options and manually set updatedAt
+            updateData.updatedAt = new Date();
+
+            student = await User.findByIdAndUpdate(
+                req.params.id,
+                updateData,
+                { new: true, runValidators: true, timestamps: false }
+            );
+        } else {
+            student = await User.findByIdAndUpdate(
+                req.params.id,
+                updateData,
+                { new: true, runValidators: true }
+            );
+        }
 
         if (!student) {
             return res.status(404).json({
