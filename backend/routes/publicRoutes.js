@@ -14,4 +14,7 @@ router.get('/shifts', publicController.getShifts);
 // Public settings (location, system status, etc.)
 router.get('/settings', getPublicSettings);
 
+// Public office/security attendance route
+router.get('/office/attendance/:date', publicController.getOfficeAttendance);
+
 module.exports = router;

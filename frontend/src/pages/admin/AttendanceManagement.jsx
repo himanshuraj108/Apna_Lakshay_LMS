@@ -417,6 +417,20 @@ const AttendanceManagement = () => {
                             <button onClick={() => setShowHolidayModal(true)} className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-xl text-sm font-medium transition-all">
                                 <IoSparkles size={16} /> Declare Holiday
                             </button>
+
+                            {/* Office/Security Link Button */}
+                            <button
+                                onClick={() => {
+                                    const link = `${window.location.origin}/office/attendance`;
+                                    navigator.clipboard.writeText(link);
+                                    setSuccess("Office Link copied to clipboard!");
+                                    setTimeout(() => setSuccess(''), 3000);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium transition-all ml-auto"
+                                title="Copy Public Attendance Link for Security/Office Staff"
+                            >
+                                <IoDocumentTextOutline size={16} /> Office Link - Link
+                            </button>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

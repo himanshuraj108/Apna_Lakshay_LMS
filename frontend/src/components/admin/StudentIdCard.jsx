@@ -32,18 +32,23 @@ const StudentIdCard = ({ student }) => {
         // 1. If we have the shift name directly
         if (student.shift && typeof student.shift === 'string') {
             shiftName = student.shift;
+        } else if (student.shift && student.shift.name) {
+            // If populated object
+            shiftName = student.shift.name;
         } else {
             // 2. Try lookup
-            const shiftVal = student.shift || student.seat?.shift;
+            const shiftVal = student.shift?._id || student.shift || student.seat?.shift;
             if (shiftVal) shiftName = getShiftName(shiftVal);
         }
 
         // 3. Append details if available (from backend population)
-        if (student.shiftDetails?.startTime && student.shiftDetails?.endTime) {
+        if (student.shift?.startTime && student.shift?.endTime) {
+            return `${shiftName} (${student.shift.startTime} - ${student.shift.endTime})`;
+        } else if (student.shiftDetails?.startTime && student.shiftDetails?.endTime) {
             return `${shiftName} (${student.shiftDetails.startTime} - ${student.shiftDetails.endTime})`;
         }
 
-        return shiftName;
+        return typeof shiftName === 'string' ? shiftName : 'N/A';
     };
 
     // Theme Logic
