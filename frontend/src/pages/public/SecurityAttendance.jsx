@@ -110,8 +110,13 @@ const SecurityAttendance = () => {
 
                 {/* Student List */}
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {[...Array(6)].map((_, i) => <div key={i} className="bg-white/3 rounded-2xl h-32 animate-pulse" />)}
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <div className="relative w-16 h-16 mb-4">
+                            <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
+                            <div className="absolute inset-2 rounded-full border-r-2 border-purple-500 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.7s' }}></div>
+                            <div className="absolute inset-4 rounded-full border-b-2 border-blue-500 animate-spin" style={{ animationDuration: '1.2s' }}></div>
+                        </div>
+                        <p className="text-gray-400 font-medium tracking-widest text-sm animate-pulse">LOADING RECORDS...</p>
                     </div>
                 ) : attendanceRecords.length === 0 ? (
                     <div className="bg-white/3 border border-white/8 rounded-2xl p-12 text-center">
