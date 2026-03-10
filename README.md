@@ -169,7 +169,7 @@ lms/
 4. **Assign Seat**: Assign a seat to the student
 5. **Student Login**: Login with the student's credentials from email
 
-## 📝 API Endpoints
+## API Endpoints
 
 ### Auth
 - `POST /api/auth/login` - Login
