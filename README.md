@@ -196,7 +196,7 @@ lms/
 - `POST /api/student/request` - Submit change request
 - `POST /api/student/profile/image` - Upload profile image
 
-## 🎯 Key Implementation Details
+## Key Implementation Details
 
 ### Offline-First Model
 - Students visit library in person
