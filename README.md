@@ -161,7 +161,7 @@ lms/
 - Input validation
 - Error handling middleware
 
-## 🧪 Testing
+## Testing
 
 1. **Public Access**: Open `http://localhost:5173` - should show seat availability
 2. **Admin Login**: Login with `admin` / `admin123`
