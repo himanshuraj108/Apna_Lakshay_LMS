@@ -63,7 +63,7 @@ const userSchema = new mongoose.Schema({
     },
     mockTestCredits: {
         type: Number,
-        default: 3
+        default: 2
     },
     mockTestCreditsResetDate: {
         type: String,

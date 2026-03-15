@@ -116,7 +116,7 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
                 "You can navigate between sections (if applicable) using the tabs provided above the question area.",
                 "Click on Save & Next to save your answer for the current question and then go to the next question.",
                 "Click on Mark for Review & Next to save your answer for the current question, mark it for review, and then go to the next question.",
-                "CREDIT SYSTEM: You are allowed a maximum of 3 Mock Tests per day. Your credits will automatically reset to 3 every night at 12:00 AM IST."
+                "CREDIT SYSTEM: You are allowed a maximum of 2 Mock Tests per day. Your credits will automatically reset to 2 every night at 12:00 AM IST."
             ],
             checkbox_label: "I have read and understood all the instructions. I agree this is only for practice.",
             btn: requireCheckbox ? "Proceed to Exam" : "I Understand"
@@ -130,7 +130,7 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
                 "आप प्रश्न क्षेत्र के ऊपर दिए गए टैब का उपयोग करके अनुभागों (यदि लागू हो) के बीच नेविगेट कर सकते हैं।",
                 "वर्तमान प्रश्न के लिए अपना उत्तर सहेजने के लिए 'सहेजें और अगला' पर क्लिक करें और फिर अगले प्रश्न पर जाएं।",
                 "वर्तमान प्रश्न के लिए अपना उत्तर सहेजने के लिए 'समीक्षा के लिए चिह्नित करें और अगला' पर क्लिक करें, इसे समीक्षा के लिए चिह्नित करें, और फिर अगले प्रश्न पर जाएं।",
-                "क्रेडिट सिस्टम: आपको प्रतिदिन अधिकतम 3 मॉक टेस्ट देने की अनुमति है। आपके क्रेडिट हर रात 12:00 बजे (IST) स्वतः 3 पर रीसेट हो जाएंगे।"
+                "क्रेडिट सिस्टम: आपको प्रतिदिन अधिकतम 2 मॉक टेस्ट देने की अनुमति है। आपके क्रेडिट हर रात 12:00 बजे (IST) स्वतः 2 पर रीसेट हो जाएंगे।"
             ],
             checkbox_label: "मैंने सभी निर्देश पढ़ और समझ लिए हैं। मैं सहमत हूँ कि यह केवल अभ्यास के लिए है।",
             btn: requireCheckbox ? "शुरू करें" : "मैं समझता हूँ"
@@ -142,10 +142,10 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
             title: "Mock Test Credit System",
             disclaimer: "Please note that Mock Test Credits are limited to ensure fair usage of AI resources.",
             points: [
-                "You are allowed a maximum of 3 Premium AI Mock Tests per day.",
-                "Your credits will automatically reset to 3 every night at exactly 12:00 AM IST (Midnight).",
+                "You are allowed a maximum of 2 Premium AI Mock Tests per day.",
+                "Your credits will automatically reset to 2 every night at exactly 12:00 AM IST (Midnight).",
                 "If you run out of credits, exams will be locked. A timer will display the remaining time until the next reset.",
-                "Credits do not carry over. If you don't use them, they are reset to 3 the next day."
+                "Credits do not carry over. If you don't use them, they are reset to 2 the next day."
             ],
             checkbox_label: "I understand the credit system rules.",
             btn: "Got It"
@@ -154,10 +154,10 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
             title: "मॉक टेस्ट क्रेडिट सिस्टम",
             disclaimer: "एआई संसाधनों का उचित उपयोग सुनिश्चित करने के लिए मॉक टेस्ट क्रेडिट सीमित हैं।",
             points: [
-                "आपको प्रतिदिन अधिकतम 3 प्रीमियम एआई मॉक टेस्ट की अनुमति है।",
-                "आपके क्रेडिट हर रात ठीक 12:00 बजे (IST) (मध्यरात्रि) 3 पर स्वतः रीसेट हो जाएंगे।",
+                "आपको प्रतिदिन अधिकतम 2 प्रीमियम एआई मॉक टेस्ट की अनुमति है।",
+                "आपके क्रेडिट हर रात ठीक 12:00 बजे (IST) (मध्यरात्रि) 2 पर स्वतः रीसेट हो जाएंगे।",
                 "यदि आपके क्रेडिट समाप्त हो जाते हैं, तो परीक्षाएं लॉक हो जाएंगी। एक टाइमर अगले रीसेट तक का शेष समय दिखाएगा।",
-                "क्रेडिट आगे नहीं बढ़ते। यदि आप उनका उपयोग नहीं करते हैं, तो वे अगले दिन 3 पर रीसेट हो जाते हैं।"
+                "क्रेडिट आगे नहीं बढ़ते। यदि आप उनका उपयोग नहीं करते हैं, तो वे अगले दिन 2 पर रीसेट हो जाते हैं।"
             ],
             checkbox_label: "मैं क्रेडिट सिस्टम के नियमों को समझता हूँ।",
             btn: "समझ गया"
@@ -244,7 +244,7 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
 // ─── 1. Exam Select Screen ────────────────────────────────────────────
 const ExamSelect = ({ onSelect }) => {
     const { user } = useAuth();
-    const credits = user?.mockTestCredits ?? 3;
+    const credits = Math.min(user?.mockTestCredits ?? 2, 2);
     const isLocked = credits <= 0;
 
     const [timeLeftToReset, setTimeLeftToReset] = useState('');
@@ -287,7 +287,7 @@ const ExamSelect = ({ onSelect }) => {
                 </div>
                 <div className="exam-header-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div className="exam-credits-label" style={{ color: isLocked ? '#fca5a5' : '#93c5fd', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', flexWrap: 'wrap' }}>
-                        <span>Credits: <span style={{ color: 'white' }}>{credits}/3</span></span>
+                        <span>Credits: <span style={{ color: 'white' }}>{credits}/2</span></span>
                         {isLocked && <span style={{ fontSize: '11px', background: '#dc2626', color: 'white', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Unlocks in {timeLeftToReset}</span>}
                         <button onClick={() => setShowInstructionsModal(true)} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', display: 'flex', padding: 0 }} title="Instructions">
                             <IoInformationCircleOutline size={18} />

@@ -62,6 +62,10 @@ const StudentManagement = () => {
     const [showArchiveModal, setShowArchiveModal] = useState(false);
     const [selectedArchive, setSelectedArchive] = useState(null);
 
+    // Session Modal States
+    const [showSessionModal, setShowSessionModal] = useState(false);
+    const [selectedSessionStudent, setSelectedSessionStudent] = useState(null);
+
     useEffect(() => {
         fetchStudents();
         fetchFloors();
@@ -1008,8 +1012,8 @@ const StudentManagement = () => {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-white/8">
-                                                {['Name', 'Email', 'Shift', 'Status', 'Presence', 'Created', 'Fee', 'Actions'].map((h, i) => (
-                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 7 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                {['Name', 'Email', 'Shift', 'Status', 'Presence', 'Credits', 'Created', 'Fee', 'Actions'].map((h, i) => (
+                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 8 ? 'text-right' : 'text-left'}`}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
@@ -1054,6 +1058,20 @@ const StudentManagement = () => {
                                                                     {student.isLoggedIn ? 'Logged In' : 'Logged Out'}
                                                                 </span>
                                                             </div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedSessionStudent(student);
+                                                                    setShowSessionModal(true);
+                                                                }}
+                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-white bg-white/10 hover:bg-white/20 rounded border border-white/10 transition-colors self-start"
+                                                            >
+                                                                Details
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-5 py-3.5 text-xs text-gray-300 font-medium">
+                                                        <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-1 rounded-md w-fit">
+                                                            <span className="font-bold">{Math.min(student.mockTestCredits ?? 2, 2)}</span> / 2
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
@@ -1082,6 +1100,58 @@ const StudentManagement = () => {
                         )}
                     </>
                 )}
+
+                {/* Session Details Modal */}
+                <Modal
+                    isOpen={showSessionModal}
+                    onClose={() => setShowSessionModal(false)}
+                    title="Session Details"
+                >
+                    <div className="space-y-4">
+                        {selectedSessionStudent && (
+                            <>
+                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                        {selectedSessionStudent.name?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="text-white font-bold truncate">{selectedSessionStudent.name}</h4>
+                                        <p className="text-gray-400 text-sm truncate">{selectedSessionStudent.email}</p>
+                                    </div>
+                                </div>
+                                <div className="grid gap-3">
+                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-400 text-sm">Status</span>
+                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                            {selectedSessionStudent.isOnline ? 'Online' : 'Offline'}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-400 text-sm">Session</span>
+                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isLoggedIn ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                            {selectedSessionStudent.isLoggedIn ? 'Logged In' : 'Logged Out'}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-400 text-sm">Last Active</span>
+                                        <span className="text-white text-sm font-medium">
+                                            {selectedSessionStudent.lastActive ? new Date(selectedSessionStudent.lastActive).toLocaleString() : 'N/A'}
+                                        </span>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-400 text-sm">Last Login</span>
+                                        <span className="text-white text-sm font-medium">
+                                            {selectedSessionStudent.lastLogin ? new Date(selectedSessionStudent.lastLogin).toLocaleString() : 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="mt-6 flex justify-end">
+                                    <button onClick={() => setShowSessionModal(false)} className={BTN_SECONDARY}>Close</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </Modal>
 
                 {/* View ID Card Modal */}
                 <Modal

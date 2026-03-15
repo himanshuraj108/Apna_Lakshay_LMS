@@ -126,18 +126,19 @@ const ActionCard = ({ icon: Icon, label, desc, color, glow, delay, onClick, to, 
 };
 
 // ─── Learning Region Card ───────────────────────────────────────────────
-const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingSoon, newBeta }) => {
+const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingSoon, locked, newBeta }) => {
+    const isDisabled = comingSoon || locked;
     const inner = (
         <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay, type: 'spring', stiffness: 90 }}
-            whileHover={!comingSoon ? { y: -6, scale: 1.03 } : {}}
-            className={`card-glass relative rounded-2xl p-6 flex flex-col items-start gap-4 overflow-hidden transition-all duration-300 group ${comingSoon ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
+            whileHover={!isDisabled ? { y: -6, scale: 1.03 } : {}}
+            className={`card-glass relative rounded-2xl p-6 flex flex-col items-start gap-4 overflow-hidden transition-all duration-300 group ${isDisabled ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
                 }`}
         >
             {/* top accent line */}
-            <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${color} ${comingSoon ? 'opacity-30' : 'opacity-50 group-hover:opacity-100'
+            <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${color} ${isDisabled ? 'opacity-30' : 'opacity-50 group-hover:opacity-100'
                 } transition-opacity`} />
 
             {/* NEW badge */}
@@ -149,19 +150,19 @@ const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingS
             )}
 
             {/* glow blob */}
-            {!comingSoon && (
+            {!isDisabled && (
                 <div className={`absolute -top-8 -right-8 w-28 h-28 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-15 blur-2xl transition-all duration-500`} />
             )}
 
             {/* icon + badges */}
             <div className="relative">
                 <div
-                    className={`p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform duration-300 ${comingSoon ? '' : 'group-hover:scale-110'}`}
-                    style={{ boxShadow: comingSoon ? 'none' : `0 8px 24px -4px ${glow}` }}
+                    className={`p-3.5 rounded-xl bg-gradient-to-br ${color} shadow-lg transition-transform duration-300 ${isDisabled ? '' : 'group-hover:scale-110'}`}
+                    style={{ boxShadow: isDisabled ? 'none' : `0 8px 24px -4px ${glow}` }}
                 >
                     <Icon size={24} className="text-white" />
                 </div>
-                {comingSoon && (
+                {isDisabled && (
                     <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 border border-white/10 rounded-full flex items-center justify-center">
                         <IoLockClosedOutline size={10} className="text-gray-300" />
                     </span>
@@ -185,6 +186,11 @@ const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingS
                     <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
                     Coming Soon
                 </span>
+            ) : locked ? (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1 rounded-full">
+                    <IoLockClosedOutline size={12} />
+                    Locked
+                </span>
             ) : (
                 <span className={`text-[10px] font-bold uppercase tracking-[0.15em] text-gray-600 group-hover:text-gray-300 transition-colors flex items-center gap-1`}>
                     Open <IoArrowForwardCircle size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
@@ -192,7 +198,8 @@ const LearningCard = ({ icon: Icon, label, desc, color, glow, delay, to, comingS
             )}
         </motion.div>
     );
-    return !comingSoon && to ? <Link to={to} className="block">{inner}</Link> : inner;
+    const targetRoute = locked ? '/pending-allocation' : to;
+    return !comingSoon && targetRoute ? <Link to={targetRoute} className="block">{inner}</Link> : inner;
 };
 
 // ─── Premium Floating Attendance Button ──────────────────────────────────
@@ -586,6 +593,8 @@ const StudentDashboard = () => {
     const attPct = dashboardData?.attendance?.percentage || 0;
     const attColor = attPct >= 75 ? 'from-green-400 to-emerald-500' : attPct >= 50 ? 'from-yellow-400 to-amber-500' : 'from-red-400 to-rose-500';
     const isActive = dashboardData ? dashboardData.isActive : user?.isActive;
+    const hasSeat = !!dashboardData?.seat?.number;
+    const isRestricted = !isActive || !hasSeat;
 
     const initials = (user?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
@@ -838,6 +847,7 @@ const StudentDashboard = () => {
                             glow="rgba(59,130,246,0.45)"
                             delay={0.1}
                             to="/student/books"
+                            locked={isRestricted}
                         />
                         <LearningCard
                             icon={IoDocumentTextOutline}
@@ -847,6 +857,7 @@ const StudentDashboard = () => {
                             glow="rgba(139,92,246,0.45)"
                             delay={0.16}
                             to="/student/notes"
+                            locked={isRestricted}
                         />
                         <LearningCard
                             icon={IoSparklesOutline}
@@ -857,6 +868,7 @@ const StudentDashboard = () => {
                             delay={0.22}
                             to="/student/mock-test"
                             newBeta
+                            locked={isRestricted}
                         />
                     </div>
                 </motion.div>
