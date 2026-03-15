@@ -1,4 +1,4 @@
-﻿// Simplified adminController - just basic exports
+// Simplified adminController - just basic exports
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Floor = require('../models/Floor');
@@ -14,6 +14,7 @@ const ArchivedStudent = require('../models/ArchivedStudent');
 const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
+const MockTestAttempt = require('../models/MockTestAttempt');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -3344,3 +3345,19 @@ async function logAction(req, action, targetModel, targetId, targetName, details
         console.error('Action Log Failed:', error.message);
     }
 }
+
+// @desc    Get mock tests history for a specific student (Admin Panel Credit Info)
+// @route   GET /api/admin/students/:id/mock-tests
+exports.getStudentMockTests = async (req, res) => {
+    try {
+        const studentId = req.params.id;
+        const attempts = await MockTestAttempt.find({ user: studentId })
+            .sort({ startedAt: -1 })
+            .select('-testData'); // Exclude heavy question data, only need metadata
+
+        res.json({ success: true, attempts });
+    } catch (error) {
+        console.error('Fetch Student Mock Tests Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch mock test history' });
+    }
+};

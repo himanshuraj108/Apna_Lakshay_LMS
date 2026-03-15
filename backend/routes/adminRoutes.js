@@ -49,7 +49,8 @@ const {
     generateQrToken,
     getQrToken,
     resetAllQrTokens,
-    markAttendanceByQrAdmin
+    markAttendanceByQrAdmin,
+    getStudentMockTests
 } = require('../controllers/adminController');
 
 // Settings come from settingsController
@@ -99,6 +100,7 @@ router.route('/students/:id')
     .delete(deleteStudent);
 
 router.post('/students/:id/reset-password', resetStudentPassword);
+router.get('/students/:id/mock-tests', getStudentMockTests);
 
 // Floor/Room/Seat management
 router.get('/floors', getFloors);

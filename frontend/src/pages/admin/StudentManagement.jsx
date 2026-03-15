@@ -66,6 +66,12 @@ const StudentManagement = () => {
     const [showSessionModal, setShowSessionModal] = useState(false);
     const [selectedSessionStudent, setSelectedSessionStudent] = useState(null);
 
+    // Credit History Modal States
+    const [showCreditModal, setShowCreditModal] = useState(false);
+    const [selectedCreditStudent, setSelectedCreditStudent] = useState(null);
+    const [creditHistory, setCreditHistory] = useState([]);
+    const [creditLoading, setCreditLoading] = useState(false);
+
     useEffect(() => {
         fetchStudents();
         fetchFloors();
@@ -94,6 +100,22 @@ const StudentManagement = () => {
             setError('Failed to load students');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchCreditHistory = async (student) => {
+        setSelectedCreditStudent(student);
+        setShowCreditModal(true);
+        setCreditLoading(true);
+        try {
+            const res = await api.get(`/admin/students/${student._id}/mock-tests`);
+            setCreditHistory(res.data.attempts || []);
+        } catch(e) {
+            console.error(e);
+            toast.error('Failed to load credit history');
+            setCreditHistory([]);
+        } finally {
+            setCreditLoading(false);
         }
     };
 
@@ -1070,8 +1092,16 @@ const StudentManagement = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3.5 text-xs text-gray-300 font-medium">
-                                                        <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-1 rounded-md w-fit">
-                                                            <span className="font-bold">{Math.min(student.mockTestCredits ?? 2, 2)}</span> / 2
+                                                        <div className="flex flex-col gap-1.5 items-start">
+                                                            <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-1 rounded-md w-fit">
+                                                                <span className="font-bold">{Math.min(student.mockTestCredits ?? 2, 2)}</span> / 2
+                                                            </div>
+                                                            <button
+                                                                onClick={() => fetchCreditHistory(student)}
+                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-white bg-white/10 hover:bg-white/20 rounded border border-white/10 transition-colors"
+                                                            >
+                                                                Details
+                                                            </button>
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
@@ -1147,6 +1177,72 @@ const StudentManagement = () => {
                                 </div>
                                 <div className="mt-6 flex justify-end">
                                     <button onClick={() => setShowSessionModal(false)} className={BTN_SECONDARY}>Close</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </Modal>
+
+                {/* Credit Details Modal */}
+                <Modal
+                    isOpen={showCreditModal}
+                    onClose={() => setShowCreditModal(false)}
+                    title="Mock Test / Credit Details"
+                >
+                    <div className="space-y-4 max-h-[70vh] overflow-y-auto w-full p-2">
+                        {selectedCreditStudent && (
+                            <>
+                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 mb-4">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                        {selectedCreditStudent.name?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h4 className="text-white font-bold truncate">{selectedCreditStudent.name}</h4>
+                                        <p className="text-gray-400 text-sm truncate">{selectedCreditStudent.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Current Credits</div>
+                                        <div className="text-xl font-black text-purple-400">{Math.min(selectedCreditStudent.mockTestCredits ?? 2, 2)}<span className="text-sm text-gray-500 font-medium">/2</span></div>
+                                    </div>
+                                </div>
+
+                                {creditLoading ? (
+                                    <div className="text-center p-8 text-gray-400">Loading history logs...</div>
+                                ) : creditHistory.length === 0 ? (
+                                    <div className="text-center p-8 text-white/40 border border-white/5 bg-white/5 rounded-xl border-dashed">No mock test history found.</div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Attempt Logs</h4>
+                                        {creditHistory.map(att => (
+                                            <div key={att._id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-white font-bold text-sm tracking-wide">{att.patternName}</span>
+                                                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded ${att.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-500'}`}>{att.status}</span>
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-400 font-medium">Generated: {new Date(att.startedAt).toLocaleString()}</div>
+                                                </div>
+                                                
+                                                {att.status === 'completed' && (
+                                                    <div className="flex gap-4 items-center bg-black/20 rounded-lg p-2 px-3 border border-white/5">
+                                                        <div className="text-center">
+                                                            <div className="text-[10px] text-gray-500 font-bold uppercase">Score</div>
+                                                            <div className="text-sm font-bold text-blue-400">{att.score} <span className="text-xs text-gray-500 font-medium">/{att.maxScore}</span></div>
+                                                        </div>
+                                                        <div className="w-px h-8 bg-white/10" />
+                                                        <div className="text-center">
+                                                            <div className="text-[10px] text-gray-500 font-bold uppercase">Acc</div>
+                                                            <div className={`text-sm font-bold ${att.percentage >= 60 ? 'text-green-400' : 'text-orange-400'}`}>{att.percentage}%</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="mt-6 flex justify-end">
+                                    <button onClick={() => setShowCreditModal(false)} className={BTN_SECONDARY}>Close</button>
                                 </div>
                             </>
                         )}

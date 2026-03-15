@@ -241,14 +241,69 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
     );
 };
 
+// ─── 0. Attempt History Component ───────────────────────────────────────
+const AttemptHistory = ({ onViewHistory }) => {
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api.get('/student/mock-test/history')
+            .then(res => setHistory(res.data.history || []))
+            .catch(err => console.error(err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading History...</div>;
+
+    if (history.length === 0) return <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No Mock Tests attempted yet.</div>;
+
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px', paddingBottom: '40px' }}>
+            {history.map(att => (
+                <div key={att._id} 
+                    onClick={() => { if (att.status === 'completed') onViewHistory(att); }}
+                    style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', cursor: att.status === 'completed' ? 'pointer' : 'default', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}
+                    onMouseOver={(e) => { if (att.status === 'completed') e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseOut={(e) => { e.currentTarget.style.transform = 'none' }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <div style={{ fontWeight: '800', fontSize: '15px', color: '#1e293b' }}>{att.patternName}</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>{new Date(att.startedAt).toLocaleString()}</div>
+                        </div>
+                        <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '4px 8px', borderRadius: '6px', 
+                            background: att.status === 'completed' ? '#dcfce7' : '#fef08a',
+                            color: att.status === 'completed' ? '#166534' : '#854d0e' }}>
+                            {att.status.toUpperCase()}
+                        </span>
+                    </div>
+                    {att.status === 'completed' && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                            <div>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>SCORE</div>
+                                <div style={{ fontSize: '16px', fontWeight: '900', color: '#2563eb' }}>{att.score} <span style={{fontSize:'12px', color:'#94a3b8'}}>/ {att.maxScore}</span></div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>PERCENTAGE</div>
+                                <div style={{ fontSize: '16px', fontWeight: '900', color: att.percentage >= 60 ? '#16a34a' : '#ea580c' }}>{att.percentage}%</div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // ─── 1. Exam Select Screen ────────────────────────────────────────────
-const ExamSelect = ({ onSelect }) => {
+const ExamSelect = ({ onSelect, onViewHistory }) => {
     const { user } = useAuth();
     const credits = Math.min(user?.mockTestCredits ?? 2, 2);
     const isLocked = credits <= 0;
 
     const [timeLeftToReset, setTimeLeftToReset] = useState('');
     const [showInstructionsModal, setShowInstructionsModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('new'); // new or history
 
     useEffect(() => {
         if (!isLocked) return;
@@ -305,10 +360,21 @@ const ExamSelect = ({ onSelect }) => {
 
                 {/* Exam Grid */}
                 <div style={{ width: '100%' }}>
-                    <h2 style={{ color: '#1a3a6a', fontWeight: '800', fontSize: '24px', marginBottom: '8px' }}>Target Your Exam</h2>
-                    <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '32px' }}>Select the specific exam you are preparing for to view syllabus, marking scheme, and start a section-wise valid mock test.</p>
+                    <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', marginBottom: '24px', gap: '24px' }}>
+                        <button onClick={() => setActiveTab('new')} style={{ padding: '12px 4px', background: 'none', border: 'none', borderBottom: activeTab === 'new' ? '3px solid #1a3a6a' : '3px solid transparent', color: activeTab === 'new' ? '#1a3a6a' : '#64748b', fontWeight: '800', fontSize: '16px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            New Exam
+                        </button>
+                        <button onClick={() => setActiveTab('history')} style={{ padding: '12px 4px', background: 'none', border: 'none', borderBottom: activeTab === 'history' ? '3px solid #1a3a6a' : '3px solid transparent', color: activeTab === 'history' ? '#1a3a6a' : '#64748b', fontWeight: '800', fontSize: '16px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                            Attempt History
+                        </button>
+                    </div>
 
-                    <div style={isLocked ? { opacity: 0.6, pointerEvents: 'none', filter: 'grayscale(100%)' } : {}}>
+                    {activeTab === 'new' ? (
+                        <>
+                            <h2 style={{ color: '#1a3a6a', fontWeight: '800', fontSize: '24px', marginBottom: '8px' }}>Target Your Exam</h2>
+                            <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '32px' }}>Select the specific exam you are preparing for to view syllabus, marking scheme, and start a section-wise valid mock test.</p>
+
+                            <div style={isLocked ? { opacity: 0.6, pointerEvents: 'none', filter: 'grayscale(100%)' } : {}}>
                         {EXAM_GROUPS.map(grp => (
                             <div key={grp.id} style={{ marginBottom: '24px', background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
                                 <div style={{ fontWeight: '800', fontSize: '14px', color: grp.color, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>{grp.name}</div>
@@ -330,7 +396,11 @@ const ExamSelect = ({ onSelect }) => {
                             </div>
                         ))}
                     </div>
-                </div>
+                </>
+                ) : (
+                    <AttemptHistory onViewHistory={onViewHistory} />
+                )}
+            </div>
 
             </div>
         </div>
@@ -339,7 +409,7 @@ const ExamSelect = ({ onSelect }) => {
 
 // ─── 2. Exam Info & Setup Screen ──────────────────────────────────────
 const ExamInfoPage = ({ examCode, onStart, onBack }) => {
-    const { checkAuth } = useAuth();
+    const { checkAuth, updateUser } = useAuth();
     const [pattern, setPattern] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sectionId, setSectionId] = useState('all'); // 'all' or specific ID
@@ -459,10 +529,15 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                                     const res = await api.post('/student/mock-test/generate', { examCode, mode: 'mcq', ...cfg, lang });
 
                                     // Force Refresh User Credits from DB
-                                    try { await checkAuth(); } catch (e) { console.error('Failed to update credits', e); }
+                                    try { 
+                                        await checkAuth(); 
+                                        if (res.data.newCredits !== undefined) {
+                                            updateUser({ mockTestCredits: res.data.newCredits });
+                                        }
+                                    } catch (e) { console.error('Failed to update credits', e); }
 
                                     // Pause for Mandatory Instructions Check
-                                    setPendingExamStart(() => () => onStart(pattern, cfg, res.data.questions));
+                                    setPendingExamStart(() => () => onStart(pattern, cfg, res.data.questions, res.data.attemptId));
                                 } catch (e) {
                                     setError(e.response?.data?.message || 'Failed to generate test. Try again.');
                                 } finally { setGenLoading(false); }
@@ -497,7 +572,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 };
 
 // ─── 3. Test Session (NTA-Style with Section Tabs & Browser Translate) ──
-const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
+const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish }) => {
     const { user } = useAuth();
     const [current, setCurrent] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -639,7 +714,8 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
         setStatuses(p => ({ ...p, [current]: 'not_answered' }));
     };
 
-    const handleSubmit = (isCheating = false) => {
+    const handleSubmit = async (isCheating = false) => {
+        if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
         clearInterval(timerRef.current);
 
@@ -661,7 +737,16 @@ const TestSession = ({ initialQuestions, pattern, config, onFinish }) => {
                 status: statuses[i],
             };
         });
-        onFinish({ results, timeLeft: sessionTime * 60 - timeLeft, maxTime: sessionTime * 60, isCheating: isCheating === true });
+
+        const payload = { results, timeLeft: sessionTime * 60 - timeLeft, maxTime: sessionTime * 60, isCheating: isCheating === true };
+        
+        try {
+            await api.post(`/student/mock-test/submit/${attemptId}`, payload);
+        } catch (e) {
+            console.error('Submit API error', e);
+        }
+
+        onFinish(payload);
     };
 
     const btnStyle = (bg, c = 'white') => ({ background: bg, color: c, border: `1px solid ${bg === 'white' ? '#cbd5e1' : bg}`, borderRadius: '6px', padding: '10px 16px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' });
@@ -1226,8 +1311,30 @@ const MockTestPage = () => {
         setPhase('info');
     };
 
-    const handleStartTest = (pattern, config, qs) => {
-        setTestData({ pattern, config, qs });
+    const handleViewHistory = async (attempt) => {
+        try {
+            // Fetch pattern structure to render Results
+            const res = await api.get(`/student/mock-test/pattern/${attempt.examCode || 'generic'}`);
+            const pattern = res.data.pattern || {};
+            
+            const resultsData = {
+               results: attempt.testData,
+               timeLeft: pattern.duration ? (pattern.duration * 60 - attempt.timeTaken) : 0,
+               maxTime: pattern.duration ? (pattern.duration * 60) : 3600,
+               isCheating: attempt.isCheating || false
+            };
+            
+            setTestData({ pattern, config: { lang: 'en', sectionId: 'all' }, qs: attempt.testData, attemptId: attempt._id });
+            setResultsData(resultsData);
+            setPhase('result');
+        } catch (error) {
+            console.error('Failed to load history mock test details:', error);
+            alert('Failed to load past exam details. Pattern may no longer exist.');
+        }
+    };
+
+    const handleStartTest = (pattern, config, qs, attemptId) => {
+        setTestData({ pattern, config, qs, attemptId });
         setPhase('test');
     };
 
@@ -1245,12 +1352,12 @@ const MockTestPage = () => {
 
     return (
         <AnimatePresence mode="wait">
-            {phase === 'select' && <motion.div key="p-select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ExamSelect onSelect={handleExamSelect} /></motion.div>}
+            {phase === 'select' && <motion.div key="p-select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><ExamSelect onSelect={handleExamSelect} onViewHistory={handleViewHistory} /></motion.div>}
 
             {phase === 'info' && <motion.div key="p-info" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}><ExamInfoPage examCode={examCode} onStart={handleStartTest} onBack={() => setPhase('select')} /></motion.div>}
 
             {phase === 'test' && testData && <motion.div key="p-test" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                <TestSession initialQuestions={testData.qs} pattern={testData.pattern} config={testData.config} onFinish={handleFinishTest} />
+                <TestSession initialQuestions={testData.qs} pattern={testData.pattern} config={testData.config} attemptId={testData.attemptId} onFinish={handleFinishTest} />
             </motion.div>}
 
             {phase === 'result' && resultsData && <motion.div key="p-res" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
