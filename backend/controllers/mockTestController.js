@@ -1,5 +1,6 @@
 const https = require('https');
 const User = require('../models/User');
+const MockTestAttempt = require('../models/MockTestAttempt');
 
 // Groq OpenAI-compatible API
 const GROQ_HOST = 'api.groq.com';
@@ -415,9 +416,20 @@ Each question object MUST have:
             return res.status(500).json({ success: false, message: 'AI failed to generate any questions.' });
         }
 
+        // Store the attempt in the database
+        const attempt = await MockTestAttempt.create({
+            user: user._id,
+            examCode: examCode,
+            patternName: pattern.name,
+            status: 'generated',
+            testData: flatQuestions
+        });
+
         res.json({
             success: true,
+            attemptId: attempt._id,
             questions: flatQuestions,
+            newCredits: user.mockTestCredits,
             meta: { examCode, patternName: pattern.name, mode, difficulty, lang, total: flatQuestions.length }
         });
     } catch (err) {
@@ -467,4 +479,75 @@ const evaluateTest = async (req, res) => {
     }
 };
 
-module.exports = { getExamPattern, generateTest, evaluateTest };
+// ─── POST /api/student/mock-test/submit/:attemptId ───────────────────
+const submitTest = async (req, res) => {
+    try {
+        const attemptId = req.params.attemptId;
+        const { results, timeLeft, maxTime, isCheating } = req.body;
+
+        const attempt = await MockTestAttempt.findOne({ _id: attemptId, user: req.user.id });
+        if (!attempt) return res.status(404).json({ success: false, message: 'Test attempt not found' });
+        if (attempt.status === 'completed') return res.status(400).json({ success: false, message: 'Test already submitted' });
+
+        // Evaluate MCQs and calculate score
+        let score = 0;
+        let totalMax = 0;
+        
+        // Use pattern info
+        let positiveMarks = 1;
+        let negativeMarks = 0;
+        const examCode = attempt.examCode;
+        if (EXAM_PATTERNS[examCode] || EXAM_PATTERNS[EXAM_ALIASES[examCode]]) {
+            const p = EXAM_PATTERNS[examCode] || EXAM_PATTERNS[EXAM_ALIASES[examCode]];
+            positiveMarks = p.positive;
+            negativeMarks = p.negative;
+        }
+
+        results.forEach(r => {
+            totalMax += positiveMarks;
+            if (r.selected !== null && r.selected !== undefined) {
+                if (r.selected === r.correct) {
+                    score += positiveMarks;
+                } else {
+                    score -= negativeMarks;
+                }
+            }
+        });
+
+        // Ensure score doesn't go below 0 (optional, but standard for some)
+        // Leaving it precise (even negative) as some real exams allow negative totals.
+        const percentage = Math.max(0, Math.round((score / totalMax) * 100));
+
+        attempt.status = 'completed';
+        attempt.completedAt = new Date();
+        attempt.score = score;
+        attempt.maxScore = totalMax;
+        attempt.percentage = percentage;
+        attempt.timeTaken = maxTime - timeLeft;
+        attempt.isCheating = isCheating;
+        attempt.testData = results;
+
+        await attempt.save();
+
+        res.json({ success: true, attempt });
+    } catch (err) {
+        console.error('Submit Test Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to submit test' });
+    }
+};
+
+// ─── GET /api/student/mock-test/history ──────────────────────────────
+const getMyMockTests = async (req, res) => {
+    try {
+        // Find tests for user, sort by newest first
+        const history = await MockTestAttempt.find({ user: req.user.id })
+            .sort({ startedAt: -1 });
+            
+        res.json({ success: true, history });
+    } catch (err) {
+        console.error('Fetch Mock Tests Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch mock test history' });
+    }
+};
+
+module.exports = { getExamPattern, generateTest, evaluateTest, submitTest, getMyMockTests };
