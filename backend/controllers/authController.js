@@ -147,7 +147,7 @@ exports.getMe = async (req, res) => {
         // Check and Reset Daily Mock Test Credits (00:00 IST)
         const currentDateIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
         if (user.mockTestCreditsResetDate !== currentDateIST) {
-            user.mockTestCredits = 3;
+            user.mockTestCredits = 2;
             user.mockTestCreditsResetDate = currentDateIST;
             await user.save({ validateBeforeSave: false });
         }
