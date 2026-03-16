@@ -240,7 +240,7 @@ lms/
 
 ## Developer 
 
-Built with ❤️ for Apna Lakshay Library
+Built with for Apna Lakshay Library
 
 ## License
 
