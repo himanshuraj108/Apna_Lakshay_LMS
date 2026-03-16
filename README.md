@@ -242,6 +242,6 @@ lms/
 
 Built with ❤️ for Apna Lakshay Library
 
-## 📄 License
+## License
 
 Proprietary - All Rights Reserved
