@@ -126,7 +126,7 @@ All emails are branded with premium HTML templates.
 - **Skeleton Loaders**: Professional loading states (no spinners)
 - **Color-Coded Statuses**:
   - Green: Available / Paid / Present
-  - 🔴 Red: Occupied / Overdue / Absent
+  - Red: Occupied / Overdue / Absent
   - 🟡 Yellow: Due Soon / Pending
 - **Fully Responsive**: Desktop, Tablet, Mobile
 
