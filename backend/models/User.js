@@ -69,6 +69,19 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    doubtCredits: {
+        type: Number,
+        default: 10
+    },
+    doubtCreditsResetDate: {
+        type: String,
+        default: null
+    },
+    creditMode: {
+        type: String,
+        enum: ['auto', 'manual'],
+        default: 'auto'
+    },
     isActive: {
         type: Boolean,
         default: false

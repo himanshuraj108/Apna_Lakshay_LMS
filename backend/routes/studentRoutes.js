@@ -17,8 +17,12 @@ const {
     getAvailableShifts,
     requestSeatChange,
     markAttendanceByQr,
-    markSelfAttendance
+    markSelfAttendance,
+    getReceipt,
+    getMonthlyReport
 } = require('../controllers/studentController');
+const { askDoubt, syncDoubtSession } = require('../controllers/doubtController');
+const { getCurrentAffairs } = require('../controllers/currentAffairsController');
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
 const { getNotes } = require('../controllers/notesController');
@@ -26,11 +30,26 @@ const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests }
 const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
 
 
+const { getCardConfig } = require('../controllers/manageCardsController');
+
 // All routes are protected and maintenance-checked
 router.use(protect, checkMaintenanceMode);
 
 // Dashboard
 router.get('/dashboard', getDashboard);
+
+// Card Config (readable by students to apply admin settings)
+router.get('/card-config', getCardConfig);
+
+// Monthly Performance Report
+router.get('/report', getMonthlyReport);
+
+// Current Affairs
+router.get('/current-affairs', getCurrentAffairs);
+
+// AI Doubt Board
+router.post('/doubt/ask', authorizeActive, askDoubt);
+router.post('/doubt/sync-session', syncDoubtSession);
 
 // Exam Alerts (RSS feed aggregation)
 router.get('/exam-alerts', getExamAlerts);
@@ -58,6 +77,7 @@ router.post('/attendance/mark-self', authorizeActive, markSelfAttendance);
 
 // Fees
 router.get('/fees', getFees);
+router.get('/fees/:id/receipt', getReceipt);
 
 // Notifications
 router.get('/notifications', getNotifications);

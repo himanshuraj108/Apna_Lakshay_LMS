@@ -168,10 +168,30 @@ router.route('/settings')
     .get(getSettings)
     .put(updateSettings);
 
+// Manage Cards
+const {
+    getCardConfig, updateCardConfig,
+    getAiCreditConfig, updateAiCreditConfig,
+    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll
+} = require('../controllers/manageCardsController');
+
+router.get('/card-config', getCardConfig);
+router.put('/card-config', updateCardConfig);
+router.get('/ai-credit-config', getAiCreditConfig);
+router.put('/ai-credit-config', updateAiCreditConfig);
+router.get('/ai-credits/students', getStudentsWithAiCredits);
+router.patch('/ai-credits/students/:id', updateStudentAiCredits);
+router.post('/ai-credits/apply-formula', applyFormulaToAll);
+
 // Holiday Management
 router.route('/holidays')
     .get(getHolidays)
     .post(declareHoliday);
 router.delete('/holidays/:id', deleteHoliday);
+
+// Student Chat History (Doubt Board)
+const { getStudentsWithChatHistory, getStudentChatHistory } = require('../controllers/doubtController');
+router.get('/chat-history', getStudentsWithChatHistory);
+router.get('/chat-history/:studentId', getStudentChatHistory);
 
 module.exports = router;

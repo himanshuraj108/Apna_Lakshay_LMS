@@ -2076,8 +2076,7 @@ exports.markFeePaid = async (req, res) => {
 
         // Send fee confirmation email
         try {
-            const date = new Date();
-            await emailService.sendFeeConfirmationEmail(fee.student, fee.amount, date.getMonth() + 1, date.getFullYear());
+            await emailService.sendFeeConfirmationEmail(fee.student, fee.amount, fee.month, fee.year, fee._id, fee.paidDate);
         } catch (emailError) {
             console.error('Fee email failed:', emailError.message);
         }
