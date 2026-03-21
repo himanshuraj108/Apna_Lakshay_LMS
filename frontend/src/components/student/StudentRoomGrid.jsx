@@ -118,14 +118,11 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
                     <p className="text-sm font-medium text-gray-400">{room.name} ({totalSeats} Seats)</p>
                 </div>
 
-                {/* Click Instruction Banner - Highlighted */}
-                <div className="absolute top-24 left-1/2 transform -translate-x-1/2 bg-blue-500/20 border border-blue-500/40 px-4 py-2 rounded-lg z-20 flex items-center gap-2 whitespace-nowrap">
-                    <span className="text-blue-400 font-semibold text-lg">💡</span>
-                    <p className="text-sm font-semibold text-blue-300">Click any seat to view full details & pricing</p>
-                </div>
+
+
 
                 {/* Fitted Box Room Container */}
-                <div className="relative w-full max-w-3xl mx-auto mt-28" style={{ aspectRatio: '3/2' }}>
+                <div className="relative w-full max-w-3xl mx-auto mt-10" style={{ aspectRatio: '3/2' }}>
                     {/* North Wall */}
                     <div className="absolute top-0 left-0 right-0 h-[80px]">
                         {doorPosition === 'north' ? (

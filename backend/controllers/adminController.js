@@ -816,8 +816,16 @@ exports.updateStudent = async (req, res) => {
                 // Note: We don't have a direct 'shift' field on User (it's in seat assignments), 
                 // but clearing the seat link effectively removes the shift association for the student.
 
-                // Optionally: Log this reset
                 console.log(`Resetting seat for reactivated student: ${currentStudent.name}`);
+
+                // Heal fees: any fee with a paidDate but still 'pending'/'overdue' should be 'paid'
+                const healed = await Fee.updateMany(
+                    { student: currentStudent._id, paidDate: { $ne: null }, status: { $in: ['pending', 'overdue'] } },
+                    { $set: { status: 'paid' } }
+                );
+                if (healed.modifiedCount > 0) {
+                    console.log(`Healed ${healed.modifiedCount} fee record(s) for reactivated student: ${currentStudent.name}`);
+                }
             }
         }
 

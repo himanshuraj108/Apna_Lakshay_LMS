@@ -132,9 +132,10 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
                                 {floors[selectedFloor] && (
                                     <div className="space-y-5">
                                         {floors[selectedFloor].rooms.map(room => (
-                                            <Card key={room._id}>
-                                                <div className="overflow-x-auto pb-4">
-                                                    <div className="min-w-[800px]">
+                                            <div key={room._id} className="rounded-2xl overflow-hidden"
+                                                style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                <div className="overflow-x-auto">
+                                                    <div className="min-w-[520px]">
                                                         <StudentRoomGrid
                                                             room={room}
                                                             onSeatClick={handleSeatClick}
@@ -142,7 +143,7 @@ const SeatChangeModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
                                                         />
                                                     </div>
                                                 </div>
-                                            </Card>
+                                            </div>
                                         ))}
                                     </div>
                                 )}

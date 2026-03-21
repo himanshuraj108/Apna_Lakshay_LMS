@@ -221,14 +221,27 @@ const StudyPlanner = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                     {/* Left: Main Content (2/3) */}
-                    <div className="lg:col-span-2 space-y-5 order-2 lg:order-1">
+                    <div className="lg:col-span-2 space-y-5 order-1">
                         <AnimatePresence mode="wait">
 
                             {/* ── TASKS VIEW ── */}
                             {view === 'tasks' && (
                                 <motion.div key="tasks" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
-                                    {/* Quick Stats + Add Button */}
-                                    <div className="grid grid-cols-3 gap-4">
+                                    {/* New Task CTA — top */}
+                                    <motion.button
+                                        onClick={() => { resetForm(); setShowModal(true); }}
+                                        animate={{ boxShadow: ["0 0 0 rgba(249,115,22,0)", "0 0 30px rgba(249,115,22,0.5)", "0 0 0 rgba(249,115,22,0)"] }}
+                                        transition={{ boxShadow: { duration: 2.5, repeat: Infinity } }}
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                                        className="relative group w-full rounded-2xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center gap-2 text-white shadow-lg shadow-orange-500/20 cursor-pointer py-3 px-5"
+                                    >
+                                        <div className="absolute inset-0 bg-white/15 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                                        <IoAdd size={20} className="relative" />
+                                        <span className="relative text-sm font-black tracking-wider">NEW TASK</span>
+                                    </motion.button>
+
+                                    {/* Quick Stats */}
+                                    <div className="grid grid-cols-2 gap-4">
                                         {[
                                             { label: 'Pending', value: pendingTasks, color: 'from-blue-500 to-cyan-400', glow: 'rgba(59,130,246,0.3)' },
                                             { label: 'Completed', value: completedTasks, color: 'from-green-500 to-emerald-400', glow: 'rgba(34,197,94,0.3)' },
@@ -241,18 +254,6 @@ const StudyPlanner = () => {
                                                 <p className="text-3xl font-black text-white">{value}</p>
                                             </motion.div>
                                         ))}
-
-                                        {/* New Task CTA */}
-                                        <motion.button
-                                            onClick={() => { resetForm(); setShowModal(true); }}
-                                            animate={{ boxShadow: ["0 0 0 rgba(249,115,22,0)", "0 0 30px rgba(249,115,22,0.5)", "0 0 0 rgba(249,115,22,0)"] }}
-                                            transition={{ boxShadow: { duration: 2.5, repeat: Infinity } }}
-                                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                            className="relative group rounded-2xl overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 flex flex-col items-center justify-center text-white shadow-lg shadow-orange-500/20 cursor-pointer p-4">
-                                            <div className="absolute inset-0 bg-white/15 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                                            <IoAdd size={30} className="relative mb-1" />
-                                            <span className="relative text-xs font-black tracking-wider">NEW TASK</span>
-                                        </motion.button>
                                     </div>
 
                                     {/* Task List */}
@@ -348,7 +349,7 @@ const StudyPlanner = () => {
                     </div>
 
                     {/* Right: Sidebar (1/3) - sticky widgets */}
-                    <div className="lg:col-span-1 space-y-5 order-1 lg:order-2">
+                    <div className="lg:col-span-1 space-y-5 order-2">
                         <div className="lg:sticky lg:top-6 space-y-5">
                             <ExamCountdown />
                             <PomodoroTimer onSessionComplete={fetchData} />
