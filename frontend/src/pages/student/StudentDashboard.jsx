@@ -22,20 +22,21 @@ import HelpSupportModal from '../../components/student/HelpSupportModal';
 import RequestHistoryModal from '../../components/student/RequestHistoryModal';
 import LmsGuideSection from '../../components/student/LmsGuideSection';
 import NewspaperModal from '../../components/student/NewspaperModal';
-import ExamAlertsModal from '../../components/student/ExamAlertsModal';
 import Footer from '../../components/layout/Footer';
 
-/* ─── CSS injected once ─────────────────────────────────────────────── */
+/* â”€â”€â”€ CSS injected once â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const DASH_STYLE = `
 @keyframes orb1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(40px,-60px) scale(1.1);}66%{transform:translate(-30px,20px) scale(0.9);}}
 @keyframes orb2{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(-40px,30px) scale(1.08);}66%{transform:translate(20px,-30px) scale(0.92);}}
 @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
 @keyframes pulse-ring{0%{transform:scale(.9);opacity:1;}80%,100%{transform:scale(1.35);opacity:0;}}
 @keyframes shimmer-name{0%{background-position:200% center;}100%{background-position:-200% center;}}
+@keyframes blink-new{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(250,204,21,0.5);}50%{opacity:0.7;box-shadow:0 0 8px 3px rgba(250,204,21,0.35);}}
 .shimmer-text{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-name 4s linear infinite;}
+.new-badge-blink{animation:blink-new 1.4s ease-in-out infinite;}
 `;
 
-/* ─── Floating Attendance Button ────────────────────────────────────── */
+/* â”€â”€â”€ Floating Attendance Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const FloatingAttendanceBtn = ({ loading, onClick }) => (
     <motion.button
         initial={{ opacity: 0, scale: 0.8 }}
@@ -60,11 +61,11 @@ const FloatingAttendanceBtn = ({ loading, onClick }) => (
         <div className="relative w-7 h-7 rounded-lg flex items-center justify-center bg-white/20">
             {loading ? <IoTimeOutline size={16} className="animate-spin" /> : <IoScan size={16} />}
         </div>
-        <span className="text-sm font-bold">{loading ? 'Checking…' : 'Mark Attendance'}</span>
+        <span className="text-sm font-bold">{loading ? 'Checkingâ€¦' : 'Mark Attendance'}</span>
     </motion.button>
 );
 
-/* ─── Location Prompt Modal ─────────────────────────────────────────── */
+/* â”€â”€â”€ Location Prompt Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
@@ -80,14 +81,14 @@ const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
             </div>
             <button onClick={onEnable} disabled={enabling}
                 className={`w-full py-3 mb-2.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${enabling ? 'bg-gray-600 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 shadow-lg shadow-emerald-500/25'}`}>
-                {enabling ? <><IoTimeOutline size={16} className="animate-spin" />Requesting…</> : <><IoLocation size={16} />Enable Location</>}
+                {enabling ? <><IoTimeOutline size={16} className="animate-spin" />Requestingâ€¦</> : <><IoLocation size={16} />Enable Location</>}
             </button>
             <button onClick={onClose} className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-300 hover:bg-white/5 rounded-xl transition-all font-medium">Dismiss</button>
         </motion.div>
     </div>
 );
 
-/* ─── Attendance Result Popup ───────────────────────────────────────── */
+/* â”€â”€â”€ Attendance Result Popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const AttendanceResultCard = ({ result, onClose }) => {
     const isEntry = result.type === 'entry';
     const isAlreadyMarked = result.type === 'already_marked';
@@ -127,9 +128,9 @@ const AttendanceResultCard = ({ result, onClose }) => {
     );
 };
 
-/* ════════════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN DASHBOARD
-   ════════════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData]           = useState(null);
     const [loading, setLoading]                       = useState(true);
@@ -139,12 +140,12 @@ const StudentDashboard = () => {
     const [showSupportModal, setShowSupportModal]     = useState(false);
     const [showHistoryModal, setShowHistoryModal]     = useState(false);
     const [showNewspaper, setShowNewspaper]           = useState(false);
-    const [showExamAlerts, setShowExamAlerts]         = useState(false);
     const [scanMessage, setScanMessage]               = useState(null);
     const [attendanceResult, setAttendanceResult]     = useState(null);
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [loadingScanner, setLoadingScanner]         = useState(false);
     const [enablingLocation, setEnablingLocation]     = useState(false);
+    const [cardConfig, setCardConfig]                 = useState(null);
     const { logout, user } = useAuth();
     const navigate = useNavigate();
 
@@ -152,7 +153,14 @@ const StudentDashboard = () => {
     const getLocationRequired = () => { try { const c = localStorage.getItem(SETTINGS_KEY); if (c !== null) return c === 'true'; } catch (_) { } return true; };
     const loadSettingsCache = async () => { try { const res = await api.get('/public/settings'); if (res.data.success) localStorage.setItem(SETTINGS_KEY, String(res.data.settings.locationAttendance !== false)); } catch (_) { } };
 
-    useEffect(() => { fetchDashboardData(); loadSettingsCache(); }, []);
+    const fetchCardConfig = async () => {
+        try {
+            const res = await api.get('/student/card-config');
+            setCardConfig(res.data);
+        } catch { /* use defaults if fails */ }
+    };
+
+    useEffect(() => { fetchDashboardData(); loadSettingsCache(); fetchCardConfig(); }, []);
     useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
 
     const fetchDashboardData = async () => {
@@ -214,7 +222,7 @@ const StudentDashboard = () => {
     const initials  = (user?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     const today     = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-    /* ── Loading state ─────────────────────────────────────────────────── */
+    /* â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) return (
         <div className="relative min-h-screen" style={{ background: '#070a10' }}>
             <style>{DASH_STYLE}</style>
@@ -224,7 +232,7 @@ const StudentDashboard = () => {
         </div>
     );
 
-    /* ── Render ─────────────────────────────────────────────────────────── */
+    /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     return (
         <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#070a10' }}>
             <style>{DASH_STYLE}</style>
@@ -236,9 +244,9 @@ const StudentDashboard = () => {
                 <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
             </div>
 
-            {/* ─────────────────────────────────────────────────────────────
+            {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   MODALS
-               ───────────────────────────────────────────────────────────── */}
+               â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <AnimatePresence>
                 {showLocationPrompt && <LocationPromptModal onClose={() => setShowLocationPrompt(false)} onEnable={handleEnableLocation} enabling={enablingLocation} />}
                 {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }} onClose={() => setShowIDCard(false)} />}
@@ -254,7 +262,7 @@ const StudentDashboard = () => {
                             </div>
                             <div className="flex justify-between items-center bg-white/4 p-4 rounded-xl mb-5 border border-white/8">
                                 <span className="text-gray-500 text-xs uppercase tracking-wider">Amount Due</span>
-                                <span className="text-2xl font-black text-white">₹{dashboardData.feeReminder.amount}</span>
+                                <span className="text-2xl font-black text-white">â‚¹{dashboardData.feeReminder.amount}</span>
                             </div>
                             <button onClick={() => setShowFeeReminder(false)} className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">I Understand</button>
                         </motion.div>
@@ -265,7 +273,6 @@ const StudentDashboard = () => {
 
             <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
             <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
-            <ExamAlertsModal isOpen={showExamAlerts} onClose={() => setShowExamAlerts(false)} />
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
 
             {/* Error toast */}
@@ -278,9 +285,9 @@ const StudentDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* ─────────────────────────────────────────────────────────────
+            {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   TOP NAVBAR
-               ───────────────────────────────────────────────────────────── */}
+               â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <header className="sticky top-0 z-40 border-b border-white/5" style={{ background: 'rgba(7,10,16,0.85)', backdropFilter: 'blur(20px)' }}>
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
                     {/* Brand */}
@@ -307,51 +314,46 @@ const StudentDashboard = () => {
                 </div>
             </header>
 
-            {/* ─────────────────────────────────────────────────────────────
+            {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   PAGE BODY
-               ───────────────────────────────────────────────────────────── */}
+               â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32">
 
-                {/* ── HERO WELCOME BANNER ─────────────────────────────── */}
-                <motion.section
-                    initial={{ opacity: 0, y: 16 }}
+                {/* -- HERO GREETING BAR ------------------------------------------ */}
+                <motion.div
+                    initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="mb-6 rounded-2xl overflow-hidden relative"
+                    transition={{ duration: 0.4 }}
+                    className="mb-5 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl"
                     style={{
-                        background: 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(59,130,246,0.12) 50%, rgba(16,185,129,0.08) 100%)',
-                        border: '1px solid rgba(255,255,255,0.07)',
+                        background: "linear-gradient(120deg,rgba(124,58,237,0.10),rgba(59,130,246,0.07),rgba(16,185,129,0.05))",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        backdropFilter: "blur(12px)",
                     }}
                 >
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-purple-600/15 blur-3xl" />
-                        <div className="absolute -bottom-4 -left-4 w-32 h-32 rounded-full bg-blue-600/10 blur-2xl" />
-                    </div>
-                    <div className="relative p-5 sm:p-7 flex items-center justify-between gap-4 flex-wrap">
-                        <div className="flex items-center gap-4">
-                            <div className="relative shrink-0" style={{ animation: 'float 4s ease-in-out infinite' }}>
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 blur-md opacity-50 scale-110" />
-                                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-white font-black text-lg sm:text-xl shadow-xl border-2 border-white/15">
-                                    {initials}
-                                </div>
-                                {isActive && <span className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-[#070a10]" />}
+                    <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 blur-sm opacity-50 scale-110" />
+                            <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg border border-white/15">
+                                {initials}
                             </div>
-                            <div>
-                                <p className="text-gray-400 text-xs mb-1 font-medium">Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'} 👋</p>
-                                <h1 className="shimmer-text text-xl sm:text-2xl md:text-3xl font-black leading-tight">{user?.name}</h1>
-                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                                    {isActive
-                                        ? <span className="inline-flex items-center gap-1.5 text-[11px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />Active Member</span>
-                                        : <span className="inline-flex items-center gap-1 text-[11px] bg-red-500/10 border border-red-500/20 text-red-400 px-2.5 py-0.5 rounded-full font-semibold">Inactive</span>}
-                                    <span className="text-gray-600 text-[11px] hidden sm:inline">{today}</span>
-                                </div>
-                            </div>
+                            {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#070a10]" />}
                         </div>
-
+                        <div className="flex items-center gap-2">
+                            <span className="text-white font-bold text-sm leading-none">{user?.name?.split(" ")[0]}</span>
+                            <span className="text-sm">{String.fromCodePoint(0x1F44B)}</span>
+                        </div>
                     </div>
-                </motion.section>
+                    <div className="flex items-center gap-3">
+                        <span className="text-gray-500 text-[11px] hidden sm:block">{today}</span>
+                        {isActive
+                            ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />Active</span>
+                            : <span className="inline-flex items-center gap-1 text-[10px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-semibold">Inactive</span>}
+                    </div>
+                </motion.div>
 
-                {/* ── STATS ROW ────────────────────────────────────────── */}
+
+                {/* â”€â”€ STATS ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -367,14 +369,14 @@ const StudentDashboard = () => {
                                 </div>
                                 <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">My Seat</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black text-white mb-0.5">{dashboardData?.seat?.number || '—'}</p>
+                            <p className="text-xl sm:text-2xl font-black text-white mb-0.5">{dashboardData?.seat?.number || 'â€”'}</p>
                             <p className="text-[11px] text-gray-400">{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
                         </div>
                     </Link>
 
                     {/* Attendance */}
                     <Link to="/student/attendance">
-                        <div className="group rounded-xl p-4 border border-white/6 hover:border-emerald-500/30 transition-all duration-200 cursor-pointer h-full" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="group relative rounded-xl p-4 border border-white/6 hover:border-emerald-500/30 transition-all duration-200 cursor-pointer h-full" style={{ background: 'rgba(255,255,255,0.03)' }}>
                             <div className="flex items-center gap-2 mb-3">
                                 <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.15)' }}>
                                     <IoCalendarOutline size={14} className="text-emerald-400" />
@@ -383,6 +385,11 @@ const StudentDashboard = () => {
                             </div>
                             <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: attColor }}>{attPct}%</p>
                             <p className="text-[11px] text-gray-400">{dashboardData?.attendance?.present || 0} / {dashboardData?.attendance?.total || 0} days</p>
+                            {dashboardData?.attendance?.rank && (
+                                <span className="absolute bottom-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-md" style={{ background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.25)', color: '#a78bfa' }}>
+                                    Rank #{dashboardData.attendance.rank}
+                                </span>
+                            )}
                         </div>
                     </Link>
 
@@ -395,7 +402,7 @@ const StudentDashboard = () => {
                                 </div>
                                 <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Fee Status</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black text-white mb-1">{dashboardData?.fee ? `₹${dashboardData.fee.amount}` : '—'}</p>
+                            <p className="text-xl sm:text-2xl font-black text-white mb-1">{dashboardData?.fee ? <>&#8377;{dashboardData.fee.amount}</> : <>&mdash;</>}</p>
                             {dashboardData?.fee?.status ? (
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                                     dashboardData.fee.status === 'paid'
@@ -428,7 +435,7 @@ const StudentDashboard = () => {
                     </Link>
                 </motion.div>
 
-                {/* ── TWO-COLUMN LAYOUT (actions + learning) ───────────── */}
+                {/* â”€â”€ TWO-COLUMN LAYOUT (actions + learning) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
                     {/* LEFT: Quick Actions list */}
@@ -449,16 +456,27 @@ const StudentDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Action grid — 3 per row, premium cards */}
+                        {/* Action grid â€” 3 per row, premium cards */}
                         <div className="p-4 grid grid-cols-3 gap-3">
-                            {[
-                                { icon: IoIdCardOutline,      label: 'ID Card',        accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',   action: () => setShowIDCard(true) },
-                                { icon: IoBookOutline,        label: 'Planner',        accentColor: '#ec4899', accentBg: 'rgba(236,72,153,0.1)',   link: '/student/planner' },
-                                { icon: IoChatbubblesOutline, label: 'Discussion',     accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/chat' },
-                                { icon: IoNewspaper,          label: 'Newspaper',      accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.1)',   action: () => setShowNewspaper(true) },
-                                { icon: IoAlertCircleOutline, label: 'Exam Alerts',    accentColor: '#ef4444', accentBg: 'rgba(239,68,68,0.1)',    action: () => setShowExamAlerts(true), live: true },
-                                { icon: IoHelpCircleOutline,  label: 'Support',        accentColor: '#eab308', accentBg: 'rgba(234,179,8,0.1)',    action: () => setShowSupportModal(true), badge: dashboardData?.requestsCount || 0 },
-                            ].map((item, i) => {
+                            {(() => {
+                                const BASE_QA = [
+                                    { id: 'id-card',        icon: IoIdCardOutline,      label: 'ID Card',        accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',   action: () => setShowIDCard(true) },
+                                    { id: 'planner',        icon: IoBookOutline,        label: 'Planner',        accentColor: '#ec4899', accentBg: 'rgba(236,72,153,0.1)',   link: '/student/planner' },
+                                    { id: 'discussion',     icon: IoChatbubblesOutline, label: 'Discussion',     accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/chat' },
+                                    { id: 'newspaper',      icon: IoNewspaper,          label: 'Newspaper',      accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.1)',   action: () => setShowNewspaper(true) },
+                                    { id: 'current-affairs',icon: IoGridOutline,        label: 'Current Affairs',accentColor: '#38bdf8', accentBg: 'rgba(56,189,248,0.1)',   link: '/student/current-affairs', live: true },
+                                    { id: 'exam-alerts',    icon: IoAlertCircleOutline, label: 'Exam Alerts',    accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/exam-alerts', live: true },
+                                    { id: 'my-report',      icon: IoDocumentTextOutline,label: 'My Report',      accentColor: '#14b8a6', accentBg: 'rgba(20,184,166,0.1)',   link: '/student/report' },
+                                    { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Ask AI',         accentColor: '#FACC15', accentBg: 'rgba(250,204,21,0.1)',   link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits} credits left` : 'AI powered' },
+                                    { id: 'support',        icon: IoHelpCircleOutline,  label: 'Support',        accentColor: '#eab308', accentBg: 'rgba(234,179,8,0.1)',    action: () => setShowSupportModal(true), badge: dashboardData?.requestsCount || 0 },
+                                ];
+                                const cfg = cardConfig?.quickActions;
+                                if (!cfg) return BASE_QA;
+                                return BASE_QA
+                                    .map(c => { const cf = cfg.find(x => x.id === c.id); return cf ? { ...c, _order: cf.order ?? 99, _visible: cf.visible !== false, _isNew: !!cf.isNew } : { ...c, _order: 99, _visible: true, _isNew: false }; })
+                                    .filter(c => c._visible)
+                                    .sort((a,b) => (a._order ?? 99) - (b._order ?? 99));
+                            })().map((item, i) => {
                                 const Card = (
                                     <motion.div
                                         key={i}
@@ -488,7 +506,7 @@ const StudentDashboard = () => {
                                         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl opacity-70 group-hover:opacity-100 transition-opacity"
                                             style={{ background: `linear-gradient(90deg, ${item.accentColor}, transparent)` }} />
 
-                                        {/* Ghost icon — large faded background accent */}
+                                        {/* Ghost icon â€” large faded background accent */}
                                         <item.icon
                                             size={56}
                                             className="absolute -bottom-2 -right-2 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity"
@@ -496,10 +514,18 @@ const StudentDashboard = () => {
                                         />
 
                                         {/* LIVE badge */}
-                                        {item.live && (
+                                        {item.live && !item._isNew && (
                                             <span className="absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
                                                 style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
                                                 <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: '#ef4444' }} />LIVE
+                                            </span>
+                                        )}
+
+                                        {/* NEW badge */}
+                                        {item._isNew && (
+                                            <span className="new-badge-blink absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
+                                                style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.35)', color: '#FACC15' }}>
+                                                NEW
                                             </span>
                                         )}
 
@@ -516,8 +542,9 @@ const StudentDashboard = () => {
                                             <item.icon size={18} style={{ color: item.accentColor }} />
                                         </div>
 
-                                        {/* Label */}
+                                        {/* Label + optional desc */}
                                         <p className="relative text-[13px] font-bold text-white leading-snug">{item.label}</p>
+                                        {item.desc && <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>{item.desc}</p>}
                                     </motion.div>
                                 );
                                 return item.link
@@ -543,11 +570,19 @@ const StudentDashboard = () => {
                                 <h2 className="text-white font-bold text-sm">Learning</h2>
                             </div>
                             <div className="p-4 flex flex-col gap-3">
-                                {[
-                                    { icon: IoBookOutline,        label: 'Books',        desc: 'Curated study books',  accentColor: '#3b82f6', accentBg: 'rgba(59,130,246,0.08)',  to: '/student/books',     locked: isRestricted },
-                                    { icon: IoDocumentTextOutline, label: 'Notes',       desc: 'Browse & download',    accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.08)',  to: '/student/notes',     locked: isRestricted },
-                                    { icon: IoSparklesOutline,    label: 'AI Mock Test', desc: 'Practice tests · β',   accentColor: '#f59e0b', accentBg: 'rgba(245,158,11,0.08)', to: '/student/mock-test', locked: isRestricted, newBeta: true },
-                                ].map((item, i) => {
+                                {(() => {
+                                    const BASE_L = [
+                                        { id: 'books',     icon: IoBookOutline,        label: 'Books',        desc: 'Curated study books',  accentColor: '#3b82f6', accentBg: 'rgba(59,130,246,0.08)',  to: '/student/books',     locked: !isActive },
+                                        { id: 'notes',     icon: IoDocumentTextOutline, label: 'Notes',       desc: 'Browse & download',    accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.08)',  to: '/student/notes',     locked: !isActive },
+                                        { id: 'mock-test', icon: IoSparklesOutline,    label: 'AI Mock Test', desc: 'Practice tests',        accentColor: '#f59e0b', accentBg: 'rgba(245,158,11,0.08)', to: '/student/mock-test', locked: !isActive, newBeta: true },
+                                    ];
+                                    const cfg = cardConfig?.learning;
+                                    if (!cfg) return BASE_L;
+                                    return BASE_L
+                                        .map(c => { const cf = cfg.find(x => x.id === c.id); return cf ? { ...c, _order: cf.order ?? 99, _visible: cf.visible !== false, _isNew: !!cf.isNew } : { ...c, _order: 99, _visible: true, _isNew: false }; })
+                                        .filter(c => c._visible)
+                                        .sort((a,b) => (a._order ?? 99) - (b._order ?? 99));
+                                })().map((item, i) => {
                                     const targetRoute = item.locked ? '/pending-allocation' : item.to;
                                     const Card = (
                                         <motion.div
@@ -588,7 +623,11 @@ const StudentDashboard = () => {
 
                                             {/* Badges */}
                                             <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                                                {item.newBeta && !item.locked && (
+                                                {item._isNew && !item.locked && (
+                                                    <span className="new-badge-blink text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
+                                                        style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.35)', color: '#FACC15' }}>NEW</span>
+                                                )}
+                                                {item.newBeta && !item._isNew && !item.locked && (
                                                     <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
                                                         style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>NEW</span>
                                                 )}
@@ -616,7 +655,7 @@ const StudentDashboard = () => {
                     </motion.div>
                 </div>
 
-                {/* ── LMS GUIDE ──────────────────────────────────────── */}
+                {/* â”€â”€ LMS GUIDE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <div className="mt-5">
                     <LmsGuideSection />
                 </div>

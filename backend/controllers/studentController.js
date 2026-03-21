@@ -87,7 +87,7 @@ exports.getDashboard = async (req, res) => {
 
             // Query 2: Get student details
             User.findById(studentId)
-                .select('registrationSource createdAt name isActive')
+                .select('registrationSource createdAt name isActive doubtCredits doubtCreditsResetDate')
                 .lean(),
 
             // Query 3: Get unread notifications count
@@ -202,6 +202,23 @@ exports.getDashboard = async (req, res) => {
 
         const attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
 
+        // ── Compute attendance rank across all active students ──
+        let attendanceRank = null;
+        try {
+            const allActiveStudentIds = await User.find({ role: 'student', isActive: true }).select('_id').lean();
+            const allCounts = await Attendance.aggregate([
+                { $match: { student: { $in: allActiveStudentIds.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
+                { $group: { _id: '$student', count: { $sum: 1 } } }
+            ]);
+            const countMap = {};
+            allCounts.forEach(c => { countMap[c._id.toString()] = c.count; });
+            const sorted = allActiveStudentIds
+                .map(s => ({ id: s._id.toString(), count: countMap[s._id.toString()] || 0 }))
+                .sort((a, b) => b.count - a.count);
+            const idx = sorted.findIndex(s => s.id === studentId.toString());
+            attendanceRank = idx >= 0 ? idx + 1 : null;
+        } catch (_) { attendanceRank = null; }
+
         // Calculate Target Fee Month based on Rolling Cycle
         let currentFee = null;
         let feeReminder = null;
@@ -275,7 +292,8 @@ exports.getDashboard = async (req, res) => {
                 attendance: {
                     present: presentCount,
                     total: totalDays,
-                    percentage: attendancePercentage
+                    percentage: attendancePercentage,
+                    rank: attendanceRank
                 },
                 fee: currentFee ? {
                     amount: currentFee.amount,
@@ -285,7 +303,13 @@ exports.getDashboard = async (req, res) => {
                 } : null,
                 feeReminder, // Add reminder data
                 unreadNotifications: unreadCount,
-                requestsCount: activeRequestsCount
+                requestsCount: activeRequestsCount,
+                doubtCredits: (() => {
+                    // Reset if it's a new day
+                    const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
+                    if (student.doubtCreditsResetDate !== todayIST) return 10;
+                    return student.doubtCredits ?? 10;
+                })()
             }
         });
     } catch (error) {
@@ -526,6 +550,113 @@ exports.getAttendance = async (req, res) => {
     }
 };
 
+// @desc    Get monthly performance report data
+// @route   GET /api/student/report
+exports.getMonthlyReport = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const now = new Date();
+        const month = parseInt(req.query.month) || (now.getMonth() + 1); // 1-12
+        const year  = parseInt(req.query.year)  || now.getFullYear();
+
+        const student = await User.findById(studentId).select('name email mobile createdAt').lean();
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
+
+        // Date range for the selected month
+        const startDate = new Date(year, month - 1, 1);
+        const endDate   = new Date(year, month, 0, 23, 59, 59);
+        const isCurrentMonth = (month === now.getMonth() + 1 && year === now.getFullYear());
+        const effectiveEnd = isCurrentMonth ? now : endDate;
+
+        // All attendance records for this student in the month
+        const records = await Attendance.find({
+            student: studentId,
+            date: { $gte: startDate, $lte: effectiveEnd }
+        }).sort({ date: 1 }).lean();
+
+        // Deduplicate by date — prefer present, then longer duration
+        const dedupMap = new Map();
+        records.forEach(r => {
+            const key = new Date(r.date).toDateString();
+            if (!dedupMap.has(key)) {
+                dedupMap.set(key, r);
+            } else {
+                const ex = dedupMap.get(key);
+                if (ex.status !== 'present' && r.status === 'present') {
+                    dedupMap.set(key, r);
+                } else if (ex.status === 'present' && r.status === 'present') {
+                    if ((r.duration || 0) > (ex.duration || 0)) dedupMap.set(key, r);
+                }
+            }
+        });
+
+        const clean = Array.from(dedupMap.values());
+
+        const presentDays = clean.filter(r => r.status === 'present' || r.status === 'holiday').length;
+        const totalMinutes = clean.filter(r => r.status === 'present').reduce((sum, r) => sum + (r.duration || 0), 0);
+
+        // Total calendar days from month start (or student join date if later) up to effectiveEnd
+        const admissionDate = student.createdAt ? new Date(student.createdAt) : startDate;
+        const calcStart = admissionDate > startDate ? admissionDate : startDate;
+        calcStart.setHours(0, 0, 0, 0);
+        const totalDays = Math.max(1, Math.floor((effectiveEnd - calcStart) / (1000 * 60 * 60 * 24)) + 1);
+
+        const percentage = Math.round((presentDays / totalDays) * 100);
+
+        // Build daily breakdown for the month (for display)
+        const dailyBreakdown = clean.map(r => ({
+            date: r.date,
+            status: r.status,
+            durationMins: r.duration || 0,
+            entryTime: r.entryTime,
+            exitTime: r.exitTime,
+        }));
+
+        // Fee for this month
+        const fee = await Fee.findOne({ student: studentId, month, year }).lean();
+
+        // Rank (by total present days lifetime, same as dashboard)
+        let rank = null;
+        try {
+            const allActive = await User.find({ role: 'student', isActive: true }).select('_id').lean();
+            const counts = await Attendance.aggregate([
+                { $match: { student: { $in: allActive.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
+                { $group: { _id: '$student', count: { $sum: 1 } } }
+            ]);
+            const cmap = {};
+            counts.forEach(c => { cmap[c._id.toString()] = c.count; });
+            const sorted = allActive.map(s => ({ id: s._id.toString(), count: cmap[s._id.toString()] || 0 })).sort((a, b) => b.count - a.count);
+            const idx = sorted.findIndex(s => s.id === studentId.toString());
+            rank = idx >= 0 ? idx + 1 : null;
+        } catch (_) {}
+
+        const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+        res.json({
+            success: true,
+            report: {
+                student: { name: student.name, email: student.email, mobile: student.mobile },
+                month,
+                year,
+                monthName: MONTH_NAMES[month - 1],
+                presentDays,
+                totalDays,
+                percentage,
+                totalStudyHours: Math.floor(totalMinutes / 60),
+                totalStudyMins: totalMinutes % 60,
+                totalMinutes,
+                rank,
+                fee: fee ? { status: fee.status, amount: fee.amount, paidDate: fee.paidDate } : null,
+                dailyBreakdown,
+                generatedAt: new Date().toISOString(),
+            }
+        });
+    } catch (err) {
+        console.error('Monthly report error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to generate report' });
+    }
+};
+
 // @desc    Get fee status
 // @route   GET /api/student/fees
 exports.getFees = async (req, res) => {
@@ -549,6 +680,65 @@ exports.getFees = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// @desc    Download receipt data for a paid fee
+// @route   GET /api/student/fees/:id/receipt
+exports.getReceipt = async (req, res) => {
+    try {
+        const fee = await Fee.findOne({ _id: req.params.id, student: req.user.id })
+            .populate('student', 'name email mobile');
+
+        if (!fee) {
+            return res.status(404).json({ success: false, message: 'Fee record not found' });
+        }
+
+        if (fee.status !== 'paid') {
+            return res.status(400).json({ success: false, message: 'Receipt only available for paid fees' });
+        }
+
+        // Get seat info for the receipt
+        const seat = await Seat.findOne({
+            'assignments.student': req.user.id,
+            'assignments.status': 'active'
+        }).populate('floor room').populate('assignments.shift').lean();
+
+        let seatInfo = null;
+        if (seat) {
+            const assignment = seat.assignments.find(a =>
+                a.student.toString() === req.user.id.toString() && a.status === 'active'
+            );
+            seatInfo = {
+                number: seat.number,
+                floor: seat.floor?.name || 'N/A',
+                room: seat.room?.name || 'N/A',
+                shift: assignment?.shift?.name || assignment?.legacyShift || 'Full Day'
+            };
+        }
+
+        const receiptNumber = `REC-${fee._id.toString().slice(-8).toUpperCase()}`;
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+
+        res.status(200).json({
+            success: true,
+            receipt: {
+                receiptNumber,
+                studentName: fee.student.name,
+                studentEmail: fee.student.email,
+                studentMobile: fee.student.mobile || 'N/A',
+                amount: fee.amount,
+                month: fee.month,
+                year: fee.year,
+                monthName: monthNames[fee.month - 1],
+                paidDate: fee.paidDate,
+                dueDate: fee.dueDate,
+                seat: seatInfo
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 

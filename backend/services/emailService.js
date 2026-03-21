@@ -298,37 +298,56 @@ exports.sendRequestResponseEmail = async (student, request, status, reason) => {
 };
 
 // 4. Fee Payment Receipt
-exports.sendFeeConfirmationEmail = async (student, amount, month, year) => {
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+exports.sendFeeConfirmationEmail = async (student, amount, month, year, feeId, paidDate) => {
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const receiptNumber = feeId ? `REC-${feeId.toString().slice(-8).toUpperCase()}` : `REC-${Date.now().toString().slice(-8)}`;
+  const paidDateStr = paidDate ? new Date(paidDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
   const content = `
     <p>Dear <strong>${student.name}</strong>,</p>
-    <p>We have successfully received your payment. Thank you for being prompt!</p>
-    
-    <div class="highlight-box">
-      <div style="text-align: center;">
-        <span class="label">Amount Paid</span>
-        <p class="value" style="font-size: 32px; color: #059669;">₹${amount}</p>
+    <p>Your fee payment has been confirmed. Here is your official receipt:</p>
+
+    <div class="highlight-box" style="border-left: 4px solid #059669;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+          <span class="label">Receipt Number</span>
+          <p class="value" style="font-family: monospace; color: #7C3AED; font-size: 15px;">${receiptNumber}</p>
+        </div>
+        <div style="background: #DCFCE7; padding: 8px 14px; border-radius: 20px;">
+          <span style="color: #166534; font-weight: bold; font-size: 13px;">&#10003; PAID</span>
+        </div>
       </div>
-      <hr style="border: 0; border-top: 1px dashed #E5E7EB; margin: 15px 0;">
-      <table width="100%">
+
+      <hr style="border: 0; border-top: 1px dashed #E5E7EB; margin: 12px 0;">
+
+      <div style="text-align: center; margin: 16px 0;">
+        <span class="label">Amount Paid</span>
+        <p class="value" style="font-size: 36px; color: #059669; margin: 4px 0;">&#8377;${amount}</p>
+      </div>
+
+      <hr style="border: 0; border-top: 1px dashed #E5E7EB; margin: 12px 0;">
+
+      <table width="100%" style="font-size: 14px;">
         <tr>
           <td><span class="label">For Period</span></td>
-          <td align="right"><p class="value" style="font-size: 16px; margin: 0;">${monthNames[month - 1]} ${year}</p></td>
+          <td align="right"><p class="value" style="font-size: 15px; margin: 0;">${monthNames[month - 1]} ${year}</p></td>
         </tr>
         <tr>
-          <td><span class="label">Date</span></td>
-          <td align="right"><p class="value" style="font-size: 16px; margin: 0;">${new Date().toLocaleDateString()}</p></td>
+          <td><span class="label">Payment Date</span></td>
+          <td align="right"><p class="value" style="font-size: 15px; margin: 0;">${paidDateStr}</p></td>
         </tr>
       </table>
     </div>
+
+    <p style="font-size: 13px; color: #6B7280; text-align: center;">You can view and download this receipt anytime from your student dashboard.</p>
   `;
 
   await sendEmail(
     student.email,
-    'Payment Receipt',
-    'Payment Successful',
+    `Payment Receipt - ${monthNames[month - 1]} ${year}`,
+    '&#9989; Payment Confirmed',
     content,
-    { text: 'Download Receipt', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/history` }
+    { text: '&#11015; Download Receipt', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/fees` }
   );
 };
 

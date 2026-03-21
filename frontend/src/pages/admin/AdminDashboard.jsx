@@ -8,7 +8,8 @@ import {
     IoSchool, IoCalendarOutline, IoCashOutline, IoBedOutline,
     IoNotificationsOutline, IoLogOut, IoScanOutline, IoTimeOutline, IoKey,
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
-    IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline
+    IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline,
+    IoGridOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
@@ -83,7 +84,9 @@ const AdminDashboard = () => {
         { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey, color: 'from-red-500 to-orange-500', desc: 'Monitor auth & security events' },
         { title: 'Analytics & Reports', path: '/admin/analytics', icon: IoBarChartOutline, color: 'from-blue-500 to-cyan-500', desc: 'Revenue, trends & statistics' },
         { title: 'Discussion Management', path: '/admin/chat', icon: IoChatbubblesOutline, color: 'from-violet-500 to-fuchsia-500', desc: 'Monitor chat rooms & students' },
+        { title: 'AI Chat History', path: '/admin/chat-history', icon: IoSparklesOutline, color: 'from-indigo-600 to-purple-600', desc: 'View student AI doubt sessions', isNew: true },
         { title: 'Kiosk Mode', path: '/admin/kiosk', icon: IoScanOutline, color: 'from-purple-500 to-pink-500', desc: 'QR kiosk for entry scanning' },
+        { title: 'Manage Cards', path: '/admin/manage-cards', icon: IoGridOutline, color: 'from-yellow-400 to-orange-500', desc: 'Dashboard cards · AI credits · Reorder', isNew: true },
     ];
 
     const STAT_CARDS = [
@@ -192,13 +195,20 @@ const AdminDashboard = () => {
                                     transition={{ delay: 0.38 + i * 0.05, type: 'spring', stiffness: 90 }}
                                     whileHover={{ y: -4, scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                     className="admin-glass relative rounded-2xl p-5 cursor-pointer group overflow-hidden transition-all duration-300 flex items-center gap-4"
+                                    style={item.isNew ? { border: '1px solid rgba(250,204,21,0.25)', boxShadow: '0 0 20px rgba(250,204,21,0.08)' } : {}}
                                 >
                                     <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-100 transition-opacity`} />
                                     <div className={`shrink-0 p-3.5 rounded-xl bg-gradient-to-br ${item.color} shadow-lg transition-transform group-hover:scale-110 duration-300`}>
                                         <item.icon size={22} className="text-white" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-white text-sm leading-snug">{item.title}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-semibold text-white text-sm leading-snug">{item.title}</p>
+                                            {item.isNew && (
+                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse"
+                                                    style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.3)', color: '#FACC15' }}>NEW</span>
+                                            )}
+                                        </div>
                                         <p className="text-xs text-gray-600 group-hover:text-gray-400 transition-colors mt-0.5">{item.desc}</p>
                                     </div>
                                     <IoArrowForward className="shrink-0 text-gray-700 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" size={18} />

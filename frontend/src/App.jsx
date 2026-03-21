@@ -104,6 +104,8 @@ const Settings = lazy(() => import('./pages/admin/Settings'));
 const AnalyticsDashboard = lazy(() => import('./pages/admin/AnalyticsDashboard'));
 const QrKiosk = lazy(() => import('./pages/admin/QrKiosk'));
 const ChatManagement = lazy(() => import('./pages/admin/ChatManagement'));
+const ManageCards = lazy(() => import('./pages/admin/ManageCards'));
+const StudentChatHistory = lazy(() => import('./pages/admin/StudentChatHistory'));
 
 // Student Pages - Lazy Loaded
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
@@ -118,6 +120,10 @@ const DiscussionRoom = lazy(() => import('./pages/student/DiscussionRoom'));
 const BooksPage = lazy(() => import('./pages/student/BooksPage'));
 const NotesPage = lazy(() => import('./pages/student/NotesPage'));
 const MockTestPage = lazy(() => import('./pages/student/MockTestPage'));
+const MonthlyReport = lazy(() => import('./pages/student/MonthlyReport'));
+const DoubtBoard = lazy(() => import('./pages/student/DoubtBoard'));
+const CurrentAffairs = lazy(() => import('./pages/student/CurrentAffairs'));
+const ExamAlerts = lazy(() => import('./pages/student/ExamAlerts'));
 
 function App() {
     const { user, loading, systemStatus } = useAuth();
@@ -184,6 +190,8 @@ function App() {
                 <Route path="/admin/password-activity" element={<ProtectedRoute adminOnly><PasswordActivity /></ProtectedRoute>} />
                 <Route path="/admin/verify/:id" element={<ProtectedRoute adminOnly><VerifyStudent /></ProtectedRoute>} />
                 <Route path="/admin/chat" element={<ProtectedRoute adminOnly><ChatManagement /></ProtectedRoute>} />
+                <Route path="/admin/chat-history" element={<ProtectedRoute adminOnly><StudentChatHistory /></ProtectedRoute>} />
+                <Route path="/admin/manage-cards" element={<ProtectedRoute adminOnly><ManageCards /></ProtectedRoute>} />
 
                 {/* Student Routes */}
                 <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
@@ -198,6 +206,10 @@ function App() {
                 <Route path="/student/books" element={<ProtectedRoute><BooksPage /></ProtectedRoute>} />
                 <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
                 <Route path="/student/mock-test" element={<ProtectedRoute><MockTestPage /></ProtectedRoute>} />
+                <Route path="/student/report" element={<ProtectedRoute><MonthlyReport /></ProtectedRoute>} />
+                <Route path="/student/doubt" element={<ProtectedRoute requireSeat><DoubtBoard /></ProtectedRoute>} />
+                <Route path="/student/current-affairs" element={<ProtectedRoute><CurrentAffairs /></ProtectedRoute>} />
+                <Route path="/student/exam-alerts" element={<ProtectedRoute><ExamAlerts /></ProtectedRoute>} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" />} />
