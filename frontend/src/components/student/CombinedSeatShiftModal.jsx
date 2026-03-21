@@ -250,16 +250,17 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                             <select
                                 value={selectedShift}
                                 onChange={(e) => setSelectedShift(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-white/4 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all appearance-none"
+                                className="w-full px-4 py-2.5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20 transition-all appearance-none"
+                                style={{ background: '#111118', colorScheme: 'dark' }}
                             >
-                                <option value="" className="bg-gray-900">Choose a shift…</option>
+                                <option value="">Choose a shift…</option>
                                 {shifts.map(shift => (
-                                    <option key={shift.id} value={shift.id} className="bg-gray-900">
+                                    <option key={shift.id} value={shift.id}>
                                         {shift.name} ({shift.startTime} – {shift.endTime})
                                     </option>
                                 ))}
                                 {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                    <option value="full" className="bg-gray-900">Full Day (9 AM – 9 PM)</option>
+                                    <option value="full">Full Day (9 AM – 9 PM)</option>
                                 )}
                             </select>
                             {selectedShift ? (
@@ -304,9 +305,10 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                                     {displayFloors[selectedFloor] && (
                                         <div className="space-y-6">
                                             {displayFloors[selectedFloor].rooms.map((room) => (
-                                                <Card key={room._id}>
-                                                    <div className="overflow-x-auto pb-4">
-                                                        <div className="min-w-[800px]">
+                                                <div key={room._id} className="rounded-2xl overflow-hidden"
+                                                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                    <div className="overflow-x-auto">
+                                                        <div className="min-w-[520px]">
                                                             <StudentRoomGrid
                                                                 room={room}
                                                                 onSeatClick={handleSeatClick}
@@ -315,7 +317,7 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                                                             />
                                                         </div>
                                                     </div>
-                                                </Card>
+                                                </div>
                                             ))}
                                         </div>
                                     )}

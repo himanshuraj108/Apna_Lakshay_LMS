@@ -530,6 +530,12 @@ exports.getAttendance = async (req, res) => {
 // @route   GET /api/student/fees
 exports.getFees = async (req, res) => {
     try {
+        // Self-heal: fix any fees that have a paidDate but are still showing as pending/overdue
+        await Fee.updateMany(
+            { student: req.user.id, paidDate: { $ne: null }, status: { $in: ['pending', 'overdue'] } },
+            { $set: { status: 'paid' } }
+        );
+
         const fees = await Fee.find({ student: req.user.id })
             .sort({ year: -1, month: -1 });
 

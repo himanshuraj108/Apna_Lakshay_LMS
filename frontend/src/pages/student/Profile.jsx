@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -8,7 +8,7 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader, { ProfileSkeleton } from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api, { BASE_URL } from '../../utils/api';
-import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark } from 'react-icons/io5';
+import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward } from 'react-icons/io5';
 import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import CombinedSeatShiftModal from '../../components/student/CombinedSeatShiftModal';
@@ -364,88 +364,121 @@ const Profile = () => {
 
                 {/* ── Change Requests ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="glass-card rounded-2xl p-5 mb-5 relative overflow-hidden"
+                    className="rounded-2xl overflow-hidden mb-4"
+                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}
                 >
-                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent" />
-                    <div className="flex items-center gap-2 mb-5">
-                        <IoSend className="text-orange-400" size={16} />
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Request Changes</h3>
+                    {/* Panel header */}
+                    <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                            style={{ background: 'rgba(249,115,22,0.12)' }}>
+                            <IoSend size={12} className="text-orange-400" />
+                        </div>
+                        <p className="text-white font-bold text-sm">Request Changes</p>
                     </div>
 
+                    <div className="p-4">
                     {profile?.isActive && profile?.seat ? (
                         <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}
+                            <div className="flex flex-col gap-2.5">
+                                {/* Shift Change */}
+                                <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
                                     onClick={() => { setRequestType('shift'); fetchAvailableShifts(); setShowRequestModal(true); }}
-                                    className="group flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 hover:border-blue-400/40 hover:shadow-xl hover:shadow-blue-500/10 transition-all"
-                                >
-                                    <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-lg shadow-blue-500/30">
-                                        <IoTime size={18} className="text-white" />
+                                    className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(145deg, rgba(59,130,246,0.07), rgba(255,255,255,0.02))',
+                                        border: '1px solid rgba(59,130,246,0.15)',
+                                        padding: '14px 16px',
+                                    }}>
+                                    {/* Accent left line */}
+                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#3b82f6' }} />
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                        style={{ background: 'rgba(59,130,246,0.12)' }}>
+                                        <IoTime size={17} style={{ color: '#60a5fa' }} />
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-white font-semibold text-sm">Request Shift Change</p>
-                                        <p className="text-blue-400 text-xs mt-0.5">Change your study session timing</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold text-sm">Request Shift Change</p>
+                                        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(96,165,250,0.8)' }}>Change your study session timing</p>
                                     </div>
-                                </motion.button>
+                                    <IoChevronForward size={16} className="text-gray-600 shrink-0" />
+                                </motion.div>
 
-                                <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}
+                                {/* Seat Change */}
+                                <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
                                     onClick={() => setShowSeatChangeModal(true)}
-                                    className="group flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-violet-500/5 border border-purple-500/20 hover:border-purple-400/40 hover:shadow-xl hover:shadow-purple-500/10 transition-all"
-                                >
-                                    <div className="p-2.5 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl shadow-lg shadow-purple-500/30">
-                                        <IoBedOutline size={18} className="text-white" />
+                                    className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(145deg, rgba(124,58,237,0.07), rgba(255,255,255,0.02))',
+                                        border: '1px solid rgba(124,58,237,0.15)',
+                                        padding: '14px 16px',
+                                    }}>
+                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#7c3aed' }} />
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                        style={{ background: 'rgba(124,58,237,0.12)' }}>
+                                        <IoBedOutline size={17} style={{ color: '#a78bfa' }} />
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-white font-semibold text-sm">Request Seat Change</p>
-                                        <p className="text-purple-400 text-xs mt-0.5">Move to a different seat</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold text-sm">Request Seat Change</p>
+                                        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(167,139,250,0.8)' }}>Move to a different seat</p>
                                     </div>
-                                </motion.button>
+                                    <IoChevronForward size={16} className="text-gray-600 shrink-0" />
+                                </motion.div>
                             </div>
 
-                            <div className="mt-4 flex items-start gap-3 px-4 py-3 bg-blue-500/5 border border-blue-500/15 rounded-xl">
-                                <IoHelpCircle className="text-blue-400 shrink-0 mt-0.5" size={16} />
-                                <p className="text-gray-500 text-xs leading-relaxed">
-                                    Change requests need admin approval. You'll be notified once reviewed.
-                                </p>
+                            <div className="mt-3 flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
+                                style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)' }}>
+                                <IoHelpCircle size={13} className="text-blue-400 shrink-0" />
+                                <p className="text-gray-500 text-xs">Change requests need admin approval. You'll be notified once reviewed.</p>
                             </div>
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-3">
-                                <IoLockClosed size={24} className="text-gray-600" />
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                                <IoLockClosed size={20} className="text-gray-600" />
                             </div>
-                            <p className="text-gray-400 font-semibold">Requests Unavailable</p>
-                            <p className="text-gray-600 text-sm mt-1.5 max-w-xs leading-relaxed">
+                            <p className="text-gray-400 font-semibold text-sm">Requests Unavailable</p>
+                            <p className="text-gray-600 text-xs mt-1.5 max-w-xs leading-relaxed">
                                 {memberStatus === 'inactive'
                                     ? 'Your account is currently inactive. Please reactivate your membership.'
                                     : 'You are pending seat allocation. Requests will be available once a seat is assigned.'}
                             </p>
                         </div>
                     )}
+                    </div>
                 </motion.div>
 
                 {/* ── Security Settings ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                    className="glass-card rounded-2xl p-5 relative overflow-hidden"
+                    className="rounded-2xl overflow-hidden"
+                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}
                 >
-                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
-                    <div className="flex items-center gap-2 mb-5">
-                        <IoShieldCheckmark className="text-red-400" size={16} />
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Security Settings</h3>
+                    <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                            style={{ background: 'rgba(239,68,68,0.12)' }}>
+                            <IoShieldCheckmark size={13} className="text-red-400" />
+                        </div>
+                        <p className="text-white font-bold text-sm">Security Settings</p>
                     </div>
-
-                    <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => { setRequestType('password'); setShowRequestModal(true); }}
-                        className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-rose-500/5 border border-red-500/20 hover:border-red-400/40 hover:shadow-xl hover:shadow-red-500/10 transition-all w-full sm:w-auto"
-                    >
-                        <div className="p-2.5 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-lg shadow-red-500/30">
-                            <IoLockClosed size={18} className="text-white" />
-                        </div>
-                        <div className="text-left">
-                            <p className="text-white font-semibold text-sm">Change Password</p>
-                            <p className="text-red-400 text-xs mt-0.5">Update your login credentials</p>
-                        </div>
-                    </motion.button>
+                    <div className="p-4">
+                        <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
+                            onClick={() => { setRequestType('password'); setShowRequestModal(true); }}
+                            className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
+                            style={{
+                                background: 'linear-gradient(145deg, rgba(239,68,68,0.07), rgba(255,255,255,0.02))',
+                                border: '1px solid rgba(239,68,68,0.15)',
+                                padding: '14px 16px',
+                            }}>
+                            <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#ef4444' }} />
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ background: 'rgba(239,68,68,0.1)' }}>
+                                <IoLockClosed size={16} style={{ color: '#f87171' }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-white font-bold text-sm">Change Password</p>
+                                <p className="text-[12px] mt-0.5" style={{ color: 'rgba(248,113,113,0.8)' }}>Update your login credentials</p>
+                            </div>
+                            <IoChevronForward size={16} className="text-gray-600 shrink-0" />
+                        </motion.div>
+                    </div>
                 </motion.div>
             </div>
 

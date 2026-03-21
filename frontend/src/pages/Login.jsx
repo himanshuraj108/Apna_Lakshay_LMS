@@ -2,23 +2,45 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { IoMail, IoLockClosed, IoGridOutline, IoArrowForward, IoEye, IoEyeOff, IoLocationOutline } from 'react-icons/io5';
+import {
+    IoMail, IoLockClosed, IoGridOutline, IoArrowForward,
+    IoEye, IoEyeOff, IoLocationOutline, IoCheckmarkCircle,
+    IoBookOutline, IoCalendarOutline, IoPeopleOutline,
+    IoSparklesOutline, IoShieldCheckmarkOutline
+} from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
 
+/* ── Feature list shown on the left brand panel ─────────────────────── */
+const FEATURES = [
+    { icon: IoBookOutline,          text: 'Smart seat management & real-time availability' },
+    { icon: IoCalendarOutline,      text: 'Automated attendance with QR & geo-verification' },
+    { icon: IoSparklesOutline,      text: 'AI-powered mock tests for competitive exams' },
+    { icon: IoPeopleOutline,        text: 'Live discussion rooms & study collaboration' },
+    { icon: IoShieldCheckmarkOutline, text: 'Secure encrypted access — your data is safe' },
+];
+
+/* ── Animated floating orb decorations ──────────────────────────────── */
+const Orb = ({ style, className }) => (
+    <div
+        className={`absolute rounded-full blur-3xl pointer-events-none ${className}`}
+        style={style}
+    />
+);
+
 const Login = () => {
     useMobileViewport();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail]               = useState('');
+    const [password, setPassword]         = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
-    const navigate = useNavigate();
-    const location = useLocation();
+    const [error, setError]               = useState('');
+    const [shake, setShake]               = useState(false);
+    const [loading, setLoading]           = useState(false);
+    const { login }    = useAuth();
+    const navigate     = useNavigate();
+    const location     = useLocation();
 
     useEffect(() => {
-        // Auto-fill from registration redirection
         if (location.state?.email && location.state?.password) {
             setEmail(location.state.email);
             setPassword(location.state.password);
@@ -36,182 +58,355 @@ const Login = () => {
             navigate(user.role === 'admin' ? '/admin' : '/student');
         } else {
             setError(result.message);
+            setShake(true);
+            setTimeout(() => setShake(false), 600);
         }
         setLoading(false);
     };
 
     return (
-        <div
-            className="min-h-screen relative flex items-center justify-center py-6 md:py-12 px-4 sm:px-6 lg:px-8 overflow-y-auto dark"
-            style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.12) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.10) 0%, transparent 55%), #030712' }}
-        >
-            {/* Ambient blobs */}
-            <div className="fixed top-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-orange-600/10 blur-[130px] pointer-events-none" />
-            <div className="fixed bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-red-600/8 blur-[120px] pointer-events-none" />
+        <div className="min-h-screen flex dark" style={{ background: '#080b12' }}>
 
-            {/* Top Right Floating Buttons (desktop) */}
-            <div className="hidden lg:flex fixed top-8 right-8 z-50 gap-4">
-                <Link to="/public-seats">
-                    <motion.button
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1, boxShadow: ["0px 0px 0px rgba(249,115,22,0)", "0px 0px 22px rgba(249,115,22,0.5)", "0px 0px 0px rgba(249,115,22,0)"] }}
-                        transition={{ scale: { duration: 0.5 }, opacity: { duration: 0.5 }, boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" } }}
-                        whileHover={{ scale: 1.08 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-3 px-7 py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 rounded-full text-white shadow-2xl shadow-orange-500/30 border border-white/15 backdrop-blur-md group font-bold tracking-wide text-sm"
+            {/* ══════════════════════════════════════════════
+                LEFT BRAND PANEL  — hidden on mobile
+               ══════════════════════════════════════════════ */}
+            <div className="hidden lg:flex lg:w-[52%] xl:w-[55%] relative flex-col justify-between p-10 xl:p-14 overflow-hidden">
+
+                {/* Background gradient */}
+                <div
+                    className="absolute inset-0 z-0"
+                    style={{
+                        background: 'linear-gradient(135deg, #0f1629 0%, #0a0e1a 40%, #0d1520 100%)',
+                    }}
+                />
+
+                {/* Decorative orbs */}
+                <Orb className="w-[500px] h-[500px] top-[-15%] left-[-15%] z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%)' }} />
+                <Orb className="w-[400px] h-[400px] bottom-[-10%] right-[-10%] z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.12) 0%, transparent 70%)' }} />
+                <Orb className="w-[300px] h-[300px] top-[40%] left-[30%] z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%)' }} />
+
+                {/* Subtle dot grid */}
+                <div
+                    className="absolute inset-0 z-0 opacity-30"
+                    style={{
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)',
+                        backgroundSize: '40px 40px',
+                    }}
+                />
+
+                {/* Content */}
+                <div className="relative z-10">
+                    {/* Brand logo */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="flex items-center gap-3 mb-16"
                     >
-                        <IoGridOutline size={20} className="animate-pulse" />
-                        VIEW SEATS
-                        <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={18} />
-                    </motion.button>
-                </Link>
-            </div>
-
-            {/* Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className="w-full max-w-md relative z-10"
-            >
-                <div className="relative bg-white/4 backdrop-blur-2xl border border-white/10 rounded-3xl p-7 md:p-9 shadow-2xl shadow-black/60">
-
-                    {/* Location Button In Card */}
-                    <Link to="/contact"
-                        className="absolute top-5 right-5 p-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-2 group z-20"
-                        title="Library Location"
-                    >
-                        <IoLocationOutline size={18} className="group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold tracking-wider hidden sm:block pr-1">LOCATION</span>
-                    </Link>
-
-                    {/* Brand */}
-                    <div className="text-center mb-7">
-                        <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl shadow-lg shadow-orange-500/30 mb-4">
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg shadow-orange-500/30 shrink-0">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                             </svg>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-black text-white mb-1">
-                            Apna <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Lakshay</span>
-                        </h1>
-                        <p className="text-gray-500 text-xs tracking-widest uppercase">Library Management System</p>
-                        <div className="h-px w-20 bg-gradient-to-r from-transparent via-orange-500/40 to-transparent mx-auto mt-4" />
-                    </div>
+                        <div>
+                            <p className="text-white font-black text-lg leading-none">Apna Lakshay</p>
+                            <p className="text-orange-400/70 text-[10px] uppercase tracking-[0.2em] font-semibold mt-0.5">Library System</p>
+                        </div>
+                    </motion.div>
 
-                    {/* Quick Access Links */}
-                    <div className="flex flex-col gap-3 mb-6">
-                        {/* Mobile View Seats */}
-                        <div className="lg:hidden">
-                            <Link to="/public-seats" className="w-full block">
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                    className="w-full flex items-center justify-center gap-3 px-5 py-3.5 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 border border-orange-500/25 rounded-xl text-orange-300 font-semibold text-sm transition-all group"
-                                >
-                                    <IoGridOutline size={18} />
-                                    VIEW AVAILABLE SEATS
-                                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} />
-                                </motion.button>
-                            </Link>
+                    {/* Headline */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        className="mb-12"
+                    >
+                        <h1 className="text-4xl xl:text-5xl font-black text-white leading-[1.15] mb-4">
+                            Your study space,
+                            <br />
+                            <span
+                                className="bg-clip-text text-transparent"
+                                style={{ backgroundImage: 'linear-gradient(90deg, #f97316, #ef4444)' }}
+                            >
+                                reimagined.
+                            </span>
+                        </h1>
+                        <p className="text-gray-400 text-base leading-relaxed max-w-sm">
+                            A complete library management system built for serious students. Track your seat, attendance, fees and learning — all in one place.
+                        </p>
+                    </motion.div>
+
+                    {/* Feature list */}
+                    <div className="space-y-4">
+                        {FEATURES.map((f, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 + i * 0.08, duration: 0.4 }}
+                                className="flex items-start gap-3"
+                            >
+                                <div className="mt-0.5 w-8 h-8 shrink-0 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center">
+                                    <f.icon size={15} className="text-orange-400" />
+                                </div>
+                                <p className="text-gray-400 text-sm leading-relaxed pt-1">{f.text}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Bottom links row */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                    className="relative z-10 flex items-center gap-4 mt-8"
+                >
+                    <Link to="/public-seats">
+                        <motion.button
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.97 }}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
+                        >
+                            <IoGridOutline size={16} />
+                            View Available Seats
+                            <IoArrowForward size={14} />
+                        </motion.button>
+                    </Link>
+                    <Link to="/contact" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors group">
+                        <IoLocationOutline size={15} className="group-hover:text-orange-400 transition-colors" />
+                        <span>Library Location</span>
+                    </Link>
+                </motion.div>
+            </div>
+
+            {/* ══════════════════════════════════════════════
+                RIGHT FORM PANEL
+               ══════════════════════════════════════════════ */}
+            <div className="flex-1 flex flex-col items-center justify-center relative px-5 sm:px-8 py-8"
+                style={{
+                    background: 'linear-gradient(160deg, #0b0f1c 0%, #080b12 60%, #0c0a14 100%)',
+                }}
+            >
+                {/* Subtle right-panel orbs */}
+                <Orb className="w-[350px] h-[350px] top-[-10%] right-[-15%] z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.07) 0%, transparent 70%)' }} />
+                <Orb className="w-[300px] h-[300px] bottom-[-5%] left-[-10%] z-0"
+                    style={{ background: 'radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)' }} />
+
+                {/* Mobile: compact brand + quick links */}
+                <div className="lg:hidden w-full max-w-sm mb-5 relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                        <div>
+                            <p className="text-white font-black text-base leading-none">
+                                Apna <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Lakshay</span>
+                            </p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-widest mt-0.5">Library System</p>
                         </div>
                     </div>
-
-                    <div className="mb-7 text-center">
-                        <h2 className="text-2xl font-bold text-white mb-1">Welcome Back</h2>
-                        <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
+                    <div className="flex gap-2">
+                        <Link to="/public-seats" className="flex-1">
+                            <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500/10 border border-orange-500/20 rounded-xl text-orange-300 font-semibold text-xs transition-all hover:bg-orange-500/15">
+                                <IoGridOutline size={13} /> View Seats
+                            </button>
+                        </Link>
+                        <Link to="/contact" className="flex-1">
+                            <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-gray-400 font-semibold text-xs transition-all hover:bg-white/8">
+                                <IoLocationOutline size={13} /> Location
+                            </button>
+                        </Link>
                     </div>
+                </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                                className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
-                            >
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-                                {error}
-                            </motion.div>
-                        )}
+                {/* ── Login Card ── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    className={`w-full max-w-sm relative z-10 ${shake ? 'shake-screen' : ''}`}
+                >
+                    {/* Card */}
+                    <div
+                        className="rounded-2xl border border-white/8 p-7 sm:p-8"
+                        style={{
+                            background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                            backdropFilter: 'blur(24px)',
+                            boxShadow: '0 32px 64px -16px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)',
+                        }}
+                    >
+                        {/* Card header */}
+                        <div className="mb-8">
+                            <h2 className="text-2xl font-black text-white mb-1.5">Welcome back</h2>
+                            <p className="text-gray-500 text-sm">Sign in to access your dashboard</p>
+                        </div>
 
-                        <div className="space-y-4">
-                            {/* Email */}
+                        {/* Error */}
+                        <AnimatePresence>
+                            {error && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginBottom: 20 }}
+                                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm overflow-hidden"
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-red-400 shrink-0 animate-pulse" />
+                                    {error}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            {/* Email field */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Email Address</label>
+                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                    Email Address
+                                </label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <IoMail className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={18} />
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <IoMail
+                                            size={17}
+                                            className="text-gray-600 group-focus-within:text-orange-400 transition-colors duration-200"
+                                        />
                                     </div>
                                     <input
-                                        type="text" value={email} onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
-                                        placeholder="hello@example.com" required
+                                        type="text"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="you@example.com"
+                                        required
+                                        className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm text-white placeholder-gray-600 outline-none transition-all duration-200"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.04)',
+                                            border: '1px solid rgba(255,255,255,0.08)',
+                                        }}
+                                        onFocus={e => {
+                                            e.target.style.border = '1px solid rgba(249,115,22,0.5)';
+                                            e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)';
+                                        }}
+                                        onBlur={e => {
+                                            e.target.style.border = '1px solid rgba(255,255,255,0.08)';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
                                     />
                                 </div>
                             </div>
 
-                            {/* Password */}
+                            {/* Password field */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Password</label>
+                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                    Password
+                                </label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <IoLockClosed className="text-gray-600 group-focus-within:text-orange-400 transition-colors" size={18} />
+                                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                                        <IoLockClosed
+                                            size={17}
+                                            className="text-gray-600 group-focus-within:text-orange-400 transition-colors duration-200"
+                                        />
                                     </div>
                                     <input
-                                        type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full pl-11 pr-12 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
-                                        placeholder="••••••••" required
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        required
+                                        className="w-full pl-10 pr-12 py-3.5 rounded-xl text-sm text-white placeholder-gray-600 outline-none transition-all duration-200"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.04)',
+                                            border: '1px solid rgba(255,255,255,0.08)',
+                                        }}
+                                        onFocus={e => {
+                                            e.target.style.border = '1px solid rgba(249,115,22,0.5)';
+                                            e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.1)';
+                                        }}
+                                        onBlur={e => {
+                                            e.target.style.border = '1px solid rgba(255,255,255,0.08)';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
                                     />
                                     <button
-                                        type="button" onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-600 hover:text-orange-400 transition-colors cursor-pointer focus:outline-none"
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-600 hover:text-orange-400 transition-colors cursor-pointer focus:outline-none"
+                                        tabIndex={-1}
                                     >
-                                        {showPassword ? <IoEyeOff size={18} /> : <IoEye size={18} />}
+                                        {showPassword ? <IoEyeOff size={17} /> : <IoEye size={17} />}
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Forgot password */}
+                            <div className="flex justify-end -mt-1">
+                                <Link
+                                    to="/forgot-password"
+                                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors font-medium"
+                                >
+                                    Forgot password?
+                                </Link>
+                            </div>
+
+                            {/* Submit button */}
+                            <motion.button
+                                whileHover={!loading ? { scale: 1.015 } : {}}
+                                whileTap={!loading ? { scale: 0.985 } : {}}
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3.5 rounded-xl font-bold text-white text-sm tracking-wide flex items-center justify-center gap-2 transition-all duration-200 group disabled:opacity-60 disabled:cursor-not-allowed"
+                                style={{
+                                    background: loading
+                                        ? 'rgba(100,100,100,0.4)'
+                                        : 'linear-gradient(135deg, #f97316 0%, #ef4444 100%)',
+                                    boxShadow: loading ? 'none' : '0 8px 24px -4px rgba(249,115,22,0.4)',
+                                }}
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Signing in…
+                                    </>
+                                ) : (
+                                    <>
+                                        Sign In
+                                        <IoArrowForward
+                                            size={16}
+                                            className="group-hover:translate-x-1 transition-transform duration-200"
+                                        />
+                                    </>
+                                )}
+                            </motion.button>
+                        </form>
+
+                        {/* Divider */}
+                        <div className="flex items-center gap-3 my-6">
+                            <div className="flex-1 h-px bg-white/6" />
+                            <span className="text-[11px] text-gray-700 uppercase tracking-widest font-medium">or</span>
+                            <div className="flex-1 h-px bg-white/6" />
                         </div>
 
-                        <div className="flex justify-end">
-                            <Link to="/forgot-password" className="text-xs text-orange-400 hover:text-orange-300 transition-colors font-medium">
-                                Forgot password?
-                            </Link>
-                        </div>
-
-                        <motion.button
-                            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                            type="submit" disabled={loading}
-                            className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 group disabled:opacity-60 disabled:cursor-not-allowed text-sm tracking-wide"
-                        >
-                            {loading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Signing in…
-                                </>
-                            ) : (
-                                <>
-                                    Sign In
-                                    <IoArrowForward className="group-hover:translate-x-1 transition-transform" size={16} />
-                                </>
-                            )}
-                        </motion.button>
-                    </form>
-
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-500">
+                        {/* Register link */}
+                        <p className="text-center text-sm text-gray-500">
                             Don&apos;t have an account?{' '}
-                            <Link to="/register" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
-                                Register here
+                            <Link
+                                to="/register"
+                                className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
+                            >
+                                Create account
                             </Link>
                         </p>
                     </div>
 
-                    <div className="mt-7 pt-5 border-t border-white/5 text-center">
-                        <p className="text-xs text-gray-700">Protected by secure encryption • Ver 1.0.0</p>
-                    </div>
-                </div>
-            </motion.div>
+                    {/* Below card */}
+                    <p className="text-center text-[11px] text-gray-700 mt-5 flex items-center justify-center gap-2">
+                        <IoShieldCheckmarkOutline size={13} className="text-gray-600" />
+                        Protected by secure encryption · Ver 1.0.0
+                    </p>
+                </motion.div>
+            </div>
 
-            {/* Attendance floating button — visible to students on login screen */}
+            {/* Attendance floating btn — visible on login screen too */}
             <AttendanceFloatingBtn />
         </div>
     );

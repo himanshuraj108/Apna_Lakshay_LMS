@@ -118,13 +118,13 @@ const ExamCountdown = () => {
                     })
                 ) : (
                     <div className="w-full text-center py-6 border-2 border-dashed border-gray-700 rounded-xl bg-gray-800/30">
-                        <p className="text-gray-500 text-sm italic mb-2">No upcoming exams.</p>
                         <button
                             onClick={() => setShowModal(true)}
-                            className="text-xs text-blue-400 hover:text-blue-300 underline"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 mb-3 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 rounded-xl text-xs font-semibold transition-all"
                         >
-                            Add your first exam
+                            <IoAdd size={14} /> Add your first exam
                         </button>
+                        <p className="text-gray-600 text-xs italic">No upcoming exams.</p>
                     </div>
                 )}
             </div>
