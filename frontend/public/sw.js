@@ -54,7 +54,10 @@ self.addEventListener('fetch', (event) => {
         event.respondWith(
             fetch(event.request)
                 .catch(() => {
-                    return caches.match(event.request);
+                    // if network fails, try cache for the exact request, otherwise fallback to root
+                    return caches.match(event.request).then(response => {
+                        return response || caches.match('/index.html') || caches.match('/');
+                    });
                 })
         );
         return;
@@ -67,7 +70,11 @@ self.addEventListener('fetch', (event) => {
                 if (response) {
                     return response;
                 }
-                return fetch(event.request);
+                return fetch(event.request).catch((err) => {
+                    console.warn('Service Worker: Fetch failed for asset', event.request.url, err);
+                    // Return a 404/503 response so the promise doesn't reject with undefined
+                    return new Response('Network error occurred', { status: 408, headers: { 'Content-Type': 'text/plain' } });
+                });
             })
     );
 });
