@@ -130,6 +130,27 @@ function App() {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // Force Desktop Mode for Admin Routes
+    useEffect(() => {
+        let viewport = document.querySelector('meta[name="viewport"]');
+        if (!viewport) {
+            viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            document.head.appendChild(viewport);
+        }
+
+        if (location.pathname.startsWith('/admin')) {
+            // Force desktop layout with a wide viewport
+            viewport.setAttribute('content', 'width=1280');
+            // Add a class to body for any targeted CSS overrides if needed
+            document.body.classList.add('admin-desktop-mode');
+        } else {
+            // Restore normal responsive layout
+            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
+            document.body.classList.remove('admin-desktop-mode');
+        }
+    }, [location.pathname]);
+
     // Initialize global socket connection for online status tracking
     useSocket(!!user);
 
