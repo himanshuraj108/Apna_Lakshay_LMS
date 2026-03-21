@@ -9,7 +9,7 @@ import {
     IoNotificationsOutline, IoLogOut, IoScanOutline, IoTimeOutline, IoKey,
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
     IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline,
-    IoGridOutline
+    IoGridOutline, IoSparklesOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
