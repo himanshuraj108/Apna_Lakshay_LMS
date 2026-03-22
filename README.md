@@ -89,6 +89,8 @@ Students are created by admin and receive credentials via email.
 - Fee management (mark as paid, send confirmations)
 - Send announcements (global or individual)
 - Approve/reject student requests
+- AI Credits management (auto-calculation based on fees or manual assignment)
+- View individual student's ThinkFlow AI chat history
 
 ### Student Features
 - Dashboard with seat, attendance, fee, notification cards
@@ -99,12 +101,14 @@ Students are created by admin and receive credentials via email.
 - Notification center
 - Profile management with image upload
 - Submit change requests (seat/shift/profile)
+- ThinkFlow AI Assistant integration for study help
 
 ### Public Features
 - View seat availability without login
 - Floor selector with room/seat grid
 - Available seats show prices, occupied seats don't
 - Mobile modal: "Download App" / "Continue in Browser"
+- Redesigned, mobile-optimized registration page and login flows
 
 ## Email System
 
@@ -129,6 +133,7 @@ All emails are branded with premium HTML templates.
   - Red: Occupied / Overdue / Absent
   - 🟡 Yellow: Due Soon / Pending
 - **Fully Responsive**: Desktop, Tablet, Mobile
+- **Mobile-Optimized Experiences**: Tuned viewport and layouts for perfect rendering on real devices
 
 ## Project Structure
 
