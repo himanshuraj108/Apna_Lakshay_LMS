@@ -205,19 +205,47 @@ exports.getDashboard = async (req, res) => {
         // ── Compute attendance rank across all active students ──
         let attendanceRank = null;
         try {
-            const allActiveStudentIds = await User.find({ role: 'student', isActive: true }).select('_id').lean();
-            const allCounts = await Attendance.aggregate([
-                { $match: { student: { $in: allActiveStudentIds.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
-                { $group: { _id: '$student', count: { $sum: 1 } } }
+            const allActiveStudents = await User.find({ role: 'student', isActive: true }).select('_id createdAt').lean();
+            const allAttendance = await Attendance.aggregate([
+                { $match: { student: { $in: allActiveStudents.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
+                { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
+                { $group: { _id: '$_id.student', uniqueDays: { $sum: 1 } } }
             ]);
-            const countMap = {};
-            allCounts.forEach(c => { countMap[c._id.toString()] = c.count; });
-            const sorted = allActiveStudentIds
-                .map(s => ({ id: s._id.toString(), count: countMap[s._id.toString()] || 0 }))
-                .sort((a, b) => b.count - a.count);
-            const idx = sorted.findIndex(s => s.id === studentId.toString());
-            attendanceRank = idx >= 0 ? idx + 1 : null;
-        } catch (_) { attendanceRank = null; }
+            
+            const uniqueMap = {};
+            allAttendance.forEach(a => { uniqueMap[a._id.toString()] = a.uniqueDays; });
+            
+            const nowTime = now.getTime();
+            const rankings = allActiveStudents.map(s => {
+                const admDate = new Date(s.createdAt || now);
+                admDate.setHours(0, 0, 0, 0);
+                let stuTotal = 0;
+                if (nowTime >= admDate.getTime()) {
+                    stuTotal = Math.floor((nowTime - admDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                }
+                const present = uniqueMap[s._id.toString()] || 0;
+                const percentage = stuTotal > 0 ? Math.round((present / stuTotal) * 100) : 0;
+                return { id: s._id.toString(), percentage };
+            });
+            
+            rankings.sort((a, b) => b.percentage - a.percentage);
+            
+            let currentRank = 1;
+            let previousPercentage = null;
+            for (let i = 0; i < rankings.length; i++) {
+                if (previousPercentage !== null && rankings[i].percentage < previousPercentage) {
+                    currentRank = i + 1;
+                }
+                previousPercentage = rankings[i].percentage;
+                if (rankings[i].id === studentId.toString()) {
+                    attendanceRank = currentRank;
+                    break;
+                }
+            }
+        } catch (err) {
+            console.error('Attendance Rank Error:', err);
+            attendanceRank = null;
+        }
 
         // Calculate Target Fee Month based on Rolling Cycle
         let currentFee = null;
@@ -618,17 +646,46 @@ exports.getMonthlyReport = async (req, res) => {
         // Rank (by total present days lifetime, same as dashboard)
         let rank = null;
         try {
-            const allActive = await User.find({ role: 'student', isActive: true }).select('_id').lean();
-            const counts = await Attendance.aggregate([
-                { $match: { student: { $in: allActive.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
-                { $group: { _id: '$student', count: { $sum: 1 } } }
+            const allActiveStudents = await User.find({ role: 'student', isActive: true }).select('_id createdAt').lean();
+            const allAttendance = await Attendance.aggregate([
+                { $match: { student: { $in: allActiveStudents.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
+                { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
+                { $group: { _id: '$_id.student', uniqueDays: { $sum: 1 } } }
             ]);
-            const cmap = {};
-            counts.forEach(c => { cmap[c._id.toString()] = c.count; });
-            const sorted = allActive.map(s => ({ id: s._id.toString(), count: cmap[s._id.toString()] || 0 })).sort((a, b) => b.count - a.count);
-            const idx = sorted.findIndex(s => s.id === studentId.toString());
-            rank = idx >= 0 ? idx + 1 : null;
-        } catch (_) {}
+            
+            const uniqueMap = {};
+            allAttendance.forEach(a => { uniqueMap[a._id.toString()] = a.uniqueDays; });
+            
+            const nowTime = now.getTime();
+            const rankings = allActiveStudents.map(s => {
+                const admDate = new Date(s.createdAt || now);
+                admDate.setHours(0, 0, 0, 0);
+                let stuTotal = 0;
+                if (nowTime >= admDate.getTime()) {
+                    stuTotal = Math.floor((nowTime - admDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                }
+                const present = uniqueMap[s._id.toString()] || 0;
+                const percentage = stuTotal > 0 ? Math.round((present / stuTotal) * 100) : 0;
+                return { id: s._id.toString(), percentage };
+            });
+            
+            rankings.sort((a, b) => b.percentage - a.percentage);
+            
+            let currentRank = 1;
+            let previousPercentage = null;
+            for (let i = 0; i < rankings.length; i++) {
+                if (previousPercentage !== null && rankings[i].percentage < previousPercentage) {
+                    currentRank = i + 1;
+                }
+                previousPercentage = rankings[i].percentage;
+                if (rankings[i].id === studentId.toString()) {
+                    rank = currentRank;
+                    break;
+                }
+            }
+        } catch (err) {
+            console.error('Report Rank Error:', err);
+        }
 
         const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
