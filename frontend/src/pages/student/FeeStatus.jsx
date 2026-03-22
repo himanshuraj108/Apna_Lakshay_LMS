@@ -6,8 +6,9 @@ import api from '../../utils/api';
 import {
     IoArrowBack, IoCashOutline, IoTimeOutline, IoAlertCircleOutline,
     IoReceiptOutline, IoInformationCircleOutline, IoCheckmarkCircle,
-    IoCalendarOutline, IoDownloadOutline
+    IoCalendarOutline, IoDownloadOutline, IoClose
 } from 'react-icons/io5';
+import PaymentReceipt from '../../components/admin/PaymentReceipt';
 
 /* ─── Background ────────────────────────────────────────────────────── */
 const PageBg = () => (
@@ -72,220 +73,33 @@ const StatChip = ({ label, value, sub, accentColor, icon: Icon, delay = 0 }) => 
     </motion.div>
 );
 
-/* ══════════════════════════════════════════════════════════════════════
-   PDF GENERATOR
-   ══════════════════════════════════════════════════════════════════════ */
-const generateReceiptPDF = async (r) => {
-    const { jsPDF } = await import('jspdf');
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-    const W = 210;
-    const YELLOW = [250, 204, 21];   // #FACC15
-    const BLACK  = [10, 10, 10];
-    const WHITE  = [255, 255, 255];
-    const DGRAY  = [40, 40, 40];
-    const LGRAY  = [180, 180, 180];
-    const BGRAY  = [245, 245, 245];
-
-    /* ══════════════════════════════════════════
-       BLACK HEADER RECTANGLE
-    ══════════════════════════════════════════ */
-    doc.setFillColor(...BLACK);
-    doc.rect(0, 0, W, 58, 'F');
-
-    // Yellow left accent bar
-    doc.setFillColor(...YELLOW);
-    doc.rect(0, 0, 6, 58, 'F');
-
-    // Library name — white
-    doc.setTextColor(...WHITE);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text('APNA LAKSHAY', 16, 22);
-
-    // Subtitle — yellow
-    doc.setTextColor(...YELLOW);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('LIBRARY MANAGEMENT SYSTEM', 16, 30);
-
-    // "FEE RECEIPT" tag — yellow box, black text
-    doc.setFillColor(...YELLOW);
-    doc.rect(16, 36, 38, 8, 'F');
-    doc.setTextColor(...BLACK);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7.5);
-    doc.text('FEE RECEIPT', 35, 41.8, { align: 'center' });
-
-    // PAID badge — white box right side
-    doc.setFillColor(...WHITE);
-    doc.rect(W - 46, 36, 32, 10, 'F');
-    doc.setTextColor(...BLACK);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text('✓  PAID', W - 30, 42.5, { align: 'center' });
-
-    /* ══════════════════════════════════════════
-       RECEIPT META ROW (white bg)
-    ══════════════════════════════════════════ */
-    doc.setFillColor(...WHITE);
-    doc.rect(0, 58, W, 26, 'F');
-
-    // Left: receipt number
-    doc.setTextColor(...LGRAY);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text('RECEIPT NO.', 14, 66);
-    doc.setTextColor(...BLACK);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text(r.receiptNumber, 14, 73);
-
-    // Right: date
-    const paidDateStr = new Date(r.paidDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    doc.setTextColor(...LGRAY);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text('DATE ISSUED', W - 14, 66, { align: 'right' });
-    doc.setTextColor(...BLACK);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text(paidDateStr, W - 14, 73, { align: 'right' });
-
-    /* ══════════════════════════════════════════
-       YELLOW AMOUNT BANNER
-    ══════════════════════════════════════════ */
-    doc.setFillColor(...YELLOW);
-    doc.rect(0, 84, W, 38, 'F');
-
-    doc.setTextColor(...BLACK);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('TOTAL AMOUNT PAID', W / 2, 96, { align: 'center' });
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(34);
-    doc.text(`Rs. ${r.amount}`, W / 2, 115, { align: 'center' });
-
-    /* ══════════════════════════════════════════
-       DETAILS SECTION (light gray bg)
-    ══════════════════════════════════════════ */
-    const detailsY = 122;
-    doc.setFillColor(...BGRAY);
-    doc.rect(0, detailsY, W, 4, 'F'); // thin top separator
-
-    const rows = [
-        ['FOR PERIOD', `${r.monthName} ${r.year}`, 'STUDENT NAME', r.studentName],
-        ['EMAIL', r.studentEmail, 'MOBILE', r.studentMobile],
-    ];
-    if (r.seat) {
-        rows.push(['SEAT NO.', `#${r.seat.number}`, 'SHIFT', r.seat.shift]);
-        rows.push(['FLOOR', r.seat.floor, 'ROOM', r.seat.room]);
-    }
-
-    const rowH = 18;
-    const col1X = 14;
-    const col2X = W / 2 + 8;
-    const startY = detailsY + 10;
-
-    rows.forEach((row, i) => {
-        const y = startY + i * rowH;
-        const isEven = i % 2 === 0;
-
-        // Alternating row bg
-        doc.setFillColor(isEven ? 255 : 248, isEven ? 255 : 248, isEven ? 255 : 248);
-        doc.rect(0, y - 5, W, rowH, 'F');
-
-        // Yellow left accent for each row
-        doc.setFillColor(...YELLOW);
-        doc.rect(0, y - 5, 4, rowH, 'F');
-
-        // Col 1 label
-        doc.setTextColor(...LGRAY);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
-        doc.text(row[0], col1X, y);
-
-        // Col 1 value
-        doc.setTextColor(...DGRAY);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
-        doc.text(String(row[1] || 'N/A'), col1X, y + 6);
-
-        // Vertical divider
-        doc.setDrawColor(...BGRAY);
-        doc.setLineWidth(0.4);
-        doc.line(W / 2 + 2, y - 5, W / 2 + 2, y + rowH - 5);
-
-        // Col 2 label
-        doc.setTextColor(...LGRAY);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(6.5);
-        doc.text(row[2], col2X, y);
-
-        // Col 2 value
-        doc.setTextColor(...DGRAY);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9.5);
-        doc.text(String(row[3] || 'N/A'), col2X, y + 6);
-    });
-
-    /* ══════════════════════════════════════════
-       DASHED TEAR-LINE (receipt feel)
-    ══════════════════════════════════════════ */
-    const tearY = startY + rows.length * rowH + 6;
-    doc.setDrawColor(...LGRAY);
-    doc.setLineWidth(0.3);
-    doc.setLineDashPattern([2, 2], 0);
-    doc.line(14, tearY, W - 14, tearY);
-    doc.setLineDashPattern([], 0); // reset
-
-    // Scissors icon text
-    doc.setTextColor(...LGRAY);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text('✂', W / 2, tearY - 0.5, { align: 'center' });
-
-    /* ══════════════════════════════════════════
-       BLACK FOOTER
-    ══════════════════════════════════════════ */
-    doc.setFillColor(...BLACK);
-    doc.rect(0, 268, W, 29, 'F');
-
-    // Yellow accent line at top of footer
-    doc.setFillColor(...YELLOW);
-    doc.rect(0, 268, W, 3, 'F');
-
-    doc.setTextColor(...WHITE);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.text('Thank you for your payment!', W / 2, 280, { align: 'center' });
-
-    doc.setTextColor(...LGRAY);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text('This is a computer-generated receipt. No signature required.', W / 2, 287, { align: 'center' });
-    doc.text(`© ${new Date().getFullYear()} Apna Lakshay Library Management System`, W / 2, 293, { align: 'center' });
-
-    doc.save(`Receipt_${r.receiptNumber}_${r.monthName}_${r.year}.pdf`);
-};
+/* PDF generator removed — using PaymentReceipt component instead */
 
 /* ════════════════════════════════════════════════════════════════════
    MAIN PAGE
    ════════════════════════════════════════════════════════════════════ */
 const FeeStatus = () => {
     const [fees, setFees] = useState([]);
+    const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [downloadingId, setDownloadingId] = useState(null);
     const [toast, setToast] = useState(null);
+
+    // new receipt modal state
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [selectedFee, setSelectedFee] = useState(null);
 
     useEffect(() => { fetchFees(); }, []);
 
     const fetchFees = async () => {
         try {
-            const response = await api.get('/student/fees');
-            setFees(response.data.fees);
-        } catch (error) { console.error('Error fetching fees:', error); }
+            const [feeRes, profRes] = await Promise.all([
+                api.get('/student/fees'),
+                api.get('/auth/me')
+            ]);
+            setFees(feeRes.data.fees);
+            setProfile(profRes.data.user);
+        } catch (error) { console.error('Error fetching data:', error); }
         finally { setLoading(false); }
     };
 
@@ -295,17 +109,8 @@ const FeeStatus = () => {
     };
 
     const handleDownloadReceipt = async (fee) => {
-        try {
-            setDownloadingId(fee._id);
-            const res = await api.get(`/student/fees/${fee._id}/receipt`);
-            await generateReceiptPDF(res.data.receipt);
-            showToast('Receipt downloaded!');
-        } catch (err) {
-            console.error('Receipt download failed:', err);
-            showToast('Failed to download receipt', 'error');
-        } finally {
-            setDownloadingId(null);
-        }
+        setSelectedFee(fee);
+        setShowReceiptModal(true);
     };
 
     const totalPaid    = fees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0);
@@ -502,6 +307,49 @@ const FeeStatus = () => {
                     </div>
                 </motion.div>
             </div>
+
+            {/* ── Receipt Modal ── */}
+            <AnimatePresence>
+                {showReceiptModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+                        onClick={() => setShowReceiptModal(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 30 }}
+                            transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-[#0a0a12] border border-white/10 rounded-2xl p-6 w-full max-w-2xl my-6"
+                        >
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 bg-gradient-to-br from-rose-600 to-red-600 rounded-xl">
+                                        <IoReceiptOutline size={16} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-white">Payment Receipt</h3>
+                                        <p className="text-xs text-gray-500">Apna Lakshya Library</p>
+                                    </div>
+                                </div>
+                                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                                    onClick={() => setShowReceiptModal(false)}
+                                    className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400"
+                                >
+                                    <IoClose size={18} />
+                                </motion.button>
+                            </div>
+                            <div className="overflow-x-auto flex justify-center">
+                                {selectedFee && profile && (
+                                    <PaymentReceipt student={profile} fee={selectedFee} slNo={fees.length - fees.indexOf(selectedFee)} />
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

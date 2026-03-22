@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -8,12 +8,14 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader, { ProfileSkeleton } from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api, { BASE_URL } from '../../utils/api';
-import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward } from 'react-icons/io5';
+import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward, IoDocumentTextOutline, IoReceiptOutline } from 'react-icons/io5';
 import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import CombinedSeatShiftModal from '../../components/student/CombinedSeatShiftModal';
 import MotivationBanner from '../../components/student/MotivationBanner';
 import useShifts from '../../hooks/useShifts';
+import AdmissionForm from '../../components/admin/AdmissionForm';
+import PaymentReceipt from '../../components/admin/PaymentReceipt';
 
 
 const Profile = () => {
@@ -23,6 +25,9 @@ const Profile = () => {
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showAdmissionModal, setShowAdmissionModal] = useState(false);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [latestFee, setLatestFee] = useState(null);
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestType, setRequestType] = useState('shift');
     const [requestData, setRequestData] = useState({});
@@ -36,18 +41,29 @@ const Profile = () => {
 
     useEffect(() => {
         fetchProfile();
+        fetchFirstFee();
     }, []);
 
     const fetchProfile = async () => {
         try {
             const response = await api.get('/auth/me');
             setProfile(response.data.user);
-            updateUser(response.data.user); // Sync with global context
+            updateUser(response.data.user);
         } catch (error) {
             console.error('Error fetching profile:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchFirstFee = async () => {
+        try {
+            const res = await api.get('/student/fees');
+            const fees = res.data.fees || [];
+            // pick the oldest paid fee (first fee)
+            const paid = fees.filter(f => f.status === 'paid').sort((a, b) => new Date(a.paidDate) - new Date(b.paidDate));
+            setLatestFee(paid[0] || fees[0] || null);
+        } catch(e) { /* silent */ }
     };
 
     const handleImageUpload = async (e) => {
@@ -289,6 +305,23 @@ const Profile = () => {
                                 <p className="text-gray-500 text-sm mt-1 flex items-center gap-1.5">
                                     <IoMail size={13} /> {profile?.email}
                                 </p>
+                                {/* ── Download buttons below email ── */}
+                                <div className="flex gap-2 mt-3 flex-wrap">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                        onClick={() => setShowAdmissionModal(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-500/25 transition-all"
+                                    >
+                                        <IoDocumentTextOutline size={13} /> Download Admission Form
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                        onClick={() => { fetchFirstFee(); setShowReceiptModal(true); }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-rose-500/25 transition-all"
+                                    >
+                                        <IoReceiptOutline size={13} /> Download Receipt
+                                    </motion.button>
+                                </div>
                             </div>
                             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${statusConfig.bg} border ${statusConfig.border}`}>
                                 <span className={`w-2 h-2 rounded-full ${statusConfig.dot} animate-pulse`} />
@@ -580,6 +613,101 @@ const Profile = () => {
             <CombinedSeatShiftModal isOpen={showCombinedChangeModal} onClose={() => setShowCombinedChangeModal(false)} currentSeat={profile?.seat}
                 onSuccess={() => { setShowCombinedChangeModal(false); fetchProfile(); setSuccess('Combined request submitted!'); setTimeout(() => setSuccess(''), 3000); }}
             />
+
+            {/* ── Admission Form Modal ── */}
+            <AnimatePresence>
+                {showAdmissionModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+                        onClick={() => setShowAdmissionModal(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 30 }}
+                            transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-[#0a0a12] border border-white/10 rounded-2xl p-6 w-full max-w-3xl my-6"
+                        >
+                            {/* Modal header */}
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl">
+                                        <IoDocumentTextOutline size={16} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-white">Admission Form</h3>
+                                        <p className="text-xs text-gray-500">Apna Lakshya Library — Download your form</p>
+                                    </div>
+                                </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                                    onClick={() => setShowAdmissionModal(false)}
+                                    className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400"
+                                >
+                                    <IoClose size={18} />
+                                </motion.button>
+                            </div>
+
+                            {/* Scrollable form area */}
+                            <div className="overflow-x-auto">
+                                <AdmissionForm profile={profile} />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            {/* ── Receipt Modal ── */}
+            <AnimatePresence>
+                {showReceiptModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+                        onClick={() => setShowReceiptModal(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 30 }}
+                            transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-[#0a0a12] border border-white/10 rounded-2xl p-6 w-full max-w-2xl my-6"
+                        >
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-2 bg-gradient-to-br from-rose-600 to-red-600 rounded-xl">
+                                        <IoReceiptOutline size={16} className="text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-white">Payment Receipt</h3>
+                                        <p className="text-xs text-gray-500">Apna Lakshya Library</p>
+                                    </div>
+                                </div>
+                                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                                    onClick={() => setShowReceiptModal(false)}
+                                    className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400"
+                                >
+                                    <IoClose size={18} />
+                                </motion.button>
+                            </div>
+                            <div className="overflow-x-auto flex justify-center">
+                                {latestFee ? (
+                                    <PaymentReceipt student={profile} fee={latestFee} slNo={1} />
+                                ) : (
+                                    <div className="py-10 text-center text-gray-500">
+                                        <IoReceiptOutline size={36} className="mx-auto mb-3 opacity-30" />
+                                        <p className="text-sm">No fee records found yet.</p>
+                                        <p className="text-xs mt-1 text-gray-600">Receipts appear here after your first payment is recorded.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div >
     );
 };
