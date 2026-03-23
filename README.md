@@ -131,7 +131,7 @@ All emails are branded with premium HTML templates.
 - **Color-Coded Statuses**:
   - Green: Available / Paid / Present
   - Red: Occupied / Overdue / Absent
-  - 🟡 Yellow: Due Soon / Pending
+  - Yellow: Due Soon / Pending
 - **Fully Responsive**: Desktop, Tablet, Mobile
 - **Mobile-Optimized Experiences**: Tuned viewport and layouts for perfect rendering on real devices
 
