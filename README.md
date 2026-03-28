@@ -221,7 +221,7 @@ lms/
 - Same percentage = same rank
 - Student's own name highlighted in ranking table
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 **MongoDB Connection Error:**
 - Ensure MongoDB is running: `mongod --dbpath "C:\data\db"`
