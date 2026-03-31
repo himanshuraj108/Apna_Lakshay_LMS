@@ -2000,13 +2000,74 @@ exports.bulkCheckOut = async (req, res) => {
 // Get fees
 exports.getFees = async (req, res) => {
     try {
-        const fees = await Fee.find()
+        let fees = await Fee.find()
             .populate('student', 'name email createdAt')
             .sort({ year: -1, month: -1 });
 
         // Filter out fees where student has been deleted (null after populate)
-        // Filter out fees where student has been deleted (null after populate)
-        const filteredFees = fees.filter(fee => fee.student);
+        let filteredFees = fees.filter(fee => fee.student);
+
+        // Auto-generate missing next-month fees on the due date
+        let generatedNew = false;
+        const latestFees = {};
+        for (const fee of filteredFees) {
+            const studentId = fee.student._id.toString();
+            // Since fees are sorted descending, the first one encountered is the latest
+            if (!latestFees[studentId]) {
+                latestFees[studentId] = fee;
+            }
+        }
+
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        for (const studentId in latestFees) {
+            let currentFee = latestFees[studentId];
+            if (!currentFee.student.createdAt) continue;
+            
+            const joinedDate = new Date(currentFee.student.createdAt);
+            const billingDay = joinedDate.getDate();
+
+            let iter = 0;
+            // Catch up missing months up to 6 months
+            while (iter < 6) {
+                const cycleEnd = new Date(currentFee.year, currentFee.month, billingDay - 1);
+                cycleEnd.setHours(0, 0, 0, 0);
+
+                if (now < cycleEnd) break; // We haven't reached the due date yet
+
+                let nextMonth = currentFee.month + 1;
+                let nextYear = currentFee.year;
+                if (nextMonth > 12) {
+                    nextMonth = 1;
+                    nextYear++;
+                }
+
+                const exists = await Fee.findOne({ student: studentId, month: nextMonth, year: nextYear });
+                if (!exists) {
+                    const nextCycleEnd = new Date(nextYear, nextMonth, billingDay - 1);
+                    currentFee = await Fee.create({
+                        student: studentId,
+                        month: nextMonth,
+                        year: nextYear,
+                        amount: currentFee.amount,
+                        dueDate: nextCycleEnd,
+                        status: 'pending'
+                    });
+                    generatedNew = true;
+                } else {
+                    currentFee = exists;
+                }
+                iter++;
+            }
+        }
+
+        if (generatedNew) {
+            fees = await Fee.find()
+                .populate('student', 'name email createdAt')
+                .sort({ year: -1, month: -1 });
+            filteredFees = fees.filter(fee => fee.student);
+        }
 
         // Calculate Billing Cycles
         const processedFees = filteredFees.map(fee => {
