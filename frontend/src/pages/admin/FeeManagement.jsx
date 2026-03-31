@@ -220,12 +220,16 @@ const FeeManagement = () => {
                                             </td>
                                             <td className="px-5 py-4 text-right">
                                                 {fee.status !== 'paid' ? (
-                                                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => markAsPaid(fee._id)}
+                                                    <motion.button 
+                                                        whileHover={{ scale: 1.05 }} 
+                                                        whileTap={{ scale: 0.95 }} 
+                                                        onClick={() => markAsPaid(fee._id)}
+                                                        disabled={false}
                                                         className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 border border-green-500/25 text-green-400 rounded-xl text-xs font-semibold transition-all ml-auto">
                                                         <IoCheckmarkCircle size={14} /> Mark Paid
                                                     </motion.button>
                                                 ) : (
-                                                    <span className="text-xs text-gray-500">Paid {new Date(fee.paidDate).toLocaleDateString('en-IN')}</span>
+                                                    <span className="text-xs text-gray-500">Paid {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : ''}</span>
                                                 )}
                                             </td>
                                         </tr>
