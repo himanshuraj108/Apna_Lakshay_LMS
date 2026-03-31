@@ -724,8 +724,58 @@ exports.getFees = async (req, res) => {
             { $set: { status: 'paid' } }
         );
 
-        const fees = await Fee.find({ student: req.user.id })
+        let fees = await Fee.find({ student: req.user.id })
             .sort({ year: -1, month: -1 });
+
+        // Auto-generate missing next-month fee on the due date limit
+        const student = await User.findById(req.user.id);
+        if (student && student.createdAt && fees.length > 0) {
+            let currentFee = fees[0]; // Latest fee
+            const joinedDate = new Date(student.createdAt);
+            const billingDay = joinedDate.getDate();
+
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+
+            let iter = 0;
+            let generatedNew = false;
+            
+            while (iter < 6) {
+                const cycleEnd = new Date(currentFee.year, currentFee.month, billingDay - 1);
+                cycleEnd.setHours(0, 0, 0, 0);
+
+                if (now < cycleEnd) break;
+
+                let nextMonth = currentFee.month + 1;
+                let nextYear = currentFee.year;
+                if (nextMonth > 12) {
+                    nextMonth = 1;
+                    nextYear++;
+                }
+
+                const exists = await Fee.findOne({ student: student.id, month: nextMonth, year: nextYear });
+                if (!exists) {
+                    const nextCycleEnd = new Date(nextYear, nextMonth, billingDay - 1);
+                    currentFee = await Fee.create({
+                        student: student.id,
+                        month: nextMonth,
+                        year: nextYear,
+                        amount: currentFee.amount,
+                        dueDate: nextCycleEnd,
+                        status: 'pending'
+                    });
+                    generatedNew = true;
+                } else {
+                    currentFee = exists;
+                }
+                iter++;
+            }
+
+            if (generatedNew) {
+                fees = await Fee.find({ student: req.user.id })
+                    .sort({ year: -1, month: -1 });
+            }
+        }
 
         res.status(200).json({
             success: true,
