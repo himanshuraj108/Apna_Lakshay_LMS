@@ -247,67 +247,44 @@ exports.getDashboard = async (req, res) => {
             attendanceRank = null;
         }
 
-        // Calculate Target Fee Month based on Rolling Cycle
+        // Fetch Most Relevant Fee for Dashboard
         let currentFee = null;
         let feeReminder = null;
+        const today = new Date();
 
-        if (student && student.createdAt) {
-            const joinedDate = new Date(student.createdAt);
-            const cycleDay = joinedDate.getDate();
-            const today = new Date();
-
-            let targetMonth = today.getMonth() + 1; // 1-12
-            let targetYear = today.getFullYear();
-
-            // If today is 'before' the cycle start day, we are in the cycle started last month
-            if (today.getDate() < cycleDay) {
-                targetMonth -= 1;
-                if (targetMonth === 0) {
-                    targetMonth = 12;
-                    targetYear -= 1;
-                }
-            }
-
-            // Fetch fee for the calculated cycle start month
+        if (student) {
+            // 1. Fetch earliest unpaid fee (pending or overdue)
             currentFee = await Fee.findOne({
                 student: studentId,
-                month: targetMonth,
-                year: targetYear
-            }).lean(); // Use lean() for faster query
+                status: { $in: ['pending', 'overdue'] }
+            }).sort({ dueDate: 1 }).lean();
 
-            // Calculate Dates and Reminder
-            if (currentFee && currentFee.status !== 'paid') {
-                // Cycle Start: targetMonth/targetYear/cycleDay
-                // Cycle End/Due Date: One day before same day next month
-                const cycleStartDate = new Date(targetYear, targetMonth - 1, cycleDay);
-                const dueDate = new Date(targetYear, targetMonth, cycleDay - 1);
+            // 2. If all paid, fetch the most recent paid fee
+            if (!currentFee) {
+                currentFee = await Fee.findOne({
+                    student: studentId,
+                    status: 'paid'
+                }).sort({ dueDate: -1 }).lean();
+            }
 
+            // Calculate Reminder
+            if (currentFee && currentFee.status !== 'paid' && currentFee.dueDate) {
+                const dueDate = new Date(currentFee.dueDate);
+                
                 // Reminder starts 5 days before due date
                 const reminderDate = new Date(dueDate);
                 reminderDate.setDate(reminderDate.getDate() - 5);
 
-                // Show reminder if today >= reminderDate (and not paid)
-                // Also show if overdue (today > dueDate)
                 if (today >= reminderDate) {
                     feeReminder = {
                         show: true,
                         amount: currentFee.amount,
                         dueDate: dueDate,
                         status: currentFee.status,
-                        message: `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString()}. Please pay to avoid late fees.`
+                        message: `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
                     };
                 }
-
-                // Inject calculated dueDate into currentFee object for display
-                currentFee.dueDate = dueDate;
             }
-        } else {
-            // Fallback for missing createdAt (legacy)
-            currentFee = await Fee.findOne({
-                student: studentId,
-                month: now.getMonth() + 1,
-                year: now.getFullYear()
-            }).lean();
         }
 
         res.status(200).json({
@@ -324,9 +301,11 @@ exports.getDashboard = async (req, res) => {
                     rank: attendanceRank
                 },
                 fee: currentFee ? {
+                    month: currentFee.month,
+                    year: currentFee.year,
                     amount: currentFee.amount,
                     status: currentFee.status,
-                    dueDate: currentFee.dueDate, // Now dynamic
+                    dueDate: currentFee.dueDate,
                     paidDate: currentFee.paidDate
                 } : null,
                 feeReminder, // Add reminder data

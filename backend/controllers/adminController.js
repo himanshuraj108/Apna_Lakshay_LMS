@@ -731,15 +731,15 @@ exports.createStudent = async (req, res) => {
     try {
         const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt } = req.body;
 
-        // Use provided password or generate one
+        // Use provided password or default to mobile number
         let password = req.body.password;
         if (!password) {
-            password = generatePassword();
+            password = mobile; // Default to mobile for first-time login
         }
 
         const studentData = {
             name,
-            email,
+            email: email || undefined, // Use undefined for missing email to respect sparse unique index
             mobile,
             address,
             password,
@@ -773,7 +773,7 @@ exports.createStudent = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Student created and credentials sent via email',
+            message: email ? 'Student created and credentials sent via email' : 'Student created (Login with Mobile)',
             student: {
                 id: student._id,
                 name: student.name,
@@ -793,9 +793,21 @@ exports.createStudent = async (req, res) => {
 // Update student
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, isActive, studentId, joinedAt } = req.body;
+        const { name, email, mobile, address, isActive, studentId, joinedAt, password } = req.body;
 
-        const updateData = { name, email, mobile, address, isActive, studentId };
+        const updateData = { 
+            name, 
+            email: email ? email.toLowerCase() : undefined, 
+            mobile, 
+            address, 
+            isActive, 
+            studentId 
+        };
+
+        // Handle password update if provided
+        if (password && password.trim() !== '') {
+            updateData.password = password;
+        }
 
         if (joinedAt) {
             updateData.createdAt = new Date(joinedAt);
@@ -829,31 +841,32 @@ exports.updateStudent = async (req, res) => {
             }
         }
 
-        let student;
-        if (joinedAt) {
-            // Mongoose prevents updating timestamps when timestamps=true is on the schema.
-            // When explicitly updating joinedAt, bypass timestamps via options and manually set updatedAt
-            updateData.updatedAt = new Date();
-
-            student = await User.findByIdAndUpdate(
-                req.params.id,
-                updateData,
-                { new: true, runValidators: true, timestamps: false }
-            );
-        } else {
-            student = await User.findByIdAndUpdate(
-                req.params.id,
-                updateData,
-                { new: true, runValidators: true }
-            );
-        }
-
+        const student = await User.findById(req.params.id);
         if (!student) {
             return res.status(404).json({
                 success: false,
                 message: 'Student not found'
             });
         }
+
+        // Apply updates
+        Object.assign(student, updateData);
+
+        // Ensure password is hashed by setting it on the document if provided
+        if (password && password.trim() !== '') {
+            student.password = password;
+        }
+
+        if (joinedAt) {
+            student.createdAt = new Date(joinedAt);
+        }
+
+        // Handle timestamps manually if joinedAt was provided
+        if (joinedAt) {
+            student.updatedAt = new Date();
+        }
+
+        await student.save();
 
         // Log action
         await logAction(req, 'student_updated', 'User', student._id, student.name, `Updated student details. Active: ${isActive}`);

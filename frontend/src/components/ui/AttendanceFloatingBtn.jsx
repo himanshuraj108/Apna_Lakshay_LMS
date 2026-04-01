@@ -4,7 +4,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import {
     IoClose, IoPhonePortrait, IoQrCode, IoCheckmarkCircle,
-    IoWarning, IoKeypad, IoLogIn, IoTime, IoMail, IoLocationOutline, IoWarningOutline
+    IoWarning, IoKeypad, IoLogIn, IoTime, IoMail, IoLocationOutline, IoWarningOutline,
+    IoGridOutline
 } from 'react-icons/io5';
 import CredentialPopup from './CredentialPopup';
 import { useNavigate } from 'react-router-dom';
@@ -12,8 +13,8 @@ import { BASE_URL } from '../../utils/api';
 
 const API = BASE_URL; // e.g. http://localhost:5000
 
-// Steps: closed → phone → location (optional) → scanning → success → (otp) → done
-const STEPS = { CLOSED: 'closed', PHONE: 'phone', LOCATION: 'location', SCANNING: 'scanning', SUCCESS: 'success', OTP: 'otp', DONE: 'done' };
+// Steps: closed → phone → location (optional) → scanning → success → (otp/seat) → done
+const STEPS = { CLOSED: 'closed', PHONE: 'phone', LOCATION: 'location', SCANNING: 'scanning', SUCCESS: 'success', OTP: 'otp', SEAT_VERIFY: 'seat_verify', DONE: 'done' };
 
 export default function AttendanceFloatingBtn() {
     const [step, setStep] = useState(STEPS.CLOSED);
@@ -26,6 +27,8 @@ export default function AttendanceFloatingBtn() {
     const [maskedEmail, setMaskedEmail] = useState('');
     const [debugOtp, setDebugOtp] = useState('');       // shown in dev if email fails
     const [credentials, setCredentials] = useState(null); // { user, password }
+    const [seatNumber, setSeatNumber] = useState('');
+    const [hasEmail, setHasEmail] = useState(false);
     const scannerRef = useRef(null);
     const navigate = useNavigate();
 
@@ -62,7 +65,9 @@ export default function AttendanceFloatingBtn() {
         setLoading(true);
         try {
             // Verify phone exists in DB before opening scanner
-            await axios.post(`${API}/api/auth/check-phone`, { mobile });
+            const res = await axios.post(`${API}/api/auth/check-phone`, { mobile });
+            setHasEmail(res.data.hasEmail);
+            setMaskedEmail(res.data.maskedEmail || '');
 
             // Check if location is required by admin
             try {
@@ -147,8 +152,13 @@ export default function AttendanceFloatingBtn() {
         }
     };
 
-    // ── STEP 3: User chose Login → send OTP ───────────────────────
+    // ── STEP 3: User chose Login → send OTP OR go to Seat Verify ───
     const handleLoginChoice = async () => {
+        if (!hasEmail) {
+            setStep(STEPS.SEAT_VERIFY);
+            return;
+        }
+
         setLoading(true);
         setError('');
         try {
@@ -158,6 +168,34 @@ export default function AttendanceFloatingBtn() {
             setStep(STEPS.OTP);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to send OTP');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── STEP 3.5: Handle Seat Verification login ──────────────────
+    const handleSeatVerify = async (e) => {
+        e.preventDefault();
+        if (!seatNumber) { setError('Enter your seat number'); return; }
+        setError('');
+        setLoading(true);
+        try {
+            const res = await axios.post(`${API}/api/auth/verify-seat-login`, { mobile, seatNumber });
+            const { token, user, password } = res.data;
+
+            // Store in localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+
+            setCredentials({ user, password });
+            setStep(STEPS.DONE);
+
+            // Full reload so AuthContext picks up the new token
+            setTimeout(() => {
+                window.location.href = user.role === 'admin' ? '/admin' : '/student';
+            }, 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Invalid seat number for this student');
         } finally {
             setLoading(false);
         }
@@ -263,6 +301,7 @@ export default function AttendanceFloatingBtn() {
                                             {step === STEPS.SCANNING && <IoQrCode size={18} className="text-white" />}
                                             {step === STEPS.SUCCESS && <IoCheckmarkCircle size={18} className="text-white" />}
                                             {step === STEPS.OTP && <IoKeypad size={18} className="text-white" />}
+                                            {step === STEPS.SEAT_VERIFY && <IoGridOutline size={18} className="text-white" />}
                                         </div>
                                         <div>
                                             <p className="text-white font-bold text-sm">
@@ -271,6 +310,7 @@ export default function AttendanceFloatingBtn() {
                                                 {step === STEPS.SCANNING && 'Scan Kiosk QR'}
                                                 {step === STEPS.SUCCESS && 'Attendance Marked!'}
                                                 {step === STEPS.OTP && 'Verify & Login'}
+                                                {step === STEPS.SEAT_VERIFY && 'Verify Seat Number'}
                                             </p>
                                             <p className="text-gray-500 text-xs">Apna Lakshay Library</p>
                                         </div>
@@ -454,11 +494,41 @@ export default function AttendanceFloatingBtn() {
                                         <button type="button" onClick={() => setStep(STEPS.SUCCESS)} className="w-full text-xs text-gray-600 hover:text-gray-400 transition-colors">← Go back</button>
                                     </form>
                                 )}
+
+                                {/* ── STEP: Seat Number Verify ── */}
+                                {step === STEPS.SEAT_VERIFY && (
+                                    <form onSubmit={handleSeatVerify} className="space-y-4">
+                                        <div className="text-center mb-4">
+                                            <div className="w-16 h-16 mx-auto bg-orange-500/10 text-orange-400 rounded-full flex items-center justify-center mb-4 border border-orange-500/20">
+                                                <IoGridOutline size={32} />
+                                            </div>
+                                            <p className="text-white font-bold text-lg mb-1">Verify Seat Number</p>
+                                            <p className="text-gray-400 text-sm">No email found for this account. Please enter your <span className="text-orange-400 font-semibold">assigned seat number</span> to log in.</p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Seat Number</label>
+                                            <input
+                                                type="text" value={seatNumber}
+                                                onChange={e => setSeatNumber(e.target.value.toUpperCase())}
+                                                placeholder="e.g. A-12"
+                                                className="w-full px-4 py-3.5 rounded-xl text-white text-center text-xl font-bold tracking-widest outline-none transition-all placeholder-gray-700 uppercase"
+                                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                                                autoFocus required
+                                            />
+                                        </div>
+                                        <button type="submit" disabled={loading || !seatNumber}
+                                            className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                            style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 20px rgba(249,115,22,0.3)' }}>
+                                            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><IoLogIn size={16} /> Verify & Login</>}
+                                        </button>
+                                        <button type="button" onClick={() => setStep(STEPS.SUCCESS)} className="w-full text-xs text-gray-600 hover:text-gray-400 transition-colors">← Go back</button>
+                                    </form>
+                                )}
                             </div>
 
                             {/* Step indicator dots */}
                             <div className="flex justify-center gap-1.5 pb-4">
-                                {[STEPS.PHONE, STEPS.SCANNING, STEPS.SUCCESS, STEPS.OTP].map((s, i) => (
+                                {[STEPS.PHONE, STEPS.SCANNING, STEPS.SUCCESS, STEPS.OTP, STEPS.SEAT_VERIFY].map((s, i) => (
                                     <div key={i} className="h-1 rounded-full transition-all duration-300"
                                         style={{ width: step === s ? 20 : 6, background: step === s ? '#22c55e' : 'rgba(255,255,255,0.1)' }} />
                                 ))}

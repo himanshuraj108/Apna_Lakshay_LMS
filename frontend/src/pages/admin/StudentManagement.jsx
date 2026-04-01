@@ -1298,13 +1298,13 @@ const StudentManagement = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">Email</label>
+                            <label className="block text-sm font-medium mb-2">Email (Optional)</label>
                             <input
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 className={INPUT}
-                                required
+                                placeholder="student@gmail.com (Leave blank if not available)"
                             />
                         </div>
                         <div>
@@ -1332,25 +1332,43 @@ const StudentManagement = () => {
                             />
                         </div>
 
-                        {!editMode && (
-                            <div className="space-y-1">
-                                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Generated Password</label>
-                                <div className="flex gap-2">
-                                    <input type="text" value={formData.password} readOnly
-                                        className={INPUT + ' flex-1 cursor-not-allowed font-mono text-center tracking-wider opacity-70'}
-                                        placeholder="Generating..." />
-                                    <button type="button" onClick={() => {
-                                        const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                                        let password = '';
-                                        for (let i = 0; i < 8; i++) { password += charset.charAt(Math.floor(Math.random() * charset.length)); }
-                                        setFormData({ ...formData, password: password });
-                                    }} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-xl transition-colors font-medium">
-                                        Regenerate
+                        <div className="space-y-1">
+                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">{editMode ? 'New Password (Optional)' : 'Generated Password'}</label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    className={INPUT + ' flex-1 font-mono text-center tracking-wider'}
+                                    placeholder={editMode ? "Leave blank to keep current" : "Generating..."}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, password: formData.mobile })}
+                                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-xl transition-colors font-medium whitespace-nowrap"
+                                    title="Set password to mobile number"
+                                >
+                                    Use Mobile
+                                </button>
+                                {!editMode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                                            let password = '';
+                                            for (let i = 0; i < 8; i++) { password += charset.charAt(Math.floor(Math.random() * charset.length)); }
+                                            setFormData({ ...formData, password: password });
+                                        }}
+                                        className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-xl transition-colors font-medium whitespace-nowrap"
+                                    >
+                                        Random
                                     </button>
-                                </div>
-                                <p className="text-xs text-gray-600 mt-1">This password will be sent to the student via email.</p>
+                                )}
                             </div>
-                        )}
+                            <p className="text-xs text-gray-600 mt-1">
+                                {editMode ? "Enter a new password or click 'Use Mobile' to reset." : "This password will be used for first-time login."}
+                            </p>
+                        </div>
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 mb-1.5">Registration Date</label>
                             <input type="date" value={formData.joinedAt}
@@ -1403,7 +1421,7 @@ const StudentManagement = () => {
                         </div>
                         {!editMode && !formData.password && (
                             <p className="text-sm text-gray-400">
-                                Note: A random password will be generated and shown after creation (email disabled)
+                                Note: Password defaults to **Student's Mobile Number** if left empty.
                             </p>
                         )}
                     </form>

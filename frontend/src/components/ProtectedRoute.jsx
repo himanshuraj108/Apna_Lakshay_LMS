@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children, adminOnly = false, requireSeat = false }) =>
 
     if (requireSeat && user.role !== 'admin') {
         const hasSeat = user.seat || user.seatNumber;
-        if (user.isActive && !hasSeat) {
+        if (!hasSeat) {
             return <Navigate to="/pending-allocation" replace />;
         }
         // Also block inactive users if seat is required (redundant if backend blocks, but good for UI)

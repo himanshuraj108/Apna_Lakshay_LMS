@@ -7,13 +7,14 @@ const { sendOTPEmail } = require('../services/emailService');
 // @route   POST /api/auth/login
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email: rawIdentifier, password } = req.body;
+        const identifier = (rawIdentifier || '').trim();
 
         // Validation
-        if (!email || !password) {
+        if (!identifier || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide email and password'
+                message: 'Please provide email/mobile and password'
             });
         }
 
@@ -21,7 +22,7 @@ exports.login = async (req, res) => {
         const envAdminEmail = process.env.ADMIN_EMAIL;
         const envAdminPassword = process.env.ADMIN_PASSWORD;
 
-        if (envAdminEmail && envAdminPassword && email === envAdminEmail && password === envAdminPassword) {
+        if (envAdminEmail && envAdminPassword && identifier === envAdminEmail && password === envAdminPassword) {
             // Create a temporary admin user object for the token
             const adminUser = {
                 _id: 'env-admin',
@@ -45,15 +46,23 @@ exports.login = async (req, res) => {
             // Let's stick to the standard flow but prioritize ENV match for password if the user exists in DB.
         }
 
-        // Check if user exists
-        let user = await User.findOne({ email }).select('+password');
+        // Check if user exists by email OR mobile (handling both string and number for mobile)
+        const mobileAsNumber = !isNaN(identifier) ? Number(identifier) : null;
+        
+        let user = await User.findOne({ 
+            $or: [
+                { email: typeof identifier === 'string' ? identifier.toLowerCase() : identifier }, 
+                { mobile: identifier },
+                ...(mobileAsNumber !== null ? [{ mobile: mobileAsNumber }] : [])
+            ] 
+        }).select('+password');
 
         // SPECIAL CASE: If credential matches ENV, but user doesn't exist in DB, likely DB was cleared.
         // We could auto-create the admin here?
         if (!user &&
             process.env.ADMIN_EMAIL &&
             process.env.ADMIN_PASSWORD &&
-            email === process.env.ADMIN_EMAIL &&
+            identifier === process.env.ADMIN_EMAIL &&
             password === process.env.ADMIN_PASSWORD
         ) {
             user = await User.create({
@@ -74,17 +83,22 @@ exports.login = async (req, res) => {
             });
         }
 
-
-
         // Check password
-        // If it matches ENV admin, we allow it regardless of DB password (feature: easy reset via env)
         let isMatch = false;
         if (process.env.ADMIN_EMAIL &&
-            email === process.env.ADMIN_EMAIL &&
+            identifier === process.env.ADMIN_EMAIL &&
             password === process.env.ADMIN_PASSWORD) {
             isMatch = true;
         } else {
             isMatch = await user.comparePassword(password);
+            
+            // EMERGENCY FALLBACK: Check if password was stored as plain text (manually edited in DB)
+            if (!isMatch && password === user.password) {
+                isMatch = true;
+                // Auto-hash it now so it's secure for next time
+                user.password = password;
+                await user.save({ validateBeforeSave: false });
+            }
         }
 
         if (!isMatch) {
@@ -94,23 +108,12 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Check Maintenance Mode for Students (Simulate Crash)
-        if (user.role === 'student' || user.role === 'user') {
-            const settings = await Settings.findOne();
-            if (settings && settings.activeModes && settings.activeModes.custom) {
-                return res.status(500).json({
-                    success: false,
-                    message: 'INTERNAL SERVER ERROR: SYSTEM CRASH DETECTED',
-                    error: 'Critical Failure in module core.sys caused by ShiftSystemException: 0xDEADBEEF',
-                    maintenanceMode: true
-                });
-            }
-        }
+        // Normal login flow continues...
 
-        // Update login status
+        // Update login status (non-blocking)
         user.isLoggedIn = true;
         user.lastLogin = new Date();
-        await user.save({ validateBeforeSave: false });
+        user.save({ validateBeforeSave: false }).catch(err => console.error('Login tracking update failed:', err.message));
 
         // Generate token
         const token = user.generateToken();
@@ -130,6 +133,8 @@ exports.login = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('❌ Login error:', error);
+
         res.status(500).json({
             success: false,
             message: 'Server error',
@@ -144,12 +149,12 @@ exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('+qrToken');
 
-        // Check and Reset Daily Mock Test Credits (00:00 IST)
+        // Check and Reset Daily Mock Test Credits (00:00 IST) (non-blocking update)
         const currentDateIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
         if (user.mockTestCreditsResetDate !== currentDateIST) {
             user.mockTestCredits = 2;
             user.mockTestCreditsResetDate = currentDateIST;
-            await user.save({ validateBeforeSave: false });
+            user.save({ validateBeforeSave: false }).catch(err => console.error('Credit reset update failed:', err.message));
         }
 
         let userData = {
@@ -395,7 +400,69 @@ exports.checkPhone = async (req, res) => {
         if (!user.isActive) {
             return res.status(403).json({ success: false, message: 'Membership expired. Please contact admin.' });
         }
-        res.status(200).json({ success: true, message: 'Phone verified' });
+
+        // Check for seat as well for the fallback login
+        const studentWithSeat = await User.findOne({ _id: user._id }).populate('seat');
+        const seatNumber = studentWithSeat.seat?.number || null;
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Phone verified',
+            hasEmail: !!user.email,
+            maskedEmail: user.email ? user.email.replace(/(.{2}).*(@.*)/, '$1***$2') : null,
+            needsSeat: !user.email,
+            hasSeat: !!seatNumber
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Verify Seat Number and auto-login student
+// @route   POST /api/auth/verify-seat-login
+exports.verifySeatLogin = async (req, res) => {
+    try {
+        const { mobile, seatNumber } = req.body;
+        if (!mobile || !seatNumber) {
+            return res.status(400).json({ success: false, message: 'Phone and seat number are required' });
+        }
+
+        const user = await User.findOne({ mobile: mobile.trim(), role: 'student' })
+            .populate('seat')
+            .select('+password');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'No student found' });
+        }
+
+        if (!user.seat || user.seat.number.toString() !== seatNumber.toString()) {
+            return res.status(401).json({ success: false, message: 'Incorrect seat number for this student' });
+        }
+
+        // Correct! Log them in
+        const PasswordLog = require('../models/PasswordLog');
+        const lastLog = await PasswordLog.findOne({ user: user._id }).sort({ createdAt: -1 });
+        const plainPassword = lastLog ? lastLog.newPassword : null;
+
+        user.isLoggedIn = true;
+        user.lastLogin = new Date();
+        await user.save({ validateBeforeSave: false });
+
+        const token = user.generateToken();
+
+        res.status(200).json({
+            success: true,
+            token,
+            password: plainPassword,
+            user: {
+                _id: user._id, 
+                name: user.name, 
+                role: user.role, 
+                email: user.email, 
+                mobile: user.mobile,
+                seat: user.seat ? user.seat.number : 'No Seat'
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }

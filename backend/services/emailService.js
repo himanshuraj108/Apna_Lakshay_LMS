@@ -133,6 +133,11 @@ const getPremiumTemplate = (title, content, actionBtn = null) => {
  * Universal Send Helper with Fallback
  */
 const sendEmail = async (to, subject, title, contentHtml, actionBtn = null) => {
+  if (!to || to.trim() === '') {
+    // Skip sending email if no address is provided (support for students without email)
+    return false;
+  }
+
   const html = getPremiumTemplate(title, contentHtml, actionBtn);
   const from = `Library Management System <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`;
 

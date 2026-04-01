@@ -10,7 +10,8 @@ const {
     checkPhone,
     markKioskAttendancePublic,
     sendOtpByPhone,
-    verifyOtpAndAutoLogin
+    verifyOtpAndAutoLogin,
+    verifySeatLogin
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
@@ -30,5 +31,6 @@ router.post('/check-phone', checkPhone);
 router.post('/kiosk-attendance', markKioskAttendancePublic);
 router.post('/send-otp-phone', sendOtpByPhone);
 router.post('/verify-otp-login', verifyOtpAndAutoLogin);
+router.post('/verify-seat-login', verifySeatLogin);
 
 module.exports = router;
