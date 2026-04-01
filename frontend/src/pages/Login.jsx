@@ -263,7 +263,7 @@ const Login = () => {
                             {/* Email field */}
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                                    Email Address
+                                    Email or Mobile Number
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -276,7 +276,7 @@ const Login = () => {
                                         type="text"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="you@example.com"
+                                        placeholder="you@example.com or 10-digit mobile"
                                         required
                                         className="w-full pl-10 pr-4 py-3.5 rounded-xl text-sm text-white placeholder-gray-600 outline-none transition-all duration-200"
                                         style={{
