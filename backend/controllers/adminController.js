@@ -1531,28 +1531,34 @@ exports.assignSeat = async (req, res) => {
             const now = new Date();
 
             // Calculate due date based on student's joined date (Billing Cycle)
-            // reusing 'student' variable fetched at start of function
             const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
             const joinedDay = joinedDate.getDate();
-
-            // Due date is the start of the current billing cycle (Prepaid model)
-            // e.g. Joined 15th Jan -> Due 15th Jan
             const dueDate = new Date(now.getFullYear(), now.getMonth(), joinedDay);
 
-            // Create or update fee record
-            await Fee.findOneAndUpdate(
-                {
+            // Create or update fee record — but NEVER overwrite a fee that's already paid
+            const existingFee = await Fee.findOne({
+                student: studentId,
+                month: now.getMonth() + 1,
+                year: now.getFullYear()
+            });
+
+            if (!existingFee) {
+                await Fee.create({
                     student: studentId,
                     month: now.getMonth() + 1,
-                    year: now.getFullYear()
-                },
-                {
+                    year: now.getFullYear(),
                     amount: newAssignment.price,
                     dueDate,
                     status: 'pending'
-                },
-                { upsert: true, new: true }
-            );
+                });
+            } else if (existingFee.status !== 'paid') {
+                // Update amount only — never reset status to pending
+                await Fee.findByIdAndUpdate(existingFee._id, {
+                    amount: newAssignment.price,
+                    dueDate
+                });
+            }
+            // If already paid → do nothing
 
             await Notification.create({
                 recipient: studentId,
@@ -2047,7 +2053,11 @@ exports.getFees = async (req, res) => {
                 const cycleEnd = new Date(currentFee.year, currentFee.month, billingDay - 1);
                 cycleEnd.setHours(0, 0, 0, 0);
 
-                if (now < cycleEnd) break; // We haven't reached the due date yet
+                // Generate next fee 5 days before cycleStart (= cycleEnd - 4 days)
+                const triggerDate = new Date(cycleEnd);
+                triggerDate.setDate(triggerDate.getDate() - 4);
+
+                if (now < triggerDate) break; // Not yet within 5-day window
 
                 let nextMonth = currentFee.month + 1;
                 let nextYear = currentFee.year;

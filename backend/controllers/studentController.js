@@ -723,7 +723,11 @@ exports.getFees = async (req, res) => {
                 const cycleEnd = new Date(currentFee.year, currentFee.month, billingDay - 1);
                 cycleEnd.setHours(0, 0, 0, 0);
 
-                if (now < cycleEnd) break;
+                // Generate next fee 5 days before cycleStart (= cycleEnd - 4 days)
+                const triggerDate = new Date(cycleEnd);
+                triggerDate.setDate(triggerDate.getDate() - 4);
+
+                if (now < triggerDate) break; // Not yet within 5-day window
 
                 let nextMonth = currentFee.month + 1;
                 let nextYear = currentFee.year;
