@@ -394,56 +394,30 @@ const StudentDashboard = () => {
                     {/* Fee */}
                     <Link to="/student/fees">
                         <div className="group rounded-xl p-4 border border-white/6 hover:border-amber-500/30 transition-all duration-200 cursor-pointer h-full flex flex-col justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                            <div>
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
-                                            <IoCashOutline size={14} className="text-amber-400" />
-                                        </div>
-                                        <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Fee Status</span>
-                                    </div>
-                                    
-                                    {dashboardData?.fee?.status && (
-                                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                            dashboardData.fee.status === 'paid'
-                                                ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-                                                : dashboardData.fee.status === 'overdue'
-                                                ? 'bg-red-500/10 border-red-500/25 text-red-400'
-                                                : 'bg-amber-500/10 border-amber-500/25 text-amber-400'
-                                        }`}>
-                                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: dashboardData.fee.status === 'paid' ? '#34d399' : dashboardData.fee.status === 'overdue' ? '#f87171' : '#fbbf24' }} />
-                                            {dashboardData.fee.status.charAt(0).toUpperCase() + dashboardData.fee.status.slice(1)}
-                                        </span>
-                                    )}
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
+                                    <IoCashOutline size={14} className="text-amber-400" />
                                 </div>
-                                
-                                {dashboardData?.fee ? (
-                                    <div className="flex items-end justify-between">
-                                        <div>
-                                            {dashboardData.fee.month && dashboardData.fee.year && (
-                                                <div className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">
-                                                    {new Date(dashboardData.fee.year, dashboardData.fee.month - 1).toLocaleString('default', { month: 'short' })} <span className="text-white/40">{dashboardData.fee.year.toString().slice(-2)}</span>
-                                                </div>
-                                            )}
-                                            <p className="text-xl sm:text-2xl font-black text-white shrink-0">&#8377;{dashboardData.fee.amount}</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-xl sm:text-2xl font-black text-white mb-1">&mdash;</p>
-                                )}
+                                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Fee Status</span>
                             </div>
 
-                            {dashboardData?.fee ? (
-                                <div className="mt-4 flex items-center gap-2 text-xs">
-                                    <div className="bg-white/5 border border-white/5 rounded px-2 py-1 flex items-center gap-1.5 w-max">
-                                        <span className="text-[9px] uppercase tracking-wider font-bold text-gray-500 block">Due</span>
-                                        <span className="text-gray-300 font-medium">
-                                            {new Date(dashboardData.fee.dueDate).toLocaleDateString('en-GB')}
-                                        </span>
-                                    </div>
-                                </div>
+                            <p className="text-xl sm:text-2xl font-black text-white mb-2">
+                                {dashboardData?.fee ? `₹${dashboardData.fee.amount}` : '—'}
+                            </p>
+
+                            {dashboardData?.fee?.status ? (
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit ${
+                                    dashboardData.fee.status === 'paid'
+                                        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                                        : dashboardData.fee.status === 'overdue'
+                                        ? 'bg-red-500/10 border-red-500/25 text-red-400'
+                                        : 'bg-amber-500/10 border-amber-500/25 text-amber-400'
+                                }`}>
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: dashboardData.fee.status === 'paid' ? '#34d399' : dashboardData.fee.status === 'overdue' ? '#f87171' : '#fbbf24' }} />
+                                    {dashboardData.fee.status.charAt(0).toUpperCase() + dashboardData.fee.status.slice(1)}
+                                </span>
                             ) : (
-                                <p className="text-[11px] text-gray-400 mt-2">No record</p>
+                                <p className="text-[11px] text-gray-400">No record</p>
                             )}
                         </div>
                     </Link>

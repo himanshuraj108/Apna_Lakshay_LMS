@@ -5,7 +5,13 @@ const MockTestAttempt = require('../models/MockTestAttempt');
 // Groq OpenAI-compatible API
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.1-8b-instant'; // Free, fast, great for structured output
+// Models tried in order — if one is rate-limited or unavailable, the next is used
+const GROQ_MODELS = [
+    'llama3-8b-8192',
+    'llama-3.1-8b-instant',
+    'gemma2-9b-it',
+    'gemma-7b-it',
+];
 
 // Detailed Exam Patterns with Sections, Syllabus, and Marking Scheme
 const EXAM_PATTERNS = {
@@ -156,10 +162,10 @@ const getGroqKeys = () => {
 
 let currentGroqKeyIndex = 0;
 
-const callGroqSingle = (messages, apiKey) => {
+const callGroqSingle = (messages, apiKey, model) => {
     return new Promise((resolve, reject) => {
         const body = JSON.stringify({
-            model: GROQ_MODEL,
+            model,
             messages,
             temperature: 0.7,
             max_tokens: 8000,
@@ -207,26 +213,31 @@ const callGroqSingle = (messages, apiKey) => {
 
 const callGroq = async (messages) => {
     const keys = getGroqKeys();
-    if (keys.length === 0) throw new Error('No Groq API keys available');
+    if (keys.length === 0) throw new Error('No Groq API keys configured on server. Please add GROQ_API_KEY to environment variables.');
 
     let lastError = null;
 
-    for (let i = 0; i < keys.length; i++) {
-        const keyIndex = (currentGroqKeyIndex + i) % keys.length;
+    // Try every combination of key × model until one works
+    for (let ki = 0; ki < keys.length; ki++) {
+        const keyIndex = (currentGroqKeyIndex + ki) % keys.length;
         const apiKey = keys[keyIndex];
-        try {
-            const result = await callGroqSingle(messages, apiKey);
-            // Save the working key index for subsequent requests
-            currentGroqKeyIndex = keyIndex;
-            return result;
-        } catch (error) {
-            lastError = error;
-            console.error(`Groq API key index ${keyIndex} failed:`, error.message);
-            // Try next key in the loop
+
+        for (const model of GROQ_MODELS) {
+            try {
+                const result = await callGroqSingle(messages, apiKey, model);
+                currentGroqKeyIndex = keyIndex;
+                console.log(`[Groq] Success with key[${keyIndex}] + model=${model}`);
+                return result;
+            } catch (error) {
+                lastError = error;
+                console.warn(`[Groq] key[${keyIndex}] model=${model} failed: ${error.message}`);
+                // If rate-limited on this key, move to next key immediately
+                if (error.message === 'rate_limit') break;
+            }
         }
     }
 
-    throw lastError || new Error('All Groq API keys failed');
+    throw lastError || new Error('All Groq API keys and models failed. Please try again later.');
 };
 
 // ─── Extract JSON from model response ────────────────────────────────
