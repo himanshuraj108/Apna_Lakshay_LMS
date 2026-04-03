@@ -8,7 +8,7 @@ A production-ready MERN stack web application for offline library seat booking a
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB
 - **Authentication**: JWT 
-- **Email**: Nodemailer with Google App Password and SMTP
+- **Email**: Nodemailer with Google App Password and SMTP (Brevo)
 
 ## Quick Start
 
