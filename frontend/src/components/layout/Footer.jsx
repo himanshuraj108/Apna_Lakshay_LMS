@@ -11,7 +11,7 @@ const Footer = () => {
                     &copy; {new Date().getFullYear()} Apna Lakshay Library Management System. All rights reserved.
                 </p>
                 <p className="text-gray-600 text-xs flex items-center justify-center gap-1">
-                    Made with for Students
+                    Made for Students
                 </p>
 
                 <div className="flex justify-center gap-6 mt-4 opacity-50 hover:opacity-100 transition-opacity duration-300">
