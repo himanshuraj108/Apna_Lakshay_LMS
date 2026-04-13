@@ -2,28 +2,37 @@ import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import Button from '../ui/Button';
 
-// --- Scan Feedback: beep + vibrate ---
+// --- Scan Feedback: barcode scanner beep + vibrate ---
 const playBeep = (type = 'success') => {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
+
         if (type === 'success') {
-            oscillator.frequency.setValueAtTime(1046, ctx.currentTime);
-            oscillator.frequency.setValueAtTime(1318, ctx.currentTime + 0.08);
-            gainNode.gain.setValueAtTime(0.35, ctx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-            oscillator.start(ctx.currentTime);
-            oscillator.stop(ctx.currentTime + 0.3);
+            // Classic barcode scanner beep: sharp 3800Hz square wave, 120ms
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(3800, ctx.currentTime);
+            gain.gain.setValueAtTime(0.4, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.12);
         } else {
-            oscillator.frequency.setValueAtTime(300, ctx.currentTime);
-            oscillator.frequency.setValueAtTime(200, ctx.currentTime + 0.15);
-            gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-            oscillator.start(ctx.currentTime);
-            oscillator.stop(ctx.currentTime + 0.45);
+            // Error: two low buzzes
+            [0, 0.18].forEach(delay => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, ctx.currentTime + delay);
+                gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + 0.15);
+            });
         }
     } catch (e) { /* AudioContext not supported */ }
 };
