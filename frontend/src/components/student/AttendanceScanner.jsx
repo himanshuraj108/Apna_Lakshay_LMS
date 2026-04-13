@@ -2,11 +2,55 @@ import { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import Button from '../ui/Button';
 
+// --- Scan Feedback: beep + vibrate ---
+const playBeep = (type = 'success') => {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        if (type === 'success') {
+            oscillator.frequency.setValueAtTime(1046, ctx.currentTime);
+            oscillator.frequency.setValueAtTime(1318, ctx.currentTime + 0.08);
+            gainNode.gain.setValueAtTime(0.35, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + 0.3);
+        } else {
+            oscillator.frequency.setValueAtTime(300, ctx.currentTime);
+            oscillator.frequency.setValueAtTime(200, ctx.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + 0.45);
+        }
+    } catch (e) { /* AudioContext not supported */ }
+};
+
+const vibrateFeedback = (type = 'success') => {
+    if (!navigator.vibrate) return;
+    if (type === 'success') {
+        navigator.vibrate([80, 40, 80]);
+    } else {
+        navigator.vibrate([200, 100, 200, 100, 400]);
+    }
+};
+
 // Status Card Component
 const VerificationCard = ({ status, student, timestamp, message }) => {
     const isSuccess = status === 'success';
     const isError = status === 'error';
     const isPending = status === 'pending';
+
+    // Fire beep + vibration when card appears
+    useEffect(() => {
+        if (status === 'success' || status === 'error') {
+            playBeep(status);
+            vibrateFeedback(status);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const getStatusColor = () => {
         if (isSuccess) return 'bg-emerald-500';
@@ -175,6 +219,9 @@ const AttendanceScanner = ({ onScanSuccess, onClose, verificationState }) => {
             config,
             (decodedText) => {
                 if (isScanning) {
+                    // Immediate beep on QR detection (before API)
+                    playBeep('success');
+                    navigator.vibrate && navigator.vibrate(60);
                     onScanSuccess(decodedText);
                 }
             },

@@ -1,10 +1,46 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { FaTimes, FaCamera, FaSignInAlt, FaSignOutAlt, FaUserCheck } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import Badge from '../../components/ui/Badge';
+
+// --- Scan Feedback: beep + vibrate ---
+const playBeep = (type = 'success') => {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        if (type === 'success') {
+            oscillator.frequency.setValueAtTime(1046, ctx.currentTime);   // C6
+            oscillator.frequency.setValueAtTime(1318, ctx.currentTime + 0.08); // E6
+            gainNode.gain.setValueAtTime(0.35, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + 0.3);
+        } else {
+            oscillator.frequency.setValueAtTime(300, ctx.currentTime);
+            oscillator.frequency.setValueAtTime(200, ctx.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + 0.45);
+        }
+    } catch (e) { /* AudioContext not supported */ }
+};
+
+const vibrate = (type = 'success') => {
+    if (!navigator.vibrate) return;
+    if (type === 'success') {
+        navigator.vibrate([80, 40, 80]); // two short pulses
+    } else {
+        navigator.vibrate([200, 100, 200, 100, 400]); // error pattern
+    }
+};
 
 const QRScannerModal = ({ onClose }) => {
     const navigate = useNavigate();
@@ -58,6 +94,9 @@ const QRScannerModal = ({ onClose }) => {
 
             const response = await api.post(endpoint, qrData);
 
+            playBeep('success');
+            vibrate('success');
+
             setScanResult({
                 type: 'success',
                 message: response.data.message,
@@ -75,6 +114,9 @@ const QRScannerModal = ({ onClose }) => {
 
         } catch (error) {
             console.error('Scan Action Failed:', error);
+            playBeep('error');
+            vibrate('error');
+
             setScanResult({
                 type: 'error',
                 message: error.response?.data?.message || 'Action failed'
