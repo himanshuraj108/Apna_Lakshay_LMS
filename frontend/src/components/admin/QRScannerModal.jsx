@@ -6,42 +6,55 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import Badge from '../../components/ui/Badge';
 
-// --- Scan Feedback: real beep sound + vibrate ---
-const beepAudio = new Audio('/beep.mp3');
-beepAudio.preload = 'auto';
+// --- Scan Feedback: MAX volume beep + vibrate ---
+// NOTE: Browsers cannot override system volume, but Web Audio gain boost
+// makes it as loud as physically possible within the browser.
+let beepBuffer = null;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// Preload and decode beep.mp3 into AudioBuffer for max volume control
+fetch('/beep.mp3')
+    .then(res => res.arrayBuffer())
+    .then(data => audioCtx.decodeAudioData(data))
+    .then(buffer => { beepBuffer = buffer; })
+    .catch(() => { beepBuffer = null; });
 
 const playBeep = (type = 'success') => {
     if (type === 'success') {
-        try {
-            beepAudio.currentTime = 0;
-            beepAudio.play().catch(() => {
-                // Fallback: synthesized beep if file not found
-                try {
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.connect(gain); gain.connect(ctx.destination);
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(3800, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.4, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-                    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.12);
-                } catch (e) { }
-            });
-        } catch (e) { }
-    } else {
-        // Error: two low buzzes (synthesized)
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            [0, 0.2].forEach(delay => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain); gain.connect(ctx.destination);
+        if (beepBuffer) {
+            // Play decoded MP3 with gain boost (as loud as browser allows)
+            const source = audioCtx.createBufferSource();
+            const gainNode = audioCtx.createGain();
+            source.buffer = beepBuffer;
+            gainNode.gain.value = 3.0; // Boost: 3x amplification
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+        } else {
+            // Fallback: synthesized square wave (already loud)
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(400, ctx.currentTime + delay);
-                gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
-                osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.15);
+                osc.frequency.setValueAtTime(3800, audioCtx.currentTime);
+                gain.gain.setValueAtTime(3.0, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+                osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.12);
+            } catch (e) { }
+        }
+    } else {
+        // Error: two loud buzzes
+        try {
+            [0, 0.2].forEach(delay => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime + delay);
+                gain.gain.setValueAtTime(3.0, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 0.15);
+                osc.start(audioCtx.currentTime + delay); osc.stop(audioCtx.currentTime + delay + 0.15);
             });
         } catch (e) { }
     }
