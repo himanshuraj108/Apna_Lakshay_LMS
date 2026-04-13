@@ -6,39 +6,45 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import Badge from '../../components/ui/Badge';
 
-// --- Scan Feedback: barcode scanner beep + vibrate ---
-const playBeep = (type = 'success') => {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+// --- Scan Feedback: real beep sound + vibrate ---
+const beepAudio = new Audio('/beep.mp3');
+beepAudio.preload = 'auto';
 
-        if (type === 'success') {
-            // Classic barcode scanner beep: sharp 3500Hz, 120ms
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(3800, ctx.currentTime);
-            gain.gain.setValueAtTime(0.4, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.12);
-        } else {
-            // Error: two low buzzes
-            [0, 0.18].forEach(delay => {
+const playBeep = (type = 'success') => {
+    if (type === 'success') {
+        try {
+            beepAudio.currentTime = 0;
+            beepAudio.play().catch(() => {
+                // Fallback: synthesized beep if file not found
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(3800, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+                    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.12);
+                } catch (e) { }
+            });
+        } catch (e) { }
+    } else {
+        // Error: two low buzzes (synthesized)
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            [0, 0.2].forEach(delay => {
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
+                osc.connect(gain); gain.connect(ctx.destination);
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(400, ctx.currentTime + delay);
                 gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
-                osc.start(ctx.currentTime + delay);
-                osc.stop(ctx.currentTime + delay + 0.15);
+                osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.15);
             });
-        }
-    } catch (e) { /* AudioContext not supported */ }
+        } catch (e) { }
+    }
 };
 
 const vibrate = (type = 'success') => {
