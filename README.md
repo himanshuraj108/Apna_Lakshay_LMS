@@ -1,9 +1,8 @@
-# NOTE - I can't share admin credentials because its running on a real world Library but you can see login as a student for demo
-# __________________________________
+# NOTE - I can't share admin credentials because its running on a real world Library but you can see login as a student for demo. 
+# ______________________
 # email - demo@gmail.com
 # Password - demo123
-# __________________________________
-
+# ______________________
 
 
 # Apna Lakshay - Library Management System
