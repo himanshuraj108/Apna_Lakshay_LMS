@@ -50,7 +50,8 @@ const {
     getQrToken,
     resetAllQrTokens,
     markAttendanceByQrAdmin,
-    getStudentMockTests
+    getStudentMockTests,
+    swapSeats
 } = require('../controllers/adminController');
 
 // Settings come from settingsController
@@ -109,6 +110,7 @@ router.delete('/floors/:id', deleteFloor);
 router.post('/rooms', createRoom);
 router.delete('/rooms/:id', deleteRoom);
 router.put('/prices', updatePrices);
+router.post('/seats/swap', swapSeats);
 router.post('/seats/assign', assignSeat);
 
 // New Seat Management Routes

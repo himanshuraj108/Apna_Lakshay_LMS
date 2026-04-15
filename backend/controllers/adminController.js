@@ -3452,3 +3452,100 @@ exports.getStudentMockTests = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to fetch mock test history' });
     }
 };
+
+// @desc    Swap seats of two students (only seat changes, nothing else)
+// @route   POST /api/admin/seats/swap
+exports.swapSeats = async (req, res) => {
+    try {
+        const { studentId1, studentId2 } = req.body;
+
+        if (!studentId1 || !studentId2) {
+            return res.status(400).json({ success: false, message: 'Both student IDs are required' });
+        }
+
+        if (studentId1 === studentId2) {
+            return res.status(400).json({ success: false, message: 'Cannot swap a student with themselves' });
+        }
+
+        // Fetch both students
+        const [student1, student2] = await Promise.all([
+            User.findById(studentId1).select('name email'),
+            User.findById(studentId2).select('name email')
+        ]);
+
+        if (!student1) return res.status(404).json({ success: false, message: 'First student not found' });
+        if (!student2) return res.status(404).json({ success: false, message: 'Second student not found' });
+
+        // Find active seat assignments for both students
+        const [seat1, seat2] = await Promise.all([
+            Seat.findOne({ 'assignments': { $elemMatch: { student: studentId1, status: 'active' } } }),
+            Seat.findOne({ 'assignments': { $elemMatch: { student: studentId2, status: 'active' } } })
+        ]);
+
+        if (!seat1) return res.status(400).json({ success: false, message: `${student1.name} does not have an active seat assignment` });
+        if (!seat2) return res.status(400).json({ success: false, message: `${student2.name} does not have an active seat assignment` });
+
+        // Prevent swapping if both are on the same seat (edge case)
+        if (seat1._id.toString() === seat2._id.toString()) {
+            return res.status(400).json({ success: false, message: 'Both students are already on the same seat' });
+        }
+
+        // ─── Perform the swap ─────────────────────────────────────────────────
+        // We only change the `student` field inside the active assignment.
+        // Everything else (shift, price, type, assignedAt, etc.) stays intact.
+
+        // Update seat1: replace student1 → student2 in its active assignment
+        await Seat.updateOne(
+            { _id: seat1._id, 'assignments.student': new mongoose.Types.ObjectId(studentId1), 'assignments.status': 'active' },
+            { $set: { 'assignments.$.student': new mongoose.Types.ObjectId(studentId2) } }
+        );
+
+        // Update seat2: replace student2 → student1 in its active assignment
+        await Seat.updateOne(
+            { _id: seat2._id, 'assignments.student': new mongoose.Types.ObjectId(studentId2), 'assignments.status': 'active' },
+            { $set: { 'assignments.$.student': new mongoose.Types.ObjectId(studentId1) } }
+        );
+
+        // Update the User.seat reference for both students
+        await Promise.all([
+            User.findByIdAndUpdate(studentId1, { seat: seat2._id }),
+            User.findByIdAndUpdate(studentId2, { seat: seat1._id })
+        ]);
+
+        // Send in-app notifications to both students
+        await Promise.all([
+            Notification.create({
+                recipient: studentId1,
+                title: 'Seat Swapped',
+                message: `Your seat has been changed to Seat ${seat2.number} by the admin.`,
+                type: 'seat',
+                createdBy: req.user.id
+            }),
+            Notification.create({
+                recipient: studentId2,
+                title: 'Seat Swapped',
+                message: `Your seat has been changed to Seat ${seat1.number} by the admin.`,
+                type: 'seat',
+                createdBy: req.user.id
+            })
+        ]);
+
+        // Log the action
+        await logAction(
+            req,
+            'swap_seats',
+            'Seat',
+            seat1._id,
+            `${seat1.number} ↔ ${seat2.number}`,
+            `Swapped seats of ${student1.name} (→ Seat ${seat2.number}) and ${student2.name} (→ Seat ${seat1.number})`
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Seats swapped successfully! ${student1.name} → Seat ${seat2.number}, ${student2.name} → Seat ${seat1.number}`
+        });
+    } catch (error) {
+        console.error('Swap Seats Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};

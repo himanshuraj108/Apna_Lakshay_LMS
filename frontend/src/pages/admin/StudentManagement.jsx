@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -71,6 +71,12 @@ const StudentManagement = () => {
     const [selectedCreditStudent, setSelectedCreditStudent] = useState(null);
     const [creditHistory, setCreditHistory] = useState([]);
     const [creditLoading, setCreditLoading] = useState(false);
+
+    // Swap Seats Modal States
+    const [showSwapModal, setShowSwapModal] = useState(false);
+    const [swapStudentId1, setSwapStudentId1] = useState('');
+    const [swapStudentId2, setSwapStudentId2] = useState('');
+    const [swapLoading, setSwapLoading] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -149,6 +155,30 @@ const StudentManagement = () => {
             } catch (err) {
                 setError('Failed to reactivate student');
             }
+        }
+    };
+
+    const handleSwapSeats = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+        setSwapLoading(true);
+        try {
+            const response = await api.post('/admin/seats/swap', {
+                studentId1: swapStudentId1,
+                studentId2: swapStudentId2
+            });
+            setSuccess(response.data.message || 'Seats swapped successfully!');
+            setShowSwapModal(false);
+            setSwapStudentId1('');
+            setSwapStudentId2('');
+            await fetchStudents();
+            await fetchFloors();
+            setTimeout(() => setSuccess(''), 5000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to swap seats');
+        } finally {
+            setSwapLoading(false);
         }
     };
 
@@ -907,6 +937,10 @@ const StudentManagement = () => {
                             className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-semibold transition-all">
                             <IoDownloadOutline size={16} /> Export PDF
                         </motion.button>
+                        <motion.button whileHover={{ scale: 1.03 }} onClick={() => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); }}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-xl text-sm font-semibold transition-all">
+                            <IoSwapHorizontal size={16} /> Swap Seats
+                        </motion.button>
                         <motion.button whileHover={{ scale: 1.03 }} onClick={handleResetAllQrs}
                             className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all">
                             <IoRefresh size={16} /> Reset All QRs
@@ -1130,6 +1164,154 @@ const StudentManagement = () => {
                         )}
                     </>
                 )}
+
+                {/* ─── Swap Seats Modal ───────────────────────────────────────── */}
+                <Modal
+                    isOpen={showSwapModal}
+                    onClose={() => { setShowSwapModal(false); setError(''); }}
+                    title="Swap Seats"
+                >
+                    <form onSubmit={handleSwapSeats} className="space-y-5">
+                        {/* Info banner */}
+                        <div className="flex items-start gap-3 bg-orange-500/8 border border-orange-500/20 rounded-xl px-4 py-3">
+                            <IoSwapHorizontal size={18} className="text-orange-400 shrink-0 mt-0.5" />
+                            <p className="text-orange-300 text-xs leading-relaxed">
+                                Only the <span className="font-bold text-orange-200">seat</span> will change between the two students.
+                                Shift, fee amount, and all other data remain <span className="font-bold text-orange-200">unchanged</span>.
+                            </p>
+                        </div>
+
+                        {/* Error inside modal */}
+                        {error && showSwapModal && (
+                            <div className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        {/* Student 1 */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Student A</label>
+                            <select
+                                id="swap-student-a"
+                                value={swapStudentId1}
+                                onChange={e => setSwapStudentId1(e.target.value)}
+                                className={INPUT}
+                                style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}
+                                required
+                            >
+                                <option value="">— Select Student A —</option>
+                                {students.filter(s => s.isActive && getStudentSeat(s._id)).map(s => (
+                                    <option key={s._id} value={s._id}>
+                                        {s.name} — Seat {getStudentSeat(s._id)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Visual Swap Preview */}
+                        <div className="flex items-center justify-center gap-4 py-2">
+                            <div className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                                {swapStudentId1 ? (() => {
+                                    const s = students.find(x => x._id === swapStudentId1);
+                                    return s ? (
+                                        <>
+                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
+                                                {s.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <p className="text-white text-xs font-semibold truncate">{s.name}</p>
+                                            <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
+                                        </>
+                                    ) : null;
+                                })() : (
+                                    <p className="text-gray-600 text-xs py-2">Student A</p>
+                                )}
+                            </div>
+                            <div className="flex flex-col items-center gap-1 shrink-0">
+                                <motion.div
+                                    animate={swapStudentId1 && swapStudentId2 ? { rotate: [0, 180, 360] } : {}}
+                                    transition={{ duration: 0.6, ease: 'easeInOut' }}
+                                    className="p-2.5 rounded-full bg-orange-500/15 border border-orange-500/30"
+                                >
+                                    <IoSwapHorizontal size={20} className="text-orange-400" />
+                                </motion.div>
+                                <span className="text-gray-600 text-[10px]">swap</span>
+                            </div>
+                            <div className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                                {swapStudentId2 ? (() => {
+                                    const s = students.find(x => x._id === swapStudentId2);
+                                    return s ? (
+                                        <>
+                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
+                                                {s.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <p className="text-white text-xs font-semibold truncate">{s.name}</p>
+                                            <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
+                                        </>
+                                    ) : null;
+                                })() : (
+                                    <p className="text-gray-600 text-xs py-2">Student B</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Student 2 */}
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Student B</label>
+                            <select
+                                id="swap-student-b"
+                                value={swapStudentId2}
+                                onChange={e => setSwapStudentId2(e.target.value)}
+                                className={INPUT}
+                                style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}
+                                required
+                            >
+                                <option value="">— Select Student B —</option>
+                                {students.filter(s => s.isActive && getStudentSeat(s._id) && s._id !== swapStudentId1).map(s => (
+                                    <option key={s._id} value={s._id}>
+                                        {s.name} — Seat {getStudentSeat(s._id)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Confirmation summary */}
+                        {swapStudentId1 && swapStudentId2 && (() => {
+                            const s1 = students.find(x => x._id === swapStudentId1);
+                            const s2 = students.find(x => x._id === swapStudentId2);
+                            if (!s1 || !s2) return null;
+                            return (
+                                <div className="bg-white/4 border border-white/10 rounded-xl p-4 space-y-2">
+                                    <p className="text-[11px] uppercase tracking-widest text-gray-500 font-bold mb-2">After swap</p>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="font-semibold text-white">{s1.name}</span>
+                                        <span className="text-gray-500">→</span>
+                                        <span className="font-bold text-green-400">Seat {getStudentSeat(s2._id)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="font-semibold text-white">{s2.name}</span>
+                                        <span className="text-gray-500">→</span>
+                                        <span className="font-bold text-green-400">Seat {getStudentSeat(s1._id)}</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Actions */}
+                        <div className="flex justify-end gap-3 pt-1">
+                            <button type="button" onClick={() => { setShowSwapModal(false); setError(''); }} className={BTN_SECONDARY}>
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={swapLoading || !swapStudentId1 || !swapStudentId2 || swapStudentId1 === swapStudentId2}
+                                className="px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all flex items-center gap-2"
+                            >
+                                <IoSwapHorizontal size={15} />
+                                {swapLoading ? 'Swapping...' : 'Confirm Swap'}
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
 
                 {/* Session Details Modal */}
                 <Modal
