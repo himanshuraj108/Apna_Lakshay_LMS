@@ -1,5 +1,12 @@
+# Note:
+## For security and privacy reasons, I’m unable to share admin demo credentials, as the system is currently being used in a real-world library environment.
+## However, you can explore the platform using the student demo login provided below:
+________________________
+## Email: demo@gmail.com
+## Password: demo123
+________________________
 # Apna Lakshay - Library Management System
-
+https://apnalakshay.com
 A production-ready MERN stack web application for offline library seat booking and digital management.
 
 ## Tech Stack
