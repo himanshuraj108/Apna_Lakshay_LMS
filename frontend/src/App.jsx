@@ -106,6 +106,7 @@ const QrKiosk = lazy(() => import('./pages/admin/QrKiosk'));
 const ChatManagement = lazy(() => import('./pages/admin/ChatManagement'));
 const ManageCards = lazy(() => import('./pages/admin/ManageCards'));
 const StudentChatHistory = lazy(() => import('./pages/admin/StudentChatHistory'));
+const VacantSeats = lazy(() => import('./pages/admin/VacantSeats'));
 
 // Student Pages - Lazy Loaded
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
@@ -213,6 +214,7 @@ function App() {
                 <Route path="/admin/chat" element={<ProtectedRoute adminOnly><ChatManagement /></ProtectedRoute>} />
                 <Route path="/admin/chat-history" element={<ProtectedRoute adminOnly><StudentChatHistory /></ProtectedRoute>} />
                 <Route path="/admin/manage-cards" element={<ProtectedRoute adminOnly><ManageCards /></ProtectedRoute>} />
+                <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><VacantSeats /></ProtectedRoute>} />
 
                 {/* Student Routes */}
                 <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />

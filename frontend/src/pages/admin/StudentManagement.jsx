@@ -1068,8 +1068,8 @@ const StudentManagement = () => {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-white/8">
-                                                {['Name', 'Email', 'Shift', 'Status', 'Presence', 'Credits', 'Created', 'Fee', 'Actions'].map((h, i) => (
-                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 8 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                {['#', 'Name', 'Email', 'Shift', 'Status', 'Presence', 'Credits', 'Created', 'Fee', 'Actions'].map((h, i) => (
+                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 9 ? 'text-right' : 'text-left'}`}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
@@ -1081,8 +1081,9 @@ const StudentManagement = () => {
                                                     {activeTab === 'inactive' && 'No inactive students found.'}
                                                     {activeTab === 'pending' && 'No students pending allocation.'}
                                                 </td></tr>
-                                            ) : filteredStudents.map(student => (
+                                            ) : filteredStudents.map((student, idx) => (
                                                 <tr key={student._id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                    <td className="px-5 py-3.5 text-xs font-bold text-gray-600 w-10 tabular-nums">{idx + 1}</td>
                                                     <td className="px-5 py-3.5 font-semibold text-sm text-white">{student.name}</td>
                                                     <td className="px-5 py-3.5 text-sm text-gray-400">{student.email}</td>
                                                     <td className="px-5 py-3.5 text-sm">

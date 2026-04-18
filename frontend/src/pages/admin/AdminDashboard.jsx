@@ -9,7 +9,7 @@ import {
     IoNotificationsOutline, IoLogOut, IoScanOutline, IoTimeOutline, IoKey,
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
     IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline,
-    IoGridOutline, IoSparklesOutline
+    IoGridOutline, IoSparklesOutline, IoSearchOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
@@ -84,9 +84,10 @@ const AdminDashboard = () => {
         { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey, color: 'from-red-500 to-orange-500', desc: 'Monitor auth & security events' },
         { title: 'Analytics & Reports', path: '/admin/analytics', icon: IoBarChartOutline, color: 'from-blue-500 to-cyan-500', desc: 'Revenue, trends & statistics' },
         { title: 'Discussion Management', path: '/admin/chat', icon: IoChatbubblesOutline, color: 'from-violet-500 to-fuchsia-500', desc: 'Monitor chat rooms & students' },
-        { title: 'AI Chat History', path: '/admin/chat-history', icon: IoSparklesOutline, color: 'from-indigo-600 to-purple-600', desc: 'View student AI doubt sessions', isNew: true },
+        { title: 'AI Chat History', path: '/admin/chat-history', icon: IoSparklesOutline, color: 'from-indigo-600 to-purple-600', desc: 'View student AI doubt sessions' },
         { title: 'Kiosk Mode', path: '/admin/kiosk', icon: IoScanOutline, color: 'from-purple-500 to-pink-500', desc: 'QR kiosk for entry scanning' },
-        { title: 'Manage Cards', path: '/admin/manage-cards', icon: IoGridOutline, color: 'from-yellow-400 to-orange-500', desc: 'Dashboard cards · AI credits · Reorder', isNew: true },
+        { title: 'Manage Cards', path: '/admin/manage-cards', icon: IoGridOutline, color: 'from-yellow-400 to-orange-500', desc: 'Dashboard cards · AI credits · Reorder' },
+        { title: 'Vacant Seats', path: '/admin/vacant-seats', icon: IoSearchOutline, color: 'from-emerald-500 to-teal-500', desc: 'View all vacant seat-shift slots' },
     ];
 
     const STAT_CARDS = [

@@ -576,7 +576,7 @@ const StudentDashboard = () => {
                                     const BASE_L = [
                                         { id: 'books',     icon: IoBookOutline,        label: 'Books',        desc: 'Curated study books',  accentColor: '#3b82f6', accentBg: 'rgba(59,130,246,0.08)',  to: '/student/books',     locked: false },
                                         { id: 'notes',     icon: IoDocumentTextOutline, label: 'Notes',       desc: 'Browse & download',    accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.08)',  to: '/student/notes',     locked: false },
-                                        { id: 'mock-test', icon: IoSparklesOutline,    label: 'AI Mock Test', desc: 'Practice tests',        accentColor: '#f59e0b', accentBg: 'rgba(245,158,11,0.08)', to: '/student/mock-test', locked: false, newBeta: true },
+                                        { id: 'mock-test', icon: IoSparklesOutline,    label: 'AI Mock Test', desc: 'Practice tests',        accentColor: '#f59e0b', accentBg: 'rgba(245,158,11,0.08)', to: '/student/mock-test', locked: false },
                                     ];
                                     const cfg = cardConfig?.learning;
                                     if (!cfg) return BASE_L;
@@ -625,14 +625,6 @@ const StudentDashboard = () => {
 
                                             {/* Badges */}
                                             <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                                                {item._isNew && !item.locked && (
-                                                    <span className="new-badge-blink text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
-                                                        style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.35)', color: '#FACC15' }}>NEW</span>
-                                                )}
-                                                {item.newBeta && !item._isNew && !item.locked && (
-                                                    <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
-                                                        style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b' }}>NEW</span>
-                                                )}
                                                 {item.locked && <IoLockClosedOutline size={12} className="text-gray-600" />}
                                             </div>
 

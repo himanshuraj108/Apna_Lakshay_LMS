@@ -374,10 +374,9 @@ exports.getDashboard = async (req, res) => {
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 
-        // 1. Total Students (Filtered by System Mode)
+        // 1. Total Students (Filtered by System Mode, ignoring isActive to count ALL students)
         const totalStudents = await User.countDocuments({
             role: 'student',
-            isActive: true,
             $or: [
                 { systemMode: mode },
                 ...(mode === 'default' ? [{ systemMode: { $exists: false } }] : [])
@@ -2016,8 +2015,138 @@ exports.bulkCheckOut = async (req, res) => {
     }
 };
 
+// ─── GET /api/admin/vacant-seats ─────────────────────────────────────────────
+exports.getVacantSeats = async (req, res) => {
+    try {
+        const Shift = require('../models/Shift');
+
+        // ── 1. Load all active shifts from DB (times come from here — nothing hardcoded)
+        const shifts = await Shift.find({ isActive: true }).lean();
+
+        // ── 2. Convert "HH:MM" → minutes since midnight for easy overlap math
+        const toMinutes = (timeStr) => {
+            if (!timeStr) return 0;
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        // Build shift time-window map: shiftId → { start, end, name, time }
+        const shiftWindowMap = {};
+        for (const s of shifts) {
+            shiftWindowMap[s._id.toString()] = {
+                id:    s._id.toString(),
+                name:  s.name,
+                time:  `${s.startTime} – ${s.endTime}`,
+                start: toMinutes(s.startTime),
+                end:   toMinutes(s.endTime),
+            };
+        }
+
+        // ── 3. Time-overlap check: do [s1,e1) and [s2,e2) share any time?
+        const overlaps = (s1, e1, s2, e2) => s1 < e2 && s2 < e1;
+
+        // ── 4. Load all seats
+        const seats = await Seat.find()
+            .populate('room', 'name')
+            .populate('floor', 'name level')
+            .lean();
+
+        const vacantSlots = [];
+
+        for (const seat of seats) {
+            const activeAssignments = (seat.assignments || []).filter(a => a.status === 'active');
+
+            // ── Collect the OCCUPIED time windows for this seat from DB shift times
+            const occupiedWindows = [];
+            for (const a of activeAssignments) {
+                // Legacy: full_day type or 'full' legacyShift → mark as blocking entire day
+                if (a.type === 'full_day' || a.legacyShift === 'full') {
+                    occupiedWindows.push({ start: 0, end: 1440 }); // 00:00–24:00
+                    continue;
+                }
+                if (a.shift) {
+                    const win = shiftWindowMap[a.shift.toString()];
+                    if (win) occupiedWindows.push(win);
+                }
+            }
+
+            // If seat's occupied windows cover the entire day (any 0–1440 window), skip
+            const isFullyBlocked = occupiedWindows.some(w => w.start === 0 && w.end >= 1440);
+            if (isFullyBlocked) continue;
+
+            const hasPartialAssignment = occupiedWindows.length > 0;
+
+            // ── Check each shift: is its time window free on this seat?
+            for (const shift of shifts) {
+                const win = shiftWindowMap[shift._id.toString()];
+                if (!win) continue;
+
+                // Does this candidate shift overlap any occupied window?
+                const hasOverlap = occupiedWindows.some(ow =>
+                    overlaps(ow.start, ow.end, win.start, win.end)
+                );
+
+                if (!hasOverlap) {
+                    const price = (seat.shiftPrices instanceof Map
+                        ? seat.shiftPrices.get(shift._id.toString())
+                        : seat.shiftPrices?.[shift._id.toString()])
+                        || seat.basePrices?.day || 0;
+
+                    vacantSlots.push({
+                        seatId:     seat._id.toString(),
+                        seatNumber: seat.number,
+                        roomName:   seat.room?.name  || 'Unknown Room',
+                        floorId:    seat.floor?._id?.toString() || '',
+                        floorName:  seat.floor?.name || 'Unknown Floor',
+                        shiftId:    shift._id.toString(),
+                        shiftName:  shift.name,
+                        shiftTime:  `${shift.startTime} – ${shift.endTime}`,
+                        price,
+                        isPartial:  hasPartialAssignment,
+                    });
+                }
+            }
+        }
+
+        // ── 5. Per-shift summary (vacant slots in each shift)
+        const shiftMap = {};
+        for (const shift of shifts) {
+            shiftMap[shift._id.toString()] = {
+                shiftId:   shift._id.toString(),
+                shiftName: shift.name,
+                shiftTime: `${shift.startTime} – ${shift.endTime}`,
+                total:     seats.length,
+                vacant:    0,
+            };
+        }
+        vacantSlots.forEach(s => { if (shiftMap[s.shiftId]) shiftMap[s.shiftId].vacant++; });
+
+        // ── 6. Overall stats
+        const totalSeats   = seats.length;
+        // Occupied: any seat with at least one active assignment
+        const occupiedSeats = seats.filter(s => {
+            const activeAssignments = (s.assignments || []).filter(a => a.status === 'active');
+            return activeAssignments.length > 0;
+        }).length;
+        // Vacancy rate = available slots / total possible slots (seats × shifts)
+        const totalPossible = totalSeats * shifts.length;
+        const vacancyRate   = totalPossible > 0 ? Math.round((vacantSlots.length / totalPossible) * 100) : 0;
+
+        res.json({
+            success: true,
+            stats: { totalSeats, occupiedSeats, vacantSlots: vacantSlots.length, vacancyRate },
+            shiftSummary: Object.values(shiftMap),
+            vacantSlots,
+        });
+    } catch (err) {
+        console.error('getVacantSeats error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // Get fees
 exports.getFees = async (req, res) => {
+
     try {
         let fees = await Fee.find()
             .populate('student', 'name email createdAt isActive')
