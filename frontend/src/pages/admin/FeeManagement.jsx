@@ -70,10 +70,16 @@ const FeeManagement = () => {
     const TABS = [
         { key: 'all', label: 'All', count: fees.length },
         { key: 'paid', label: 'Paid', count: fees.filter(f => f.status === 'paid').length },
-        { key: 'online', label: 'Online Paid', count: fees.filter(f => f.razorpayOrderId).length },
+        ...(onlinePaymentEnabled ? [{ key: 'online', label: 'Online Paid', count: fees.filter(f => f.razorpayOrderId).length }] : []),
         { key: 'pending', label: 'Pending', count: fees.filter(f => f.status === 'pending').length },
         { key: 'overdue', label: 'Overdue', count: fees.filter(f => f.status === 'overdue').length },
     ];
+
+    useEffect(() => {
+        if (!onlinePaymentEnabled && filter === 'online') {
+            setFilter('all');
+        }
+    }, [onlinePaymentEnabled, filter]);
 
     const STATUS_COLORS = {
         paid: 'text-green-400 bg-green-500/10 border-green-500/20',
