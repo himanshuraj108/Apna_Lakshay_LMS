@@ -87,6 +87,7 @@ const TermsOfService = lazy(() => import('./pages/common/TermsOfService'));
 const AccessDeniedPending = lazy(() => import('./pages/public/AccessDeniedPending'));
 const ContactAdmin = lazy(() => import('./pages/common/ContactAdmin'));
 const SecurityAttendance = lazy(() => import('./pages/public/SecurityAttendance'));
+const PublicVacantSeats = lazy(() => import('./pages/public/PublicVacantSeats'));
 
 // Admin Pages - Lazy Loaded
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -196,6 +197,7 @@ function App() {
                 <Route path="/contact" element={<ContactAdmin />} />
                 <Route path="/pending-allocation" element={<AccessDeniedPending />} />
                 <Route path="/office/attendance" element={<SecurityAttendance />} />
+                <Route path="/office/vacant-seats" element={<PublicVacantSeats />} />
 
                 {/* Admin Routes */}
                 <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />

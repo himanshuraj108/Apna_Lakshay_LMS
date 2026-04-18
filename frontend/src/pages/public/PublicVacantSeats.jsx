@@ -5,12 +5,12 @@ import api from '../../utils/api';
 import {
     IoArrowBack, IoBedOutline, IoSearchOutline, IoFilterOutline,
     IoRefreshOutline, IoLayersOutline, IoTimeOutline, IoGridOutline,
-    IoListOutline, IoCheckmarkCircle, IoCloseCircle, IoChevronDown, IoOpenOutline
+    IoListOutline, IoCheckmarkCircle, IoCloseCircle, IoChevronDown
 } from 'react-icons/io5';
 
 const PAGE_BG = { background: '#050508' };
 
-const VacantSeats = () => {
+const PublicVacantSeats = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -25,7 +25,7 @@ const VacantSeats = () => {
         setLoading(true);
         setError('');
         try {
-            const res = await api.get('/admin/vacant-seats');
+            const res = await api.get('/public/office/vacant-seats');
             setData(res.data);
         } catch (e) {
             setError('Failed to load vacant seats data');
@@ -86,10 +86,10 @@ const VacantSeats = () => {
                 {/* ── Header */}
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between gap-4 mb-8 flex-wrap">
                     <div className="flex items-center gap-4">
-                        <Link to="/admin">
+                        <Link to="/login">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
-                                <IoArrowBack size={16} /> Back
+                                <IoArrowBack size={16} /> Home
                             </motion.button>
                         </Link>
                         <div>
@@ -97,27 +97,18 @@ const VacantSeats = () => {
                                 <div className="p-1.5 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg">
                                     <IoBedOutline size={14} className="text-white" />
                                 </div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Admin</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Public Office</span>
                             </div>
                             <h1 className="text-2xl sm:text-3xl font-black text-white">Vacant Seats</h1>
                             <p className="text-gray-500 text-sm mt-0.5">Real-time seat availability by shift</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Link to="/office/vacant-seats" target="_blank">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium transition-all">
-                                <IoOpenOutline size={16} /> Public Link
-                            </motion.button>
-                        </Link>
-                        <motion.button
-                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            onClick={fetchVacant}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
-                            <IoRefreshOutline size={16} className={loading ? 'animate-spin' : ''} /> Refresh
-                        </motion.button>
-                    </div>
+                    <motion.button
+                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                        onClick={fetchVacant}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                        <IoRefreshOutline size={16} className={loading ? 'animate-spin' : ''} /> Refresh
+                    </motion.button>
                 </motion.div>
 
                 {/* ── Error */}
@@ -205,7 +196,8 @@ const VacantSeats = () => {
                     <div className="relative">
                         <IoLayersOutline size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         <select value={filterFloor} onChange={e => setFilterFloor(e.target.value)}
-                            className="pl-8 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-white/20 transition-all appearance-none cursor-pointer">
+                            className="pl-8 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-white/20 transition-all appearance-none cursor-pointer"
+                            style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}>
                             <option value="all">All Floors</option>
                             {floors.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                         </select>
@@ -216,7 +208,8 @@ const VacantSeats = () => {
                     <div className="relative">
                         <IoTimeOutline size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         <select value={filterShift} onChange={e => setFilterShift(e.target.value)}
-                            className="pl-8 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-white/20 transition-all appearance-none cursor-pointer">
+                            className="pl-8 pr-8 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-gray-300 focus:outline-none focus:border-white/20 transition-all appearance-none cursor-pointer"
+                            style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}>
                             <option value="all">All Shifts</option>
                             {shifts.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                         </select>
@@ -289,9 +282,6 @@ const VacantSeats = () => {
                                                     Partial
                                                 </span>
                                             )}
-                                            {slot.price > 0 && (
-                                                <p className="text-[10px] text-yellow-400/70 mt-1">₹{slot.price}/mo</p>
-                                            )}
                                         </motion.div>
                                     ))}
                                 </div>
@@ -306,7 +296,7 @@ const VacantSeats = () => {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-white/8">
-                                        {['Seat', 'Room', 'Floor', 'Shift', 'Shift Time', 'Price'].map(h => (
+                                        {['Seat', 'Room', 'Floor', 'Shift', 'Shift Time'].map(h => (
                                             <th key={h} className="px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-gray-500 text-left">{h}</th>
                                         ))}
                                     </tr>
@@ -328,9 +318,6 @@ const VacantSeats = () => {
                                                 </span>
                                             </td>
                                             <td className="px-5 py-3.5 text-sm text-gray-500">{slot.shiftTime}</td>
-                                            <td className="px-5 py-3.5 text-sm text-yellow-400/80">
-                                                {slot.price > 0 ? `₹${slot.price}` : '—'}
-                                            </td>
                                         </motion.tr>
                                     ))}
                                 </tbody>
@@ -343,4 +330,4 @@ const VacantSeats = () => {
     );
 };
 
-export default VacantSeats;
+export default PublicVacantSeats;
