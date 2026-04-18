@@ -14,6 +14,7 @@ const PAGE_BG = { background: '#050508' };
 const FeeManagement = () => {
     const [fees, setFees] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(true);
     const [filter, setFilter] = useState('all');
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
@@ -22,10 +23,28 @@ const FeeManagement = () => {
 
     const fetchFees = async () => {
         try {
-            const res = await api.get('/admin/fees');
-            setFees(res.data.fees);
-        } catch (e) { setError('Failed to load fees'); }
+            const [feesRes, settingsRes] = await Promise.all([
+                api.get('/admin/fees'),
+                api.get('/admin/settings')
+            ]);
+            setFees(feesRes.data.fees);
+            setOnlinePaymentEnabled(settingsRes.data.settings?.onlinePaymentEnabled !== false);
+        } catch (e) { setError('Failed to load data'); }
         finally { setLoading(false); }
+    };
+
+    const toggleOnlinePayment = async () => {
+        try {
+            const newValue = !onlinePaymentEnabled;
+            setOnlinePaymentEnabled(newValue);
+            await api.put('/admin/settings', { onlinePaymentEnabled: newValue });
+            setSuccess(`Online payments ${newValue ? 'enabled' : 'disabled'}!`);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (e) {
+            setOnlinePaymentEnabled(!onlinePaymentEnabled); // Revert on failure
+            setError('Failed to update settings');
+            setTimeout(() => setError(''), 3000);
+        }
     };
 
     const markAsPaid = async (feeId) => {
@@ -40,7 +59,10 @@ const FeeManagement = () => {
         }
     };
 
-    const filteredFees = filter === 'all' ? fees : fees.filter(f => f.status === filter);
+    const filteredFees = filter === 'all' ? fees : 
+                         filter === 'online' ? fees.filter(f => f.razorpayOrderId) :
+                         fees.filter(f => f.status === filter);
+                         
     const totalCollected = fees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0);
     const totalPending = fees.filter(f => f.status === 'pending').reduce((s, f) => s + f.amount, 0);
     const totalOverdue = fees.filter(f => f.status === 'overdue').reduce((s, f) => s + f.amount, 0);
@@ -48,6 +70,7 @@ const FeeManagement = () => {
     const TABS = [
         { key: 'all', label: 'All', count: fees.length },
         { key: 'paid', label: 'Paid', count: fees.filter(f => f.status === 'paid').length },
+        { key: 'online', label: 'Online Paid', count: fees.filter(f => f.razorpayOrderId).length },
         { key: 'pending', label: 'Pending', count: fees.filter(f => f.status === 'pending').length },
         { key: 'overdue', label: 'Overdue', count: fees.filter(f => f.status === 'overdue').length },
     ];
@@ -133,6 +156,23 @@ const FeeManagement = () => {
                         </div>
                         <h1 className="text-2xl sm:text-3xl font-black text-white">Fee Management</h1>
                     </div>
+                    
+                    {/* Toggle Switch */}
+                    <div className="ml-auto flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
+                        <div className="flex flex-col items-end">
+                            <span className="text-sm font-bold text-white leading-tight">Online Payments</span>
+                            <span className="text-[10px] text-gray-400 font-medium">Allow students to pay via Razorpay</span>
+                        </div>
+                        <button
+                            onClick={toggleOnlinePayment}
+                            className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${onlinePaymentEnabled ? 'bg-purple-500' : 'bg-white/20'}`}
+                        >
+                            <motion.div
+                                animate={{ x: onlinePaymentEnabled ? 24 : 0 }}
+                                className="w-4 h-4 rounded-full bg-white shadow-md relative z-10"
+                            />
+                        </button>
+                    </div>
                 </motion.div>
 
                 {/* Toasts */}
@@ -214,9 +254,21 @@ const FeeManagement = () => {
                                             <td className="px-5 py-4 text-right font-bold text-white">₹{fee.amount}</td>
                                             <td className="px-5 py-4 text-sm text-gray-400">{new Date(fee.dueDate).toLocaleDateString('en-IN')}</td>
                                             <td className="px-5 py-4">
-                                                <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_COLORS[fee.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>
-                                                    {fee.status}
-                                                </span>
+                                                <div className="flex flex-col gap-1.5 items-start">
+                                                    <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_COLORS[fee.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>
+                                                        {fee.status}
+                                                    </span>
+                                                    {fee.razorpayOrderId && (
+                                                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border"
+                                                            style={{ 
+                                                                color: fee.status === 'paid' && fee.razorpayPaymentId ? '#c084fc' : '#9ca3af',
+                                                                background: fee.status === 'paid' && fee.razorpayPaymentId ? 'rgba(168,85,247,0.1)' : 'rgba(255,255,255,0.05)',
+                                                                borderColor: fee.status === 'paid' && fee.razorpayPaymentId ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.1)'
+                                                            }}>
+                                                            {fee.status === 'paid' && fee.razorpayPaymentId ? 'Online: Success' : 'Online: Attempted'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-5 py-4 text-right">
                                                 {fee.student?.isActive === false ? (

@@ -19,7 +19,9 @@ const {
     markAttendanceByQr,
     markSelfAttendance,
     getReceipt,
-    getMonthlyReport
+    getMonthlyReport,
+    createFeePaymentOrder,
+    verifyFeePayment
 } = require('../controllers/studentController');
 const { askDoubt, syncDoubtSession } = require('../controllers/doubtController');
 const { getCurrentAffairs } = require('../controllers/currentAffairsController');
@@ -78,6 +80,8 @@ router.post('/attendance/mark-self', authorizeActive, markSelfAttendance);
 // Fees
 router.get('/fees', getFees);
 router.get('/fees/:id/receipt', getReceipt);
+router.post('/fees/:id/create-order', createFeePaymentOrder);
+router.post('/fees/:id/verify-payment', verifyFeePayment);
 
 // Notifications
 router.get('/notifications', getNotifications);

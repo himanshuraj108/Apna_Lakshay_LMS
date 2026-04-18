@@ -260,9 +260,16 @@ const StudentDashboard = () => {
                             </div>
                             <div className="flex justify-between items-center bg-white/4 p-4 rounded-xl mb-5 border border-white/8">
                                 <span className="text-gray-500 text-xs uppercase tracking-wider">Amount Due</span>
-                                <span className="text-2xl font-black text-white">â‚¹{dashboardData.feeReminder.amount}</span>
+                                <span className="text-2xl font-black text-white">₹{dashboardData.feeReminder.amount}</span>
                             </div>
-                            <button onClick={() => setShowFeeReminder(false)} className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">I Understand</button>
+                            {dashboardData.onlinePaymentEnabled ? (
+                                <div className="flex gap-3">
+                                    <button onClick={() => setShowFeeReminder(false)} className="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">Later</button>
+                                    <Link to="/student/fees?pay=now" onClick={() => setShowFeeReminder(false)} className="flex-1 block text-center py-3 bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/20 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">Pay</Link>
+                                </div>
+                            ) : (
+                                <button onClick={() => setShowFeeReminder(false)} className="w-full py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">I Understand</button>
+                            )}
                         </motion.div>
                     </div>
                 )}
@@ -392,19 +399,19 @@ const StudentDashboard = () => {
                     </Link>
 
                     {/* Fee */}
-                    <Link to="/student/fees">
-                        <div className="group rounded-xl p-4 border border-white/6 hover:border-amber-500/30 transition-all duration-200 cursor-pointer h-full flex flex-col justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
-                                    <IoCashOutline size={14} className="text-amber-400" />
-                                </div>
-                                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Fee Status</span>
+                    <div onClick={() => navigate('/student/fees')} className="group rounded-xl p-4 border border-white/6 hover:border-amber-500/30 transition-all duration-200 cursor-pointer h-full flex flex-col justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
+                                <IoCashOutline size={14} className="text-amber-400" />
                             </div>
+                            <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Fee Status</span>
+                        </div>
 
-                            <p className="text-xl sm:text-2xl font-black text-white mb-2">
-                                {dashboardData?.fee ? `₹${dashboardData.fee.amount}` : '—'}
-                            </p>
+                        <p className="text-xl sm:text-2xl font-black text-white mb-2">
+                            {dashboardData?.fee ? `₹${dashboardData.fee.amount}` : '—'}
+                        </p>
 
+                        <div className="flex items-center justify-between mt-auto">
                             {dashboardData?.fee?.status ? (
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit ${
                                     dashboardData.fee.status === 'paid'
@@ -419,8 +426,20 @@ const StudentDashboard = () => {
                             ) : (
                                 <p className="text-[11px] text-gray-400">No record</p>
                             )}
+
+                            {dashboardData?.fee?.status && dashboardData.fee.status !== 'paid' && dashboardData.onlinePaymentEnabled && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate('/student/fees?pay=now');
+                                    }}
+                                    className="px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg shadow-orange-500/20 hover:opacity-90 transition-opacity"
+                                >
+                                    Pay Online
+                                </button>
+                            )}
                         </div>
-                    </Link>
+                    </div>
 
                     {/* Notifications */}
                     <Link to="/student/notifications">

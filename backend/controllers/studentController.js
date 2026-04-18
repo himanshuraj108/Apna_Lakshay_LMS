@@ -8,6 +8,9 @@ const multer = require('multer');
 const { storage } = require('../config/cloudinary');
 const SystemSetting = require('../models/SystemSetting');
 const Holiday = require('../models/Holiday');
+const Settings = require('../models/Settings');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
 // ─── Geo-Fence Helpers ────────────────────────────────────────────────────
 // Haversine formula: returns distance in metres between two lat/lng points
@@ -75,7 +78,7 @@ exports.getDashboard = async (req, res) => {
         // ==========================================
         // PERFORMANCE OPTIMIZATION: Run independent queries in parallel
         // ==========================================
-        const [seat, student, unreadCount, activeRequestsCount] = await Promise.all([
+        const [seat, student, unreadCount, activeRequestsCount, settings] = await Promise.all([
             // Query 1: Get seat info
             Seat.findOne({
                 'assignments.student': studentId,
@@ -100,7 +103,10 @@ exports.getDashboard = async (req, res) => {
             Request.countDocuments({
                 student: studentId,
                 status: { $in: ['pending', 'approved', 'rejected'] }
-            })
+            }),
+
+            // Query 5: System Settings
+            Settings.findOne().lean()
         ]);
 
         let assignedSeatData = null;
@@ -316,7 +322,8 @@ exports.getDashboard = async (req, res) => {
                     const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
                     if (student.doubtCreditsResetDate !== todayIST) return 10;
                     return student.doubtCredits ?? 10;
-                })()
+                })(),
+                onlinePaymentEnabled: settings ? settings.onlinePaymentEnabled !== false : true
             }
         });
     } catch (error) {
@@ -760,9 +767,12 @@ exports.getFees = async (req, res) => {
             }
         }
 
+        const settings = await Settings.findOne() || { onlinePaymentEnabled: true };
+
         res.status(200).json({
             success: true,
-            fees
+            fees,
+            onlinePaymentEnabled: settings.onlinePaymentEnabled !== false 
         });
     } catch (error) {
         res.status(500).json({
@@ -770,6 +780,79 @@ exports.getFees = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// @desc    Initialize a Razorpay order before frontend checkout
+// @route   POST /api/student/fees/:id/create-order
+exports.createFeePaymentOrder = async (req, res) => {
+    try {
+        const fee = await Fee.findOne({ _id: req.params.id, student: req.user.id });
+        if (!fee) return res.status(404).json({ success: false, message: 'Fee record not found' });
+        if (fee.status === 'paid') return res.status(400).json({ success: false, message: 'Fee is already paid' });
+
+        if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+            return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
+        }
+
+        const razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET,
+        });
+
+        const options = {
+            amount: fee.amount * 100, // Amount in paise
+            currency: 'INR',
+            receipt: `receipt_fee_${fee._id}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        
+        // Save order ID to the fee for verification mapping later
+        fee.razorpayOrderId = order.id;
+        await fee.save();
+
+        res.status(200).json({
+            success: true,
+            orderId: order.id,
+            amount: options.amount,
+            currency: options.currency
+        });
+    } catch (error) {
+        console.error('Razorpay Order Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to create payment order', error: error.message });
+    }
+};
+
+// @desc    Verify Razorpay payment signature
+// @route   POST /api/student/fees/:id/verify-payment
+exports.verifyFeePayment = async (req, res) => {
+    try {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        const fee = await Fee.findOne({ _id: req.params.id, student: req.user.id });
+
+        if (!fee) return res.status(404).json({ success: false, message: 'Fee record not found' });
+
+        const body = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSignature = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .update(body.toString())
+            .digest("hex");
+
+        if (expectedSignature === razorpay_signature) {
+            // Signature is valid. Mark as paid.
+            fee.status = 'paid';
+            fee.paidDate = new Date();
+            fee.razorpayPaymentId = razorpay_payment_id;
+            await fee.save();
+
+            return res.status(200).json({ success: true, message: 'Payment verified successfully.' });
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid payment signature. Verification failed.' });
+        }
+    } catch (error) {
+        console.error('Razorpay Verification Error:', error);
+        res.status(500).json({ success: false, message: 'Failed to verify payment', error: error.message });
     }
 };
 

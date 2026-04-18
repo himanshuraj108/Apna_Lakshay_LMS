@@ -10,7 +10,8 @@ exports.getSettings = async (req, res) => {
             settings = await Settings.create({
                 shiftMode: 'default',
                 systemStatus: 'active',
-                locationAttendance: true
+                locationAttendance: true,
+                onlinePaymentEnabled: true
             });
         }
 
@@ -32,7 +33,7 @@ exports.getSettings = async (req, res) => {
 // @route   PUT /api/admin/settings
 exports.updateSettings = async (req, res) => {
     try {
-        const { shiftMode, systemStatus, activeModes, locationAttendance } = req.body;
+        const { shiftMode, systemStatus, activeModes, locationAttendance, onlinePaymentEnabled } = req.body;
 
         let settings = await Settings.findOne();
 
@@ -41,6 +42,7 @@ exports.updateSettings = async (req, res) => {
         if (shiftMode !== undefined) updateFields.shiftMode = shiftMode;
         if (activeModes !== undefined) updateFields.activeModes = activeModes;
         if (systemStatus !== undefined) updateFields.systemStatus = systemStatus;
+        if (onlinePaymentEnabled !== undefined) updateFields.onlinePaymentEnabled = !!onlinePaymentEnabled;
 
         // Strict boolean coercion for locationAttendance
         if (locationAttendance !== undefined) {
@@ -56,6 +58,7 @@ exports.updateSettings = async (req, res) => {
                 activeModes: activeModes || { default: true, custom: false },
                 systemStatus: systemStatus || 'active',
                 locationAttendance: locationAttendance !== undefined ? locationAttendance : true,
+                onlinePaymentEnabled: onlinePaymentEnabled !== undefined ? !!onlinePaymentEnabled : true,
                 updatedBy: req.user._id
             });
         } else {
@@ -85,13 +88,14 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled');
 
         if (!settings) {
             settings = {
                 shiftMode: 'default',
                 systemStatus: 'active',
-                locationAttendance: true
+                locationAttendance: true,
+                onlinePaymentEnabled: true
             };
         }
 

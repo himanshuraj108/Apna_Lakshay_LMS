@@ -19,6 +19,10 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    onlinePaymentEnabled: {
+        type: Boolean,
+        default: true
+    },
     libraryName: { type: String, default: 'Library Management System' },
     address: { type: String, default: '' },
     contactNumber: { type: String, default: '' },

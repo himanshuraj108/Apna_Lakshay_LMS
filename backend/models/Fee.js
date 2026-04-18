@@ -33,6 +33,14 @@ const feeSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    razorpayOrderId: {
+        type: String,
+        default: null
+    },
+    razorpayPaymentId: {
+        type: String,
+        default: null
+    },
     markedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FeeStatusSkeleton } from '../../components/ui/SkeletonLoader';
 import api from '../../utils/api';
@@ -81,9 +81,12 @@ const StatChip = ({ label, value, sub, accentColor, icon: Icon, delay = 0 }) => 
 const FeeStatus = () => {
     const [fees, setFees] = useState([]);
     const [profile, setProfile] = useState(null);
+    const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(true);
     const [loading, setLoading] = useState(true);
     const [downloadingId, setDownloadingId] = useState(null);
     const [toast, setToast] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const autoPayAttempted = useRef(false);
 
     // new receipt modal state
     const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -98,6 +101,7 @@ const FeeStatus = () => {
                 api.get('/auth/me')
             ]);
             setFees(feeRes.data.fees);
+            setOnlinePaymentEnabled(feeRes.data.onlinePaymentEnabled !== false);
             setProfile(profRes.data.user);
         } catch (error) { console.error('Error fetching data:', error); }
         finally { setLoading(false); }
@@ -112,6 +116,70 @@ const FeeStatus = () => {
         setSelectedFee(fee);
         setShowReceiptModal(true);
     };
+
+    const handlePayment = async (fee) => {
+        try {
+            // 1. Create order on backend
+            const { data } = await api.post(`/student/fees/${fee._id}/create-order`);
+            
+            // 2. Setup Razorpay options
+            const options = {
+                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SeyCQ3mGQ4m7AH', // fallback strictly for demo
+                amount: data.amount,
+                currency: data.currency,
+                name: 'Library Management System',
+                description: `Fee Payment - ${monthNamesFull[fee.month - 1]} ${fee.year}`,
+                order_id: data.orderId,
+                handler: async function (response) {
+                    try {
+                        const verifyRes = await api.post(`/student/fees/${fee._id}/verify-payment`, {
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature
+                        });
+                        if(verifyRes.data.success){
+                            showToast('Payment successful!');
+                            fetchFees(); // refresh data
+                        }
+                    } catch (err) {
+                        showToast(err.response?.data?.message || 'Payment verification failed', 'error');
+                    }
+                },
+                prefill: {
+                    name: profile?.name,
+                    email: profile?.email,
+                    contact: profile?.mobile
+                },
+                theme: {
+                    color: '#6366f1' // indigo
+                }
+            };
+
+            const rzp1 = new window.Razorpay(options);
+            rzp1.on('payment.failed', function (response){
+                showToast(response.error.description || 'Payment Failed', 'error');
+            });
+            rzp1.open();
+            
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Server failed to create order', 'error');
+        }
+    };
+
+    // Auto-Pay Logic via Query Params
+    useEffect(() => {
+        if (!loading && fees.length > 0 && profile && !autoPayAttempted.current) {
+            const shouldAutoPay = searchParams.get('pay') === 'now';
+            if (shouldAutoPay) {
+                autoPayAttempted.current = true;
+                const pendingFee = fees.find(f => f.status !== 'paid');
+                if (pendingFee) {
+                    setSearchParams({}); // Clean up URL immediately
+                    handlePayment(pendingFee);
+                }
+            }
+        }
+    }, [loading, fees, profile, searchParams, setSearchParams]);
 
     const totalPaid    = fees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0);
     const totalPending = fees.filter(f => f.status !== 'paid').reduce((s, f) => s + f.amount, 0);
@@ -258,7 +326,19 @@ const FeeStatus = () => {
                                                     )}
                                                 </motion.button>
                                             ) : (
-                                                <StatusBadge status={fee.status} />
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <StatusBadge status={fee.status} />
+                                                    {onlinePaymentEnabled && (
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.04 }}
+                                                            whileTap={{ scale: 0.96 }}
+                                                            onClick={() => handlePayment(fee)}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-[11px] font-bold shadow-lg shadow-blue-500/20"
+                                                        >
+                                                            Pay Online
+                                                        </motion.button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </motion.div>
