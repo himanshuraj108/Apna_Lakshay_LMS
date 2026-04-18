@@ -2020,7 +2020,7 @@ exports.bulkCheckOut = async (req, res) => {
 exports.getFees = async (req, res) => {
     try {
         let fees = await Fee.find()
-            .populate('student', 'name email createdAt')
+            .populate('student', 'name email createdAt isActive')
             .sort({ year: -1, month: -1 });
 
         // Filter out fees where student has been deleted (null after populate)

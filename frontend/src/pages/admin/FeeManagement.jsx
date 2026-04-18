@@ -219,7 +219,9 @@ const FeeManagement = () => {
                                                 </span>
                                             </td>
                                             <td className="px-5 py-4 text-right">
-                                                {fee.status === 'paid' ? (
+                                                {fee.student?.isActive === false ? (
+                                                    <span className="text-[11px] font-semibold text-gray-500 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full ml-auto block w-fit">Inactive</span>
+                                                ) : fee.status === 'paid' ? (
                                                     <span className="text-xs text-gray-500">Paid {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : ''}</span>
                                                 ) : new Date() >= new Date(fee.cycleStart) ? (
                                                     <motion.button 
