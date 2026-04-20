@@ -46,6 +46,9 @@ exports.getSeats = async (req, res) => {
                 name: room.name,
                 dimensions: room.dimensions,
                 doorPosition: room.doorPosition,
+                hasAc: room.hasAc || false,
+                acPosition: room.acPosition || 'north',
+                hasFan: room.hasFan || false,
                 seats: room.seats.map(seat => {
                     // Filter active assignments
                     const activeAssignments = seat.assignments?.filter(a => a.status === 'active') || [];

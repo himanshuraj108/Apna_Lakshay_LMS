@@ -244,7 +244,36 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
         );
     };
 
+    // ═══ CEILING FAN OVERLAY ════════════════════════════════
+    const CeilingFan = () => {
+        if (!room.hasFan) return null;
 
+        return (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.35] mix-blend-screen z-20">
+                {/* Fast spinning blades */}
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 0.25, ease: 'linear' }}
+                    className="relative w-32 h-32 flex items-center justify-center"
+                >
+                    {/* Center motor */}
+                    <div className="absolute w-5 h-5 rounded-full bg-white/40 border border-white/50 z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)] inset-0 m-auto" />
+                    
+                    {/* 3 Blades (perfect center pivot) */}
+                    {[0, 120, 240].map((deg) => (
+                        <div key={deg} className="absolute left-[calc(50%-4px)] bottom-1/2 w-2 h-[56px] origin-bottom" 
+                             style={{ transform: `rotate(${deg}deg)` }}>
+                            <div className="w-[32px] h-[56px] -ml-[12px] bg-gradient-to-t from-white/30 to-white/5 
+                                          rounded-t-[100%] rounded-b-[40%] backdrop-blur-[2px]" />
+                        </div>
+                    ))}
+                </motion.div>
+                
+                {/* Fast motion blur ring */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border-[12px] border-white/10 blur-[3px]" />
+            </div>
+        );
+    };
 
     const northSeats = room.seats.filter(s => s.position?.wall === 'north').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
     const eastSeats = room.seats.filter(s => s.position?.wall === 'east').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
@@ -466,6 +495,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                     {/* Room Interior — hidden when dimensions are 0×0 */}
                     {showInterior && (
                         <div className="absolute top-[80px] left-[80px] right-[80px] bottom-[80px] bg-gradient-to-br from-gray-700/40 to-gray-800/40 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center p-4 overflow-hidden">
+                            <CeilingFan />
                             <div className="relative z-30 w-full h-full flex items-center justify-center overflow-auto">
                                 {unpositionedSeats.length > 0 ? (
                                     <div className="w-full h-full">

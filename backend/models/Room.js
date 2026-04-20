@@ -34,6 +34,10 @@ const roomSchema = new mongoose.Schema({
         enum: ['north', 'south', 'east', 'west'],
         default: 'north'
     },
+    hasFan: {
+        type: Boolean,
+        default: false
+    },
     seats: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seat'

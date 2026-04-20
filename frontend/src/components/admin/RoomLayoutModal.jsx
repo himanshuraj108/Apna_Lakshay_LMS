@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes } from 'react-icons/fa';
-import { IoSnowOutline, IoThermometerOutline } from 'react-icons/io5';
+import { FaTimes, FaFan } from 'react-icons/fa';
+import { IoSnowOutline } from 'react-icons/io5';
 import api from '../../utils/api';
 
 const POSITIONS = ['north', 'south', 'east', 'west'];
@@ -9,7 +9,7 @@ const POS_LABEL = { north: 'Top', south: 'Bottom', east: 'Right', west: 'Left' }
 
 const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
     const [layoutData, setLayoutData] = useState({ width: 4, height: 4, doorPosition: 'south' });
-    const [roomData, setRoomData] = useState({ name: '', hasAc: false, acPosition: 'north' });
+    const [roomData, setRoomData] = useState({ name: '', hasAc: false, acPosition: 'north', hasFan: false });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -24,6 +24,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                 name: room.name || '',
                 hasAc: room.hasAc || false,
                 acPosition: room.acPosition || 'north',
+                hasFan: room.hasFan || false,
             });
         }
     }, [room]);
@@ -33,8 +34,11 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
         setLoading(true);
         setError('');
         try {
-            // 1. Update layout (dimensions, door)
-            await api.put(`/admin/rooms/${room._id}/layout`, layoutData);
+            // 1. Update layout (dimensions, door, fan)
+            await api.put(`/admin/rooms/${room._id}/layout`, {
+                ...layoutData,
+                hasFan: roomData.hasFan,
+            });
             // 2. Update room meta (name, AC)
             await api.put(`/admin/rooms/${room._id}`, roomData);
             onSuccess();
@@ -178,6 +182,36 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
+                            </div>
+
+                            {/* Fan Section */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`p-1.5 rounded-lg ${roomData.hasFan ? 'bg-amber-500/20' : 'bg-white/5'} transition-colors`}>
+                                            <motion.div
+                                                animate={roomData.hasFan ? { rotate: 360 } : { rotate: 0 }}
+                                                transition={{ repeat: roomData.hasFan ? Infinity : 0, duration: 1.2, ease: 'linear' }}
+                                            >
+                                                <FaFan size={14} className={roomData.hasFan ? 'text-amber-400' : 'text-gray-500'} />
+                                            </motion.div>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">Ceiling Fan</p>
+                                            <p className="text-[10px] text-gray-500">Toggle fan overlay for this room</p>
+                                        </div>
+                                    </div>
+                                    <button type="button"
+                                        onClick={() => setRoomData({ ...roomData, hasFan: !roomData.hasFan })}
+                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasFan ? 'bg-amber-500' : 'bg-white/10 border border-white/15'}`}>
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${roomData.hasFan ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+                                {roomData.hasFan && (
+                                    <div className="mt-2 px-3 py-2 bg-amber-500/8 border border-amber-500/15 rounded-lg">
+                                        <p className="text-[11px] text-amber-400/80">🌀 Ceiling fan animation will show inside the room interior.</p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Actions */}

@@ -373,7 +373,7 @@ exports.updateFloorPrices = async (req, res) => {
 // @route   PUT /api/admin/rooms/:id/layout
 exports.updateRoomLayout = async (req, res) => {
     try {
-        const { width, height, doorPosition } = req.body;
+        const { width, height, doorPosition, hasFan } = req.body;
         const room = await Room.findById(req.params.id);
 
         if (!room) {
@@ -387,6 +387,7 @@ exports.updateRoomLayout = async (req, res) => {
         if (width !== undefined) room.dimensions.width = width;
         if (height !== undefined) room.dimensions.height = height;
         if (doorPosition) room.doorPosition = doorPosition;
+        if (hasFan !== undefined) room.hasFan = hasFan;
 
         await room.save();
 
