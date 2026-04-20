@@ -383,8 +383,9 @@ exports.updateRoomLayout = async (req, res) => {
             });
         }
 
-        if (width) room.dimensions.width = width;
-        if (height) room.dimensions.height = height;
+        // Use !== undefined so that 0 is accepted (falsy check would skip 0)
+        if (width !== undefined) room.dimensions.width = width;
+        if (height !== undefined) room.dimensions.height = height;
         if (doorPosition) room.doorPosition = doorPosition;
 
         await room.save();

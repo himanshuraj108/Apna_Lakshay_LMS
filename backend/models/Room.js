@@ -25,6 +25,15 @@ const roomSchema = new mongoose.Schema({
         enum: ['north', 'south', 'east', 'west'],
         default: 'south'
     },
+    hasAc: {
+        type: Boolean,
+        default: false
+    },
+    acPosition: {
+        type: String,
+        enum: ['north', 'south', 'east', 'west'],
+        default: 'north'
+    },
     seats: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Seat'

@@ -1,22 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
+import { IoSnowOutline, IoThermometerOutline } from 'react-icons/io5';
 import api from '../../utils/api';
 
+const POSITIONS = ['north', 'south', 'east', 'west'];
+const POS_LABEL = { north: 'Top', south: 'Bottom', east: 'Right', west: 'Left' };
+
 const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
-    const [formData, setFormData] = useState({
-        width: 4,
-        height: 4,
-        doorPosition: 'south'
-    });
+    const [layoutData, setLayoutData] = useState({ width: 4, height: 4, doorPosition: 'south' });
+    const [roomData, setRoomData] = useState({ name: '', hasAc: false, acPosition: 'north' });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         if (room) {
-            setFormData({
-                width: room.dimensions?.width || 4,
-                height: room.dimensions?.height || 4,
-                doorPosition: room.doorPosition || 'south'
+            setLayoutData({
+                width: room.dimensions?.width ?? 4,
+                height: room.dimensions?.height ?? 4,
+                doorPosition: room.doorPosition || 'south',
+            });
+            setRoomData({
+                name: room.name || '',
+                hasAc: room.hasAc || false,
+                acPosition: room.acPosition || 'north',
             });
         }
     }, [room]);
@@ -24,15 +31,17 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
+        setError('');
         try {
-            const response = await api.put(`/admin/rooms/${room._id}/layout`, formData);
-
+            // 1. Update layout (dimensions, door)
+            await api.put(`/admin/rooms/${room._id}/layout`, layoutData);
+            // 2. Update room meta (name, AC)
+            await api.put(`/admin/rooms/${room._id}`, roomData);
             onSuccess();
             onClose();
-        } catch (error) {
-            console.error('Error updating room layout:', error);
-            alert('Failed to update room layout');
+        } catch (err) {
+            console.error('Error updating room:', err);
+            setError(err.response?.data?.message || 'Failed to update room');
         } finally {
             setLoading(false);
         }
@@ -40,102 +49,150 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
 
     if (!isOpen || !room) return null;
 
+    const INPUT = 'w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-blue-500/60 outline-none transition-all';
+    const LABEL = 'block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5';
+
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                 onClick={onClose}
             >
                 <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full"
+                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                    className="bg-[#080810] border border-white/15 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">Configure {room.name} Layout</h2>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors"
-                        >
-                            <FaTimes size={24} />
-                        </button>
+                    {/* Header accent */}
+                    <div className="h-px w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-indigo-500" />
+
+                    <div className="p-6">
+                        <div className="flex justify-between items-center mb-5">
+                            <div>
+                                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-0.5">Configure Room</p>
+                                <h2 className="text-xl font-black text-white">{room.name}</h2>
+                            </div>
+                            <button onClick={onClose} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                                <FaTimes size={16} />
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="mb-4 px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm">{error}</div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Room Name */}
+                            <div>
+                                <label className={LABEL}>Room Name</label>
+                                <input
+                                    type="text"
+                                    value={roomData.name}
+                                    onChange={e => setRoomData({ ...roomData, name: e.target.value })}
+                                    className={INPUT}
+                                    placeholder="e.g. Study Hall A"
+                                    required
+                                />
+                            </div>
+
+                            {/* Dimensions */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className={LABEL}>Width (cols)</label>
+                                    <input type="number" min="0" max="10" value={layoutData.width}
+                                        onChange={e => setLayoutData({ ...layoutData, width: parseInt(e.target.value) || 0 })}
+                                        className={INPUT} />
+                                </div>
+                                <div>
+                                    <label className={LABEL}>Height (rows)</label>
+                                    <input type="number" min="0" max="10" value={layoutData.height}
+                                        onChange={e => setLayoutData({ ...layoutData, height: parseInt(e.target.value) || 0 })}
+                                        className={INPUT} />
+                                </div>
+                            </div>
+                            {layoutData.width === 0 && layoutData.height === 0 ? (
+                                <p className="text-[11px] text-amber-400/80 bg-amber-500/8 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                                    ⚠ Room interior box will be hidden (no center area shown)
+                                </p>
+                            ) : (
+                                <p className="text-[11px] text-gray-600 px-1">
+                                    Set both to 0 to hide the interior center area
+                                </p>
+                            )}
+
+                            {/* Door */}
+                            <div>
+                                <label className={LABEL}>Door Position</label>
+                                <select value={layoutData.doorPosition}
+                                    onChange={e => setLayoutData({ ...layoutData, doorPosition: e.target.value })}
+                                    className={INPUT} style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}>
+                                    {POSITIONS.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)} ({POS_LABEL[p]})</option>)}
+                                </select>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="h-px bg-white/6" />
+
+                            {/* AC Section */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`p-1.5 rounded-lg ${roomData.hasAc ? 'bg-cyan-500/20' : 'bg-white/5'} transition-colors`}>
+                                            <IoSnowOutline size={14} className={roomData.hasAc ? 'text-cyan-400' : 'text-gray-500'} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white">Air Conditioning</p>
+                                            <p className="text-[10px] text-gray-500">Toggle AC for this room</p>
+                                        </div>
+                                    </div>
+                                    {/* Toggle switch */}
+                                    <button type="button"
+                                        onClick={() => setRoomData({ ...roomData, hasAc: !roomData.hasAc })}
+                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasAc ? 'bg-cyan-500' : 'bg-white/10 border border-white/15'}`}>
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${roomData.hasAc ? 'left-7' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                {/* AC Position */}
+                                <AnimatePresence>
+                                    {roomData.hasAc && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                            className="overflow-hidden">
+                                            <label className={LABEL}>AC Unit Position</label>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {POSITIONS.map(p => (
+                                                    <button key={p} type="button"
+                                                        onClick={() => setRoomData({ ...roomData, acPosition: p })}
+                                                        className={`py-2 rounded-xl text-xs font-bold transition-all ${roomData.acPosition === p
+                                                            ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-400'
+                                                            : 'bg-white/5 border border-white/10 text-gray-500 hover:bg-white/8'}`}>
+                                                        {POS_LABEL[p]}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="mt-2 px-3 py-2 bg-cyan-500/8 border border-cyan-500/15 rounded-lg">
+                                                <p className="text-[11px] text-cyan-400/80">❄️ AC unit placed on <span className="font-bold capitalize">{roomData.acPosition}</span> wall. Cool air flows inward.</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={onClose}
+                                    className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-xl text-sm font-medium transition-all">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={loading}
+                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 disabled:opacity-50 transition-all">
+                                    {loading ? 'Saving…' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Room Width (meters)
-                            </label>
-                            <input
-                                type="number"
-                                min="2"
-                                max="10"
-                                value={formData.width}
-                                onChange={(e) => setFormData({ ...formData, width: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Room Height (meters)
-                            </label>
-                            <input
-                                type="number"
-                                min="2"
-                                max="10"
-                                value={formData.height}
-                                onChange={(e) => setFormData({ ...formData, height: parseInt(e.target.value) })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
-                                Door Position
-                            </label>
-                            <select
-                                value={formData.doorPosition}
-                                onChange={(e) => setFormData({ ...formData, doorPosition: e.target.value })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none capitalize"
-                            >
-                                <option value="north">North (Top)</option>
-                                <option value="south">South (Bottom)</option>
-                                <option value="east">East (Right)</option>
-                                <option value="west">West (Left)</option>
-                            </select>
-                        </div>
-
-                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mt-4">
-                            <p className="text-sm text-blue-300">
-                                💡 Preview: {formData.width}m x {formData.height}m room with door on <span className="capitalize font-bold">{formData.doorPosition}</span> wall
-                            </p>
-                        </div>
-
-                        <div className="flex gap-4 pt-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                {loading ? 'Updating...' : 'Update Layout'}
-                            </button>
-                        </div>
-                    </form>
                 </motion.div>
             </motion.div>
         </AnimatePresence>

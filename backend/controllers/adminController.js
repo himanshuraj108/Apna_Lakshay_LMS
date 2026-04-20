@@ -1094,6 +1094,36 @@ exports.createRoom = async (req, res) => {
     }
 };
 
+// Update room
+exports.updateRoom = async (req, res) => {
+    try {
+        const { name, hasAc, acPosition } = req.body;
+
+        const room = await Room.findByIdAndUpdate(
+            req.params.id,
+            { name, hasAc, acPosition },
+            { new: true, runValidators: true }
+        );
+
+        if (!room) {
+            return res.status(404).json({ success: false, message: 'Room not found' });
+        }
+
+        await logAction(req, 'update_room', 'Room', room._id, room.name, `Updated room config for ${room.name}`);
+
+        res.status(200).json({
+            success: true,
+            room
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
 exports.getFloors = async (req, res) => {
     try {
         const { shiftId } = req.query; // Optional specific shift to view availability for

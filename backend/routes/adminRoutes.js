@@ -12,6 +12,7 @@ const {
     createFloor,
     deleteFloor,
     createRoom,
+    updateRoom,
     deleteRoom,
     getFloors,
     updatePrices,
@@ -109,6 +110,7 @@ router.get('/floors', getFloors);
 router.post('/floors', createFloor);
 router.delete('/floors/:id', deleteFloor);
 router.post('/rooms', createRoom);
+router.put('/rooms/:id', updateRoom);
 router.delete('/rooms/:id', deleteRoom);
 router.put('/prices', updatePrices);
 router.post('/seats/swap', swapSeats);
