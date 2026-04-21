@@ -3655,13 +3655,13 @@ exports.swapSeats = async (req, res) => {
 
         // Update seat1: replace student1 → student2 in its active assignment
         await Seat.updateOne(
-            { _id: seat1._id, 'assignments.student': new mongoose.Types.ObjectId(studentId1), 'assignments.status': 'active' },
+            { _id: seat1._id, 'assignments': { $elemMatch: { student: new mongoose.Types.ObjectId(studentId1), status: 'active' } } },
             { $set: { 'assignments.$.student': new mongoose.Types.ObjectId(studentId2) } }
         );
 
         // Update seat2: replace student2 → student1 in its active assignment
         await Seat.updateOne(
-            { _id: seat2._id, 'assignments.student': new mongoose.Types.ObjectId(studentId2), 'assignments.status': 'active' },
+            { _id: seat2._id, 'assignments': { $elemMatch: { student: new mongoose.Types.ObjectId(studentId2), status: 'active' } } },
             { $set: { 'assignments.$.student': new mongoose.Types.ObjectId(studentId1) } }
         );
 
