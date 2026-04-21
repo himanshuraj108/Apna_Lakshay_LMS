@@ -504,12 +504,12 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                             {unpositionedSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
                                         </div>
                                     </div>
-                                ) : (
+                                ) : !room.hasFan ? (
                                     <div className="text-center">
                                         <p className="text-gray-400 text-sm font-semibold">Room Interior</p>
                                         <p className="text-gray-500 text-xs mt-1">{roomW}m × {roomH}m</p>
                                     </div>
-                                )}
+                                ) : null}
                             </div>
                         </div>
                     )}

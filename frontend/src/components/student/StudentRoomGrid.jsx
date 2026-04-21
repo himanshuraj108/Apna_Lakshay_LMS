@@ -339,10 +339,12 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
                     {((room.dimensions?.width ?? 0) > 0 || (room.dimensions?.height ?? 0) > 0) && (
                         <div className="absolute top-[80px] left-[80px] right-[80px] bottom-[80px] bg-gradient-to-br from-gray-700/40 to-gray-800/40 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden">
                             <CeilingFan />
-                            <div className="text-center relative z-30">
-                                <p className="text-gray-400 text-sm font-semibold">Room Interior</p>
-                                <p className="text-gray-500 text-xs mt-1">{room.dimensions?.width || 0}m × {room.dimensions?.height || 0}m</p>
-                            </div>
+                            {!room.hasFan && (
+                                <div className="text-center relative z-30">
+                                    <p className="text-gray-400 text-sm font-semibold">Room Interior</p>
+                                    <p className="text-gray-500 text-xs mt-1">{room.dimensions?.width || 0}m × {room.dimensions?.height || 0}m</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
