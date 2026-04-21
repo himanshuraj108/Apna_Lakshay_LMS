@@ -78,6 +78,13 @@ const StudentManagement = () => {
     const [swapStudentId2, setSwapStudentId2] = useState('');
     const [swapLoading, setSwapLoading] = useState(false);
 
+    // Bulk Fee Update States
+    const [acFilter, setAcFilter] = useState('all');
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    const [showBulkFeeModal, setShowBulkFeeModal] = useState(false);
+    const [bulkFeeAmount, setBulkFeeAmount] = useState('');
+    const [bulkFeeOperation, setBulkFeeOperation] = useState('increase');
+    const [bulkFeeLoading, setBulkFeeLoading] = useState(false);
     useEffect(() => {
         fetchStudents();
         fetchFloors();
@@ -155,6 +162,32 @@ const StudentManagement = () => {
             } catch (err) {
                 setError('Failed to reactivate student');
             }
+        }
+    };
+
+    const handleBulkFeeUpdate = async (e) => {
+        e.preventDefault();
+        if (!bulkFeeAmount || selectedStudentIds.length === 0) return;
+        
+        setError('');
+        setSuccess('');
+        setBulkFeeLoading(true);
+        try {
+            const response = await api.put('/admin/students/bulk-fee-update', {
+                studentIds: selectedStudentIds,
+                amount: parseInt(bulkFeeAmount),
+                operation: bulkFeeOperation
+            });
+            setSuccess(response.data.message || 'Fees updated successfully!');
+            setShowBulkFeeModal(false);
+            setBulkFeeAmount('');
+            setSelectedStudentIds([]); // Clear selection after bulk acting
+            await fetchStudents();
+            setTimeout(() => setSuccess(''), 5000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update fees in bulk');
+        } finally {
+            setBulkFeeLoading(false);
         }
     };
 
@@ -906,7 +939,14 @@ const StudentManagement = () => {
         }
     };
 
-    const filteredStudents = getFilteredStudents();
+    const filteredStudents = getFilteredStudents().filter(student => {
+        if (acFilter !== 'all') {
+            const hasAc = student.seat?.room?.hasAc;
+            if (acFilter === 'ac' && !hasAc) return false;
+            if (acFilter === 'non-ac' && hasAc) return false;
+        }
+        return true;
+    });
 
     return (
         <div className="relative min-h-screen" style={PAGE_BG}>
@@ -971,6 +1011,17 @@ const StudentManagement = () => {
                             {tab.icon}{tab.label}
                         </button>
                     ))}
+                    
+                    <select
+                        value={acFilter}
+                        onChange={(e) => setAcFilter(e.target.value)}
+                        className="ml-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-gray-300 outline-none hover:bg-white/10 transition-colors"
+                    >
+                        <option value="all" className="bg-[#050508]">All Rooms</option>
+                        <option value="ac" className="bg-[#050508]">AC Rooms Only</option>
+                        <option value="non-ac" className="bg-[#050508]">Non-AC Rooms Only</option>
+                    </select>
+
                     {activeTab === 'history' && (
                         <motion.button whileHover={{ scale: 1.03 }} onClick={handleClearArchives}
                             disabled={archivedStudents.length === 0}
@@ -979,6 +1030,19 @@ const StudentManagement = () => {
                         </motion.button>
                     )}
                 </div>
+
+                {selectedStudentIds.length > 0 && (
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center justify-between bg-blue-500/10 border border-blue-500/25 px-4 py-3 rounded-xl mb-5">
+                        <span className="text-blue-300 text-sm font-medium">{selectedStudentIds.length} student(s) selected</span>
+                        <div className="flex gap-3">
+                            <button onClick={() => setSelectedStudentIds([])} className="text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                            <button onClick={() => setShowBulkFeeModal(true)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors">
+                                Edit Fees
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Alerts */}
                 {success && (
@@ -1015,6 +1079,13 @@ const StudentManagement = () => {
                                     const filtered = students.filter(s => {
                                         if (!s.isActive) return false;
                                         if (shiftFilter && !hasShiftAssignment(s._id, shiftFilter)) return false;
+                                        
+                                        if (acFilter !== 'all') {
+                                            const hasAc = s.seat?.room?.hasAc;
+                                            if (acFilter === 'ac' && !hasAc) return false;
+                                            if (acFilter === 'non-ac' && hasAc) return false;
+                                        }
+
                                         return true;
                                     });
                                     return filtered.length === 0 ? (
@@ -1068,6 +1139,14 @@ const StudentManagement = () => {
                                     <table className="w-full">
                                         <thead>
                                             <tr className="border-b border-white/8">
+                                                <th className="px-5 py-3 w-10 text-center">
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
+                                                        onChange={(e) => setSelectedStudentIds(e.target.checked ? filteredStudents.map(s => s._id) : [])}
+                                                        className="rounded border-gray-600 bg-black/20"
+                                                    />
+                                                </th>
                                                 {['#', 'Name', 'Email', 'Shift', 'Status', 'Presence', 'Credits', 'Created', 'Fee', 'Actions'].map((h, i) => (
                                                     <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 9 ? 'text-right' : 'text-left'}`}>{h}</th>
                                                 ))}
@@ -1075,7 +1154,7 @@ const StudentManagement = () => {
                                         </thead>
                                         <tbody>
                                             {filteredStudents.length === 0 ? (
-                                                <tr><td colSpan="8" className="text-center p-10 text-gray-600 text-sm">
+                                                <tr><td colSpan="11" className="text-center p-10 text-gray-600 text-sm">
                                                     {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
                                                     {activeTab === 'active' && 'No active students found.'}
                                                     {activeTab === 'inactive' && 'No inactive students found.'}
@@ -1083,6 +1162,17 @@ const StudentManagement = () => {
                                                 </td></tr>
                                             ) : filteredStudents.map((student, idx) => (
                                                 <tr key={student._id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                    <td className="px-5 py-3.5 w-10 text-center">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={selectedStudentIds.includes(student._id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setSelectedStudentIds(prev => [...prev, student._id]);
+                                                                else setSelectedStudentIds(prev => prev.filter(id => id !== student._id));
+                                                            }}
+                                                            className="rounded border-gray-600 bg-black/20"
+                                                        />
+                                                    </td>
                                                     <td className="px-5 py-3.5 text-xs font-bold text-gray-600 w-10 tabular-nums">{idx + 1}</td>
                                                     <td className="px-5 py-3.5 font-semibold text-sm text-white">{student.name}</td>
                                                     <td className="px-5 py-3.5 text-sm text-gray-400">{student.email}</td>
@@ -1938,6 +2028,49 @@ const StudentManagement = () => {
                             </div>
                         </div>
                     )}
+                </Modal>
+
+                <Modal isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
+                    <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
+                            <p className="text-sm text-blue-300">
+                                You have selected <span className="font-bold text-white">{selectedStudentIds.length}</span> student(s).
+                                This will instantly adjust the current active seat price for all of them.
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Operation</label>
+                            <select
+                                value={bulkFeeOperation}
+                                onChange={(e) => setBulkFeeOperation(e.target.value)}
+                                className={INPUT}
+                            >
+                                <option value="increase" className="bg-[#050508]">Increase Fee (+)</option>
+                                <option value="decrease" className="bg-[#050508]">Decrease Fee (-)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2">Amount to {bulkFeeOperation === 'increase' ? 'Add' : 'Subtract'} (₹)</label>
+                            <input
+                                type="number"
+                                required
+                                min="1"
+                                value={bulkFeeAmount}
+                                onChange={(e) => setBulkFeeAmount(e.target.value)}
+                                className={INPUT}
+                                placeholder="e.g. 200"
+                            />
+                        </div>
+
+                        <div className="flex gap-4 mt-6">
+                            <button type="button" onClick={() => setShowBulkFeeModal(false)} className={BTN_SECONDARY}>Cancel</button>
+                            <button type="submit" disabled={bulkFeeLoading || !bulkFeeAmount} className={BTN_PRIMARY}>
+                                {bulkFeeLoading ? 'Applying...' : 'Apply Changes'}
+                            </button>
+                        </div>
+                    </form>
                 </Modal>
             </div>
         </div>

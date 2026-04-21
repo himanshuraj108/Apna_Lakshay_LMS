@@ -47,7 +47,8 @@ try {
         sendSeatChangeRejectedEmail: async () => console.log('Email service not available'),
         sendOTPEmail: async () => console.log('Email service not available'),
         sendShiftChangeApprovedEmail: async () => console.log('Email service not available'),
-        sendShiftChangeRejectedEmail: async () => console.log('Email service not available')
+        sendShiftChangeRejectedEmail: async () => console.log('Email service not available'),
+        sendFeeUpdateEmail: async () => console.log('Email service not available')
     };
 }
 
@@ -790,6 +791,89 @@ exports.createStudent = async (req, res) => {
 };
 
 // Update student
+// Bulk update student fees via a flat amount offset
+exports.bulkUpdateStudentFees = async (req, res) => {
+    try {
+        const { studentIds, amount, operation } = req.body;
+
+        if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'Please select at least one student.' });
+        }
+
+        if (typeof amount !== 'number' || amount <= 0) {
+            return res.status(400).json({ success: false, message: 'Amount must be a positive number.' });
+        }
+
+        if (!['increase', 'decrease'].includes(operation)) {
+            return res.status(400).json({ success: false, message: 'Invalid operation. Use increase or decrease.' });
+        }
+
+        let updateCount = 0;
+
+        for (const studentId of studentIds) {
+            const student = await User.findById(studentId);
+            if (!student || !student.seat) continue;
+
+            const seat = await Seat.findById(student.seat);
+            if (!seat) continue;
+
+            // Find their active assignment
+            const assignmentIndex = seat.assignments.findIndex(
+                a => a.student.toString() === student._id.toString() && a.status === 'active'
+            );
+
+            if (assignmentIndex !== -1) {
+                const currentPrice = seat.assignments[assignmentIndex].price || 0;
+                let newPrice = currentPrice;
+
+                if (operation === 'increase') {
+                    newPrice = currentPrice + amount;
+                } else if (operation === 'decrease') {
+                    newPrice = Math.max(0, currentPrice - amount);
+                }
+
+                if (newPrice !== currentPrice) {
+                    seat.assignments[assignmentIndex].price = newPrice;
+                    await seat.save();
+                    updateCount++;
+
+                    // Update any existing pending fees for this student to reflect the new price
+                    await Fee.updateMany(
+                        { student: student._id, status: 'pending' },
+                        { $set: { amount: newPrice } }
+                    );
+
+                    // Send email notification to user about the updated fee
+                    try {
+                        await emailService.sendFeeUpdateEmail(student, currentPrice, newPrice);
+                    } catch (emailErr) {
+                        console.error('Failed to send fee update email:', emailErr);
+                    }
+
+                    // Log action dynamically if required
+                    await logAction(
+                        req,
+                        'update_student',
+                        'User',
+                        student._id,
+                        `Fee Bulk Override (${operation})`,
+                        `Fee for ${student.name} changed from ₹${currentPrice} to ₹${newPrice}`
+                    );
+                }
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully updated fees for ${updateCount} students.`,
+            updateCount
+        });
+    } catch (error) {
+        console.error('Bulk fee update error:', error);
+        res.status(500).json({ success: false, message: 'Server error during bulk fee update.', error: error.message });
+    }
+};
+
 exports.updateStudent = async (req, res) => {
     try {
         const { name, email, mobile, address, isActive, studentId, joinedAt, password } = req.body;

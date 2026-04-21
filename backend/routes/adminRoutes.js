@@ -37,6 +37,7 @@ const {
     clearActionHistory,
     getPasswordActivity,
     resetStudentPassword,
+    bulkUpdateStudentFees,
     getArchivedStudents,
     getArchivedStudent,
     deleteArchivedStudent,
@@ -96,6 +97,8 @@ router.get('/dashboard', getDashboard);
 router.route('/students')
     .get(getStudents)
     .post(createStudent);
+
+router.put('/students/bulk-fee-update', bulkUpdateStudentFees);
 
 router.route('/students/:id')
     .get(getStudent)

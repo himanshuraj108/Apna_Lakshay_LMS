@@ -516,3 +516,34 @@ exports.sendShiftChangeRejectedEmail = async (student, requestedShiftName, reaso
   `;
   await sendEmail(student.email, 'Shift Change Update', 'Request Declined', content);
 };
+
+// 9. Bulk Row Fee Edits
+exports.sendFeeUpdateEmail = async (student, oldPrice, newPrice) => {
+  const isIncrease = newPrice > oldPrice;
+  
+  const content = `
+    <p>Dear <strong>${student.name}</strong>,</p>
+    <p>This is a notification that your monthly library fee has been updated.</p>
+    
+    <div style="display: flex; gap: 10px; margin: 20px 0;">
+       <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; flex: 1;">
+         <span class="label">Previous Fee</span>
+         <p class="value" style="font-size: 18px; color: #6B7280;">₹${oldPrice}</p>
+       </div>
+       <div style="background: ${isIncrease ? '#FEF3C7' : '#D1FAE5'}; padding: 15px; border-radius: 8px; flex: 1;">
+         <span class="label" style="color: ${isIncrease ? '#B45309' : '#047857'};">New Fee</span>
+         <p class="value" style="color: ${isIncrease ? '#92400E' : '#065F46'}; font-size: 20px;">₹${newPrice}</p>
+       </div>
+    </div>
+    
+    <p>This new pricing takes effect immediately for all upcoming and currently pending invoices.</p>
+  `;
+  
+  await sendEmail(
+    student.email, 
+    'Fee Structure Updated', 
+    'Fee Adjustment Notice', 
+    content, 
+    { text: 'View Fee Dashboard', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/fees` }
+  );
+};
