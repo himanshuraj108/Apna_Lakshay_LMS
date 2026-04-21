@@ -26,7 +26,8 @@ const UpdateFloorPricesModal = ({ isOpen, onClose, floor, onSuccess }) => {
 
         try {
             const response = await api.put(`/admin/floors/${floor._id}/prices`, {
-                basePrices: formData.basePrices
+                basePrices: formData.basePrices,
+                shiftPrices: formData.basePrices // Mirror required to persist Map-based dynamic custom shift IDs
             });
 
             if (response.data.success) {

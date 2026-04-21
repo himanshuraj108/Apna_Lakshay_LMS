@@ -19,7 +19,8 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
 
         try {
             const response = await api.put(`/admin/rooms/${room._id}/prices`, {
-                basePrices: formData.basePrices
+                basePrices: formData.basePrices,
+                shiftPrices: formData.basePrices // Mirror required to persist Map-based dynamic custom shift IDs
             });
 
             if (response.data.success) {
