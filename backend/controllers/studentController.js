@@ -137,6 +137,8 @@ exports.getDashboard = async (req, res) => {
                 number: seat.number,
                 floor: seat.floor?.name,
                 room: seat.room?.name,
+                roomHasAc: seat.room?.hasAc || false,
+                roomHasFan: seat.room?.hasFan || false,
                 shift: shiftName,
                 shiftDetails, // Added details
                 price: assignment?.price || 0,

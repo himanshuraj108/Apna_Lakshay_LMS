@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { IoPersonCircleOutline } from 'react-icons/io5';
 import { QRCodeCanvas } from 'qrcode.react';
+import { IoCellular } from 'react-icons/io5';
+import { FaWind, FaBan } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
 import { BASE_URL } from '../../utils/api';
 
@@ -102,11 +104,28 @@ const StudentIdCard = ({ student }) => {
                     </div>
 
                     {/* Name & Role */}
-                    <div className="text-center mt-3 mb-6">
+                    <div className="text-center mt-3 mb-4">
                         <h2 className="text-2xl font-bold text-gray-800 leading-tight">{student.name}</h2>
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2 uppercase tracking-wide ${theme.tag}`}>
                             Student
                         </span>
+
+                        {/* AC / NON-AC Badge — only show if seat is assigned */}
+                        {(student.seat?.number || student.seatNumber) && (
+                            <div className="flex justify-center mt-2">
+                                {(student.seat?.roomHasAc || student.seat?.room?.hasAc) ? (
+                                    <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
+                                        <FaWind size={10} className="text-blue-500" />
+                                        AC Room
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 text-gray-500 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
+                                        <FaBan size={10} className="text-gray-400" />
+                                        Non-AC Room
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Details Grid */}
