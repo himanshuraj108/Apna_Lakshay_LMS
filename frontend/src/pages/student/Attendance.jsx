@@ -447,36 +447,68 @@ const Attendance = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {rankings.map((student) => (
-                                                <tr key={student.studentId}
-                                                    style={{
-                                                        borderBottom: '1px solid rgba(255,255,255,0.04)',
-                                                        background: student.isMe ? 'rgba(124,58,237,0.08)' : 'transparent',
-                                                    }}>
-                                                    <td className="px-5 py-3.5">
-                                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold"
-                                                            style={{
-                                                                background: student.rank === 1 ? 'rgba(234,179,8,0.15)' : student.rank === 2 ? 'rgba(156,163,175,0.1)' : student.rank === 3 ? 'rgba(249,115,22,0.12)' : 'rgba(255,255,255,0.04)',
-                                                                color: student.rank === 1 ? '#fbbf24' : student.rank === 2 ? '#9ca3af' : student.rank === 3 ? '#fb923c' : '#6b7280',
-                                                            }}>
-                                                            {student.rank <= 3 ? ['🥇', '🥈', '🥉'][student.rank - 1] : student.rank}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-200 font-medium">
-                                                        {student.name}
-                                                        {student.isMe && (
-                                                            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full font-bold"
-                                                                style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.25)' }}>You</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-right">
-                                                        <span className="text-base font-black"
-                                                            style={{ color: student.percentage >= 90 ? '#4ade80' : student.percentage >= 75 ? '#fbbf24' : '#f87171' }}>
-                                                            {student.percentage}%
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {(() => {
+                                                // Rank value at the 5th position — include all ties at that boundary
+                                                const top5Cutoff = rankings.length >= 5
+                                                    ? rankings[4].rank
+                                                    : (rankings[rankings.length - 1]?.rank ?? 5);
+
+                                                return rankings.map((student) => {
+                                                const isTop5 = student.rank <= top5Cutoff;
+                                                const rankColors = {
+                                                    1: { bg: 'rgba(234,179,8,0.15)',   color: '#fbbf24', label: '1st' },
+                                                    2: { bg: 'rgba(156,163,175,0.12)', color: '#d1d5db', label: '2nd' },
+                                                    3: { bg: 'rgba(249,115,22,0.13)',  color: '#fb923c', label: '3rd' },
+                                                };
+                                                const rc = rankColors[student.rank] || { bg: 'rgba(255,255,255,0.04)', color: '#6b7280', label: `#${student.rank}` };
+
+                                                let rowBg = 'transparent';
+                                                if (student.isMe) rowBg = 'rgba(124,58,237,0.08)';
+                                                else if (isTop5) rowBg = 'rgba(34,197,94,0.05)';
+
+                                                return (
+                                                    <tr key={student.studentId}
+                                                        style={{
+                                                            borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                                            background: rowBg,
+                                                            borderLeft: isTop5 && !student.isMe ? '3px solid rgba(34,197,94,0.35)' : student.isMe ? '3px solid rgba(124,58,237,0.4)' : '3px solid transparent',
+                                                        }}>
+                                                        <td className="px-5 py-3.5">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
+                                                                    style={{ background: rc.bg, color: rc.color }}>
+                                                                    {student.rank}
+                                                                </div>
+                                                                {student.rank <= 3 && (
+                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                                                                        style={{ background: rc.bg, color: rc.color }}>
+                                                                        {rc.label}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-sm font-medium">
+                                                            <div className="flex items-center gap-2">
+                                                                {isTop5 && !student.isMe && (
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                                                )}
+                                                                <span className={isTop5 ? 'text-white font-semibold' : 'text-gray-300'}>{student.name}</span>
+                                                                {student.isMe && (
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                                                        style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.25)' }}>You</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <span className="text-base font-black"
+                                                                style={{ color: student.percentage >= 90 ? '#4ade80' : student.percentage >= 75 ? '#fbbf24' : '#f87171' }}>
+                                                                {student.percentage}%
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                                });
+                                            })()}
                                         </tbody>
                                     </table>
                                 </div>
