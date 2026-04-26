@@ -261,10 +261,10 @@ exports.getDashboard = async (req, res) => {
         const today = new Date();
 
         if (student) {
-            // 1. Fetch earliest unpaid fee (pending or overdue)
+            // 1. Fetch earliest unpaid fee (pending, partial, or overdue)
             currentFee = await Fee.findOne({
                 student: studentId,
-                status: { $in: ['pending', 'overdue'] }
+                status: { $in: ['pending', 'overdue', 'partial'] }
             }).sort({ dueDate: 1 }).lean();
 
             // 2. If all paid, fetch the most recent paid fee
@@ -286,10 +286,12 @@ exports.getDashboard = async (req, res) => {
                 if (today >= reminderDate) {
                     feeReminder = {
                         show: true,
-                        amount: currentFee.amount,
+                        amount: currentFee.status === 'partial' ? (currentFee.outstanding ?? currentFee.amount) : currentFee.amount,
                         dueDate: dueDate,
                         status: currentFee.status,
-                        message: `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
+                        message: currentFee.status === 'partial'
+                            ? `Partial payment recorded. Outstanding fee of ₹${currentFee.outstanding ?? currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}.`
+                            : `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
                     };
                 }
             }
@@ -314,8 +316,11 @@ exports.getDashboard = async (req, res) => {
                     amount: currentFee.amount,
                     status: currentFee.status,
                     dueDate: currentFee.dueDate,
-                    paidDate: currentFee.paidDate
+                    paidDate: currentFee.paidDate,
+                    partialPaid: currentFee.partialPaid ?? 0,
+                    outstanding: currentFee.outstanding ?? currentFee.amount,
                 } : null,
+
                 feeReminder, // Add reminder data
                 unreadNotifications: unreadCount,
                 requestsCount: activeRequestsCount,
