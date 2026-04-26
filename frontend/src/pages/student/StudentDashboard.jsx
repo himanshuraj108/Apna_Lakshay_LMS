@@ -408,7 +408,7 @@ const StudentDashboard = () => {
                         </div>
 
                         <p className="text-xl sm:text-2xl font-black text-white mb-2">
-                            {dashboardData?.fee ? `₹${dashboardData.fee.amount}` : '—'}
+                            {dashboardData?.fee ? `₹${dashboardData.fee.status === 'partial' ? (dashboardData.fee.outstanding ?? dashboardData.fee.amount) : dashboardData.fee.amount}` : '—'}
                         </p>
 
                         <div className="flex items-center justify-between mt-auto">
@@ -418,9 +418,11 @@ const StudentDashboard = () => {
                                         ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
                                         : dashboardData.fee.status === 'overdue'
                                         ? 'bg-red-500/10 border-red-500/25 text-red-400'
+                                        : dashboardData.fee.status === 'partial'
+                                        ? 'bg-orange-500/10 border-orange-500/25 text-orange-400'
                                         : 'bg-amber-500/10 border-amber-500/25 text-amber-400'
                                 }`}>
-                                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: dashboardData.fee.status === 'paid' ? '#34d399' : dashboardData.fee.status === 'overdue' ? '#f87171' : '#fbbf24' }} />
+                                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: dashboardData.fee.status === 'paid' ? '#34d399' : dashboardData.fee.status === 'overdue' ? '#f87171' : dashboardData.fee.status === 'partial' ? '#fb923c' : '#fbbf24' }} />
                                     {dashboardData.fee.status.charAt(0).toUpperCase() + dashboardData.fee.status.slice(1)}
                                 </span>
                             ) : (
