@@ -85,6 +85,10 @@ const StudentManagement = () => {
     const [bulkFeeAmount, setBulkFeeAmount] = useState('');
     const [bulkFeeOperation, setBulkFeeOperation] = useState('increase');
     const [bulkFeeLoading, setBulkFeeLoading] = useState(false);
+
+    // Show / hide inactive students (default: hidden)
+    const [showInactive, setShowInactive] = useState(false);
+
     useEffect(() => {
         fetchStudents();
         fetchFloors();
@@ -935,7 +939,7 @@ const StudentManagement = () => {
                 );
             case 'all':
             default:
-                return students;
+                return showInactive ? students : students.filter(s => s.isActive);
         }
     };
 
@@ -1021,6 +1025,30 @@ const StudentManagement = () => {
                         <option value="ac" className="bg-[#050508]">AC Rooms Only</option>
                         <option value="non-ac" className="bg-[#050508]">Non-AC Rooms Only</option>
                     </select>
+
+                    {/* Show Inactive toggle */}
+                    {activeTab === 'all' && (
+                        <button
+                            onClick={() => setShowInactive(p => !p)}
+                            className="ml-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-all"
+                            style={{
+                                background: showInactive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
+                                borderColor: showInactive ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)',
+                                color: showInactive ? '#f87171' : '#6b7280',
+                            }}
+                        >
+                            <span
+                                className="relative inline-flex w-8 h-4 rounded-full transition-colors duration-200 shrink-0"
+                                style={{ background: showInactive ? '#ef4444' : 'rgba(255,255,255,0.12)' }}
+                            >
+                                <span
+                                    className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200"
+                                    style={{ transform: showInactive ? 'translateX(16px)' : 'translateX(0)' }}
+                                />
+                            </span>
+                            Show Inactive
+                        </button>
+                    )}
 
                     {activeTab === 'history' && (
                         <motion.button whileHover={{ scale: 1.03 }} onClick={handleClearArchives}
