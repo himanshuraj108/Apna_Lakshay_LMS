@@ -48,7 +48,8 @@ try {
         sendOTPEmail: async () => console.log('Email service not available'),
         sendShiftChangeApprovedEmail: async () => console.log('Email service not available'),
         sendShiftChangeRejectedEmail: async () => console.log('Email service not available'),
-        sendFeeUpdateEmail: async () => console.log('Email service not available')
+        sendFeeUpdateEmail: async () => console.log('Email service not available'),
+        sendPartialFeeEmail: async () => console.log('Email service not available')
     };
 }
 
@@ -2423,6 +2424,65 @@ exports.markFeePaid = async (req, res) => {
         });
     }
 };
+
+// @desc    Mark fee as partially paid
+// @route   PUT /api/admin/fees/:id/partial
+exports.markFeePartialPaid = async (req, res) => {
+    try {
+        const { partialAmount } = req.body;
+        const fee = await Fee.findById(req.params.id).populate('student', 'name email');
+
+        if (!fee) {
+            return res.status(404).json({ success: false, message: 'Fee record not found' });
+        }
+
+        if (!partialAmount || isNaN(partialAmount) || Number(partialAmount) <= 0) {
+            return res.status(400).json({ success: false, message: 'Please enter a valid partial amount.' });
+        }
+
+        const parsed = Number(partialAmount);
+
+        if (parsed >= fee.amount) {
+            return res.status(400).json({ success: false, message: 'Partial amount must be less than total. Use Full Paid instead.' });
+        }
+
+        const outstanding = fee.amount - parsed;
+
+        fee.status = 'partial';
+        fee.partialPaid = parsed;
+        fee.outstanding = outstanding;
+        fee.paidDate = new Date();
+        fee.markedBy = req.user.id;
+        await fee.save();
+
+        // In-app notification
+        await Notification.create({
+            recipient: fee.student._id,
+            title: 'Partial Fee Payment Recorded',
+            message: `₹${parsed} received. Outstanding balance: ₹${outstanding}.`,
+            type: 'fee',
+            createdBy: req.user.id
+        });
+
+        // Email
+        try {
+            await emailService.sendPartialFeeEmail(fee.student, parsed, outstanding, fee.amount, fee.month, fee.year);
+        } catch (emailError) {
+            console.error('Partial fee email failed:', emailError.message);
+        }
+
+        await logAction(req, 'fee_partial_paid', 'Fee', fee._id, `Partial: ₹${parsed}`, `Partial payment of ₹${parsed} recorded for ${fee.student.name}. Outstanding: ₹${outstanding}`);
+
+        res.status(200).json({
+            success: true,
+            message: `Partial payment of ₹${parsed} recorded. Outstanding: ₹${outstanding}.`
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+
 
 // Send notification
 exports.sendNotification = async (req, res) => {
