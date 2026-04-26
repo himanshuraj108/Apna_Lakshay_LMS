@@ -547,3 +547,41 @@ exports.sendFeeUpdateEmail = async (student, oldPrice, newPrice) => {
     { text: 'View Fee Dashboard', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/fees` }
   );
 };
+
+// 10. Partial Fee Payment
+exports.sendPartialFeeEmail = async (student, partialPaid, outstanding, total, month, year) => {
+  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  const content = `
+    <p>Dear <strong>${student.name}</strong>,</p>
+    <p>A partial payment has been recorded for your fee of <strong>${monthNames[month - 1]} ${year}</strong>.</p>
+
+    <div class="highlight-box" style="border-left: 4px solid #F59E0B;">
+      <table width="100%" style="font-size: 15px;">
+        <tr>
+          <td><span class="label">Total Fee</span></td>
+          <td align="right"><p class="value" style="font-size: 16px; margin: 0;">&#8377;${total}</p></td>
+        </tr>
+        <tr>
+          <td><span class="label" style="color: #059669;">Amount Paid</span></td>
+          <td align="right"><p class="value" style="font-size: 18px; color: #059669; margin: 0;">&#8377;${partialPaid}</p></td>
+        </tr>
+        <tr>
+          <td><span class="label" style="color: #DC2626;">Outstanding Due</span></td>
+          <td align="right"><p class="value" style="font-size: 18px; color: #DC2626; margin: 0;">&#8377;${outstanding}</p></td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size: 13px; color: #6B7280;">Please clear the remaining balance at the earliest to avoid any late charges.</p>
+  `;
+
+  await sendEmail(
+    student.email,
+    `Partial Fee Payment - ${monthNames[month - 1]} ${year}`,
+    '⚠️ Partial Payment Received',
+    content,
+    { text: 'View Fee Dashboard', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/fees` }
+  );
+};
+
