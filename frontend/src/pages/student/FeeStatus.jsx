@@ -29,9 +29,10 @@ const monthNamesFull = ['January', 'February', 'March', 'April', 'May', 'June', 
 /* ─── Status Badge ──────────────────────────────────────────────────── */
 const StatusBadge = ({ status }) => {
     const styles = {
-        paid:    { bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.25)',   color: '#4ade80', label: 'Paid',    icon: <IoCheckmarkCircle size={11} /> },
-        pending: { bg: 'rgba(234,179,8,0.1)',   border: 'rgba(234,179,8,0.25)',   color: '#fbbf24', label: 'Pending', icon: <IoTimeOutline size={11} /> },
-        overdue: { bg: 'rgba(239,68,68,0.1)',   border: 'rgba(239,68,68,0.25)',   color: '#f87171', label: 'Overdue', icon: <IoAlertCircleOutline size={11} /> },
+        paid:    { bg: 'rgba(34,197,94,0.1)',    border: 'rgba(34,197,94,0.25)',    color: '#4ade80', label: 'Paid',    icon: <IoCheckmarkCircle size={11} /> },
+        pending: { bg: 'rgba(234,179,8,0.1)',    border: 'rgba(234,179,8,0.25)',    color: '#fbbf24', label: 'Pending', icon: <IoTimeOutline size={11} /> },
+        overdue: { bg: 'rgba(239,68,68,0.1)',    border: 'rgba(239,68,68,0.25)',    color: '#f87171', label: 'Overdue', icon: <IoAlertCircleOutline size={11} /> },
+        partial: { bg: 'rgba(251,146,60,0.1)',   border: 'rgba(251,146,60,0.25)',   color: '#fb923c', label: 'Partial', icon: <IoTimeOutline size={11} /> },
     }[status] || { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', color: '#9ca3af', label: status, icon: null };
 
     return (
@@ -181,8 +182,10 @@ const FeeStatus = () => {
         }
     }, [loading, fees, profile, searchParams, setSearchParams]);
 
-    const totalPaid    = fees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0);
-    const totalPending = fees.filter(f => f.status !== 'paid').reduce((s, f) => s + f.amount, 0);
+    const totalPaid    = fees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0)
+                        + fees.filter(f => f.status === 'partial').reduce((s, f) => s + (f.partialPaid || 0), 0);
+    const totalPending = fees.filter(f => f.status === 'pending' || f.status === 'overdue').reduce((s, f) => s + f.amount, 0)
+                        + fees.filter(f => f.status === 'partial').reduce((s, f) => s + (f.outstanding || 0), 0);
     const paidCount    = fees.filter(f => f.status === 'paid').length;
 
     return (
@@ -264,8 +267,8 @@ const FeeStatus = () => {
                                         transition={{ delay: idx * 0.04 }}
                                         className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
                                         style={{
-                                            background: fee.status === 'paid' ? 'rgba(34,197,94,0.03)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.02)',
-                                            border: `1px solid ${fee.status === 'paid' ? 'rgba(34,197,94,0.1)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)'}`,
+                                            background: fee.status === 'paid' ? 'rgba(34,197,94,0.03)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.04)' : fee.status === 'partial' ? 'rgba(251,146,60,0.04)' : 'rgba(255,255,255,0.02)',
+                                            border: `1px solid ${fee.status === 'paid' ? 'rgba(34,197,94,0.1)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.12)' : fee.status === 'partial' ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.05)'}`,
                                         }}>
 
                                         {/* Month icon */}
@@ -288,13 +291,20 @@ const FeeStatus = () => {
                                             {fee.paidDate && (
                                                 <div className="flex items-center gap-1">
                                                     <IoCheckmarkCircle size={10} className="text-emerald-500 shrink-0" />
-                                                    <span className="text-gray-600">Paid</span>
+                                                    <span className="text-gray-600">{fee.status === 'partial' ? 'Part.Paid' : 'Paid'}</span>
                                                     <span className="text-emerald-400 font-medium">{new Date(fee.paidDate).toLocaleDateString('en-IN')}</span>
+                                                </div>
+                                            )}
+                                            {fee.status === 'partial' && fee.partialPaid > 0 && (
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-green-400 font-bold">₹{fee.partialPaid} paid</span>
+                                                    <span className="text-gray-600">·</span>
+                                                    <span className="text-red-400 font-bold">₹{fee.outstanding} due</span>
                                                 </div>
                                             )}
                                         </div>
 
-                                        {/* Right side: Receipt button for paid, badge for others */}
+                                        {/* Right side */}
                                         <div className="shrink-0">
                                             {fee.status === 'paid' ? (
                                                 <motion.button
@@ -304,27 +314,28 @@ const FeeStatus = () => {
                                                     disabled={downloadingId === fee._id}
                                                     title="Download Receipt"
                                                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all disabled:opacity-60"
-                                                    style={{
-                                                        background: '#FACC15',
-                                                        border: 'none',
-                                                        color: '#000000',
-                                                    }}
+                                                    style={{ background: '#FACC15', border: 'none', color: '#000000' }}
                                                 >
                                                     {downloadingId === fee._id ? (
-                                                        <>
-                                                            <svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                                <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-                                                                <path d="M12 2a10 10 0 0 1 10 10" />
-                                                            </svg>
-                                                            <span>Wait...</span>
-                                                        </>
+                                                        <><svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" strokeOpacity="0.25" /><path d="M12 2a10 10 0 0 1 10 10" /></svg><span>Wait...</span></>
                                                     ) : (
-                                                        <>
-                                                            <IoDownloadOutline size={11} />
-                                                            <span>Receipt</span>
-                                                        </>
+                                                        <><IoDownloadOutline size={11} /><span>Receipt</span></>
                                                     )}
                                                 </motion.button>
+                                            ) : fee.status === 'partial' ? (
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <StatusBadge status="partial" />
+                                                    {onlinePaymentEnabled && (
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.04 }}
+                                                            whileTap={{ scale: 0.96 }}
+                                                            onClick={() => handlePayment(fee)}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-[11px] font-bold shadow-lg shadow-orange-500/20"
+                                                        >
+                                                            Pay ₹{fee.outstanding}
+                                                        </motion.button>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div className="flex flex-col items-end gap-2">
                                                     <StatusBadge status={fee.status} />
