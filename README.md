@@ -2,7 +2,7 @@
 ## For security and privacy reasons, I’m unable to share admin demo credentials, as the system is currently being used in a real-world library environment.
 ## However, you can explore the platform using the student demo login provided below:
 ________________________
-## Email: demo@gmail.com
+## Email: demo@gmail.com || 0123456789
 ## Password: demo123
 ________________________
 # Apna Lakshay - Library Management System
