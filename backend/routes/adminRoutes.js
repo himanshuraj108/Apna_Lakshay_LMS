@@ -28,6 +28,7 @@ const {
     bulkCheckOut,
     getFees,
     markFeePaid,
+    markFeePartialPaid,
     getVacantSeats,
     sendNotification,
     getRequests,
@@ -151,6 +152,7 @@ router.post('/reset-student-qrs', resetAllQrTokens);
 // Fees
 router.get('/fees', getFees);
 router.put('/fees/:id/paid', markFeePaid);
+router.put('/fees/:id/partial', markFeePartialPaid);
 router.get('/vacant-seats', getVacantSeats);
 
 // Notifications

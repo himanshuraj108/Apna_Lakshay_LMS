@@ -22,8 +22,16 @@ const feeSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['paid', 'pending', 'overdue'],
+        enum: ['paid', 'pending', 'overdue', 'partial'],
         default: 'pending'
+    },
+    partialPaid: {
+        type: Number,
+        default: 0
+    },
+    outstanding: {
+        type: Number,
+        default: 0
     },
     paidDate: {
         type: Date,
