@@ -92,23 +92,34 @@ Students are created by admin and receive credentials via email.
 - Student CRUD operations with email notifications
 - Floor/Room/Seat management with dynamic pricing
 - Seat assignment to students
-- Daily attendance marking
-- Fee management (mark as paid, send confirmations)
+- Daily attendance marking with QR-based identification
+- **Fee Management**:
+  - Mark fee as fully paid or partially paid
+  - Partial payments show paid amount + outstanding balance (orange highlight)
+  - Bulk fee update across multiple students with email notifications
+  - Show/hide inactive students toggle (default: hidden)
+  - Download fee report as PDF
+  - Online payment toggle (enable/disable Razorpay for students)
 - Send announcements (global or individual)
 - Approve/reject student requests
 - AI Credits management (auto-calculation based on fees or manual assignment)
-- View individual student's ThinkFlow AI chat history
+- View individual student's AI chat history
 
 ### Student Features
 - Dashboard with seat, attendance, fee, notification cards
 - View own seat on visual map (highlighted)
 - Attendance tracking with ranking system
 - Study planner / to-do list
-- Fee status and history
+- **Fee status and history**:
+  - Shows paid / pending / overdue / partial statuses
+  - Partial fees display paid amount + outstanding due inline
+  - Pay outstanding balance online via Razorpay
+  - Download payment receipt as PDF
+- **AI Doubt Board**: Ask subject-specific doubts (Maths, Science, History, Polity, Economy, Geography, Current Affairs, English) powered by Groq API (Llama 3.1 8B) with multi-key fallback and daily limit per student
+- **AI Mock Test Generator**: Dynamically generates exam-pattern questions for SSC CGL, CHSL, GD, UPSC and other competitive exams with section-wise syllabus, negative marking, and multi-model fallback
 - Notification center
 - Profile management with image upload
 - Submit change requests (seat/shift/profile)
-- ThinkFlow AI Assistant integration for study help
 
 ### Public Features
 - View seat availability without login
@@ -123,7 +134,9 @@ Sends automated emails for:
 - Student credential delivery
 - Seat assignment confirmation
 - Request approval/rejection
-- Fee payment confirmation
+- Fee payment confirmation (full paid)
+- **Partial fee notification** — shows Paid amount, Outstanding balance, and Total side-by-side
+- **Bulk fee update notification** — shows Previous Fee vs New Fee with status indicator
 - Fee due reminders (5 days before month end)
 - Admin announcements
 
@@ -139,6 +152,7 @@ All emails are branded with premium HTML templates.
   - Green: Available / Paid / Present
   - Red: Occupied / Overdue / Absent
   - Yellow: Due Soon / Pending
+  - Orange: Partial Payment (row highlight + badge + breakdown text)
 - **Fully Responsive**: Desktop, Tablet, Mobile
 - **Mobile-Optimized Experiences**: Tuned viewport and layouts for perfect rendering on real devices
 
@@ -196,8 +210,12 @@ lms/
 - `POST /api/admin/students` - Create student
 - `POST /api/admin/seats/assign` - Assign seat
 - `POST /api/admin/attendance` - Mark attendance
-- `PUT /api/admin/fees/:id/paid` - Mark fee as paid
+- `PUT /api/admin/fees/:id/paid` - Mark fee as fully paid
+- `PUT /api/admin/fees/:id/partial` - Record partial payment
+- `PUT /api/admin/fees/bulk-update` - Bulk update student fees
 - `POST /api/admin/notifications` - Send notification
+- `GET /api/admin/settings` - Get system settings
+- `PUT /api/admin/settings` - Update system settings (e.g. online payment toggle)
 
 ### Student (Protected)
 - `GET /api/student/dashboard` - Dashboard data
@@ -207,6 +225,10 @@ lms/
 - `GET /api/student/notifications` - Notifications
 - `POST /api/student/request` - Submit change request
 - `POST /api/student/profile/image` - Upload profile image
+- `POST /api/student/doubt/ask` - Ask AI doubt (Groq)
+- `POST /api/student/mock-test/generate` - Generate AI mock test
+- `POST /api/student/fees/:id/create-order` - Create Razorpay order
+- `POST /api/student/fees/:id/verify-payment` - Verify Razorpay payment
 
 ## Key Implementation Details
 
