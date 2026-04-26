@@ -3,7 +3,7 @@
 ## However, you can explore the platform using the student demo login provided below:
 ________________________
 ## Email: demo@gmail.com || 0123456789
-## Password: demo123
+## Password: 123456
 ________________________
 # Apna Lakshay - Library Management System
 https://apnalakshay.com
