@@ -271,4 +271,4 @@ Built with for Apna Lakshay Library
 
 ## License
 
-Proprietary - All Rights Reserved
+Proprietary - All Rights Reserved 2026
