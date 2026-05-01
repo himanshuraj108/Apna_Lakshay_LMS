@@ -153,9 +153,25 @@ const StudentIdCard = ({ student }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
-                            <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
-                                {getFormattedShift()}
-                            </p>
+                            {/* Multi-shift support: show all assigned shifts */}
+                            {student.shifts && student.shifts.length > 0 ? (
+                                <div className="flex flex-col items-end gap-0.5">
+                                    {student.shifts.map((s, i) => (
+                                        <div key={i}>
+                                            <p className={`font-bold text-[10px] ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
+                                                {s.name}
+                                            </p>
+                                            {s.startTime && s.endTime && (
+                                                <p className="text-gray-400 text-[9px]">{s.startTime}–{s.endTime}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
+                                    {getFormattedShift()}
+                                </p>
+                            )}
                         </div>
 
                         {/* Address Row */}
