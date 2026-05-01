@@ -151,11 +151,28 @@ const MySeat = () => {
                                 </div>
                             </div>
 
-                            {/* Status row */}
-                            <div className="relative mt-4 pt-4 border-t border-white/6 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                <span className="text-emerald-400 text-xs font-semibold">Active</span>
-                                <span className="text-gray-700 text-xs ml-auto">{seat.shift || ''}</span>
+                            {/* Status row — show all assigned shifts */}
+                            <div className="relative mt-4 pt-4 border-t border-white/6">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="text-emerald-400 text-xs font-semibold">Active</span>
+                                </div>
+                                {seat.shifts && seat.shifts.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                        {seat.shifts.map((s, i) => (
+                                            <span key={i}
+                                                className="inline-flex flex-col px-3 py-1.5 rounded-xl text-xs font-bold"
+                                                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}>
+                                                <span>{s.name}</span>
+                                                {s.startTime && s.endTime && (
+                                                    <span className="text-[10px] text-emerald-300/70 font-normal mt-0.5">{s.startTime}–{s.endTime}</span>
+                                                )}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-gray-700 text-xs">{seat.shift || ''}</span>
+                                )}
                             </div>
                         </motion.div>
 
@@ -163,7 +180,34 @@ const MySeat = () => {
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
                             className="flex flex-col gap-3">
                             <DetailChip icon={IoLocationOutline} label="Location" value={`${floor?.name}, ${room?.name}`} accentColor="#3b82f6" />
-                            <DetailChip icon={IoTimeOutline} label="Shift" value={seat.shift || '—'} accentColor="#10b981" />
+                            {/* Shift chips — one per assigned shift */}
+                            {seat.shifts && seat.shifts.length > 0 ? (
+                                <div className="flex flex-col gap-2">
+                                    {seat.shifts.map((s, i) => (
+                                        <div key={i}
+                                            className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden"
+                                            style={{
+                                                background: 'linear-gradient(145deg, #10b9810d, rgba(255,255,255,0.02))',
+                                                border: '1px solid rgba(16,185,129,0.25)',
+                                                padding: '14px 16px',
+                                            }}>
+                                            <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#10b981' }} />
+                                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(16,185,129,0.15)' }}>
+                                                <IoTimeOutline size={17} style={{ color: '#10b981' }} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'rgba(156,163,175,0.7)' }}>Shift {i + 1}</p>
+                                                <p className="text-white font-bold text-sm">{s.name}</p>
+                                                {s.startTime && s.endTime && (
+                                                    <p className="text-emerald-400 text-[11px] font-semibold mt-0.5">{s.startTime} – {s.endTime}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <DetailChip icon={IoTimeOutline} label="Shift" value={seat.shift || '—'} accentColor="#10b981" />
+                            )}
                             <DetailChip icon={IoCashOutline} label="Monthly Fee" value={`₹${price}`} accentColor="#f59e0b" />
                         </motion.div>
 
@@ -179,7 +223,11 @@ const MySeat = () => {
                             </div>
                             <div className="p-4 flex flex-col gap-2">
                                 {shifts.map(shift => {
-                                    const isCurrent = (seat.shiftId && seat.shiftId.toString() === shift.id.toString()) || seat.shift === shift.name;
+                                    const shiftIdStr = (shift._id || shift.id || '').toString();
+                                    // Highlight if this shift is in the student's assigned shifts[]
+                                    const isCurrent = seat.shifts
+                                        ? seat.shifts.some(s => s._id && s._id.toString() === shiftIdStr)
+                                        : (seat.shiftId && seat.shiftId.toString() === shiftIdStr) || seat.shift === shift.name;
                                     const shiftPrice = seat.shiftPrices?.[shift.id] || seat.basePrices?.[shift.id] || 800;
                                     return (
                                         <div key={shift.id}
