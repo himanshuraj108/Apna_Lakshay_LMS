@@ -521,24 +521,29 @@ exports.getStudents = async (req, res) => {
         const studentsWithShift = students.map(student => {
             let shiftInfo = null;
             let shiftDetails = null;
+            let shiftsArr = [];
+
             if (student.seat && student.seat.assignments) {
-                // Find active assignment for this student
-                const assignment = student.seat.assignments.find(a =>
+                // Find ALL active assignments for this student
+                const myAssignments = student.seat.assignments.filter(a =>
                     a.status === 'active' && a.student.toString() === student._id.toString()
                 );
 
-                if (assignment) {
-                    if (assignment.shift && assignment.shift.name) {
-                        shiftInfo = assignment.shift.name;
-                        shiftDetails = {
-                            startTime: assignment.shift.startTime,
-                            endTime: assignment.shift.endTime
-                        };
-                    } else if (assignment.legacyShift) {
-                        shiftInfo = assignment.legacyShift;
-                    } else if (assignment.type === 'full_day') {
-                        shiftInfo = 'Full Day';
+                shiftsArr = myAssignments.map(a => {
+                    if (a.shift && a.shift.name) {
+                        return { _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime, price: a.price };
+                    } else if (a.legacyShift) {
+                        return { name: a.legacyShift, price: a.price };
+                    } else if (a.type === 'full_day') {
+                        return { name: 'Full Day', price: a.price };
                     }
+                    return null;
+                }).filter(Boolean);
+
+                // Backward compat: single shift fields from first assignment
+                if (shiftsArr.length > 0) {
+                    shiftInfo = shiftsArr.map(s => s.name).join(' + ');
+                    shiftDetails = { startTime: shiftsArr[0].startTime, endTime: shiftsArr[0].endTime };
                 }
             }
 
@@ -548,9 +553,10 @@ exports.getStudents = async (req, res) => {
 
             return {
                 ...student,
-                shift: shiftInfo,
-                shiftDetails, // New field containing time info
-                registrationSource: student.registrationSource || 'admin', // Default for existing students
+                shift: shiftInfo,              // backward compat: "Shift 1 + Shift 3"
+                shiftDetails,                  // backward compat: first shift times
+                shifts: shiftsArr,             // NEW: full array [{name, startTime, endTime}]
+                registrationSource: student.registrationSource || 'admin',
                 currentFee: feeMap[student._id.toString()] || null,
                 isOnline,
                 isLoggedIn: student.isLoggedIn || false,
@@ -941,16 +947,17 @@ exports.updateStudent = async (req, res) => {
             student.password = password;
         }
 
-        if (joinedAt) {
-            student.createdAt = new Date(joinedAt);
-        }
-
-        // Handle timestamps manually if joinedAt was provided
-        if (joinedAt) {
-            student.updatedAt = new Date();
-        }
-
         await student.save();
+
+        // Mongoose timestamps:true BLOCKS createdAt changes via .save()
+        // Use raw MongoDB updateOne to force-write the new admission date
+        if (joinedAt) {
+            await User.collection.updateOne(
+                { _id: student._id },
+                { $set: { createdAt: new Date(joinedAt) } }
+            );
+        }
+
 
         // Log action
         await logAction(req, 'student_updated', 'User', student._id, student.name, `Updated student details. Active: ${isActive}`);
@@ -1495,92 +1502,52 @@ exports.deleteRoom = async (req, res) => {
 // Assign seat
 exports.assignSeat = async (req, res) => {
     try {
-        const { seatId, studentId, shift, negotiatedPrice } = req.body;
+        // Accept shifts[] array OR single shift (backward compat)
+        const { seatId, studentId, shift, shifts: shiftsInput, negotiatedPrice } = req.body;
+        const shiftIds = (shiftsInput && shiftsInput.length > 0) ? shiftsInput : (shift ? [shift] : []);
 
-        // Validate that at least one parameter (seatId or shift) is provided
-        if (!seatId && !shift) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide at least seat or shift to update'
-            });
+        // Validate inputs
+        if (!seatId && shiftIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'Please provide at least seat or shift to update' });
         }
-
-        // Validate studentId
         if (!studentId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Student ID is required'
-            });
+            return res.status(400).json({ success: false, message: 'Student ID is required' });
         }
 
         const student = await User.findById(studentId);
-        if (!student) {
-            return res.status(404).json({
-                success: false,
-                message: 'Student not found'
-            });
-        }
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
 
-        // If seatId is provided, validate it
         let seat = null;
         if (seatId) {
             seat = await Seat.findById(seatId).populate('floor room');
-            if (!seat) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Seat not found'
-                });
-            }
+            if (!seat) return res.status(404).json({ success: false, message: 'Seat not found' });
         }
 
-
-        // Check availability logic for DYNAMIC SHIFTS (only if seat is being assigned/changed)
-        if (seatId && shift) {
-            // 1. Is the seat blocked by a full-day assignment from ANOTHER student?
-            const activeAssignments = seat.assignments.filter(a => a.status === 'active' && a.student.toString() !== studentId.toString());
-            const isFullyBlocked = activeAssignments.some(a => a.type === 'full_day');
-
-            if (isFullyBlocked) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Seat is fully occupied (Full Day)'
-                });
-            }
-
-            // 2. Check for time-based overlaps (not just exact shift ID match)
-            // Get the requested shift details
-            const requestedShift = await Shift.findById(shift);
-            if (!requestedShift) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Shift not found'
-                });
-            }
-
-            // Import time overlap utility
+        // Check shift availability against OTHER students only
+        if (seatId && shiftIds.length > 0) {
             const { doTimeRangesOverlap } = require('../utils/timeUtils');
+            const otherActive = seat.assignments.filter(
+                a => a.status === 'active' && a.student.toString() !== studentId.toString()
+            );
 
-            // Check if requested shift time overlaps with any existing assignment
-            for (const assignment of activeAssignments) {
-                if (assignment.shift) {
-                    const assignedShift = await Shift.findById(assignment.shift);
-                    if (assignedShift) {
-                        const hasOverlap = doTimeRangesOverlap(
-                            requestedShift.startTime,
-                            requestedShift.endTime,
-                            assignedShift.startTime,
-                            assignedShift.endTime
-                        );
+            if (otherActive.some(a => a.type === 'full_day')) {
+                return res.status(400).json({ success: false, message: 'Seat is fully occupied (Full Day)' });
+            }
 
-                        if (hasOverlap) {
+            const requestedShifts = await Shift.find({ _id: { $in: shiftIds } });
+            if (requestedShifts.length !== shiftIds.length) {
+                return res.status(404).json({ success: false, message: 'One or more shifts not found' });
+            }
+
+            for (const reqShift of requestedShifts) {
+                for (const asgn of otherActive) {
+                    if (asgn.shift) {
+                        const asgnShift = await Shift.findById(asgn.shift);
+                        if (asgnShift && doTimeRangesOverlap(reqShift.startTime, reqShift.endTime, asgnShift.startTime, asgnShift.endTime)) {
                             return res.status(400).json({
                                 success: false,
-                                message: `Seat is already occupied during this time period. Conflict with ${assignedShift.name} (${assignedShift.startTime}-${assignedShift.endTime})`,
-                                conflictingShift: {
-                                    name: assignedShift.name,
-                                    startTime: assignedShift.startTime,
-                                    endTime: assignedShift.endTime
-                                }
+                                message: `Seat occupied during ${reqShift.name}. Conflict with ${asgnShift.name} (${asgnShift.startTime}-${asgnShift.endTime})`,
+                                conflictingShift: { name: asgnShift.name, startTime: asgnShift.startTime, endTime: asgnShift.endTime }
                             });
                         }
                     }
@@ -1619,21 +1586,36 @@ exports.assignSeat = async (req, res) => {
             }
         }
 
-        // 4. Create new assignment object (only if both seat and shift are provided)
-        if (seatId && shift) {
-            const newAssignment = {
-                student: student._id, // Explicitly use ObjectId from fetched student
-                shift: shift, // Shift ID
-                type: 'specific', // Assuming specific shift for now
-                status: 'active',
-                assignedAt: new Date(),
-                price: negotiatedPrice || seat.shiftPrices?.get(shift) || seat.basePrices?.day || 0 // Fallback with safe access
-            };
+        // 4. Create one assignment per requested shift
+        if (seatId && shiftIds.length > 0) {
+            // Calculate total price: negotiatedPrice OR sum of each shift's price
+            let totalPrice = 0;
+            if (negotiatedPrice) {
+                totalPrice = Number(negotiatedPrice);
+            } else {
+                for (const shiftId of shiftIds) {
+                    totalPrice += seat.shiftPrices?.get(shiftId) || seat.basePrices?.day || 0;
+                }
+            }
 
-            // 5. Add to seat
-            seat.assignments.push(newAssignment);
-            seat.isOccupied = true; // General flag
+            // Create one assignment per shift; only the first carries the total fee price
+            shiftIds.forEach((shiftId, index) => {
+                seat.assignments.push({
+                    student: student._id,
+                    shift: shiftId,
+                    type: 'specific',
+                    status: 'active',
+                    assignedAt: new Date(),
+                    price: index === 0 ? totalPrice : 0  // total on first, 0 on rest
+                });
+            });
+
+            const newAssignment = { price: totalPrice }; // for fee creation below
+            seat.isOccupied = true;
             await seat.save();
+
+            // expose newAssignment for fee logic below
+            var _newAssignmentPrice = totalPrice;
 
             // Update student reference (Only set seatAssignedAt if not already set)
             const userUpdateUpdates = { seat: seatId };
@@ -1644,35 +1626,60 @@ exports.assignSeat = async (req, res) => {
 
             const now = new Date();
 
-            // Calculate due date based on student's joined date (Billing Cycle)
+            // Calculate billing cycle based on student's JOINED date (not today)
+            // If student joined Apr 30 and today is May 1, first fee should be Apr 30 cycle
             const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
-            const joinedDay = joinedDate.getDate();
-            const dueDate = new Date(now.getFullYear(), now.getMonth(), joinedDay);
+            const joinedDay  = joinedDate.getDate();
+
+            // Determine which month/year the fee belongs to
+            // Rule: the billing cycle starts on joinedDay each month.
+            // If today is past joinedDay in the current month → current month's cycle
+            // If today is before joinedDay in the current month → previous month's cycle
+            // But if joinedDate itself is in a past month → use joinedDate's month/year for first fee
+            let feeMonth, feeYear;
+            const joinedMonth = joinedDate.getMonth() + 1; // 1-indexed
+            const joinedYear  = joinedDate.getFullYear();
+            const todayMonth  = now.getMonth() + 1;
+            const todayYear   = now.getFullYear();
+
+            if (joinedYear < todayYear || (joinedYear === todayYear && joinedMonth < todayMonth)) {
+                // Joined in a previous month — first fee is for that joined month
+                feeMonth = joinedMonth;
+                feeYear  = joinedYear;
+            } else {
+                // Joined this month
+                feeMonth = todayMonth;
+                feeYear  = todayYear;
+            }
+
+            // dueDate = the joinedDay of feeMonth/feeYear
+            const dueDate = new Date(feeYear, feeMonth - 1, joinedDay);
 
             // Create or update fee record — but NEVER overwrite a fee that's already paid
             const existingFee = await Fee.findOne({
                 student: studentId,
-                month: now.getMonth() + 1,
-                year: now.getFullYear()
+                month: feeMonth,
+                year: feeYear
             });
 
             if (!existingFee) {
                 await Fee.create({
                     student: studentId,
-                    month: now.getMonth() + 1,
-                    year: now.getFullYear(),
-                    amount: newAssignment.price,
+                    month: feeMonth,
+                    year: feeYear,
+                    amount: _newAssignmentPrice || 0,
                     dueDate,
                     status: 'pending'
                 });
             } else if (existingFee.status !== 'paid') {
                 // Update amount only — never reset status to pending
                 await Fee.findByIdAndUpdate(existingFee._id, {
-                    amount: newAssignment.price,
+                    amount: _newAssignmentPrice || 0,
                     dueDate
                 });
             }
             // If already paid → do nothing
+
 
             await Notification.create({
                 recipient: studentId,
