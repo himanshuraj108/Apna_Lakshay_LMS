@@ -111,27 +111,23 @@ exports.getDashboard = async (req, res) => {
 
         let assignedSeatData = null;
         if (seat) {
-            // Find specific assignment
-            const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+            // Find ALL active assignments for this student
+            const myAssignments = seat.assignments.filter(
+                a => a.student.toString() === studentId.toString() && a.status === 'active'
+            );
 
-            let shiftName = 'N/A';
-            let shiftDetails = null;
-
-            if (assignment) {
-                if (assignment.shift && assignment.shift.name) {
-                    shiftName = assignment.shift.name;
-                    shiftDetails = {
-                        startTime: assignment.shift.startTime,
-                        endTime: assignment.shift.endTime
-                    };
-                } else if (assignment.legacyShift) {
-                    shiftName = assignment.legacyShift;
-                } else if (assignment.type === 'full_day') {
-                    shiftName = 'Full Day';
-                } else {
-                    shiftName = 'Assigned';
+            const shiftsArr = myAssignments.map(a => {
+                if (a.shift && a.shift.name) {
+                    return { _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime };
+                } else if (a.legacyShift) {
+                    return { name: a.legacyShift };
+                } else if (a.type === 'full_day') {
+                    return { name: 'Full Day' };
                 }
-            }
+                return null;
+            }).filter(Boolean);
+
+            const shiftName = shiftsArr.map(s => s.name).join(' + ') || 'N/A';
 
             assignedSeatData = {
                 number: seat.number,
@@ -139,10 +135,11 @@ exports.getDashboard = async (req, res) => {
                 room: seat.room?.name,
                 roomHasAc: seat.room?.hasAc || false,
                 roomHasFan: seat.room?.hasFan || false,
-                shift: shiftName,
-                shiftDetails, // Added details
-                price: assignment?.price || 0,
-                assignedAt: assignment?.assignedAt // Add assignment date
+                shift: shiftName,          // backward compat
+                shifts: shiftsArr,         // NEW: all shifts
+                shiftDetails: shiftsArr[0] ? { startTime: shiftsArr[0].startTime, endTime: shiftsArr[0].endTime } : null,
+                price: myAssignments[0]?.price || 0,
+                assignedAt: myAssignments[0]?.assignedAt
             };
         }
 
@@ -369,28 +366,26 @@ exports.getMySeat = async (req, res) => {
             });
         }
 
-        // Find specific assignment
-        const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+        // Find ALL active assignments for this student
+        const myAssignments = seat.assignments.filter(
+            a => a.student.toString() === studentId.toString() && a.status === 'active'
+        );
 
-        let shiftName = 'N/A';
-        let shiftId = null;
-
-        if (assignment) {
-            if (assignment.shift) {
-                shiftId = assignment.shift._id || assignment.shift;
-                if (assignment.shift.name) {
-                    shiftName = assignment.shift.name;
-                } else {
-                    shiftName = assignment.legacyShift || 'Assigned';
-                }
-            } else if (assignment.legacyShift) {
-                shiftName = assignment.legacyShift;
-                shiftId = assignment.legacyShift;
-            } else if (assignment.type === 'full_day') {
-                shiftName = 'Full Day';
-                shiftId = 'full';
+        // Build shifts[] array from all assignments
+        const shiftsArr = myAssignments.map(a => {
+            if (a.shift && a.shift.name) {
+                return { _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime };
+            } else if (a.legacyShift) {
+                return { name: a.legacyShift };
+            } else if (a.type === 'full_day') {
+                return { name: 'Full Day' };
             }
-        }
+            return null;
+        }).filter(Boolean);
+
+        // Backward compat: first shift as single string
+        const shiftName = shiftsArr.map(s => s.name).join(' + ') || 'N/A';
+        const shiftId = myAssignments[0]?.shift?._id || myAssignments[0]?.legacyShift || null;
 
         res.status(200).json({
             success: true,
@@ -399,9 +394,10 @@ exports.getMySeat = async (req, res) => {
                 number: seat.number,
                 floor: seat.floor,
                 room: seat.room,
-                shift: shiftName,
-                shiftId: shiftId,
-                price: assignment?.price || 0,
+                shift: shiftName,        // backward compat
+                shiftId: shiftId,        // backward compat
+                shifts: shiftsArr,       // NEW: all assigned shifts
+                price: myAssignments[0]?.price || 0,
                 basePrices: seat.basePrices,
                 shiftPrices: seat.shiftPrices
             }
