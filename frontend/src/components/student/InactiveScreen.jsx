@@ -1,162 +1,141 @@
 import { motion } from 'framer-motion';
 import {
-    IoLibraryOutline, IoLogOutOutline,
-    IoCallOutline, IoCheckmarkCircle,
-    IoTrophyOutline, IoFlashOutline, IoRocketOutline,
-    IoHeartOutline, IoStar, IoTimeOutline, IoLockClosedOutline
+    IoLibraryOutline, IoLogOutOutline, IoCallOutline,
+    IoCheckmarkCircle, IoTrophyOutline, IoFlashOutline,
+    IoRocketOutline, IoTimeOutline, IoLockClosedOutline
 } from 'react-icons/io5';
 
-/* ─── CSS ─────────────────────────────────────────────────────────────── */
 const STYLE = `
 @keyframes orb-drift1 {
-    0%,100% { transform:translate(0,0) scale(1); }
-    33%     { transform:translate(60px,-80px) scale(1.1); }
-    66%     { transform:translate(-40px,30px) scale(0.9); }
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(40px,-50px) scale(1.08);}
 }
 @keyframes orb-drift2 {
-    0%,100% { transform:translate(0,0) scale(1); }
-    33%     { transform:translate(-60px,40px) scale(1.08); }
-    66%     { transform:translate(30px,-50px) scale(0.92); }
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(-40px,35px) scale(0.94);}
 }
 @keyframes shimmer-title {
-    0%   { background-position: 200% center; }
-    100% { background-position: -200% center; }
+    0%{background-position:200% center;}
+    100%{background-position:-200% center;}
 }
-@keyframes spin-slow { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-@keyframes pulse-soft { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
-@keyframes badge-bounce {
-    0%,100% { transform: translateY(0); }
-    50%     { transform: translateY(-3px); }
-}
-.inactive-title-shimmer {
-    background: linear-gradient(90deg, #f59e0b, #ef4444, #ec4899, #a855f7, #f59e0b);
-    background-size: 300% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    animation: shimmer-title 5s linear infinite;
+@keyframes spin-slow {from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes pulse-dot {0%,100%{opacity:0.5;}50%{opacity:1;}}
+.inactive-shimmer {
+    background:linear-gradient(90deg,#f59e0b,#ef4444,#ec4899,#a855f7,#f59e0b);
+    background-size:300% auto;
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    animation:shimmer-title 5s linear infinite;
 }
 .cta-glow {
-    box-shadow: 0 4px 32px rgba(245,158,11,0.3), 0 0 64px rgba(245,158,11,0.12),
-                inset 0 1px 0 rgba(255,255,255,0.18);
+    box-shadow:0 4px 28px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.15);
 }
 `;
 
-/* ─── Feature row ─────────────────────────────────────────────────────── */
 const Feature = ({ icon: Icon, text, color, delay }) => (
     <motion.div
-        initial={{ opacity: 0, x: -18 }}
+        initial={{ opacity: 0, x: -14 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay, duration: 0.38 }}
-        className="flex items-center gap-3 py-2.5 px-4 rounded-xl"
-        style={{ background: `${color}0d`, border: `1px solid ${color}20` }}
+        transition={{ delay, duration: 0.32 }}
+        className="flex items-center gap-2.5 py-2 px-3 rounded-xl"
+        style={{ background: `${color}0c`, border: `1px solid ${color}1e` }}
     >
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+        <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: `${color}18` }}>
-            <Icon size={14} style={{ color }} />
+            <Icon size={12} style={{ color }} />
         </div>
-        <span className="text-sm font-medium text-gray-300">{text}</span>
-        <IoCheckmarkCircle size={14} className="ml-auto shrink-0" style={{ color }} />
+        <span className="text-xs font-medium text-gray-300 leading-tight">{text}</span>
+        <IoCheckmarkCircle size={12} className="ml-auto shrink-0" style={{ color }} />
     </motion.div>
 );
 
-/* ════════════════════════════════════════════════════════════════════════
-   MAIN
-   ════════════════════════════════════════════════════════════════════════ */
 const InactiveScreen = ({ user, onLogout }) => {
     const firstName = user?.name?.split(' ')[0] || 'Student';
 
     return (
-        <div className="fixed inset-0 z-[100] overflow-y-auto flex items-center justify-center p-4"
-            style={{ background: '#070a10' }}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            style={{ background: '#070a10', overflow: 'hidden' }}>
             <style>{STYLE}</style>
 
-            {/* ── Ambient background ── */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-15%] left-[-8%] w-[600px] h-[600px] rounded-full blur-[130px]"
-                    style={{ background: 'rgba(245,158,11,0.07)', animation: 'orb-drift1 22s ease-in-out infinite' }} />
-                <div className="absolute bottom-[-15%] right-[-8%] w-[550px] h-[550px] rounded-full blur-[120px]"
-                    style={{ background: 'rgba(168,85,247,0.07)', animation: 'orb-drift2 28s ease-in-out infinite' }} />
-                <div className="absolute top-[40%] right-[20%] w-[280px] h-[280px] rounded-full blur-[100px]"
-                    style={{ background: 'rgba(236,72,153,0.05)', animation: 'orb-drift1 18s ease-in-out infinite reverse' }} />
-                {/* grid */}
+            {/* Ambient orbs */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-[-10%] left-[-8%] w-[500px] h-[500px] rounded-full blur-[120px]"
+                    style={{ background: 'rgba(245,158,11,0.07)', animation: 'orb-drift1 20s ease-in-out infinite' }} />
+                <div className="absolute bottom-[-10%] right-[-8%] w-[450px] h-[450px] rounded-full blur-[110px]"
+                    style={{ background: 'rgba(168,85,247,0.07)', animation: 'orb-drift2 26s ease-in-out infinite' }} />
                 <div className="absolute inset-0"
-                    style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.022) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
+                    style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(255,255,255,0.02) 1px,transparent 0)', backgroundSize: '48px 48px' }} />
             </div>
 
-            {/* ── Card ── */}
+            {/* Card */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 24 }}
+                initial={{ opacity: 0, scale: 0.94, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 200, damping: 22 }}
-                className="relative z-10 w-full max-w-md"
+                transition={{ type: 'spring', stiffness: 210, damping: 22 }}
+                className="relative z-10 w-full"
+                style={{ maxWidth: 420 }}
             >
-                {/* Glowing border */}
-                <div className="absolute -inset-[1px] rounded-3xl opacity-60"
+                {/* Glow border */}
+                <div className="absolute -inset-[1px] rounded-3xl opacity-50"
                     style={{
-                        background: 'linear-gradient(135deg, rgba(245,158,11,0.7), rgba(236,72,153,0.4), rgba(168,85,247,0.4))',
-                        filter: 'blur(1px)',
+                        background: 'linear-gradient(135deg,rgba(245,158,11,0.8),rgba(236,72,153,0.4),rgba(168,85,247,0.5))',
+                        filter: 'blur(1px)'
                     }} />
 
                 <div className="relative rounded-3xl overflow-hidden"
-                    style={{ background: 'linear-gradient(170deg, #0e1117, #131925, #0e1117)' }}>
+                    style={{ background: 'linear-gradient(160deg,#0f1219,#141a26,#0f1219)' }}>
 
-                    {/* Top accent bar */}
-                    <div className="h-[3px] w-full"
+                    {/* Top bar */}
+                    <div className="h-[3px]"
                         style={{ background: 'linear-gradient(90deg,#f59e0b,#ef4444,#ec4899,#a855f7)' }} />
 
                     {/* ── Hero ── */}
-                    <div className="relative px-8 pt-10 pb-8 text-center"
+                    <div className="px-7 pt-7 pb-5 text-center"
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
 
-                        {/* Icon with ring */}
-                        <div className="relative w-24 h-24 mx-auto mb-7">
+                        {/* Icon — smaller, contained */}
+                        <div className="relative w-16 h-16 mx-auto mb-4">
                             <div className="absolute inset-0 rounded-full"
-                                style={{ border: '1.5px dashed rgba(245,158,11,0.25)', animation: 'spin-slow 10s linear infinite' }} />
-                            <div className="absolute inset-0 rounded-full"
-                                style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.12), transparent)', animation: 'pulse-soft 3s ease-in-out infinite' }} />
-                            <div className="absolute inset-4 rounded-full flex items-center justify-center"
+                                style={{ border: '1.5px dashed rgba(245,158,11,0.22)', animation: 'spin-slow 10s linear infinite' }} />
+                            <div className="absolute inset-[5px] rounded-full flex items-center justify-center"
                                 style={{
-                                    background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.1))',
-                                    border: '1px solid rgba(245,158,11,0.3)',
-                                    boxShadow: '0 0 24px rgba(245,158,11,0.18), inset 0 1px 0 rgba(255,255,255,0.08)'
+                                    background: 'linear-gradient(135deg,rgba(245,158,11,0.14),rgba(239,68,68,0.09))',
+                                    border: '1px solid rgba(245,158,11,0.28)',
+                                    boxShadow: '0 0 20px rgba(245,158,11,0.15)'
                                 }}>
-                                <IoLockClosedOutline size={30} className="text-amber-400" />
+                                <IoLockClosedOutline size={22} className="text-amber-400" />
                             </div>
                         </div>
 
                         {/* Status pill */}
                         <motion.div
-                            initial={{ scale: 0.7, opacity: 0 }}
+                            initial={{ scale: 0.75, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.25, type: 'spring', stiffness: 280, damping: 18 }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5"
-                            style={{
-                                background: 'rgba(239,68,68,0.1)',
-                                border: '1px solid rgba(239,68,68,0.28)',
-                            }}
+                            transition={{ delay: 0.22, type: 'spring', stiffness: 280, damping: 18 }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
+                            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.26)' }}
                         >
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0"
-                                style={{ animation: 'pulse-soft 1.8s ease-in-out infinite' }} />
-                            <span className="text-red-400 text-xs font-bold uppercase tracking-widest">Account Inactive</span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0"
+                                style={{ animation: 'pulse-dot 1.8s ease-in-out infinite' }} />
+                            <span className="text-red-400 text-[10px] font-bold uppercase tracking-widest">Account Inactive</span>
                         </motion.div>
 
-                        {/* Name */}
+                        {/* Greeting */}
                         <motion.h1
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="text-3xl font-black text-white mb-3"
-                        >
-                            Hi, {firstName}
-                        </motion.h1>
-
-                        {/* Subtitle */}
-                        <motion.p
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.28 }}
-                            className="text-base font-bold mb-4 inactive-title-shimmer"
+                            transition={{ delay: 0.18 }}
+                            className="text-2xl font-black text-white mb-1.5"
+                        >
+                            Hi {firstName}! 👋
+                        </motion.h1>
+
+                        <motion.p
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.26 }}
+                            className="text-sm font-bold mb-2.5 inactive-shimmer"
                         >
                             Your membership is currently paused.
                         </motion.p>
@@ -164,99 +143,73 @@ const InactiveScreen = ({ user, onLogout }) => {
                         <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: 0.36 }}
-                            className="text-gray-400 text-sm leading-relaxed"
+                            transition={{ delay: 0.33 }}
+                            className="text-gray-400 text-xs leading-relaxed"
                         >
-                            Your account has been deactivated by the admin. To continue
-                            using your seat, attendance tracking, and study tools — please
-                            contact the library admin to re-activate your membership.
+                            Your account has been deactivated. Contact the admin
+                            to restore access to your seat, attendance and study tools.
                         </motion.p>
                     </div>
 
-                    {/* ── What you'll get back ── */}
-                    <div className="px-8 py-6"
+                    {/* ── Features ── */}
+                    <div className="px-7 py-4"
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.44 }}
-                            className="text-[11px] font-bold uppercase tracking-widest text-gray-600 mb-3"
-                        >
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">
                             What you get on re-activation
-                        </motion.p>
-                        <div className="flex flex-col gap-2">
+                        </p>
+                        <div className="flex flex-col gap-1.5">
                             {[
-                                { icon: IoTrophyOutline, text: 'Access to your assigned seat & shift',         color: '#f59e0b', delay: 0.46 },
-                                { icon: IoFlashOutline,  text: 'AI doubt solving & mock test generator',        color: '#a855f7', delay: 0.52 },
-                                { icon: IoRocketOutline, text: 'Monthly attendance reports & streaks',          color: '#3b82f6', delay: 0.58 },
-                                { icon: IoHeartOutline,  text: 'Student rankings & peer leaderboard',           color: '#ec4899', delay: 0.64 },
-                                { icon: IoStar,          text: 'All your previous data is preserved safely',    color: '#10b981', delay: 0.70 },
-                            ].map((f, i) => (
-                                <Feature key={i} {...f} />
-                            ))}
+                                { icon: IoTrophyOutline, text: 'Access to your assigned seat & shift',       color: '#f59e0b', delay: 0.40 },
+                                { icon: IoFlashOutline,  text: 'AI doubt solving & mock test generator',     color: '#a855f7', delay: 0.46 },
+                                { icon: IoRocketOutline, text: 'Attendance tracking & monthly reports',      color: '#3b82f6', delay: 0.52 },
+                                { icon: IoLibraryOutline,text: 'All previous data preserved and restored',   color: '#10b981', delay: 0.58 },
+                            ].map((f, i) => <Feature key={i} {...f} />)}
                         </div>
                     </div>
 
                     {/* ── CTA ── */}
-                    <div className="px-8 py-8">
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.76 }}
-                            className="text-center text-sm text-gray-400 mb-5 leading-relaxed"
-                        >
-                            Contact the admin to get your account re-activated.
-                            <br />
-                            <span className="text-amber-400 font-semibold">Your data and history are safe.</span>
-                        </motion.p>
-
-                        {/* Primary CTA — opens contact page */}
+                    <div className="px-7 py-5">
                         <motion.a
                             href="https://www.apnalakshay.com/contact"
                             target="_blank"
                             rel="noopener noreferrer"
-                            initial={{ opacity: 0, y: 12 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.82, type: 'spring', stiffness: 240, damping: 20 }}
-                            whileHover={{ scale: 1.025, y: -2 }}
+                            transition={{ delay: 0.66, type: 'spring', stiffness: 240, damping: 20 }}
+                            whileHover={{ scale: 1.025, y: -1 }}
                             whileTap={{ scale: 0.97 }}
-                            className="cta-glow w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black text-white mb-3 relative overflow-hidden"
+                            className="cta-glow w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white mb-2.5"
                             style={{
-                                background: 'linear-gradient(135deg, #d97706, #ef4444)',
+                                background: 'linear-gradient(135deg,#d97706,#ef4444)',
                                 textDecoration: 'none',
                                 display: 'flex',
                             }}
                         >
-                            {/* shine sweep on hover */}
-                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full duration-700 transition-transform"
-                                style={{ background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.14),transparent)' }} />
-                            <IoCallOutline size={18} />
+                            <IoCallOutline size={16} />
                             Contact Admin to Re-Activate
                         </motion.a>
 
-                        {/* Logout */}
                         <motion.button
                             onClick={onLogout}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: 0.90 }}
+                            transition={{ delay: 0.74 }}
                             whileHover={{ scale: 1.01 }}
                             whileTap={{ scale: 0.97 }}
-                            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-gray-500 hover:text-gray-300 transition-colors"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold text-gray-500 hover:text-gray-300 transition-colors"
                             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
                         >
-                            <IoLogOutOutline size={15} />
+                            <IoLogOutOutline size={13} />
                             Sign Out
                         </motion.button>
 
-                        {/* Footer */}
                         <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: 1.0 }}
-                            className="text-center text-[11px] text-gray-600 mt-5 flex items-center justify-center gap-1.5"
+                            transition={{ delay: 0.82 }}
+                            className="text-center text-[10px] text-gray-600 mt-3.5 flex items-center justify-center gap-1"
                         >
-                            <IoTimeOutline size={12} />
+                            <IoTimeOutline size={11} />
                             Your attendance history and data are fully preserved
                         </motion.p>
                     </div>
