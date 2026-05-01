@@ -1,5 +1,3 @@
----
-
 # Apna Lakshay — Library Management System
 
 **Live:** https://apnalakshay.com
