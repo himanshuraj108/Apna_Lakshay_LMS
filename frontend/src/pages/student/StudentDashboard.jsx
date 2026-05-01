@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -247,7 +247,7 @@ const StudentDashboard = () => {
                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <AnimatePresence>
                 {showLocationPrompt && <LocationPromptModal onClose={() => setShowLocationPrompt(false)} onEnable={handleEnableLocation} enabling={enablingLocation} />}
-                {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }} onClose={() => setShowIDCard(false)} />}
+                {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, shifts: dashboardData?.seat?.shifts, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }} onClose={() => setShowIDCard(false)} />}
                 {showNewspaper && <NewspaperModal onClose={() => setShowNewspaper(false)} />}
                 {showFeeReminder && dashboardData?.feeReminder && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -374,8 +374,20 @@ const StudentDashboard = () => {
                                 </div>
                                 <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">My Seat</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black text-white mb-0.5">{dashboardData?.seat?.number || 'â€”'}</p>
-                            <p className="text-[11px] text-gray-400">{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
+                            <p className="text-xl sm:text-2xl font-black text-white mb-0.5">{dashboardData?.seat?.number || '—'}</p>
+                            {/* Multi-shift support */}
+                            {dashboardData?.seat?.shifts && dashboardData.seat.shifts.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                    {dashboardData.seat.shifts.map((s, i) => (
+                                        <span key={i} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                            style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+                                            {s.name}{s.startTime ? ` ${s.startTime}–${s.endTime}` : ''} 
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-[11px] text-gray-400">{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
+                            )}
                         </div>
                     </Link>
 
