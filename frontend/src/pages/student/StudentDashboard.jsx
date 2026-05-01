@@ -22,6 +22,7 @@ import HelpSupportModal from '../../components/student/HelpSupportModal';
 import RequestHistoryModal from '../../components/student/RequestHistoryModal';
 import LmsGuideSection from '../../components/student/LmsGuideSection';
 import NewspaperModal from '../../components/student/NewspaperModal';
+import InactiveScreen from '../../components/student/InactiveScreen';
 import Footer from '../../components/layout/Footer';
 
 /* â”€â”€â”€ CSS injected once â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -204,7 +205,6 @@ const StudentDashboard = () => {
             if (res.data.success) { setAttendanceResult({ type: res.data.type, attendance: res.data.attendance }); fetchDashboardData(); }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
-
     const handleQuickAttendance = async () => {
         try {
             const isLocationRequired = getLocationRequired();
@@ -229,6 +229,12 @@ const StudentDashboard = () => {
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
         </div>
     );
+
+
+    /* -- Inactive guard -- blocks all dashboard access -- */
+    if (!isActive) {
+        return <InactiveScreen user={user} onLogout={handleLogout} />;
+    }
 
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     return (
