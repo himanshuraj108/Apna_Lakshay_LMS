@@ -43,7 +43,7 @@ const StudentManagement = () => {
     });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
-        shift: 'full',
+        shifts: [],      // array of selected shift IDs
         negotiatedPrice: ''
     });
     const [assigningSeat, setAssigningSeat] = useState(false);
@@ -293,7 +293,7 @@ const StudentManagement = () => {
             await api.post('/admin/seats/assign', {
                 seatId: seatFormData.seatId,
                 studentId: selectedStudent._id,
-                shift: seatFormData.shift,
+                shifts: seatFormData.shifts,
                 negotiatedPrice: seatFormData.negotiatedPrice ? Number(seatFormData.negotiatedPrice) : undefined
             });
 
@@ -301,7 +301,7 @@ const StudentManagement = () => {
             fetchStudents();
             fetchFloors();
             setShowSeatModal(false);
-            setSeatFormData({ seatId: '', shift: 'full', negotiatedPrice: '' });
+            setSeatFormData({ seatId: '', shifts: [], negotiatedPrice: '' });
             setTimeout(() => setSuccess(''), 3000);
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to assign seat');
@@ -432,7 +432,7 @@ const StudentManagement = () => {
 
     const openSeatAssignModal = (student) => {
         setSelectedStudent(student);
-        setSeatFormData({ seatId: '', shift: 'full', negotiatedPrice: '' });
+        setSeatFormData({ seatId: '', shifts: [], negotiatedPrice: '' });
         setShowSeatModal(true);
     };
 
@@ -1773,31 +1773,52 @@ const StudentManagement = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-2">Shift</label>
-                            <select
-                                value={seatFormData.shift}
-                                onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
-                                className={INPUT}
-                            >
-                                <option value="" className="bg-[#050508]">Select shift...</option>
-                                {(() => {
-                                    const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
-                                    return availableShifts.map(shift => (
-                                        <option key={shift.id} value={shift.id} className="bg-[#050508]">
-                                            {shift.name} ({getShiftTimeRange(shift)})
-                                        </option>
-                                    ));
-                                })()}
-                                {!isCustom && !shifts.some(s => s.id === 'full') &&
-                                    (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
-                                        <option value="full" className="bg-[#050508]">Full Day (9 AM - 9 PM)</option>
-                                    )}
-                            </select>
-                            {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
-                                <p className="text-sm text-yellow-400 mt-2">
-                                    No available shifts for this seat. All shifts are taken.
-                                </p>
-                            )}
+                            <label className="block text-sm font-medium mb-2">Shifts <span className="text-gray-400 font-normal">(select one or more)</span></label>
+                            {(() => {
+                                const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
+                                if (!seatFormData.seatId) {
+                                    return <p className="text-xs text-gray-500 mt-1">Select a seat first to see available shifts.</p>;
+                                }
+                                if (availableShifts.length === 0) {
+                                    return <p className="text-sm text-yellow-400 mt-2">No available shifts for this seat. All shifts are taken.</p>;
+                                }
+                                return (
+                                    <div className="flex flex-col gap-2">
+                                        {availableShifts.map(shift => {
+                                            const shiftId = shift._id || shift.id;
+                                            const checked = seatFormData.shifts.includes(shiftId);
+                                            return (
+                                                <label key={shiftId} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                                    checked
+                                                    ? 'border-purple-500 bg-purple-500/10'
+                                                    : 'border-white/10 bg-white/5 hover:border-white/20'
+                                                }`}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="accent-purple-500 w-4 h-4"
+                                                        checked={checked}
+                                                        onChange={() => {
+                                                            setSeatFormData(prev => ({
+                                                                ...prev,
+                                                                shifts: checked
+                                                                    ? prev.shifts.filter(id => id !== shiftId)
+                                                                    : [...prev.shifts, shiftId]
+                                                            }));
+                                                        }}
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-white text-sm font-semibold">{shift.name}</p>
+                                                        {shift.startTime && shift.endTime && (
+                                                            <p className="text-gray-400 text-xs">{shift.startTime} – {shift.endTime}</p>
+                                                        )}
+                                                    </div>
+                                                    {checked && <span className="text-purple-400 text-xs font-bold">✓ Selected</span>}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         <div>
@@ -1817,7 +1838,7 @@ const StudentManagement = () => {
                         </div>
 
                         <div className="flex gap-3">
-                            <button type="submit" disabled={availableSeats.length === 0 || assigningSeat}
+                            <button type="submit" disabled={availableSeats.length === 0 || assigningSeat || !seatFormData.seatId || seatFormData.shifts.length === 0}
                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold shadow-lg shadow-green-500/20 disabled:opacity-50">
                                 {assigningSeat ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Assigning...</>) : (<><IoBedOutline size={15} /> Assign Seat</>)}
                             </button>
