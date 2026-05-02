@@ -39,7 +39,8 @@ const StudentManagement = () => {
         password: '',
         confirmPassword: '',
         systemMode: mode,
-        joinedAt: new Date().toISOString().split('T')[0] // Default to today
+        joinedAt: new Date().toISOString().split('T')[0], // Default to today
+        sendMail: false
     });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
@@ -258,6 +259,7 @@ const StudentManagement = () => {
                     joinedAt: formData.joinedAt,
                     password: formData.password,
                     negotiatedPrice: formData.negotiatedPrice !== '' ? formData.negotiatedPrice : undefined,
+                    sendMail: formData.sendMail
                 });
                 setSuccess('Student updated successfully');
             } else {
@@ -418,7 +420,8 @@ const StudentManagement = () => {
             joinedAt: student.createdAt ? new Date(student.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             shift: shiftId,
             negotiatedPrice: negotiatedPrice,
-            seatId: getStudentSeat(student._id) ? student.seat._id : '' // Needed for assignSeat
+            seatId: getStudentSeat(student._id) ? student.seat._id : '', // Needed for assignSeat
+            sendMail: false
         });
         setShowModal(true);
     };
@@ -1707,7 +1710,21 @@ const StudentManagement = () => {
                                 </div>
                             </div>
                         )}
-                        <div className="flex gap-3">
+                        {editMode && (
+                            <div className="flex items-center gap-2 mt-4 mb-4">
+                                <input
+                                    type="checkbox"
+                                    id="sendMail"
+                                    checked={formData.sendMail}
+                                    onChange={(e) => setFormData({ ...formData, sendMail: e.target.checked })}
+                                    className="w-4 h-4 rounded border-gray-600 text-emerald-500 focus:ring-emerald-500 bg-transparent cursor-pointer"
+                                />
+                                <label htmlFor="sendMail" className="text-sm text-gray-300 cursor-pointer">
+                                    Send Email Notification to Student
+                                </label>
+                            </div>
+                        )}
+                        <div className="flex gap-3 mt-4">
                             <button type="submit" disabled={loading} className={BTN_PRIMARY + ' flex-1'}>
                                 {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Student' : 'Create Student')}
                             </button>

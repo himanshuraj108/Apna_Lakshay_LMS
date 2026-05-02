@@ -1000,6 +1000,16 @@ exports.updateStudent = async (req, res) => {
         await logAction(req, 'student_updated', 'User', student._id, student.name, `Updated student details. Active: ${isActive}`);
 
 
+        // Send Profile Update Email if requested
+        if (req.body.sendMail) {
+            try {
+                await emailService.sendProfileUpdateEmail(student);
+            } catch (emailErr) {
+                console.error("Failed to send profile update email:", emailErr);
+                // Continue execution even if email fails
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: 'Student updated successfully',
@@ -2522,6 +2532,23 @@ exports.markFeePartialPaid = async (req, res) => {
             success: true,
             message: `Partial payment of ₹${parsed} recorded. Outstanding: ₹${outstanding}.`
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+// Cancel fee due to inactive period
+exports.cancelFee = async (req, res) => {
+    try {
+        const fee = await Fee.findById(req.params.id).populate('student');
+        if (!fee) return res.status(404).json({ success: false, message: 'Fee not found' });
+
+        fee.status = 'cancelled';
+        fee.paidDate = null;
+        await fee.save();
+
+        await logAction(req, 'fee_cancelled', 'Fee', fee._id, fee.student?.name || 'Unknown', `Cancelled fee for month ${fee.month}/${fee.year}`);
+
+        res.status(200).json({ success: true, message: 'Fee has been cancelled successfully.' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
