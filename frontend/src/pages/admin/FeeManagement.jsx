@@ -75,6 +75,9 @@ const FeeManagement = () => {
             if (payType === 'full') {
                 await api.put(`/admin/fees/${payModal._id}/paid`);
                 setSuccess('Fee marked as fully paid!');
+            } else if (payType === 'cancel') {
+                await api.put(`/admin/fees/${payModal._id}/cancelled`);
+                setSuccess('Fee cancelled successfully!');
             } else {
                 if (!partialAmt || isNaN(partialAmt) || Number(partialAmt) <= 0) {
                     setError('Please enter a valid partial amount.');
@@ -114,6 +117,7 @@ const FeeManagement = () => {
         ...(onlinePaymentEnabled ? [{ key: 'online', label: 'Online Paid', count: baseFees.filter(f => f.razorpayOrderId).length }] : []),
         { key: 'pending', label: 'Pending',     count: baseFees.filter(f => f.status === 'pending' || f.status === 'partial').length },
         { key: 'overdue', label: 'Overdue',     count: baseFees.filter(f => f.status === 'overdue').length },
+        { key: 'cancelled', label: 'Cancelled', count: baseFees.filter(f => f.status === 'cancelled').length },
     ];
 
     useEffect(() => {
@@ -127,6 +131,7 @@ const FeeManagement = () => {
         pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
         overdue: 'text-red-400 bg-red-500/10 border-red-500/20',
         partial: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+        cancelled: 'text-gray-400 bg-gray-500/10 border-gray-500/20',
     };
 
     const generateFeeTablePDF = () => {
@@ -351,18 +356,23 @@ const FeeManagement = () => {
                                             </td>
 
                                             <td className="px-5 py-4 text-right">
-                                                {fee.student?.isActive === false ? (
-                                                    <span className="text-[11px] font-semibold text-gray-500 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full ml-auto block w-fit">Inactive</span>
-                                                ) : fee.status === 'paid' ? (
+                                                {fee.status === 'paid' ? (
                                                     <span className="text-xs text-gray-500">Paid {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : ''}</span>
-                                                ) : new Date() >= new Date(fee.cycleStart) ? (
-                                                    <motion.button 
-                                                        whileHover={{ scale: 1.05 }} 
-                                                        whileTap={{ scale: 0.95 }} 
-                                                        onClick={() => openPayModal(fee)}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 border border-green-500/25 text-green-400 rounded-xl text-xs font-semibold transition-all ml-auto">
-                                                        <IoCheckmarkCircle size={14} /> Mark Paid
-                                                    </motion.button>
+                                                ) : fee.status === 'cancelled' ? (
+                                                    <span className="text-xs text-gray-500">Cancelled</span>
+                                                ) : new Date() >= new Date(fee.cycleStart) || fee.student?.isActive === false ? (
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {fee.student?.isActive === false && (
+                                                            <span className="text-[11px] font-semibold text-gray-500 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">Inactive</span>
+                                                        )}
+                                                        <motion.button 
+                                                            whileHover={{ scale: 1.05 }} 
+                                                            whileTap={{ scale: 0.95 }} 
+                                                            onClick={() => openPayModal(fee)}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/15 hover:bg-green-500/25 border border-green-500/25 text-green-400 rounded-xl text-xs font-semibold transition-all">
+                                                            <IoCheckmarkCircle size={14} /> Action
+                                                        </motion.button>
+                                                    </div>
                                                 ) : (
                                                     <span className="text-[11px] font-semibold text-blue-400/70 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full ml-auto block w-fit">Upcoming</span>
                                                 )}
@@ -434,6 +444,7 @@ const FeeManagement = () => {
                                 >
                                     <option value="full" className="bg-[#0d0d14]">Full Paid</option>
                                     <option value="partial" className="bg-[#0d0d14]">Partial Paid</option>
+                                    <option value="cancel" className="bg-[#0d0d14]">Cancel Payment (Inactive Period)</option>
                                 </select>
                             </div>
 
@@ -474,10 +485,10 @@ const FeeManagement = () => {
                                 <button
                                     onClick={handleMarkPaid}
                                     disabled={payLoading || (payType === 'partial' && (!partialAmt || isNaN(partialAmt) || Number(partialAmt) <= 0))}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-green-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white ${payType === 'cancel' ? 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-400 hover:to-rose-400 shadow-red-500/25' : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 shadow-green-500/25'}`}
                                 >
                                     <IoCheckmarkCircle size={16} />
-                                    {payLoading ? 'Processing...' : payType === 'full' ? 'Mark as Fully Paid' : 'Record Partial Payment'}
+                                    {payLoading ? 'Processing...' : payType === 'full' ? 'Mark as Fully Paid' : payType === 'cancel' ? 'Cancel Payment' : 'Record Partial Payment'}
                                 </button>
                             </div>
                         </motion.div>
