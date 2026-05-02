@@ -957,10 +957,48 @@ exports.updateStudent = async (req, res) => {
                 { $set: { createdAt: new Date(joinedAt) } }
             );
         }
+        const { negotiatedPrice } = req.body;
 
+        // ─── Update negotiated price on active seat assignment ───────────
+        if (negotiatedPrice !== undefined && negotiatedPrice !== '' && !isNaN(Number(negotiatedPrice))) {
+            const newPrice = Number(negotiatedPrice);
+            const seat = await Seat.findOne({
+                'assignments.student': student._id,
+                'assignments.status': 'active'
+            });
+
+            if (seat) {
+                // Update price on the FIRST active assignment (which carries the total)
+                let updated = false;
+                for (let i = 0; i < seat.assignments.length; i++) {
+                    const a = seat.assignments[i];
+                    if (a.student.toString() === student._id.toString() && a.status === 'active') {
+                        if (!updated) {
+                            seat.assignments[i].price = newPrice; // first assignment carries total
+                            updated = true;
+                        } else {
+                            seat.assignments[i].price = 0; // subsequent shifts carry 0
+                        }
+                    }
+                }
+                await seat.save();
+
+                // Also patch the latest unpaid fee record for this student
+                const now = new Date();
+                await Fee.findOneAndUpdate(
+                    {
+                        student: student._id,
+                        status: { $in: ['pending', 'overdue', 'partial'] },
+                    },
+                    { $set: { amount: newPrice } },
+                    { sort: { createdAt: -1 } }
+                );
+            }
+        }
 
         // Log action
         await logAction(req, 'student_updated', 'User', student._id, student.name, `Updated student details. Active: ${isActive}`);
+
 
         res.status(200).json({
             success: true,
