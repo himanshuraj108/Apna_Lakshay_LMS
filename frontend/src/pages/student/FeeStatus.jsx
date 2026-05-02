@@ -33,6 +33,7 @@ const StatusBadge = ({ status }) => {
         pending: { bg: 'rgba(234,179,8,0.1)',    border: 'rgba(234,179,8,0.25)',    color: '#fbbf24', label: 'Pending', icon: <IoTimeOutline size={11} /> },
         overdue: { bg: 'rgba(239,68,68,0.1)',    border: 'rgba(239,68,68,0.25)',    color: '#f87171', label: 'Overdue', icon: <IoAlertCircleOutline size={11} /> },
         partial: { bg: 'rgba(251,146,60,0.1)',   border: 'rgba(251,146,60,0.25)',   color: '#fb923c', label: 'Partial', icon: <IoTimeOutline size={11} /> },
+        cancelled: { bg: 'rgba(156,163,175,0.1)', border: 'rgba(156,163,175,0.25)', color: '#9ca3af', label: 'Cancelled', icon: <IoCloseCircle size={11} /> },
     }[status] || { bg: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.1)', color: '#9ca3af', label: status, icon: null };
 
     return (
@@ -267,8 +268,8 @@ const FeeStatus = () => {
                                         transition={{ delay: idx * 0.04 }}
                                         className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
                                         style={{
-                                            background: fee.status === 'paid' ? 'rgba(34,197,94,0.03)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.04)' : fee.status === 'partial' ? 'rgba(251,146,60,0.04)' : 'rgba(255,255,255,0.02)',
-                                            border: `1px solid ${fee.status === 'paid' ? 'rgba(34,197,94,0.1)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.12)' : fee.status === 'partial' ? 'rgba(251,146,60,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                                            background: fee.status === 'paid' ? 'rgba(34,197,94,0.03)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.04)' : fee.status === 'partial' ? 'rgba(251,146,60,0.04)' : fee.status === 'cancelled' ? 'rgba(156,163,175,0.04)' : 'rgba(255,255,255,0.02)',
+                                            border: `1px solid ${fee.status === 'paid' ? 'rgba(34,197,94,0.1)' : fee.status === 'overdue' ? 'rgba(239,68,68,0.12)' : fee.status === 'partial' ? 'rgba(251,146,60,0.15)' : fee.status === 'cancelled' ? 'rgba(156,163,175,0.15)' : 'rgba(255,255,255,0.05)'}`,
                                         }}>
 
                                         {/* Month icon */}
