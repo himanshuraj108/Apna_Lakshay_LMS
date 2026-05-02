@@ -498,10 +498,10 @@ exports.getStudents = async (req, res) => {
             .lean() // Use lean for performance and easier modification
             .sort({ createdAt: -1 });
 
-        // Get latest fee for all fetched students
+        // Get latest UNPAID fee for all fetched students (prefer pending/overdue over paid)
         const studentIds = students.map(s => s._id);
         const latestFees = await Fee.aggregate([
-            { $match: { student: { $in: studentIds } } },
+            { $match: { student: { $in: studentIds }, status: { $in: ['pending', 'overdue', 'partial'] } } },
             { $sort: { year: -1, month: -1, createdAt: -1 } },
             {
                 $group: {
