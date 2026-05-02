@@ -625,10 +625,9 @@ pm2 start server.js --name apna-lakshay
 
 ## Developer
 
-Built with ❤️ for Apna Lakshay Library by **Himanshu Raj**
+Developed by **Himanshu Raj**
 
 - GitHub: https://github.com/himanshuraj108
-- LinkedIn: https://linkedin.com/in/himanshu-raj-184488303
 
 ---
 
