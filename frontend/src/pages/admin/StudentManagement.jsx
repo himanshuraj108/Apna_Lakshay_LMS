@@ -400,15 +400,16 @@ const StudentManagement = () => {
         let negotiatedPrice = '';
         if (student.seat && student.seat.assignments) {
             const assignment = student.seat.assignments.find(a =>
-                a.status === 'active' && a.student === student._id
+                a.status === 'active' && String(a.student) === String(student._id)
             );
             if (assignment && assignment.shift) {
                 shiftId = typeof assignment.shift === 'object' ? assignment.shift._id : assignment.shift;
             } else if (assignment && assignment.legacyShift === 'full' || assignment?.type === 'full_day') {
                 shiftId = 'full';
             }
-            if (assignment && assignment.negotiatedPrice !== undefined) {
-                negotiatedPrice = assignment.negotiatedPrice;
+            // The backend stores the fee as 'price' on the assignment, not 'negotiatedPrice'
+            if (assignment && assignment.price !== undefined && assignment.price !== null) {
+                negotiatedPrice = assignment.price;
             }
         }
 
@@ -505,11 +506,13 @@ const StudentManagement = () => {
                     if (seat.assignments && seat.assignments.length > 0) {
                         const activeAssignment = seat.assignments.find(a =>
                             a.status === 'active' &&
-                            (typeof a.student === 'object' ? a.student._id : a.student) === studentId
+                            String(typeof a.student === 'object' ? a.student._id : a.student) === String(studentId)
                         );
                         if (activeAssignment) {
-                            if (activeAssignment.negotiatedPrice) {
-                                return `Rs. ${activeAssignment.negotiatedPrice}`;
+                            // Backend stores as 'price', 'negotiatedPrice' is legacy
+                            const displayPrice = activeAssignment.price || activeAssignment.negotiatedPrice;
+                            if (displayPrice) {
+                                return `Rs. ${displayPrice}`;
                             } else {
                                 // Find base price based on shift type
                                 const shiftId = typeof activeAssignment.shift === 'object' ? activeAssignment.shift._id : activeAssignment.shift;
