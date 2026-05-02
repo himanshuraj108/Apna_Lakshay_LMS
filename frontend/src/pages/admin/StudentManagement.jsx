@@ -268,6 +268,7 @@ const StudentManagement = () => {
             }
 
             fetchStudents();
+            fetchFloors(); // refresh seat data so updated price shows immediately in table
             setShowModal(false);
             setFormData({ name: '', email: '', mobile: '' });
             setTimeout(() => setSuccess(''), 5000);
