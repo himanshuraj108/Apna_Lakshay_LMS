@@ -585,3 +585,20 @@ exports.sendPartialFeeEmail = async (student, partialPaid, outstanding, total, m
   );
 };
 
+
+// 11. Profile Update
+exports.sendProfileUpdateEmail = async (student) => {
+  const content = ` 
+    <p>Dear <strong>${student.name}</strong>,</p>
+    <p>Your profile details have been successfully updated by the administration.</p>
+    <p>If you have any questions or notice any incorrect information, please contact the admin.</p>
+  `;
+
+  await sendEmail(
+    student.email,
+    'Profile Details Updated',
+    'Profile Updated',
+    content,
+    { text: 'View Profile', url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/student/dashboard` }
+  );
+};
