@@ -962,38 +962,37 @@ exports.updateStudent = async (req, res) => {
         // ─── Update negotiated price on active seat assignment ───────────
         if (negotiatedPrice !== undefined && negotiatedPrice !== '' && !isNaN(Number(negotiatedPrice))) {
             const newPrice = Number(negotiatedPrice);
-            const seat = await Seat.findOne({
-                'assignments.student': student._id,
-                'assignments.status': 'active'
-            });
 
-            if (seat) {
-                // Update price on the FIRST active assignment (which carries the total)
-                let updated = false;
-                for (let i = 0; i < seat.assignments.length; i++) {
-                    const a = seat.assignments[i];
-                    if (a.student.toString() === student._id.toString() && a.status === 'active') {
-                        if (!updated) {
-                            seat.assignments[i].price = newPrice; // first assignment carries total
-                            updated = true;
-                        } else {
-                            seat.assignments[i].price = 0; // subsequent shifts carry 0
-                        }
+            // Use direct MongoDB update to safely patch nested array subdocuments
+            // (avoids Mongoose markModified issues with deeply nested paths)
+            const seatUpdateResult = await Seat.updateOne(
+                {
+                    'assignments.student': student._id,
+                    'assignments.status': 'active'
+                },
+                {
+                    $set: {
+                        'assignments.$[elem].price': newPrice
                     }
+                },
+                {
+                    arrayFilters: [
+                        { 'elem.student': student._id, 'elem.status': 'active' }
+                    ],
+                    multi: true
                 }
-                await seat.save();
+            );
 
-                // Also patch the latest unpaid fee record for this student
-                const now = new Date();
-                await Fee.findOneAndUpdate(
-                    {
-                        student: student._id,
-                        status: { $in: ['pending', 'overdue', 'partial'] },
-                    },
-                    { $set: { amount: newPrice } },
-                    { sort: { createdAt: -1 } }
-                );
-            }
+            // Patch ALL unpaid fee records for this student (pending, overdue, partial)
+            await Fee.updateMany(
+                {
+                    student: student._id,
+                    status: { $in: ['pending', 'overdue', 'partial'] }
+                },
+                { $set: { amount: newPrice } }
+            );
+
+            console.log(`Negotiated price updated to ₹${newPrice} for student ${student.name}. Seat updated: ${seatUpdateResult.modifiedCount > 0}`);
         }
 
         // Log action
