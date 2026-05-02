@@ -22,7 +22,7 @@ const feeSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['paid', 'pending', 'overdue', 'partial'],
+        enum: ['paid', 'pending', 'overdue', 'partial', 'cancelled'],
         default: 'pending'
     },
     partialPaid: {
