@@ -627,8 +627,6 @@ pm2 start server.js --name apna-lakshay
 
 Developed by **Himanshu Raj**
 
-- GitHub: https://github.com/himanshuraj108
-
 ---
 
 ## License
