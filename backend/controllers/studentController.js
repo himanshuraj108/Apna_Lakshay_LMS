@@ -172,16 +172,12 @@ exports.getDashboard = async (req, res) => {
             } else {
                 const existing = uniqueAttendanceMap.get(dateKey);
 
-                // Conflict resolution strategy (Same as getAttendance):
-                // 1. Prefer 'present'/'holiday' over 'absent'
-                if (existing.status !== 'present' && existing.status !== 'holiday' && (record.status === 'present' || record.status === 'holiday')) {
+                // Conflict resolution: prefer the most recently updated record
+                // (admin changes always update updatedAt, so admin overrides win)
+                const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+                const recordTime = record.updatedAt ? new Date(record.updatedAt).getTime() : 0;
+                if (recordTime > existingTime) {
                     uniqueAttendanceMap.set(dateKey, record);
-                }
-                // 2. If both present, prefer the one with longer duration
-                else if ((existing.status === 'present' || existing.status === 'holiday') && (record.status === 'present' || record.status === 'holiday')) {
-                    if ((record.duration || 0) > (existing.duration || 0)) {
-                        uniqueAttendanceMap.set(dateKey, record);
-                    }
                 }
             }
         });
@@ -424,10 +420,15 @@ exports.getAttendance = async (req, res) => {
         const admissionDate = new Date(student.createdAt);
         admissionDate.setHours(0, 0, 0, 0);
 
+        // IST records stored as midnight UTC of the IST date can be UP TO 5h30m AHEAD of
+        // the server's UTC clock (e.g. midnight-to-5:30am IST = 6:30pm-midnight UTC prev day).
+        // Add a 24h buffer so tonight's IST attendance is never excluded.
+        const queryEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
         // Get my ALL-TIME attendance
         const myAttendance = await Attendance.find({
             student: req.user.id,
-            date: { $gte: admissionDate, $lte: now }
+            date: { $gte: admissionDate, $lte: queryEnd }
         }).sort({ date: 1 });
 
         // Deduplicate attendance records (fix for multiple entries per day)
@@ -443,17 +444,11 @@ exports.getAttendance = async (req, res) => {
                 uniqueAttendanceMap.set(dateKey, record);
             } else {
                 const existing = uniqueAttendanceMap.get(dateKey);
-
-                // Conflict resolution strategy:
-                // 1. Prefer 'present'/'holiday' over 'absent'
-                if (existing.status !== 'present' && existing.status !== 'holiday' && (record.status === 'present' || record.status === 'holiday')) {
+                // Prefer the most recently updated record (admin overrides always win)
+                const existingTime = existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
+                const recordTime = record.updatedAt ? new Date(record.updatedAt).getTime() : 0;
+                if (recordTime > existingTime) {
                     uniqueAttendanceMap.set(dateKey, record);
-                }
-                // 2. If both present/holiday, prefer the one with longer duration or valid entry/exit
-                else if ((existing.status === 'present' || existing.status === 'holiday') && (record.status === 'present' || record.status === 'holiday')) {
-                    if ((record.duration || 0) > (existing.duration || 0)) {
-                        uniqueAttendanceMap.set(dateKey, record);
-                    }
                 }
             }
         });
@@ -591,7 +586,7 @@ exports.getMonthlyReport = async (req, res) => {
             date: { $gte: startDate, $lte: effectiveEnd }
         }).sort({ date: 1 }).lean();
 
-        // Deduplicate by date — prefer present, then longer duration
+        // Deduplicate by date — prefer most recently updated (admin overrides win)
         const dedupMap = new Map();
         records.forEach(r => {
             const key = new Date(r.date).toDateString();
@@ -599,11 +594,9 @@ exports.getMonthlyReport = async (req, res) => {
                 dedupMap.set(key, r);
             } else {
                 const ex = dedupMap.get(key);
-                if (ex.status !== 'present' && r.status === 'present') {
-                    dedupMap.set(key, r);
-                } else if (ex.status === 'present' && r.status === 'present') {
-                    if ((r.duration || 0) > (ex.duration || 0)) dedupMap.set(key, r);
-                }
+                const exTime = ex.updatedAt ? new Date(ex.updatedAt).getTime() : 0;
+                const rTime = r.updatedAt ? new Date(r.updatedAt).getTime() : 0;
+                if (rTime > exTime) dedupMap.set(key, r);
             }
         });
 
@@ -1863,3 +1856,250 @@ exports.markSelfAttendance = async (req, res) => {
     }
 };
 
+// ── PIN-based manual attendance (for students whose camera doesn't work) ──────
+exports.markAttendanceByPin = async (req, res) => {
+    try {
+        const { pin } = req.body;
+        const studentId = req.user.id;
+
+        const settings = await Settings.findOne();
+        if (!settings || !settings.pinAttendanceEnabled) {
+            return res.status(403).json({ success: false, message: 'PIN attendance is currently disabled by the admin.' });
+        }
+        if (!settings.attendancePin || settings.attendancePin.trim() === '') {
+            return res.status(400).json({ success: false, message: 'No attendance PIN has been set by admin yet.' });
+        }
+        if (!pin || String(pin).trim() !== String(settings.attendancePin).trim()) {
+            return res.status(400).json({ success: false, message: 'Incorrect PIN. Please check with your admin.' });
+        }
+
+        const user = await User.findById(studentId);
+        if (!user || !user.isActive) {
+            return res.status(403).json({ success: false, message: 'Your account is inactive.' });
+        }
+
+        // ── IST helpers (same as QR attendance) ──────────────────────────
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+
+        const now = getISTDate();
+
+        // ── Time Restriction (only if enabled by admin) ───────────────────
+        if (settings.timeRestrictionEnabled !== false) {
+            const seat = await Seat.findOne({
+                'assignments.student': studentId,
+                'assignments.status': 'active'
+            }).populate('assignments.shift');
+
+            if (seat) {
+                const assignment = seat.assignments.find(
+                    a => a.student.toString() === studentId.toString() && a.status === 'active'
+                );
+                if (assignment?.shift?.startTime && assignment?.shift?.endTime) {
+                    const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
+                    const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
+
+                    const allowedStart = getISTDate();
+                    allowedStart.setHours(sH, sM - 180, 0, 0); // 3 hours before shift
+                    const allowedEnd = getISTDate();
+                    allowedEnd.setHours(eH, eM, 0, 0);
+
+                    if (allowedEnd < allowedStart) {
+                        if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
+                        else allowedEnd.setDate(allowedEnd.getDate() + 1);
+                    }
+
+                    if (now < allowedStart || now > allowedEnd) {
+                        return res.status(403).json({
+                            success: false,
+                            message: `Entry allowed only 3 hrs before shift (${assignment.shift.startTime} – ${assignment.shift.endTime})`
+                        });
+                    }
+                }
+            }
+        }
+
+        // ── Date for today: IST date string → UTC midnight ───────────────
+        // Admin panel queries: new Date("YYYY-MM-DD") = UTC midnight
+        // We must store the same way: get IST date string, parse as UTC midnight
+        const istYear = now.getFullYear();
+        const istMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const istDay = String(now.getDate()).padStart(2, '0');
+        const today = new Date(`${istYear}-${istMonth}-${istDay}`); // UTC midnight of IST date
+
+        const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        let attendance, message, type;
+
+        // Check for open session → mark exit
+        const activeSession = await Attendance.findOne({
+            student: studentId, status: 'present', exitTime: null, entryTime: { $ne: null }
+        }).sort({ date: -1 });
+
+        if (activeSession) {
+            const entryParts = activeSession.entryTime.split(':');
+            const entryDate = new Date(activeSession.date);
+            entryDate.setHours(parseInt(entryParts[0]), parseInt(entryParts[1]), 0);
+            const durationMins = Math.max(0, Math.round((now - entryDate) / 60000));
+
+            // ── 10-minute minimum between entry and exit ──────────────────
+            const MIN_STAY = 10;
+            if (durationMins < MIN_STAY) {
+                const waitLeft = MIN_STAY - durationMins;
+                return res.status(400).json({
+                    success: false,
+                    message: `Please wait ${waitLeft} more minute${waitLeft > 1 ? 's' : ''} before marking exit. (Min stay: ${MIN_STAY} min)`
+                });
+            }
+
+            activeSession.exitTime = entryTime;
+            activeSession.duration = durationMins;
+            activeSession.notes = `Manual Check-Out (PIN) — ${durationMins} min`;
+            await activeSession.save();
+            attendance = activeSession;
+            message = `Goodbye, ${user.name}! Exit marked at ${entryTime} (${durationMins} min).`;
+            type = 'exit';
+
+        } else {
+            // Check already completed today (real exit = non-null, non-empty exitTime)
+            const todayComplete = await Attendance.findOne({
+                student: studentId,
+                date: today,
+                status: 'present',
+                exitTime: { $nin: [null, '', undefined] }
+            });
+            if (todayComplete) {
+                return res.status(200).json({ success: true, message: 'Attendance already completed for today.', type: 'already_marked', attendance: todayComplete });
+            }
+            // Update existing absent record or create new
+            const existing = await Attendance.findOne({ student: studentId, date: today });
+            if (existing) {
+                existing.entryTime = entryTime;
+                existing.status = 'present';
+                existing.notes = 'Manual Check-In (PIN)';
+                existing.markedBy = studentId;
+                await existing.save();
+                attendance = existing;
+            } else {
+                attendance = await Attendance.create({
+                    student: studentId, date: today, status: 'present',
+                    entryTime, notes: 'Manual Check-In (PIN)', markedBy: studentId, duration: 0
+                });
+            }
+            message = `Welcome, ${user.name}! Entry marked at ${entryTime} via PIN.`;
+            type = 'entry';
+        }
+
+        res.status(200).json({ success: true, message, type, attendance });
+    } catch (error) {
+        console.error('PIN Attendance Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// ── Direct attendance (no PIN) — only allowed when PIN mode is OFF ─────────
+exports.markAttendanceDirectly = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+
+        const settings = await Settings.findOne();
+        if (!settings) return res.status(403).json({ success: false, message: 'System not configured.' });
+
+        // This endpoint ONLY works when PIN mode is OFF (direct mark mode)
+        if (settings.pinAttendanceEnabled) {
+            return res.status(403).json({ success: false, message: 'PIN is required. Please use the PIN entry.' });
+        }
+
+        const user = await User.findById(studentId);
+        if (!user || !user.isActive) return res.status(403).json({ success: false, message: 'Your account is inactive.' });
+
+        // ── IST helpers ───────────────────────────────────────────────────
+        const getISTDate = () => {
+            const d = new Date();
+            const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+            return new Date(utc + (3600000 * 5.5));
+        };
+        const now = getISTDate();
+
+        // ── Time Restriction ──────────────────────────────────────────────
+        if (settings.timeRestrictionEnabled !== false) {
+            const seat = await Seat.findOne({ 'assignments.student': studentId, 'assignments.status': 'active' }).populate('assignments.shift');
+            if (seat) {
+                const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
+                if (assignment?.shift?.startTime && assignment?.shift?.endTime) {
+                    const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
+                    const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
+                    const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 180, 0, 0);
+                    const allowedEnd = getISTDate(); allowedEnd.setHours(eH, eM, 0, 0);
+                    if (allowedEnd < allowedStart) {
+                        if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
+                        else allowedEnd.setDate(allowedEnd.getDate() + 1);
+                    }
+                    if (now < allowedStart || now > allowedEnd) {
+                        return res.status(403).json({ success: false, message: `Entry allowed only 3 hrs before shift (${assignment.shift.startTime} – ${assignment.shift.endTime})` });
+                    }
+                }
+            }
+        }
+
+        // ── Today (UTC midnight of IST date — matches admin query) ─────────
+        const istYear = now.getFullYear();
+        const istMonth = String(now.getMonth() + 1).padStart(2, '0');
+        const istDay = String(now.getDate()).padStart(2, '0');
+        const today = new Date(`${istYear}-${istMonth}-${istDay}`);
+
+        const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        let attendance, message, type;
+
+        // Check open session → mark exit
+        const activeSession = await Attendance.findOne({
+            student: studentId, status: 'present', exitTime: null, entryTime: { $ne: null }
+        }).sort({ date: -1 });
+
+        if (activeSession) {
+            const entryParts = activeSession.entryTime.split(':');
+            const entryDate = new Date(activeSession.date);
+            entryDate.setHours(parseInt(entryParts[0]), parseInt(entryParts[1]), 0);
+            const durationMins = Math.max(0, Math.round((now - entryDate) / 60000));
+
+            const MIN_STAY = 10;
+            if (durationMins < MIN_STAY) {
+                const waitLeft = MIN_STAY - durationMins;
+                return res.status(400).json({ success: false, message: `Please wait ${waitLeft} more minute${waitLeft > 1 ? 's' : ''} before marking exit. (Min stay: ${MIN_STAY} min)` });
+            }
+            activeSession.exitTime = entryTime;
+            activeSession.duration = durationMins;
+            activeSession.notes = `Manual Check-Out (Direct) — ${durationMins} min`;
+            await activeSession.save();
+            attendance = activeSession;
+            message = `Goodbye, ${user.name}! Exit marked at ${entryTime} (${durationMins} min).`;
+            type = 'exit';
+        } else {
+            const todayComplete = await Attendance.findOne({ student: studentId, date: today, status: 'present', exitTime: { $nin: [null, '', undefined] } });
+            if (todayComplete) {
+                return res.status(200).json({ success: true, message: 'Attendance already completed for today.', type: 'already_marked', attendance: todayComplete });
+            }
+            const existing = await Attendance.findOne({ student: studentId, date: today });
+            if (existing) {
+                existing.entryTime = entryTime; existing.status = 'present';
+                existing.notes = 'Manual Check-In (Direct)'; existing.markedBy = studentId;
+                await existing.save(); attendance = existing;
+            } else {
+                attendance = await Attendance.create({
+                    student: studentId, date: today, status: 'present',
+                    entryTime, notes: 'Manual Check-In (Direct)', markedBy: studentId, duration: 0
+                });
+            }
+            message = `Welcome, ${user.name}! Entry marked at ${entryTime}.`;
+            type = 'entry';
+        }
+
+        res.status(200).json({ success: true, message, type, attendance });
+    } catch (error) {
+        console.error('Direct Attendance Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
