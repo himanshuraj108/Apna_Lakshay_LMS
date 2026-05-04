@@ -18,6 +18,8 @@ const {
     requestSeatChange,
     markAttendanceByQr,
     markSelfAttendance,
+    markAttendanceByPin,
+    markAttendanceDirectly,
     getReceipt,
     getMonthlyReport,
     createFeePaymentOrder,
@@ -76,6 +78,8 @@ router.get('/seat', getMySeat);
 router.get('/attendance', authorizeActive, getAttendance);
 router.post('/attendance/qr-scan', authorizeActive, markAttendanceByQr);
 router.post('/attendance/mark-self', authorizeActive, markSelfAttendance);
+router.post('/attendance/mark-pin', authorizeActive, markAttendanceByPin);
+router.post('/attendance/mark-direct', authorizeActive, markAttendanceDirectly);
 
 // Fees
 router.get('/fees', getFees);
