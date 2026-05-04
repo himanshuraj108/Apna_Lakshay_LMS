@@ -6,9 +6,10 @@ const passwordLogSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    email: { // For tracking forgot password attempts even if user ID lookup fails initially, or for easy display
+    email: {
         type: String,
-        required: true
+        required: false,
+        default: ''
     },
     newPassword: {
         type: String, // Storing visible as requested for admin support
@@ -16,7 +17,7 @@ const passwordLogSchema = new mongoose.Schema({
     },
     source: {
         type: String,
-        enum: ['profile_change', 'forgot_reset', 'admin_reset'],
+        enum: ['profile_change', 'forgot_reset', 'admin_reset', 'admin_bulk_reset'],
         required: true
     },
     timestamp: {
