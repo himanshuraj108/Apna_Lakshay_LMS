@@ -1803,9 +1803,9 @@ exports.markAttendance = async (req, res) => {
                 updateData.duration = 0;
             }
 
-            // Add optional fields if provided
-            if (entryTime !== undefined) updateData.entryTime = entryTime;
-            if (exitTime !== undefined) updateData.exitTime = exitTime;
+            // Add optional fields if provided — treat empty string as null
+            if (entryTime !== undefined) updateData.entryTime = entryTime || null;
+            if (exitTime !== undefined) updateData.exitTime = exitTime || null;
             if (notes !== undefined) updateData.notes = notes;
 
             // Explicitly calculate duration if both times provided
