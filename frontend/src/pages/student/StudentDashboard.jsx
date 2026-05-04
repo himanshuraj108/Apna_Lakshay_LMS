@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -15,7 +15,8 @@ import {
     IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoDocumentTextOutline,
     IoLocation, IoLogInOutline, IoLogOutOutline, IoTimerOutline, IoInformationCircleOutline,
     IoLogOutOutline as IoLogoutIcon, IoChevronForward, IoGridOutline, IoMapOutline,
-    IoMenuOutline, IoCloseOutline
+    IoMenuOutline, IoCloseOutline, IoKeypadOutline,
+    IoCameraOutline, IoCameraReverseOutline, IoAddOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -25,7 +26,43 @@ import NewspaperModal from '../../components/student/NewspaperModal';
 import InactiveScreen from '../../components/student/InactiveScreen';
 import Footer from '../../components/layout/Footer';
 
-/* â”€â”€â”€ CSS injected once â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Beep + Vibrate (same pattern as QR scanner) ───────────────── */
+let _beepBuffer = null;
+const _audioCtx = typeof window !== 'undefined'
+    ? new (window.AudioContext || window.webkitAudioContext)()
+    : null;
+if (_audioCtx) {
+    fetch('/beep.mp3')
+        .then(r => r.arrayBuffer())
+        .then(d => _audioCtx.decodeAudioData(d))
+        .then(b => { _beepBuffer = b; })
+        .catch(() => { _beepBuffer = null; });
+}
+const playSuccessBeep = () => {
+    if (!_audioCtx) return;
+    try {
+        if (_beepBuffer) {
+            const src = _audioCtx.createBufferSource();
+            const gain = _audioCtx.createGain();
+            src.buffer = _beepBuffer;
+            gain.gain.value = 3.0;
+            src.connect(gain); gain.connect(_audioCtx.destination);
+            src.start(0);
+        } else {
+            const osc = _audioCtx.createOscillator();
+            const gain = _audioCtx.createGain();
+            osc.connect(gain); gain.connect(_audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(3800, _audioCtx.currentTime);
+            gain.gain.setValueAtTime(3.0, _audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.12);
+            osc.start(_audioCtx.currentTime); osc.stop(_audioCtx.currentTime + 0.12);
+        }
+    } catch (_) {}
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+};
+
+/* ─── CSS injected once ─────────────────────────────────────────────── */
 const DASH_STYLE = `
 @keyframes orb1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(40px,-60px) scale(1.1);}66%{transform:translate(-30px,20px) scale(0.9);}}
 @keyframes orb2{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(-40px,30px) scale(1.08);}66%{transform:translate(20px,-30px) scale(0.92);}}
@@ -33,38 +70,189 @@ const DASH_STYLE = `
 @keyframes pulse-ring{0%{transform:scale(.9);opacity:1;}80%,100%{transform:scale(1.35);opacity:0;}}
 @keyframes shimmer-name{0%{background-position:200% center;}100%{background-position:-200% center;}}
 @keyframes blink-new{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(250,204,21,0.5);}50%{opacity:0.7;box-shadow:0 0 8px 3px rgba(250,204,21,0.35);}}
+@keyframes blink-green{0%,100%{opacity:1;text-shadow:0 0 8px rgba(34,197,94,0.9);}50%{opacity:0.7;text-shadow:0 0 16px rgba(34,197,94,0.5);}}
+@keyframes blink-red{0%,100%{opacity:1;text-shadow:0 0 8px rgba(239,68,68,0.9);}50%{opacity:0.7;text-shadow:0 0 16px rgba(239,68,68,0.5);}}
 .shimmer-text{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-name 4s linear infinite;}
 .new-badge-blink{animation:blink-new 1.4s ease-in-out infinite;}
+.label-blink-green{animation:blink-green 1.1s ease-in-out infinite;color:#22c55e;font-weight:800;}
+.label-blink-red{animation:blink-red 1.1s ease-in-out infinite;color:#ef4444;font-weight:800;}
+@keyframes fab-blink{0%,100%{box-shadow:0 8px 32px rgba(16,185,129,0.5),0 0 0 1px rgba(255,255,255,0.12);}50%{box-shadow:0 8px 48px rgba(16,185,129,0.9),0 0 0 4px rgba(16,185,129,0.25);}}
+.fab-blink{animation:fab-blink 1.6s ease-in-out infinite;}
 `;
 
-/* â”€â”€â”€ Floating Attendance Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const FloatingAttendanceBtn = ({ loading, onClick }) => (
-    <motion.button
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, delay: 0.4 }}
-        whileHover={!loading ? { scale: 1.06 } : {}}
-        whileTap={!loading ? { scale: 0.94 } : {}}
-        onClick={onClick}
-        disabled={loading}
-        className={`fixed bottom-6 right-5 z-50 flex items-center gap-2.5 rounded-2xl font-bold text-white shadow-2xl transition-all ${loading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
-        style={{
-            padding: '12px 20px',
-            background: loading ? 'rgba(60,65,80,0.9)' : 'linear-gradient(135deg,#10b981,#14b8a6)',
-            backdropFilter: 'blur(16px)',
-            boxShadow: loading ? 'none' : '0 8px 32px rgba(16,185,129,0.5), 0 0 0 1px rgba(255,255,255,0.12)',
-            border: '1px solid rgba(255,255,255,0.15)',
-        }}
-    >
-        {!loading && (
-            <span className="absolute inset-0 rounded-2xl" style={{ background: 'rgba(16,185,129,0.25)', animation: 'pulse-ring 2.4s ease-out infinite', pointerEvents: 'none' }} />
-        )}
-        <div className="relative w-7 h-7 rounded-lg flex items-center justify-center bg-white/20">
-            {loading ? <IoTimeOutline size={16} className="animate-spin" /> : <IoScan size={16} />}
-        </div>
-        <span className="text-sm font-bold">{loading ? 'Checkingâ€¦' : 'Mark Attendance'}</span>
-    </motion.button>
+/* ─── No-Camera SVG icon: black camera + red diagonal slash ─── */
+const NoCameraIcon = ({ size = 32 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        <circle cx="12" cy="13" r="4" stroke="#111" strokeWidth="2" fill="none"/>
+        {/* Bold red slash top-left → bottom-right */}
+        <line x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"/>
+    </svg>
 );
+
+/* ─── Speed Dial FAB — expands to Camera / No-Camera sub-buttons ─── */
+const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
+    const [open, setOpen] = useState(false);
+
+    const toggle = () => { if (!loading) setOpen(o => !o); };
+    const doCamera = () => { setOpen(false); onCamera(); };
+    const doManual = () => { setOpen(false); onManual(); };
+
+    const subBtns = [
+        manualEnabled && {
+            key: 'manual',
+            icon: <NoCameraIcon size={32} />,
+            label: 'Without Camera',
+            labelClass: 'label-blink-red',
+            bgBtn: '#ffffff',
+            shadow: 'rgba(239,68,68,0.35)',
+            onClick: doManual,
+        },
+        {
+            key: 'camera',
+            icon: <IoCameraOutline size={32} color="#111" />,
+            label: 'With Camera',
+            labelClass: 'label-blink-green',
+            bgBtn: '#ffffff',
+            shadow: 'rgba(34,197,94,0.35)',
+            onClick: doCamera,
+        },
+    ].filter(Boolean);
+
+    return (
+        <>
+            {/* ── Centered sub-button overlay ── */}
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        key="fab-center"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="fixed inset-0 z-[61] flex flex-col items-center justify-center gap-8"
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        {subBtns.map((btn, i) => (
+                            <motion.div
+                                key={btn.key}
+                                initial={{ opacity: 0, scale: 0.6, y: 40 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.6, y: 30 }}
+                                transition={{ type: 'spring', stiffness: 380, damping: 24, delay: i * 0.1 }}
+                                className="flex flex-col items-center gap-3 cursor-pointer"
+                                style={{ pointerEvents: 'auto' }}
+                                onClick={btn.onClick}
+                            >
+                                {/* Icon square */}
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.88 }}
+                                    className="w-24 h-24 rounded-3xl flex items-center justify-center shrink-0 relative overflow-hidden"
+                                    style={{
+                                        background: btn.bgBtn,
+                                        boxShadow: `0 10px 40px ${btn.shadow}, 0 0 0 2px rgba(0,0,0,0.08)`,
+                                    }}
+                                >
+                                    {btn.key === 'camera'
+                                        ? <IoCameraOutline size={48} color="#111" />
+                                        : <NoCameraIcon size={48} />
+                                    }
+                                    {/* Red slash for Without Camera */}
+                                    {btn.key === 'manual' && (
+                                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 96 96" fill="none" style={{ pointerEvents: 'none', borderRadius: 'inherit' }}>
+                                            <line x1="8" y1="8" x2="88" y2="88" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" />
+                                        </svg>
+                                    )}
+                                </motion.button>
+
+                                {/* Label below icon */}
+                                <motion.span
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 8 }}
+                                    transition={{ delay: i * 0.1 + 0.08 }}
+                                    className="text-lg font-extrabold rounded-2xl shadow-2xl select-none text-center"
+                                    style={{
+                                        padding: '10px 22px',
+                                        background: '#0e1015',
+                                        border: '1px solid rgba(255,255,255,0.13)',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.8)',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    <span className={btn.labelClass}>{btn.label}</span>
+                                </motion.span>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── Main FAB — bottom right ── */}
+            <div className="fixed bottom-6 right-5 z-[60]">
+                <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.35 }}
+                    whileHover={!loading ? { scale: 1.07 } : {}}
+                    whileTap={!loading ? { scale: 0.93 } : {}}
+                    onClick={toggle}
+                    disabled={loading}
+                    className={`relative flex items-center justify-center rounded-2xl font-bold text-white shadow-2xl overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed${!loading && !open ? ' fab-blink' : ''}`}
+                    style={{
+                        padding: open ? '18px' : '14px 24px',
+                        gap: open ? 0 : '10px',
+                        background: loading ? 'rgba(60,65,80,0.9)' : open ? 'linear-gradient(135deg,#ef4444,#b91c1c)' : 'linear-gradient(135deg,#10b981,#14b8a6)',
+                        backdropFilter: 'blur(16px)',
+                        border: '1px solid rgba(255,255,255,0.15)',
+                        transition: 'background 0.25s, padding 0.2s',
+                    }}
+                >
+                    {open ? (
+                        <motion.div
+                            key="close-icon"
+                            initial={{ rotate: -45, opacity: 0 }}
+                            animate={{ rotate: 0, opacity: 1 }}
+                            exit={{ rotate: 45, opacity: 0 }}
+                            transition={{ duration: 0.18 }}
+                        >
+                            <IoCloseOutline size={20} />
+                        </motion.div>
+                    ) : (
+                        <>
+                            <div className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-white/20">
+                                {loading
+                                    ? <IoTimeOutline size={20} className="animate-spin" />
+                                    : <IoScan size={20} />
+                                }
+                            </div>
+                            <span className="text-base font-bold relative">
+                                {loading ? 'Checking…' : 'Mark Attendance'}
+                            </span>
+                        </>
+                    )}
+                </motion.button>
+            </div>
+
+            {/* Backdrop — full blur overlay */}
+            <AnimatePresence>
+                {open && (
+                    <motion.div
+                        key="fab-backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 z-[59]"
+                        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+                        onClick={() => setOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
+        </>
+    );
+};
 
 /* â”€â”€â”€ Location Prompt Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
@@ -117,12 +305,47 @@ const AttendanceResultCard = ({ result, onClose }) => {
                         </div>
                     </div>
                     <div className="space-y-2.5 mb-5">
-                        {isAlreadyMarked && <p className="text-sm text-gray-300 leading-relaxed mb-3">You have already completed your attendance for today.</p>}
-                        {att.entryTime && (<div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5"><span className="text-xs text-gray-400 uppercase tracking-wider">Entry</span><span className="text-sm font-bold text-emerald-400">{att.entryTime}</span></div>)}
-                        {!isEntry && att.exitTime && (<div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5"><span className="text-xs text-gray-400 uppercase tracking-wider">Exit</span><span className="text-sm font-bold text-red-400">{att.exitTime}</span></div>)}
-                        {!isEntry && att.duration > 0 && (<div className="flex items-center justify-between rounded-xl px-4 py-2.5 border" style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}><span className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: '#818cf8' }}><IoTimerOutline size={13} />Duration</span><span className="text-sm font-black" style={{ color: '#a5b4fc' }}>{Math.floor(att.duration / 60)}h {att.duration % 60}m</span></div>)}
+                        {isAlreadyMarked && (
+                            <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                                You have already completed your attendance for today.
+                            </p>
+                        )}
+                        {/* Entry Time — always shown if present */}
+                        {att.entryTime && (
+                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                                <span className="text-xs text-gray-400 uppercase tracking-wider">Entry</span>
+                                <span className="text-sm font-bold text-emerald-400">{att.entryTime}</span>
+                            </div>
+                        )}
+                        {/* Exit Time — show for exit and already_marked */}
+                        {(isAlreadyMarked || result.type === 'exit') && att.exitTime && (
+                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                                <span className="text-xs text-gray-400 uppercase tracking-wider">Exit</span>
+                                <span className="text-sm font-bold text-red-400">{att.exitTime}</span>
+                            </div>
+                        )}
+                        {/* Duration — show for exit and already_marked */}
+                        {(isAlreadyMarked || result.type === 'exit') && att.duration > 0 && (
+                            <div className="flex items-center justify-between rounded-xl px-4 py-2.5 border"
+                                style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}>
+                                <span className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: '#818cf8' }}>
+                                    <IoTimerOutline size={13} />Duration
+                                </span>
+                                <span className="text-sm font-black" style={{ color: '#a5b4fc' }}>
+                                    {Math.floor(att.duration / 60)}h {att.duration % 60}m
+                                </span>
+                            </div>
+                        )}
+                        {/* Notes — show for already_marked if present */}
+                        {isAlreadyMarked && att.notes && (
+                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                                <span className="text-xs text-gray-400 uppercase tracking-wider">Note</span>
+                                <span className="text-xs text-amber-400 font-medium text-right max-w-[60%]">{att.notes}</span>
+                            </div>
+                        )}
                     </div>
                     <button onClick={onClose} className="w-full py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 active:scale-95 transition-all" style={{ background: theme.iconBg }}>Dismiss</button>
+
                 </div>
             </motion.div>
         </div>
@@ -147,6 +370,13 @@ const StudentDashboard = () => {
     const [loadingScanner, setLoadingScanner]         = useState(false);
     const [enablingLocation, setEnablingLocation]     = useState(false);
     const [cardConfig, setCardConfig]                 = useState(null);
+    const [pinEnabled, setPinEnabled]                 = useState(false);
+    const [manualMarkEnabled, setManualMarkEnabled]   = useState(false); // true when admin allows manual (with or without PIN)
+    const [showPinModal, setShowPinModal]             = useState(false);
+    const [pinValue, setPinValue]                     = useState('');
+    const [pinLoading, setPinLoading]                 = useState(false);
+    const [pinError, setPinError]                     = useState('');
+    const [directMarkLoading, setDirectMarkLoading]   = useState(false);
     const { logout, user } = useAuth();
     const isActive = user?.isActive;
     const navigate = useNavigate();
@@ -162,8 +392,23 @@ const StudentDashboard = () => {
         } catch { /* use defaults if fails */ }
     };
 
-    useEffect(() => { fetchDashboardData(); loadSettingsCache(); fetchCardConfig(); }, []);
+    useEffect(() => { fetchDashboardData(); loadSettingsCache(); fetchCardConfig(); fetchPinStatus(); }, []);
     useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
+
+    const fetchPinStatus = async () => {
+        try {
+            const res = await api.get('/public/settings');
+            const s = res.data?.settings;
+            if (s) {
+                // pinEnabled = PIN required; manualMarkEnabled = button visible (PIN on OR off but system allows manual)
+                setPinEnabled(!!s.pinAttendanceEnabled);
+                // Show the button if PIN is ON (requires pin) OR if system is active and admin wants direct mark
+                // We use pinAttendanceEnabled as the ON/OFF for the whole manual feature
+                // When PIN=true → modal; When PIN=false but system active → direct mark
+                setManualMarkEnabled(true); // always show when system is reachable; backend enforces
+            }
+        } catch (_) {}
+    };
 
     const fetchDashboardData = async () => {
         try { const res = await api.get('/student/dashboard'); setDashboardData(res.data.data); } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -215,6 +460,53 @@ const StudentDashboard = () => {
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
 
+    const handlePinAttendance = async () => {
+        const trimmed = pinValue.trim();
+        if (!trimmed) { setPinError('Please enter your PIN.'); return; }
+        setPinLoading(true); setPinError('');
+        try {
+            const res = await api.post('/student/attendance/mark-pin', { pin: trimmed });
+            if (res.data.success) {
+                const isNew = res.data.type !== 'already_marked';
+                if (isNew) playSuccessBeep();          // beep only for fresh marks
+                setShowPinModal(false);
+                setPinValue('');
+                setAttendanceResult({
+                    type: res.data.type,
+                    attendance: res.data.attendance,
+                    message: res.data.message
+                });
+                if (isNew) fetchDashboardData();       // refresh only if something changed
+            }
+        } catch (e) {
+            setPinError(e.response?.data?.message || 'PIN incorrect or attendance failed.');
+        } finally { setPinLoading(false); }
+    };
+
+    const handleDirectMark = async () => {
+        setDirectMarkLoading(true);
+        try {
+            const res = await api.post('/student/attendance/mark-direct');
+            if (res.data.success) {
+                const isNew = res.data.type !== 'already_marked';
+                if (isNew) playSuccessBeep();
+                // Success → close modal, show result card
+                setShowPinModal(false);
+                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance, message: res.data.message });
+                if (isNew) fetchDashboardData();
+            }
+        } catch (e) {
+            // Show error INSIDE the modal (not as a toast behind the backdrop)
+            setPinError(e.response?.data?.message || 'Could not mark attendance. Please try again.');
+            // Modal stays open so student can read the wait message clearly
+        } finally { setDirectMarkLoading(false); }
+    };
+
+    const handleWithoutCamera = () => {
+        // Always open the modal — PIN input shown conditionally inside
+        setShowPinModal(true); setPinError(''); setPinValue('');
+    };
+
     const attPct    = dashboardData?.attendance?.percentage || 0;
     const attColor  = attPct >= 75 ? '#22c55e' : attPct >= 50 ? '#f59e0b' : '#ef4444';
     const initials  = (user?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
@@ -225,7 +517,7 @@ const StudentDashboard = () => {
         <div className="relative min-h-screen" style={{ background: '#070a10' }}>
             <style>{DASH_STYLE}</style>
             <div className="relative z-10"><DashboardSkeleton /></div>
-            <FloatingAttendanceBtn loading={loadingScanner} onClick={handleOpenScanner} />
+            {!showScanner && <SpeedDialFAB loading={loadingScanner} onCamera={handleOpenScanner} onManual={handleWithoutCamera} manualEnabled={manualMarkEnabled} />}
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
         </div>
     );
@@ -255,6 +547,75 @@ const StudentDashboard = () => {
                 {showLocationPrompt && <LocationPromptModal onClose={() => setShowLocationPrompt(false)} onEnable={handleEnableLocation} enabling={enablingLocation} />}
                 {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, shifts: dashboardData?.seat?.shifts, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }} onClose={() => setShowIDCard(false)} />}
                 {showNewspaper && <NewspaperModal onClose={() => setShowNewspaper(false)} />}
+
+                {/* ── Manual Attendance Modal (PIN or Direct) ── */}
+                {showPinModal && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 40 }}
+                            className="w-full max-w-sm rounded-2xl p-6 shadow-2xl relative"
+                            style={{ background: 'linear-gradient(135deg,#0f1117,#12141c)', border: '1px solid rgba(251,191,36,0.2)' }}
+                        >
+                            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-t-2xl" />
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-amber-500/10 rounded-xl"><IoKeypadOutline size={18} className="text-amber-400" /></div>
+                                    <div>
+                                        <h3 className="text-white font-bold text-base">Manual Attendance</h3>
+                                        <p className="text-gray-500 text-xs">
+                                            {pinEnabled ? 'Enter the daily PIN from your admin' : 'Click below to mark your attendance'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onClick={() => { setShowPinModal(false); setPinValue(''); setPinError(''); }}
+                                    className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
+                                    <IoCloseCircle size={20} />
+                                </button>
+                            </div>
+
+                            {/* PIN input — only shown when PIN mode is ON */}
+                            {pinEnabled && (
+                                <div className="flex gap-2 mb-3">
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={pinValue}
+                                        onChange={e => { setPinValue(e.target.value.slice(0, 8)); setPinError(''); }}
+                                        onKeyDown={e => e.key === 'Enter' && handlePinAttendance()}
+                                        placeholder="Enter PIN"
+                                        autoFocus
+                                        className="flex-1 bg-white/5 border border-white/10 focus:border-amber-500/50 text-white text-lg font-bold tracking-widest rounded-xl px-4 py-3 outline-none placeholder-gray-700 text-center"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Direct mode info — shown when PIN is OFF */}
+                            {!pinEnabled && (
+                                <div className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/15 rounded-xl px-4 py-3 mb-4">
+                                    <IoFlashOutline size={18} className="text-amber-400 shrink-0" />
+                                    <p className="text-amber-200/80 text-sm">Your attendance will be marked instantly without a PIN.</p>
+                                </div>
+                            )}
+
+                            {pinError && <p className="text-red-400 text-xs text-center mb-3">{pinError}</p>}
+
+                            <button
+                                onClick={pinEnabled ? handlePinAttendance : handleDirectMark}
+                                disabled={pinEnabled ? (pinLoading || !pinValue) : directMarkLoading}
+                                className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-40"
+                                style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', color: '#000' }}
+                            >
+                                {(pinEnabled ? pinLoading : directMarkLoading)
+                                    ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />Marking…</span>
+                                    : '✓ Mark Attendance'
+                                }
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
                 {showFeeReminder && dashboardData?.feeReminder && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#111827] border border-red-500/25 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
@@ -698,8 +1059,15 @@ const StudentDashboard = () => {
                 </div>
             </main>
 
-            {/* Floating attendance button (mobile) */}
-            <FloatingAttendanceBtn loading={loadingScanner} onClick={handleOpenScanner} />
+            {/* ── Speed Dial FAB: Mark Attendance (camera + no-camera) ── */}
+            {!showScanner && (
+                <SpeedDialFAB
+                    loading={loadingScanner}
+                    onCamera={handleOpenScanner}
+                    onManual={handleWithoutCamera}
+                    manualEnabled={manualMarkEnabled}
+                />
+            )}
         </div>
     );
 };
