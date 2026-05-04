@@ -31,6 +31,7 @@ const actionLogSchema = new mongoose.Schema({
             'update_shift',
             'delete_shift',
             'password_reset',
+            'bulk_password_reset',
             'generate_qr'
         ]
     },
