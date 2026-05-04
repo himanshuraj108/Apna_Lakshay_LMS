@@ -2943,6 +2943,74 @@ exports.resetStudentPassword = async (req, res) => {
     }
 };
 
+// Bulk reset all student passwords to their mobile numbers
+exports.bulkResetPasswordsToMobile = async (req, res) => {
+    try {
+        const PasswordLog = require('../models/PasswordLog');
+        const bcrypt = require('bcryptjs');
+
+        // Fetch only lightweight data — only need _id, name, email, mobile
+        const students = await User.find({
+            role: 'student',
+            mobile: { $exists: true, $nin: [null, '', undefined] }
+        }).select('name email mobile');
+
+        if (!students || students.length === 0) {
+            return res.status(404).json({ success: false, message: 'No students with mobile numbers found.' });
+        }
+
+        console.log(`[BulkReset] Processing ${students.length} students...`);
+
+        let successCount = 0;
+        let skippedCount = 0;
+        const errors = [];
+
+        for (const student of students) {
+            try {
+                if (!student.mobile) { skippedCount++; continue; }
+
+                const newPassword = String(student.mobile).trim();
+                if (newPassword.length < 6) { skippedCount++; continue; }
+
+                // Hash manually and use updateOne — avoids all Mongoose pre-save hook issues
+                const hashedPassword = await bcrypt.hash(newPassword, 10);
+                await User.updateOne({ _id: student._id }, { $set: { password: hashedPassword } });
+
+                // Count success immediately after the DB update succeeds
+                successCount++;
+
+                // Log separately — don't let log failure break the count
+                try {
+                    await PasswordLog.create({
+                        user: student._id,
+                        email: student.email || '',
+                        newPassword: newPassword,
+                        source: 'admin_bulk_reset'
+                    });
+                } catch (logErr) {
+                    console.warn(`[BulkReset] PasswordLog failed for ${student.name}:`, logErr.message);
+                }
+
+            } catch (err) {
+                console.error(`[BulkReset] ERROR for ${student.name}:`, err.message);
+                errors.push({ name: student.name, error: err.message });
+            }
+        }
+
+        await logAction(req, 'bulk_password_reset', 'User', null, 'All Students',
+            `Bulk reset: ${successCount} passwords set to mobile. Skipped: ${skippedCount}.`);
+
+        res.status(200).json({
+            success: true,
+            message: `Done! ${successCount} student passwords reset to their mobile numbers. Skipped: ${skippedCount}.`,
+            successCount, skippedCount,
+            ...(errors.length > 0 && { errors })
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error during bulk password reset.', error: error.message });
+    }
+};
+
 // @desc    Get all requests
 // @route   GET /api/admin/requests
 exports.getRequests = async (req, res) => {
