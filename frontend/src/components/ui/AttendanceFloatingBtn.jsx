@@ -29,8 +29,16 @@ export default function AttendanceFloatingBtn() {
     const [credentials, setCredentials] = useState(null); // { user, password }
     const [seatNumber, setSeatNumber] = useState('');
     const [hasEmail, setHasEmail] = useState(false);
+    const [loginAttendanceEnabled, setLoginAttendanceEnabled] = useState(null); // null = loading
     const scannerRef = useRef(null);
     const navigate = useNavigate();
+
+    // Fetch setting on mount — only show if admin enabled login attendance
+    useEffect(() => {
+        axios.get(`${API}/api/public/settings`)
+            .then(res => setLoginAttendanceEnabled(!!res.data?.settings?.loginAttendanceEnabled))
+            .catch(() => setLoginAttendanceEnabled(false)); // hidden on error
+    }, []);
 
     // Clean up scanner on unmount / step change
     useEffect(() => {
@@ -231,6 +239,9 @@ export default function AttendanceFloatingBtn() {
     };
 
     // ─────────────────────────────────────────────────────────────
+    // Only render if admin has enabled login attendance button
+    if (!loginAttendanceEnabled) return null;
+
     return (
         <>
             {/* Floating Button */}
