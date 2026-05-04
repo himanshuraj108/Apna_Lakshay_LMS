@@ -33,7 +33,7 @@ exports.getSettings = async (req, res) => {
 // @route   PUT /api/admin/settings
 exports.updateSettings = async (req, res) => {
     try {
-        const { shiftMode, systemStatus, activeModes, locationAttendance, onlinePaymentEnabled } = req.body;
+        const { shiftMode, systemStatus, activeModes, locationAttendance, onlinePaymentEnabled, pinAttendanceEnabled, attendancePin, timeRestrictionEnabled, loginAttendanceEnabled } = req.body;
 
         let settings = await Settings.findOne();
 
@@ -43,6 +43,10 @@ exports.updateSettings = async (req, res) => {
         if (activeModes !== undefined) updateFields.activeModes = activeModes;
         if (systemStatus !== undefined) updateFields.systemStatus = systemStatus;
         if (onlinePaymentEnabled !== undefined) updateFields.onlinePaymentEnabled = !!onlinePaymentEnabled;
+        if (pinAttendanceEnabled !== undefined) updateFields.pinAttendanceEnabled = !!pinAttendanceEnabled;
+        if (attendancePin !== undefined) updateFields.attendancePin = String(attendancePin).trim();
+        if (timeRestrictionEnabled !== undefined) updateFields.timeRestrictionEnabled = !!timeRestrictionEnabled;
+        if (loginAttendanceEnabled !== undefined) updateFields.loginAttendanceEnabled = !!loginAttendanceEnabled;
 
         // Strict boolean coercion for locationAttendance
         if (locationAttendance !== undefined) {
@@ -88,7 +92,8 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled');
+
 
         if (!settings) {
             settings = {
