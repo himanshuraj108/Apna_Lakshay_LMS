@@ -40,6 +40,7 @@ const {
     getPasswordActivity,
     resetStudentPassword,
     bulkUpdateStudentFees,
+    bulkResetPasswordsToMobile,
     getArchivedStudents,
     getArchivedStudent,
     deleteArchivedStudent,
@@ -101,6 +102,7 @@ router.route('/students')
     .post(createStudent);
 
 router.put('/students/bulk-fee-update', bulkUpdateStudentFees);
+router.post('/students/bulk-reset-passwords-to-mobile', bulkResetPasswordsToMobile);
 
 router.route('/students/:id')
     .get(getStudent)
