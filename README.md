@@ -586,6 +586,13 @@ pm2 start server.js --name apna-lakshay
 
 ## Changelog
 
+### v2.4.0 — UX & Attendance Overhaul (May 2026)
+- Overhauled Student Dashboard Attendance UX with a centered overlay, pulsing FAB, and glassmorphism blur effects
+- Added Admin toggle to show/hide the Login Screen Attendance check-in button globally
+- Implemented PIN-based manual attendance check-in/out, bypassing QR code when enabled by admin
+- Fixed IST timezone issue for midnight attendance reporting, ensuring late-night check-ins correctly register
+- Consolidated Admin Dashboard settings into a unified "Settings" dropdown for global toggles (Maintenance Mode, PIN Attendance, Login Attendance, Time Restriction, Location)
+
 ### v2.3.0 — Multi-Shift Support (May 2026)
 - Admin can assign students to multiple non-overlapping shifts simultaneously
 - Seat assign modal replaced single dropdown with interactive multi-checkbox UI
