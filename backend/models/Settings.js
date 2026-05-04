@@ -23,6 +23,22 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    pinAttendanceEnabled: {
+        type: Boolean,
+        default: false
+    },
+    attendancePin: {
+        type: String,
+        default: ''
+    },
+    timeRestrictionEnabled: {
+        type: Boolean,
+        default: true
+    },
+    loginAttendanceEnabled: {
+        type: Boolean,
+        default: false
+    },
     libraryName: { type: String, default: 'Library Management System' },
     address: { type: String, default: '' },
     contactNumber: { type: String, default: '' },
