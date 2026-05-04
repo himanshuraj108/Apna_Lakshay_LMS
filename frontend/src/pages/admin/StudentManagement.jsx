@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
 import api from '../../utils/api';
 import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal } from 'react-icons/io5';
@@ -89,6 +89,14 @@ const StudentManagement = () => {
 
     // Show / hide inactive students (default: hidden)
     const [showInactive, setShowInactive] = useState(false);
+
+    // Settings gear dropdown
+    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+
+    // Bulk Reset Password to Mobile
+    const [showBulkResetModal, setShowBulkResetModal] = useState(false);
+    const [bulkResetLoading, setBulkResetLoading] = useState(false);
+    const [bulkResetResult, setBulkResetResult] = useState(null);
 
     useEffect(() => {
         fetchStudents();
@@ -193,6 +201,23 @@ const StudentManagement = () => {
             setError(err.response?.data?.message || 'Failed to update fees in bulk');
         } finally {
             setBulkFeeLoading(false);
+        }
+    };
+
+    const handleBulkResetPasswordsToMobile = async () => {
+        setBulkResetLoading(true);
+        setBulkResetResult(null);
+        setError('');
+        try {
+            const res = await api.post('/admin/students/bulk-reset-passwords-to-mobile');
+            setBulkResetResult(res.data);
+            setSuccess(res.data.message);
+            setTimeout(() => setSuccess(''), 6000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Bulk password reset failed.');
+        } finally {
+            setBulkResetLoading(false);
+            setShowBulkResetModal(false);
         }
     };
 
@@ -976,19 +1001,85 @@ const StudentManagement = () => {
                             <h1 className="text-2xl sm:text-3xl font-black text-white">Student Management</h1>
                         </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                        <motion.button whileHover={{ scale: 1.03 }} onClick={generateStudentTablePDF}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-semibold transition-all">
-                            <IoDownloadOutline size={16} /> Export PDF
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.03 }} onClick={() => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-xl text-sm font-semibold transition-all">
-                            <IoSwapHorizontal size={16} /> Swap Seats
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.03 }} onClick={handleResetAllQrs}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all">
-                            <IoRefresh size={16} /> Reset All QRs
-                        </motion.button>
+                    <div className="flex gap-2 flex-wrap items-center">
+                        {/* ── Settings Gear Dropdown ── */}
+                        <div className="relative">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                onClick={() => setShowSettingsMenu(prev => !prev)}
+                                className="flex items-center gap-2 px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-semibold transition-all"
+                                title="Settings"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-300 ${showSettingsMenu ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Settings
+                            </motion.button>
+
+                            <AnimatePresence>
+                                {showSettingsMenu && (
+                                    <>
+                                        {/* Backdrop to close */}
+                                        <div className="fixed inset-0 z-30" onClick={() => setShowSettingsMenu(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
+                                            style={{ background: 'rgba(13,13,20,0.97)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)' }}
+                                        >
+                                            <div className="px-3 py-2 border-b border-white/5">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
+                                            </div>
+                                            {[
+                                                {
+                                                    label: 'Export PDF',
+                                                    icon: <IoDownloadOutline size={15} />,
+                                                    color: 'text-indigo-400',
+                                                    bg: 'hover:bg-indigo-500/10',
+                                                    action: () => { generateStudentTablePDF(); setShowSettingsMenu(false); }
+                                                },
+                                                {
+                                                    label: 'Swap Seats',
+                                                    icon: <IoSwapHorizontal size={15} />,
+                                                    color: 'text-orange-400',
+                                                    bg: 'hover:bg-orange-500/10',
+                                                    action: () => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); setShowSettingsMenu(false); }
+                                                },
+                                                {
+                                                    label: 'Reset All QRs',
+                                                    icon: <IoRefresh size={15} />,
+                                                    color: 'text-red-400',
+                                                    bg: 'hover:bg-red-500/10',
+                                                    action: () => { handleResetAllQrs(); setShowSettingsMenu(false); }
+                                                },
+                                                {
+                                                    label: 'Reset All Passwords to Mobile',
+                                                    icon: (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                        </svg>
+                                                    ),
+                                                    color: 'text-orange-400',
+                                                    bg: 'hover:bg-orange-500/10',
+                                                    action: () => { setBulkResetResult(null); setShowBulkResetModal(true); setShowSettingsMenu(false); }
+                                                },
+                                            ].map((item, i) => (
+                                                <button key={i} onClick={item.action}
+                                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium ${item.color} ${item.bg} transition-colors text-left`}>
+                                                    {item.icon}
+                                                    {item.label}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* ── Add Student ── */}
                         <motion.button whileHover={{ scale: 1.03 }} onClick={openAddModal}
                             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25">
                             <IoAdd size={16} /> Add Student
@@ -1072,7 +1163,6 @@ const StudentManagement = () => {
                     </motion.div>
                 )}
 
-                {/* Alerts */}
                 {success && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
                         className="bg-green-500/10 border border-green-500/25 text-green-400 px-4 py-3 rounded-xl mb-5 text-sm">
@@ -2114,6 +2204,72 @@ const StudentManagement = () => {
                         </div>
                     </form>
                 </Modal>
+
+                {/* ── Bulk Reset Passwords to Mobile Modal ── */}
+                <AnimatePresence>
+                    {showBulkResetModal && (
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+                            onClick={() => !bulkResetLoading && setShowBulkResetModal(false)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+                                className="bg-[#0d0d14] border border-orange-500/20 rounded-2xl p-7 w-full max-w-md shadow-2xl"
+                                onClick={e => e.stopPropagation()}
+                            >
+                                {/* Icon */}
+                                <div className="flex justify-center mb-5">
+                                    <div className="w-14 h-14 rounded-2xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <h2 className="text-xl font-bold text-white text-center mb-2">Reset All Passwords</h2>
+                                <p className="text-gray-400 text-sm text-center mb-1">
+                                    This will set every student's login password to their registered mobile number.
+                                </p>
+                                <p className="text-orange-400 text-xs text-center mb-6 font-semibold">
+                                    ⚠ This action affects ALL students with a mobile number and cannot be undone.
+                                </p>
+
+                                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6 text-sm text-gray-300 space-y-1">
+                                    <p>• Students without a mobile number will be skipped.</p>
+                                    <p>• Each password will become the student's 10-digit mobile number.</p>
+                                    <p>• Students must use their mobile number to log in after this.</p>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowBulkResetModal(false)}
+                                        disabled={bulkResetLoading}
+                                        className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleBulkResetPasswordsToMobile}
+                                        disabled={bulkResetLoading}
+                                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                                    >
+                                        {bulkResetLoading ? (
+                                            <>
+                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                                </svg>
+                                                Resetting...
+                                            </>
+                                        ) : 'Yes, Reset All Passwords'}
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
