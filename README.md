@@ -1,7 +1,6 @@
 # Apna Lakshay — Library Management System
 
 **Live:** https://apnalakshay.com
-**GitHub:** https://github.com/himanshuraj108/Apna_Lakshay_LMS
 
 A production-ready, full-stack MERN web application for offline library seat booking, digital attendance, fee management, and AI-powered academic support. Currently live and used by 100+ students daily.
 
