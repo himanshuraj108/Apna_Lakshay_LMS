@@ -339,10 +339,10 @@ Mongoose's `timestamps: true` silently blocks `createdAt` changes via `.save()`.
 - **Skeleton loaders** for all async data (no spinners)
 - **Color-coded statuses**:
   - 🟢 Green: Available / Paid / Present / Top-5 Attendance
-  - 🔴 Red: Occupied / Overdue / Absent / Inactive
-  - 🟡 Yellow: Due Soon / Pending / Warning
-  - 🟠 Orange: Partial Payment (row highlight + badge + breakdown)
-  - 🟣 Purple: Own seat highlight / Selected shifts
+  -  Red: Occupied / Overdue / Absent / Inactive
+  -  Yellow: Due Soon / Pending / Warning
+  -  Orange: Partial Payment (row highlight + badge + breakdown)
+  -  Purple: Own seat highlight / Selected shifts
 - **Fully responsive**: Desktop, Tablet, Mobile
 - **Show/hide inactive** toggles in Fee Management and Student Management
 
