@@ -338,7 +338,7 @@ Mongoose's `timestamps: true` silently blocks `createdAt` changes via `.save()`.
 - **Framer Motion** micro-animations on all pages
 - **Skeleton loaders** for all async data (no spinners)
 - **Color-coded statuses**:
-  - 🟢 Green: Available / Paid / Present / Top-5 Attendance
+  -  Green: Available / Paid / Present / Top-5 Attendance
   -  Red: Occupied / Overdue / Absent / Inactive
   -  Yellow: Due Soon / Pending / Warning
   -  Orange: Partial Payment (row highlight + badge + breakdown)
