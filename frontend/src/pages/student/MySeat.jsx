@@ -11,44 +11,30 @@ import {
 } from 'react-icons/io5';
 import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 
-/* ─── Animated background ─────────────────────────────────────────── */
+/* ─── Background ─────────────────────────────────────────────────── */
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#070a10' }} />
-        <div className="fixed top-[-15%] left-[-5%] w-[500px] h-[500px] rounded-full -z-10 blur-[130px]"
-            style={{ background: 'rgba(124,58,237,0.08)', animation: 'orb1 18s ease-in-out infinite' }} />
-        <div className="fixed bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full -z-10 blur-[100px]"
-            style={{ background: 'rgba(59,130,246,0.07)', animation: 'orb2 22s ease-in-out infinite' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
     </>
 );
 
 /* ─── Detail chip ──────────────────────────────────────────────────── */
 const DetailChip = ({ icon: Icon, label, value, accentColor }) => (
-    <div className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden"
-        style={{
-            background: `linear-gradient(145deg, ${accentColor}0d, rgba(255,255,255,0.02))`,
-            border: '1px solid rgba(255,255,255,0.06)',
-            padding: '14px 16px',
-        }}>
-        {/* Accent left line */}
-        <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full"
-            style={{ background: accentColor }} />
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: `${accentColor}18` }}>
+    <div className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm"
+        style={{ padding: '14px 16px' }}>
+        <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: accentColor }} />
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${accentColor}18` }}>
             <Icon size={17} style={{ color: accentColor }} />
         </div>
         <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'rgba(156,163,175,0.7)' }}>{label}</p>
-            <p className="text-white font-bold text-sm truncate">{value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-gray-500">{label}</p>
+            <p className="text-gray-900 font-bold text-sm truncate">{value}</p>
         </div>
     </div>
 );
 
-/* ════════════════════════════════════════════════════════════════════
-   MAIN PAGE
-   ════════════════════════════════════════════════════════════════════ */
 const MySeat = () => {
     const [seatData, setSeatData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -68,23 +54,21 @@ const MySeat = () => {
 
     /* ── No seat ─────────────────────────────────────────────────── */
     if (!seatData?.seat) return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
             <PageBg />
             <div className="relative z-10 max-w-2xl mx-auto px-5 py-10">
                 <Link to="/student">
                     <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all mb-10"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 transition-all mb-10 bg-white border border-gray-200 shadow-sm">
                         <IoArrowBack size={15} /> Back to Dashboard
                     </motion.button>
                 </Link>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    className="text-center py-20 rounded-2xl"
-                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div className="w-16 h-16 rounded-2xl bg-gray-800 flex items-center justify-center mx-auto mb-4">
-                        <IoSadOutline size={30} className="text-gray-500" />
+                    className="text-center py-20 rounded-2xl bg-white border border-gray-200 shadow-sm">
+                    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                        <IoSadOutline size={30} className="text-gray-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">No Seat Assigned</h2>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">No Seat Assigned</h2>
                     <p className="text-gray-500 text-sm">Contact admin to get a seat allocated.</p>
                 </motion.div>
             </div>
@@ -96,82 +80,78 @@ const MySeat = () => {
     const price = seat.shiftPrices?.[seat.shiftId] || seat.basePrices?.[seat.shiftId] || seat.price || 800;
 
     return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
             <PageBg />
-
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
-                {/* ── Header ─────────────────────────────────────── */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-4 mb-8">
+                {/* Header */}
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/student">
                         <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all"
-                            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 transition-all bg-white border border-gray-200 shadow-sm">
                             <IoArrowBack size={15} />
                             <span className="hidden sm:inline">Dashboard</span>
                         </motion.button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-white">My Seat</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">My Seat</h1>
                         <p className="text-gray-500 text-sm mt-0.5">Your assigned study spot</p>
                     </div>
                 </motion.div>
 
-                {/* ── Main grid ──────────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-
                     {/* LEFT COLUMN */}
                     <div className="lg:col-span-2 flex flex-col gap-4">
 
                         {/* Seat number hero */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                            className="relative rounded-2xl overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(145deg, rgba(124,58,237,0.1), rgba(99,102,241,0.05))',
-                                border: '1px solid rgba(124,58,237,0.2)',
-                                padding: '20px',
-                            }}>
-                            {/* Accent line top */}
-                            <div className="absolute top-0 left-0 right-0 h-[2px]"
-                                style={{ background: 'linear-gradient(90deg, #7c3aed, #6366f1, transparent)' }} />
-                            {/* Soft glow */}
+                            className="relative rounded-2xl overflow-hidden bg-white border border-orange-200 shadow-sm"
+                            style={{ padding: '20px' }}>
+                            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+                                style={{ background: 'linear-gradient(90deg, #f97316, #fb923c, transparent)' }} />
                             <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl pointer-events-none"
-                                style={{ background: 'rgba(124,58,237,0.15)' }} />
+                                style={{ background: 'rgba(249,115,22,0.06)' }} />
 
-                            {/* Horizontal layout */}
                             <div className="relative flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                                    style={{ background: 'linear-gradient(135deg, #7c3aed, #6366f1)', boxShadow: '0 6px 20px rgba(124,58,237,0.35)' }}>
-                                    <IoBedOutline size={22} className="text-white" />
-                                </div>
                                 <div className="min-w-0">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'rgba(167,139,250,0.7)' }}>Seat No.</p>
-                                    <p className="text-3xl font-black text-white leading-none truncate">{seat.number}</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-orange-500">Seat No.</p>
+                                    <p className="text-3xl font-black text-gray-900 leading-none truncate">{seat.number}</p>
                                 </div>
                             </div>
 
-                            {/* Status row — show all assigned shifts */}
-                            <div className="relative mt-4 pt-4 border-t border-white/6">
+                            {/* Stamp */}
+                            <div className="absolute top-1/2 right-10 -translate-y-1/2 flex items-center justify-center w-[96px] h-[96px] transform rotate-[-18deg] border-[4px] border-emerald-600 text-emerald-600 rounded-full pointer-events-none mix-blend-multiply opacity-70">
+                                <div className="absolute inset-[3px] border-[1.5px] border-emerald-600 rounded-full" />
+                                <div className="flex flex-col items-center justify-center w-full">
+                                    <p className="font-bold text-[6.5px] tracking-[0.2em] uppercase text-center leading-[1.2] mb-[3px]">
+                                        APNA LAKSHAY<br/>LIBRARY
+                                    </p>
+                                    <div className="w-[85%] h-[1.5px] bg-emerald-600 mb-[3px]" />
+                                    <p className="font-black text-[11px] tracking-widest uppercase text-center" style={{ transform: 'scaleY(1.2)' }}>
+                                        CONFIRMED
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="relative mt-4 pt-4 border-t border-gray-100">
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span className="text-emerald-400 text-xs font-semibold">Active</span>
+                                    <span className="text-emerald-600 text-xs font-semibold">Active</span>
                                 </div>
                                 {seat.shifts && seat.shifts.length > 0 ? (
                                     <div className="flex flex-wrap gap-1.5 mt-1">
                                         {seat.shifts.map((s, i) => (
-                                            <span key={i}
-                                                className="inline-flex flex-col px-3 py-1.5 rounded-xl text-xs font-bold"
-                                                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', color: '#34d399' }}>
+                                            <span key={i} className="inline-flex flex-col px-3 py-1.5 rounded-xl text-xs font-bold"
+                                                style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: '#059669' }}>
                                                 <span>{s.name}</span>
                                                 {s.startTime && s.endTime && (
-                                                    <span className="text-[10px] text-emerald-300/70 font-normal mt-0.5">{s.startTime}–{s.endTime}</span>
+                                                    <span className="text-[10px] text-emerald-500 font-normal mt-0.5">{s.startTime}–{s.endTime}</span>
                                                 )}
                                             </span>
                                         ))}
                                     </div>
                                 ) : (
-                                    <span className="text-gray-700 text-xs">{seat.shift || ''}</span>
+                                    <span className="text-gray-400 text-xs">{seat.shift || ''}</span>
                                 )}
                             </div>
                         </motion.div>
@@ -180,26 +160,20 @@ const MySeat = () => {
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
                             className="flex flex-col gap-3">
                             <DetailChip icon={IoLocationOutline} label="Location" value={`${floor?.name}, ${room?.name}`} accentColor="#3b82f6" />
-                            {/* Shift chips — one per assigned shift */}
                             {seat.shifts && seat.shifts.length > 0 ? (
                                 <div className="flex flex-col gap-2">
                                     {seat.shifts.map((s, i) => (
-                                        <div key={i}
-                                            className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden"
-                                            style={{
-                                                background: 'linear-gradient(145deg, #10b9810d, rgba(255,255,255,0.02))',
-                                                border: '1px solid rgba(16,185,129,0.25)',
-                                                padding: '14px 16px',
-                                            }}>
-                                            <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#10b981' }} />
-                                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(16,185,129,0.15)' }}>
-                                                <IoTimeOutline size={17} style={{ color: '#10b981' }} />
+                                        <div key={i} className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm"
+                                            style={{ padding: '14px 16px' }}>
+                                            <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-emerald-500" />
+                                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50">
+                                                <IoTimeOutline size={17} className="text-emerald-500" />
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'rgba(156,163,175,0.7)' }}>Shift {i + 1}</p>
-                                                <p className="text-white font-bold text-sm">{s.name}</p>
+                                                <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-gray-500">Shift {i + 1}</p>
+                                                <p className="text-gray-900 font-bold text-sm">{s.name}</p>
                                                 {s.startTime && s.endTime && (
-                                                    <p className="text-emerald-400 text-[11px] font-semibold mt-0.5">{s.startTime} – {s.endTime}</p>
+                                                    <p className="text-emerald-600 text-[11px] font-semibold mt-0.5">{s.startTime} – {s.endTime}</p>
                                                 )}
                                             </div>
                                         </div>
@@ -213,45 +187,42 @@ const MySeat = () => {
 
                         {/* Pricing plans */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }}
-                            className="rounded-2xl overflow-hidden"
-                            style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
-                                <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
-                                    <IoCashOutline size={13} className="text-amber-400" />
+                            className="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm">
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                                <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-amber-50">
+                                    <IoCashOutline size={13} className="text-amber-500" />
                                 </div>
-                                <p className="text-white font-bold text-sm">Pricing Plans</p>
+                                <p className="text-gray-900 font-bold text-sm">Pricing Plans</p>
                             </div>
                             <div className="p-4 flex flex-col gap-2">
                                 {shifts.map(shift => {
                                     const shiftIdStr = (shift._id || shift.id || '').toString();
-                                    // Highlight if this shift is in the student's assigned shifts[]
                                     const isCurrent = seat.shifts
                                         ? seat.shifts.some(s => s._id && s._id.toString() === shiftIdStr)
                                         : (seat.shiftId && seat.shiftId.toString() === shiftIdStr) || seat.shift === shift.name;
                                     const shiftPrice = seat.shiftPrices?.[shift.id] || seat.basePrices?.[shift.id] || 800;
                                     return (
-                                        <div key={shift.id}
-                                            className="flex justify-between items-center px-4 py-3 rounded-xl transition-all"
+                                        <div key={shift.id} className="flex justify-between items-center px-4 py-3 rounded-xl transition-all"
                                             style={{
-                                                background: isCurrent ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.03)',
-                                                border: `1px solid ${isCurrent ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.06)'}`,
+                                                background: isCurrent ? 'rgba(16,185,129,0.06)' : '#f8fafc',
+                                                border: `1px solid ${isCurrent ? 'rgba(16,185,129,0.25)' : '#e2e8f0'}`,
                                             }}>
                                             <div>
-                                                <p className="text-sm font-semibold" style={{ color: isCurrent ? '#4ade80' : '#d1d5db' }}>{shift.name}</p>
-                                                <p className="text-[11px] text-gray-600">{getShiftTimeRange(shift)}</p>
+                                                <p className="text-sm font-semibold" style={{ color: isCurrent ? '#059669' : '#374151' }}>{shift.name}</p>
+                                                <p className="text-[11px] text-gray-400">{getShiftTimeRange(shift)}</p>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {isCurrent && <IoCheckmarkCircle className="text-emerald-400" size={15} />}
-                                                <span className="font-black text-sm" style={{ color: isCurrent ? '#fff' : '#6b7280' }}>₹{shiftPrice}</span>
+                                                {isCurrent && <IoCheckmarkCircle className="text-emerald-500" size={15} />}
+                                                <span className="font-black text-sm" style={{ color: isCurrent ? '#059669' : '#9ca3af' }}>₹{shiftPrice}</span>
                                             </div>
                                         </div>
                                     );
                                 })}
                                 {!isCustom && !shifts.some(s => s.id === 'full') && (
                                     <div className="flex justify-between items-center px-4 py-3 rounded-xl"
-                                        style={{ background: seat.shift === 'Full Day' ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                        <span className="text-sm text-gray-400">Full Day</span>
-                                        <span className="font-black text-sm text-gray-500">₹{seat.basePrices?.full || 1200}</span>
+                                        style={{ background: seat.shift === 'Full Day' ? 'rgba(16,185,129,0.06)' : '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                        <span className="text-sm text-gray-500">Full Day</span>
+                                        <span className="font-black text-sm text-gray-400">₹{seat.basePrices?.full || 1200}</span>
                                     </div>
                                 )}
                             </div>
@@ -262,43 +233,34 @@ const MySeat = () => {
                     <div className="lg:col-span-3">
                         {room && room.seats ? (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                                className="rounded-2xl overflow-hidden h-full"
-                                style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                {/* Map header */}
-                                <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                                className="rounded-2xl overflow-hidden h-full bg-white border border-gray-200 shadow-sm">
+                                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                                            <IoGridOutline size={13} className="text-blue-400" />
+                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-orange-50">
+                                            <IoGridOutline size={13} className="text-orange-500" />
                                         </div>
-                                        <p className="text-white font-bold text-sm">Seat Location Map</p>
+                                        <p className="text-gray-900 font-bold text-sm">Seat Location Map</p>
                                     </div>
-                                    <span className="text-[11px] font-bold px-3 py-1 rounded-full"
-                                        style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#60a5fa' }}>
+                                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600">
                                         {room?.name || 'Room View'}
                                     </span>
                                 </div>
-
-                                {/* Map body */}
                                 <div className="p-6 overflow-x-auto min-h-[600px] flex items-start justify-center">
                                     <StudentRoomGrid room={room} highlightSeatId={seat._id} onSeatClick={() => {}} />
                                 </div>
-
-                                {/* Callout */}
-                                <div className="mx-5 mb-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm"
-                                    style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
-                                    <IoBedOutline size={15} className="text-purple-400 shrink-0" />
-                                    <p className="text-purple-300 text-sm">
-                                        Your seat <strong className="text-white font-black">#{seat.number}</strong> is highlighted on the map.
+                                <div className="mx-5 mb-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm bg-orange-50 border border-orange-200">
+                                    <IoBedOutline size={15} className="text-orange-500 shrink-0" />
+                                    <p className="text-orange-700 text-sm">
+                                        Your seat <strong className="text-orange-900 font-black">#{seat.number}</strong> is highlighted on the map.
                                     </p>
                                 </div>
                             </motion.div>
                         ) : (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="h-64 lg:h-full rounded-2xl flex items-center justify-center text-center"
-                                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                className="h-64 lg:h-full rounded-2xl flex items-center justify-center text-center bg-white border border-gray-200 shadow-sm">
                                 <div>
-                                    <IoGridOutline size={36} className="text-gray-700 mx-auto mb-3" />
-                                    <p className="text-gray-600 text-sm">Room map not available</p>
+                                    <IoGridOutline size={36} className="text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-400 text-sm">Room map not available</p>
                                 </div>
                             </motion.div>
                         )}
