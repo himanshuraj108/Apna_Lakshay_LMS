@@ -386,7 +386,7 @@ const Login = () => {
                             <div className="flex-1 h-px bg-white/6" />
                         </div>
 
-                        {/* Register link */}
+                        {/* Register link 
                         <p className="text-center text-sm text-gray-500">
                             Don&apos;t have an account?{' '}
                             <Link
@@ -396,7 +396,7 @@ const Login = () => {
                                 Create account
                             </Link>
                         </p>
-                    </div>
+                    </div> */}
 
                     {/* Below card */}
                     <p className="text-center text-[11px] text-gray-700 mt-5 flex items-center justify-center gap-2">
