@@ -9,7 +9,7 @@ const Sk = ({ className = '', style = {} }) => (
 
 // ── Shared layout wrappers ────────────────────────────────────────────────────
 const PageShell = ({ children }) => (
-    <div className="min-h-screen p-4 sm:p-6" style={{ background: '#050508' }}>
+    <div className="min-h-screen p-4 sm:p-6" style={{ background: '#f9fafb' }}>
         <div className="max-w-6xl mx-auto space-y-5">{children}</div>
     </div>
 );
@@ -38,15 +38,15 @@ export const DashboardSkeleton = () => (
         {/* Stats 2×2 grid */}
         <div className="grid grid-cols-2 gap-4 mb-8">
             {[
-                'from-blue-500/20 to-cyan-500/10',
-                'from-green-500/20 to-emerald-500/10',
-                'from-amber-500/20 to-orange-500/10',
-                'from-pink-500/20 to-rose-500/10',
+                'from-blue-100 to-cyan-50',
+                'from-green-100 to-emerald-50',
+                'from-amber-100 to-orange-50',
+                'from-pink-100 to-rose-50',
             ].map((grad, i) => (
                 <div
                     key={i}
-                    className="relative rounded-2xl p-6 border border-white/8 overflow-hidden"
-                    style={{ background: `linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))` }}
+                    className="relative rounded-2xl p-6 border border-gray-200 overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.01))` }}
                 >
                     <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${grad} opacity-60`} />
                     <div className="flex items-start justify-between mb-5">
@@ -61,7 +61,7 @@ export const DashboardSkeleton = () => (
         </div>
 
         {/* Quick Actions section */}
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-6 mb-8">
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 mb-8">
             {/* Section header */}
             <div className="flex items-center gap-3 mb-6">
                 <Sk className="w-8 h-8 rounded-xl flex-shrink-0" />
@@ -75,7 +75,7 @@ export const DashboardSkeleton = () => (
                 {[...Array(8)].map((_, i) => (
                     <div
                         key={i}
-                        className="flex items-center gap-4 p-4 rounded-2xl border border-white/8 bg-white/3"
+                        className="flex items-center gap-4 p-4 rounded-2xl border border-gray-200 bg-white shadow-sm"
                     >
                         <Sk className="w-11 h-11 rounded-xl flex-shrink-0" />
                         <div className="flex-1 space-y-2">
@@ -88,7 +88,7 @@ export const DashboardSkeleton = () => (
         </div>
 
         {/* Learning Region section */}
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
                 <Sk className="w-8 h-8 rounded-xl flex-shrink-0" />
                 <div className="space-y-1.5">
@@ -100,7 +100,7 @@ export const DashboardSkeleton = () => (
                 {[...Array(3)].map((_, i) => (
                     <div
                         key={i}
-                        className="rounded-2xl border border-white/8 bg-white/3 p-6 space-y-4"
+                        className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 space-y-4"
                     >
                         <Sk className="w-12 h-12 rounded-xl" />
                         <div className="space-y-2">
@@ -120,7 +120,7 @@ export const DashboardSkeleton = () => (
 // 2. PROFILE SKELETON  (Profile.jsx)
 // ─────────────────────────────────────────────────────────────────────────────
 export const ProfileSkeleton = () => (
-    <div className="min-h-screen px-4 sm:px-6 py-8 pb-16" style={{ background: '#050508' }}>
+    <div className="min-h-screen px-4 sm:px-6 py-8 pb-16" style={{ background: '#f9fafb' }}>
         <div className="max-w-4xl mx-auto">
             {/* Top bar */}
             <div className="flex items-center justify-between mb-8">
@@ -129,12 +129,12 @@ export const ProfileSkeleton = () => (
             </div>
 
             {/* Hero banner card */}
-            <div className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden mb-6">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden mb-6">
                 {/* Banner */}
-                <div className="h-28 bg-gradient-to-br from-violet-600/15 via-indigo-600/10 to-blue-600/15" />
+                <div className="h-28 bg-gradient-to-br from-orange-100 via-orange-50 to-orange-100" />
                 <div className="px-6 pb-6">
                     <div className="-mt-12 mb-4 flex items-end justify-between flex-wrap gap-4">
-                        <Sk className="w-24 h-24 rounded-2xl flex-shrink-0" style={{ border: '4px solid #0a0a12' }} />
+                        <Sk className="w-24 h-24 rounded-2xl flex-shrink-0" style={{ border: '4px solid #ffffff' }} />
                         <Sk className="h-8 w-28 rounded-xl" />
                     </div>
                     <div className="flex items-start justify-between flex-wrap gap-3">
@@ -150,7 +150,7 @@ export const ProfileSkeleton = () => (
             {/* Main grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
                 {/* QR Card */}
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-5 flex flex-col items-center gap-4">
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 flex flex-col items-center gap-4">
                     <div className="flex items-center gap-2 self-start">
                         <Sk className="w-4 h-4 rounded" />
                         <Sk className="h-3 w-20" />
@@ -162,13 +162,13 @@ export const ProfileSkeleton = () => (
                 </div>
 
                 {/* Info card */}
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-5 md:col-span-2">
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:col-span-2">
                     <div className="flex items-center gap-2 mb-4">
                         <Sk className="w-4 h-4 rounded" />
                         <Sk className="h-3 w-36" />
                     </div>
                     {[...Array(6)].map((_, i) => (
-                        <div key={i} className="flex items-center gap-4 py-3.5 border-b border-white/5 last:border-0">
+                        <div key={i} className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0">
                             <Sk className="w-8 h-8 rounded-lg flex-shrink-0" />
                             <div className="flex-1 space-y-1.5">
                                 <Sk className="h-2.5 w-16" />
@@ -180,14 +180,14 @@ export const ProfileSkeleton = () => (
             </div>
 
             {/* Action buttons section */}
-            <div className="rounded-2xl border border-white/8 bg-white/3 p-5 mb-5">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 mb-5">
                 <div className="flex items-center gap-2 mb-5">
                     <Sk className="w-4 h-4 rounded" />
                     <Sk className="h-3 w-28" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[...Array(2)].map((_, i) => (
-                        <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-white/8 bg-white/3">
+                        <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm">
                             <Sk className="w-10 h-10 rounded-xl flex-shrink-0" />
                             <div className="space-y-1.5">
                                 <Sk className="h-3.5 w-36" />
@@ -199,12 +199,12 @@ export const ProfileSkeleton = () => (
             </div>
 
             {/* Security section */}
-            <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
                 <div className="flex items-center gap-2 mb-5">
                     <Sk className="w-4 h-4 rounded" />
                     <Sk className="h-3 w-32" />
                 </div>
-                <div className="flex items-center gap-4 p-4 rounded-xl border border-white/8 bg-white/3 w-fit">
+                <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm w-fit">
                     <Sk className="w-10 h-10 rounded-xl flex-shrink-0" />
                     <div className="space-y-1.5">
                         <Sk className="h-3.5 w-28" />
@@ -220,7 +220,7 @@ export const ProfileSkeleton = () => (
 // 3. FEE STATUS SKELETON  (FeeStatus.jsx)
 // ─────────────────────────────────────────────────────────────────────────────
 export const FeeStatusSkeleton = () => (
-    <div className="min-h-screen px-4 sm:px-6 py-8" style={{ background: '#050508' }}>
+    <div className="min-h-screen px-4 sm:px-6 py-8" style={{ background: '#f9fafb' }}>
         <div className="max-w-5xl mx-auto">
             {/* Header */}
             <div className="flex items-center gap-4 mb-10">
@@ -233,8 +233,8 @@ export const FeeStatusSkeleton = () => (
 
             {/* 3 stat cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                {['from-green-500/20 to-emerald-400/10', 'from-yellow-500/20 to-amber-400/10', 'from-blue-500/20 to-cyan-400/10'].map((grad, i) => (
-                    <div key={i} className="relative rounded-2xl p-5 border border-white/8 bg-white/3 overflow-hidden">
+                {['from-green-100 to-emerald-50', 'from-yellow-100 to-amber-50', 'from-blue-100 to-cyan-50'].map((grad, i) => (
+                    <div key={i} className="relative rounded-2xl p-5 border border-gray-200 bg-white shadow-sm overflow-hidden">
                         <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${grad}`} />
                         <div className="flex items-center gap-4">
                             <Sk className="w-11 h-11 rounded-xl flex-shrink-0" />
@@ -249,20 +249,20 @@ export const FeeStatusSkeleton = () => (
             </div>
 
             {/* Table card */}
-            <div className="rounded-2xl border border-white/8 bg-white/3 p-6 mb-6">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 mb-6">
                 <div className="flex items-center gap-2 mb-6">
                     <Sk className="w-5 h-5 rounded" />
                     <Sk className="h-5 w-40" />
                 </div>
                 {/* Table head */}
-                <div className="flex gap-4 pb-4 border-b border-white/8 mb-3">
+                <div className="flex gap-4 pb-4 border-b border-gray-200 mb-3">
                     {[120, 80, 100, 100, 80].map((w, i) => (
                         <Sk key={i} className="h-3" style={{ width: w }} />
                     ))}
                 </div>
                 {/* Table rows */}
                 {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex gap-4 py-4 border-b border-white/5 last:border-0">
+                    <div key={i} className="flex gap-4 py-4 border-b border-gray-100 last:border-0">
                         <Sk className="h-4 flex-1" style={{ maxWidth: 120 }} />
                         <Sk className="h-4 flex-1" style={{ maxWidth: 80 }} />
                         <Sk className="h-4 flex-1" style={{ maxWidth: 100 }} />
@@ -273,11 +273,11 @@ export const FeeStatusSkeleton = () => (
             </div>
 
             {/* Instructions card */}
-            <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
                 <Sk className="h-5 w-44 mb-5" />
                 <div className="space-y-2.5">
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/3 border border-white/5">
+                        <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white shadow-sm border border-gray-100">
                             <Sk className="w-6 h-6 rounded-full flex-shrink-0" />
                             <Sk className="h-4 flex-1" />
                         </div>
@@ -292,7 +292,7 @@ export const FeeStatusSkeleton = () => (
 // 4. ATTENDANCE SKELETON  (Attendance.jsx)
 // ─────────────────────────────────────────────────────────────────────────────
 export const AttendanceSkeleton = () => (
-    <div className="min-h-screen px-4 sm:px-6 py-8" style={{ background: '#050508' }}>
+    <div className="min-h-screen px-4 sm:px-6 py-8" style={{ background: '#f9fafb' }}>
         <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-10 flex-wrap gap-4">
@@ -311,8 +311,8 @@ export const AttendanceSkeleton = () => (
 
             {/* 4 stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {['from-slate-400/20 to-gray-300/10', 'from-green-500/20 to-emerald-400/10', 'from-blue-500/20 to-cyan-400/10', 'from-purple-500/20 to-violet-400/10'].map((grad, i) => (
-                    <div key={i} className="relative rounded-2xl p-5 border border-white/8 bg-white/3 overflow-hidden">
+                {['from-gray-200 to-gray-100', 'from-green-100 to-emerald-50', 'from-blue-100 to-cyan-50', 'from-purple-100 to-violet-50'].map((grad, i) => (
+                    <div key={i} className="relative rounded-2xl p-5 border border-gray-200 bg-white shadow-sm overflow-hidden">
                         <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${grad}`} />
                         <Sk className="w-9 h-9 rounded-xl mb-3" />
                         <Sk className="h-2.5 w-20 mb-2" />
@@ -322,12 +322,12 @@ export const AttendanceSkeleton = () => (
             </div>
 
             {/* Progress bar card */}
-            <div className="mb-8 p-5 rounded-2xl border border-white/8 bg-white/3">
+            <div className="mb-8 p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="flex justify-between mb-3">
                     <Sk className="h-4 w-40" />
                     <Sk className="h-4 w-10" />
                 </div>
-                <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/5">
+                <div className="w-full bg-gray-50 rounded-full h-3 overflow-hidden border border-gray-100">
                     <div className="h-full w-3/5 skeleton rounded-full" />
                 </div>
                 <div className="flex justify-between mt-2">
@@ -339,11 +339,11 @@ export const AttendanceSkeleton = () => (
 
             {/* Daily log table */}
             <div className="space-y-6">
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
                     <Sk className="h-5 w-24 mb-6" />
                     <div className="space-y-3">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl border border-white/8 bg-white/3">
+                            <div key={i} className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm">
                                 <div className="flex items-center gap-3 min-w-[180px]">
                                     <Sk className="w-10 h-10 rounded-xl flex-shrink-0" />
                                     <div className="space-y-1.5">
@@ -362,13 +362,13 @@ export const AttendanceSkeleton = () => (
                 </div>
 
                 {/* Rankings table */}
-                <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
+                <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <Sk className="w-5 h-5 rounded" />
                         <Sk className="h-5 w-44" />
                     </div>
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} className="flex gap-4 py-4 border-b border-white/5 last:border-0 items-center">
+                        <div key={i} className="flex gap-4 py-4 border-b border-gray-100 last:border-0 items-center">
                             <Sk className="w-8 h-8 rounded-full flex-shrink-0" />
                             <Sk className="h-4 flex-1" />
                             <Sk className="h-5 w-12" />
@@ -384,7 +384,7 @@ export const AttendanceSkeleton = () => (
 // 5. BOOKS / NOTES PAGE SKELETON  (BooksPage.jsx & NotesPage.jsx)
 // ─────────────────────────────────────────────────────────────────────────────
 export const BooksNotesPageSkeleton = ({ variant = 'books' }) => (
-    <div className="min-h-screen px-4 sm:px-6 py-8 pb-20" style={{ background: '#050508' }}>
+    <div className="min-h-screen px-4 sm:px-6 py-8 pb-20" style={{ background: '#f9fafb' }}>
         <div className="max-w-6xl mx-auto">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
@@ -418,14 +418,14 @@ export const BooksNotesPageSkeleton = ({ variant = 'books' }) => (
             {variant === 'books' ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {[...Array(10)].map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-white/8 bg-white/3 overflow-hidden flex flex-col">
+                        <div key={i} className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col">
                             <Sk className="w-full h-48 rounded-none" />
                             <div className="p-4 space-y-2.5">
                                 <Sk className="h-4 w-full" />
                                 <Sk className="h-4 w-4/5" />
                                 <Sk className="h-3 w-3/5" />
                                 <Sk className="h-3 w-full" />
-                                <div className="flex justify-between pt-2 border-t border-white/5">
+                                <div className="flex justify-between pt-2 border-t border-gray-100">
                                     <Sk className="h-3 w-16" />
                                     <Sk className="h-3 w-10" />
                                 </div>
@@ -437,7 +437,7 @@ export const BooksNotesPageSkeleton = ({ variant = 'books' }) => (
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(9)].map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-white/8 bg-white/3 p-5 flex flex-col gap-3">
+                        <div key={i} className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 flex flex-col gap-3">
                             <div className="absolute top-0 left-0 w-full h-px" />
                             <div className="flex items-start gap-3">
                                 <Sk className="w-10 h-10 rounded-xl flex-shrink-0" />
@@ -454,7 +454,7 @@ export const BooksNotesPageSkeleton = ({ variant = 'books' }) => (
                                     <Sk key={j} className="h-5 w-16 rounded-full" />
                                 ))}
                             </div>
-                            <div className="flex gap-3 pt-2 border-t border-white/5">
+                            <div className="flex gap-3 pt-2 border-t border-gray-100">
                                 <Sk className="h-4 w-16" />
                                 <Sk className="h-4 w-16" />
                             </div>
@@ -474,7 +474,7 @@ export const BooksNotesPageSkeleton = ({ variant = 'books' }) => (
 // 6. MY SEAT SKELETON  (MySeat.jsx)
 // ─────────────────────────────────────────────────────────────────────────────
 export const SeatSkeleton = () => (
-    <div className="min-h-screen px-4 sm:px-6 py-8" style={{ background: '#050508' }}>
+    <div className="min-h-screen px-4 sm:px-6 py-8" style={{ background: '#f9fafb' }}>
         <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center gap-4 mb-10">
@@ -489,7 +489,7 @@ export const SeatSkeleton = () => (
                 {/* Left: details */}
                 <div className="col-span-1 space-y-5">
                     {/* Seat hero */}
-                    <div className="rounded-2xl border border-purple-500/20 bg-white/3 p-6 text-center space-y-4">
+                    <div className="rounded-2xl border border-purple-200 bg-white shadow-sm p-6 text-center space-y-4">
                         <Sk className="w-20 h-20 rounded-2xl mx-auto" />
                         <Sk className="h-14 w-20 mx-auto" />
                         <Sk className="h-3.5 w-28 mx-auto" />
@@ -498,7 +498,7 @@ export const SeatSkeleton = () => (
                     {/* Info rows */}
                     <div className="space-y-2.5">
                         {[...Array(3)].map((_, i) => (
-                            <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-white/3 border border-white/8">
+                            <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-white shadow-sm border border-gray-200">
                                 <Sk className="w-9 h-9 rounded-lg flex-shrink-0" />
                                 <div className="flex-1 space-y-1.5">
                                     <Sk className="h-2.5 w-16" />
@@ -508,11 +508,11 @@ export const SeatSkeleton = () => (
                         ))}
                     </div>
                     {/* Pricing */}
-                    <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+                    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
                         <Sk className="h-3 w-28 mb-4" />
                         <div className="space-y-2">
                             {[...Array(3)].map((_, i) => (
-                                <div key={i} className="flex justify-between items-center p-3 rounded-xl border border-white/8 bg-white/3">
+                                <div key={i} className="flex justify-between items-center p-3 rounded-xl border border-gray-200 bg-white shadow-sm">
                                     <div className="space-y-1">
                                         <Sk className="h-3.5 w-20" />
                                         <Sk className="h-3 w-28" />
@@ -526,7 +526,7 @@ export const SeatSkeleton = () => (
 
                 {/* Right: seat map */}
                 <div className="col-span-2">
-                    <div className="rounded-2xl border border-white/8 bg-white/3 p-6 h-full">
+                    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 h-full">
                         <div className="flex justify-between items-center mb-6">
                             <Sk className="h-6 w-44" />
                             <Sk className="h-6 w-24 rounded-full" />
@@ -534,7 +534,7 @@ export const SeatSkeleton = () => (
                         {/* Seat grid */}
                         <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(8, 1fr)' }}>
                             {[...Array(40)].map((_, i) => (
-                                <Sk key={i} className={`rounded-lg ${i === 12 ? 'ring-2 ring-purple-500/50' : ''}`} style={{ aspectRatio: '1 / 1' }} />
+                                <Sk key={i} className={`rounded-lg ${i === 12 ? 'ring-2 ring-orange-500/50' : ''}`} style={{ aspectRatio: '1 / 1' }} />
                             ))}
                         </div>
                         <Sk className="h-12 w-full rounded-xl mt-5" />
@@ -549,7 +549,7 @@ export const SeatSkeleton = () => (
 // 7. ADMIN DASHBOARD SKELETON  (AdminDashboard.jsx)
 // ─────────────────────────────────────────────────────────────────────────────
 export const AdminDashboardSkeleton = () => (
-    <div className="min-h-screen p-6" style={{ background: '#050508' }}>
+    <div className="min-h-screen p-6" style={{ background: '#f9fafb' }}>
         <div className="max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-10">
@@ -566,12 +566,12 @@ export const AdminDashboardSkeleton = () => (
             {/* Stat cards row */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[
-                    'from-purple-500/20 to-indigo-500/10',
-                    'from-green-500/20 to-emerald-500/10',
-                    'from-blue-500/20 to-cyan-500/10',
-                    'from-amber-500/20 to-orange-500/10',
+                    'from-purple-100 to-indigo-50',
+                    'from-green-100 to-emerald-50',
+                    'from-blue-100 to-cyan-50',
+                    'from-amber-100 to-orange-50',
                 ].map((grad, i) => (
-                    <div key={i} className="relative rounded-2xl p-5 border border-white/8 bg-white/3 overflow-hidden">
+                    <div key={i} className="relative rounded-2xl p-5 border border-gray-200 bg-white shadow-sm overflow-hidden">
                         <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${grad}`} />
                         <div className="flex items-start justify-between mb-4">
                             <Sk className="w-10 h-10 rounded-xl" />
@@ -594,8 +594,8 @@ export const AdminDashboardSkeleton = () => (
 // 8. ADMIN TABLE SKELETON  (StudentManagement, FeeManagement, etc.)
 // ─────────────────────────────────────────────────────────────────────────────
 export const AdminTableSkeleton = ({ embedded = false }) => (
-    <div className={embedded ? '' : 'min-h-screen p-6'} style={embedded ? {} : { background: '#050508' }}>
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-6">
+    <div className={embedded ? '' : 'min-h-screen p-6'} style={embedded ? {} : { background: '#f9fafb' }}>
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
             {/* Table header row */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
                 <Sk className="h-5 w-36" />
@@ -611,14 +611,14 @@ export const AdminTableSkeleton = ({ embedded = false }) => (
                 ))}
             </div>
             {/* Column headers */}
-            <div className="grid grid-cols-6 gap-4 pb-4 border-b border-white/8">
+            <div className="grid grid-cols-6 gap-4 pb-4 border-b border-gray-200">
                 {[40, 100, 80, 80, 70, 60].map((w, i) => (
                     <Sk key={i} className="h-3" style={{ maxWidth: w }} />
                 ))}
             </div>
             {/* Data rows */}
             {[...Array(8)].map((_, i) => (
-                <div key={i} className="grid grid-cols-6 gap-4 py-4 border-b border-white/5 last:border-0 items-center">
+                <div key={i} className="grid grid-cols-6 gap-4 py-4 border-b border-gray-100 last:border-0 items-center">
                     <Sk className="w-8 h-8 rounded-full" />
                     <Sk className="h-4" />
                     <Sk className="h-4 w-4/5" />
@@ -638,7 +638,7 @@ export const AdminTableSkeleton = ({ embedded = false }) => (
 // 9. NOTIFICATION SKELETON  (refined)
 // ─────────────────────────────────────────────────────────────────────────────
 const NotificationSkeleton = () => (
-    <div className="relative rounded-2xl border border-white/8 bg-white/5 overflow-hidden">
+    <div className="relative rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden">
         <div className="absolute left-0 top-0 bottom-0 w-1 skeleton" />
         <div className="p-5 flex gap-4">
             <Sk className="w-12 h-12 rounded-2xl flex-shrink-0" />
@@ -704,9 +704,9 @@ const ChatSkeleton = () => (
 export const PublicSeatViewSkeleton = () => (
     <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto dark relative">
         {/* Fixed full-screen background — blocks body CSS blobs */}
-        <div className="fixed inset-0 -z-10" style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.09) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.07) 0%, transparent 55%), #030712' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.09) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.07) 0%, transparent 55%), #f9fafb' }} />
         {/* Ambient blob */}
-        <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-600/8 blur-[140px] pointer-events-none -z-10" />
+        <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-400/10 blur-[140px] pointer-events-none -z-10" />
 
         {/* Floating login button placeholder */}
         <div className="fixed top-8 right-8 z-50">
@@ -731,7 +731,7 @@ export const PublicSeatViewSkeleton = () => (
 
             {/* Room card 1 — bigger grid */}
             <div className="space-y-6">
-                <div className="bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <div className="bg-white shadow-sm backdrop-blur-xl border border-gray-200 rounded-2xl p-6">
                     {/* Room header */}
                     <div className="flex items-center justify-between mb-6">
                         <div className="space-y-2">
@@ -757,7 +757,7 @@ export const PublicSeatViewSkeleton = () => (
                 </div>
 
                 {/* Room card 2 — smaller grid */}
-                <div className="bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <div className="bg-white shadow-sm backdrop-blur-xl border border-gray-200 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-6">
                         <div className="space-y-2">
                             <Sk className="h-5 w-28" />
@@ -781,13 +781,13 @@ export const PublicSeatViewSkeleton = () => (
                 </div>
 
                 {/* Floor Summary */}
-                <div className="bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                <div className="bg-white shadow-sm backdrop-blur-xl border border-gray-200 rounded-2xl p-6">
                     <Sk className="h-5 w-32 mb-5" />
                     <div className="grid grid-cols-3 gap-4">
-                        {['from-white/10 to-white/5', 'from-red-500/15 to-red-400/5', 'from-green-500/15 to-green-400/5'].map((grad, i) => (
+                        {['from-gray-100 to-gray-50', 'from-red-500/15 to-red-400/5', 'from-green-500/15 to-green-400/5'].map((grad, i) => (
                             <div
                                 key={i}
-                                className="rounded-xl p-4 text-center border border-white/8"
+                                className="rounded-xl p-4 text-center border border-gray-200"
                                 style={{ background: `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))` }}
                             >
                                 <Sk className="h-3 w-20 mx-auto mb-3" />
@@ -802,7 +802,7 @@ export const PublicSeatViewSkeleton = () => (
                     {[
                         { color: 'bg-green-500/30 border border-green-500/40', label: 'Available' },
                         { color: 'bg-red-500/30 border border-red-500/40', label: 'Occupied' },
-                        { color: 'bg-white/10 border border-white/10', label: 'Your Seat' },
+                        { color: 'bg-white/10 border border-gray-200', label: 'Your Seat' },
                     ].map(({ color, label }, i) => (
                         <div key={i} className="flex items-center gap-2">
                             <div className={`w-5 h-5 rounded-md ${color}`} />
@@ -819,7 +819,7 @@ export const PublicSeatViewSkeleton = () => (
 // LEGACY SKELETONS (kept for backward-compat, improved)
 // ─────────────────────────────────────────────────────────────────────────────
 const CardSkeleton = () => (
-    <div className="bg-white/3 border border-white/8 rounded-2xl p-5">
+    <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-5">
         <div className="flex items-center gap-3 mb-4">
             <Sk className="w-10 h-10 rounded-xl flex-shrink-0" />
             <Sk className="h-5 w-1/2" />
@@ -833,7 +833,7 @@ const CardSkeleton = () => (
 const StatsSkeleton = () => (
     <div className="grid grid-cols-2 gap-4">
         {[1, 2, 3, 4].map(i => (
-            <div key={i} className="bg-white/3 border border-white/8 rounded-2xl p-4 space-y-3">
+            <div key={i} className="bg-white shadow-sm border border-gray-200 rounded-2xl p-4 space-y-3">
                 <Sk className="w-10 h-10 rounded-xl" />
                 <Sk className="h-7 w-1/2" />
                 <Sk className="h-3.5 w-3/4" />
@@ -843,13 +843,13 @@ const StatsSkeleton = () => (
 );
 
 const TableSkeleton = () => (
-    <div className="bg-white/3 border border-white/8 rounded-2xl p-5">
+    <div className="bg-white shadow-sm border border-gray-200 rounded-2xl p-5">
         <Sk className="h-6 w-1/4 mb-5" />
-        <div className="grid grid-cols-4 gap-4 pb-3 border-b border-white/8">
+        <div className="grid grid-cols-4 gap-4 pb-3 border-b border-gray-200">
             {[...Array(4)].map((_, i) => <Sk key={i} className="h-3" />)}
         </div>
         {[...Array(5)].map((_, i) => (
-            <div key={i} className="grid grid-cols-4 gap-4 py-3.5 border-b border-white/5 last:border-0">
+            <div key={i} className="grid grid-cols-4 gap-4 py-3.5 border-b border-gray-100 last:border-0">
                 {[...Array(4)].map((_, j) => <Sk key={j} className="h-4" />)}
             </div>
         ))}
@@ -889,7 +889,7 @@ const SkeletonLoader = ({ type = 'card', count = 1 }) => {
 
 // ── Full-page generic skeleton (drop-in for any page) ────────────────────────
 export const PageSkeleton = ({ title = '', subtitle = '' }) => (
-    <div className="min-h-screen p-4 md:p-6 space-y-5 max-w-2xl mx-auto" style={{ background: '#050508' }}>
+    <div className="min-h-screen p-4 md:p-6 space-y-5 max-w-2xl mx-auto" style={{ background: '#f9fafb' }}>
         {/* Back + Header */}
         <div className="flex items-center gap-3">
             <Sk className="w-24 h-9 rounded-xl" />
