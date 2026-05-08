@@ -40,9 +40,9 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
         if (isDirectlyBooked || isDirectFullDayBooked)
             return { label: 'Occupied', color: 'bg-red-500/15 text-red-400 border-red-500/25' };
         if (isOverlapOccupied || (seat.isFullyBlocked && !isFullDayShift))
-            return { label: 'Not Available', color: 'bg-gray-500/15 text-gray-400 border-gray-500/25' };
+            return { label: 'Not Available', color: 'bg-gray-500/15 text-gray-500 border-gray-500/25' };
         if (isFullDayShift && isPartiallyBooked)
-            return { label: 'Not Available', color: 'bg-gray-500/15 text-gray-400 border-gray-500/25' };
+            return { label: 'Not Available', color: 'bg-gray-500/15 text-gray-500 border-gray-500/25' };
         return { label: 'Available', color: 'bg-green-500/15 text-green-400 border-green-500/25' };
     };
 
@@ -62,7 +62,7 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                 onClick={onClose}
             >
                 <motion.div
@@ -71,8 +71,8 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.93, opacity: 0, y: 20 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                    className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl"
-                    style={{ background: 'linear-gradient(160deg, rgba(13,13,22,0.99) 0%, rgba(18,18,30,0.99) 100%)' }}
+                    className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 shadow-2xl"
+                    style={{ background: '#ffffff' }}
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Top accent */}
@@ -86,19 +86,19 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                                 <IoBedOutline size={20} className="text-white" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-white">Seat {seat.number}</h2>
+                                <h2 className="text-xl font-bold text-gray-900">Seat {seat.number}</h2>
                                 <p className="text-xs text-gray-500 capitalize">{seat.position?.wall || 'Library'} wall</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white transition-all"
+                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-500 hover:text-gray-900 transition-all"
                         >
                             <IoClose size={18} />
                         </button>
                     </div>
 
-                    <div className="mx-6 h-px bg-white/6 mb-5" />
+                    <div className="mx-6 h-px bg-gray-100 mb-5" />
 
                     <div className="px-6 pb-6 space-y-4">
                         {/* Overall status pill */}
@@ -108,26 +108,26 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
                         </div>
 
                         {/* Shift availability */}
-                        <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                             <div className="flex items-center gap-2 mb-3">
                                 <IoTimeOutline size={16} className="text-orange-400" />
-                                <h3 className="text-sm font-semibold text-gray-300">Shift Availability & Pricing</h3>
+                                <h3 className="text-sm font-semibold text-gray-700">Shift Availability & Pricing</h3>
                             </div>
                             <div className="space-y-2">
                                 {shifts.map(shift => {
                                     const st = getShiftStatus(shift);
                                     const price = seat.basePrices?.[shift.id] || seat.shiftPrices?.[shift.id] || 800;
                                     return (
-                                        <div key={shift.id} className="flex items-center justify-between bg-white/3 rounded-lg px-3 py-2.5 border border-white/5">
+                                        <div key={shift.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2.5 border border-gray-100 shadow-sm">
                                             <div>
-                                                <p className="text-sm font-semibold text-white">{shift.name}</p>
+                                                <p className="text-sm font-semibold text-gray-900">{shift.name}</p>
                                                 <p className="text-[11px] text-gray-500">{shift.startTime} – {shift.endTime}</p>
                                             </div>
                                             <div className="text-right">
                                                 <span className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${st.color} mb-1`}>
                                                     {st.label}
                                                 </span>
-                                                <p className="text-sm font-bold text-gray-300">₹{price}</p>
+                                                <p className="text-sm font-bold text-gray-900">₹{price}</p>
                                             </div>
                                         </div>
                                     );
@@ -137,10 +137,10 @@ const SeatDetailsModal = ({ isOpen, onClose, seat }) => {
 
                         {/* Position */}
                         {seat.position && (
-                            <div className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3">
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3">
                                 <IoLocationOutline size={16} className="text-gray-500 shrink-0" />
-                                <p className="text-sm text-gray-400">
-                                    <span className="text-white font-medium capitalize">{seat.position.wall}</span> wall
+                                <p className="text-sm text-gray-500">
+                                    <span className="text-gray-900 font-medium capitalize">{seat.position.wall}</span> wall
                                     {seat.position.index !== undefined && ` · Position ${seat.position.index + 1}`}
                                 </p>
                             </div>
