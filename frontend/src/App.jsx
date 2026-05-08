@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useSocket } from './hooks/useSocket';
 import PwaInstallBanner from './components/ui/PwaInstallBanner';
+import { Analytics } from "@vercel/analytics/react"
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -27,7 +28,7 @@ const PageLoader = () => {
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center z-50"
             style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(249,115,22,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(239,68,68,0.08) 0%, transparent 60%), #030712' }}>
-
+            <Analytics />
             {/* Logo card */}
             <div className="relative flex flex-col items-center gap-6">
                 {/* Spinning ring */}
