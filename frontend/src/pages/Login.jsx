@@ -32,7 +32,7 @@ const Login = () => {
     useMobileViewport();
     const [email, setEmail]               = useState('');
     const [password, setPassword]         = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(true);
     const [error, setError]               = useState('');
     const [shake, setShake]               = useState(false);
     const [loading, setLoading]           = useState(false);
