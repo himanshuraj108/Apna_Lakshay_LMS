@@ -1088,11 +1088,11 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
 
 // ─── 4. Advanced Result Dashboard ───────────────────────────────────────
 const DashboardCSS = `
-.gl-card { background: rgba(25, 30, 48, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; }
-.g-text { background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.gl-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.g-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .circ-prog { width: 140px; height: 140px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
-.circ-prog::before { content: ""; position: absolute; inset: 10px; border-radius: 50%; background: #0b0f19; }
-.circ-val { position: relative; z-index: 10; font-size: 36px; font-weight: 900; color: white; }
+.circ-prog::before { content: ""; position: absolute; inset: 10px; border-radius: 50%; background: #ffffff; }
+.circ-val { position: relative; z-index: 10; font-size: 36px; font-weight: 900; }
 `;
 
 const ResultDashboard = ({ data, pattern, onRetry }) => {
@@ -1133,21 +1133,21 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
 
     if (isCheating) {
         return (
-            <div style={{ background: '#0b0f19', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '24px' }}>
-                <div style={{ background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: '24px', padding: '48px 32px', maxWidth: '600px', textAlign: 'center', backdropFilter: 'blur(16px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-                    <div style={{ width: '100px', height: '100px', background: 'rgba(220,38,38,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <div style={{ background: '#FEF2F2', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '24px' }}>
+                <div style={{ background: 'white', border: '1px solid #fecaca', borderRadius: '24px', padding: '48px 32px', maxWidth: '600px', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)' }}>
+                    <div style={{ width: '100px', height: '100px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
                         <IoAlertCircleOutline size={64} color="#ef4444" />
                     </div>
-                    <h1 style={{ color: '#fef2f2', fontSize: '36px', fontWeight: '900', marginBottom: '16px', letterSpacing: '-1px' }}>Test Terminated</h1>
-                    <p style={{ color: '#fca5a5', fontSize: '16px', lineHeight: '1.6', marginBottom: '32px' }}>
+                    <h1 style={{ color: '#0f172a', fontSize: '36px', fontWeight: '900', marginBottom: '16px', letterSpacing: '-1px' }}>Test Terminated</h1>
+                    <p style={{ color: '#64748b', fontSize: '16px', lineHeight: '1.6', marginBottom: '32px' }}>
                         Your mock exam was automatically submitted due to repeated exits from the full-screen environment. This violates the examination protocol and your session is deemed incomplete.
                     </p>
-                    <div style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', padding: '16px', borderRadius: '12px', fontWeight: '900', fontSize: '20px', letterSpacing: '4px', textTransform: 'uppercase', boxShadow: '0 10px 25px rgba(220,38,38,0.4)', marginBottom: '40px' }}>
+                    <div style={{ background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: 'white', padding: '16px', borderRadius: '12px', fontWeight: '900', fontSize: '20px', letterSpacing: '4px', textTransform: 'uppercase', boxShadow: '0 10px 25px rgba(220,38,38,0.3)', marginBottom: '40px' }}>
                         RESULT: INVALID / CHEATING
                     </div>
                     <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                        <button onClick={onRetry} style={{ padding: '14px 28px', background: 'transparent', color: '#fca5a5', border: '2px solid #dc2626', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', transition: 'all 0.2s' }}>ATTEMPT AGAIN</button>
-                        <Link to="/student"><button style={{ padding: '14px 28px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', backdropFilter: 'blur(4px)', transition: 'all 0.2s' }}>DASHBOARD</button></Link>
+                        <button onClick={onRetry} style={{ padding: '14px 28px', background: 'white', color: '#dc2626', border: '2px solid #dc2626', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', transition: 'all 0.2s' }}>ATTEMPT AGAIN</button>
+                        <Link to="/student"><button style={{ padding: '14px 28px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '800', transition: 'all 0.2s' }}>DASHBOARD</button></Link>
                     </div>
                 </div>
             </div>
@@ -1155,18 +1155,18 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
     }
 
     return (
-        <div style={{ background: '#0b0f19', minHeight: '100vh', color: 'white', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ background: '#F8FAFC', minHeight: '100vh', color: '#1e293b', fontFamily: 'Inter, sans-serif' }}>
             <style>{DashboardCSS}</style>
             <style>{MOBILE_CSS}</style>
 
             {/* Header */}
-            <div className="result-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.5)', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(10px)' }}>
+            <div className="result-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
                 <div>
                     <h1 style={{ fontSize: '22px', fontWeight: '900', margin: 0 }}><span className="g-text">Analytics Report</span></h1>
-                    <div style={{ color: '#94a3b8', fontSize: '13px', marginTop: '4px' }}>{pattern.name}</div>
+                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>{pattern.name}</div>
                 </div>
                 <div className="result-header-btns" style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={onRetry} style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Start New Test</button>
+                    <button onClick={onRetry} style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Start New Test</button>
                     <Link to="/student"><button style={{ padding: '10px 20px', background: 'linear-gradient(to right, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Exit to Dashboard</button></Link>
                 </div>
             </div>
@@ -1180,8 +1180,8 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                         <div className="circ-prog" style={{ background: `conic-gradient(${gradeColor} ${globalPct}%, rgba(255,255,255,0.05) 0)` }}>
                             <div className="circ-val" style={{ color: gradeColor }}>{globalPct}<span style={{ fontSize: '18px' }}>%</span></div>
                         </div>
-                        <h2 style={{ fontSize: '20px', fontWeight: '800', marginTop: '20px', marginBottom: '4px' }}>Normalized Score</h2>
-                        <div style={{ color: '#94a3b8', fontSize: '14px' }}>{totalScore.toFixed(2)} out of {globalMaxScore} Marks</div>
+                        <h2 style={{ fontSize: '20px', fontWeight: '800', marginTop: '20px', marginBottom: '4px', color: '#0f172a' }}>Normalized Score</h2>
+                        <div style={{ color: '#64748b', fontSize: '14px' }}>{totalScore.toFixed(2)} out of {globalMaxScore} Marks</div>
                     </div>
 
                     {/* Stats Grid */}
@@ -1214,15 +1214,15 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                         </h2>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
                             {sectionStats.map((sec, idx) => (
-                                <div key={idx} style={{ background: 'rgba(0,0,0,0.3)', padding: '20px', borderRadius: '12px' }}>
+                                <div key={idx} style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                        <b style={{ fontSize: '14px', color: '#e2e8f0' }}>{sec.name}</b>
+                                        <b style={{ fontSize: '14px', color: '#1e293b' }}>{sec.name}</b>
                                         <b style={{ fontSize: '14px', color: sec.pct >= 60 ? '#4ade80' : sec.pct >= 40 ? '#fbbf24' : '#f87171' }}>{sec.pct}%</b>
                                     </div>
-                                    <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
+                                    <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
                                         <div style={{ height: '100%', width: `${sec.pct}%`, background: sec.pct >= 60 ? '#4ade80' : sec.pct >= 40 ? '#fbbf24' : '#f87171', borderRadius: '4px' }}></div>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b' }}>
                                         <span>Score: {sec.score.toFixed(1)} / {sec.maxScore}</span>
                                         <span>{sec.correct} C / {sec.wrong} W</span>
                                     </div>
@@ -1245,14 +1245,14 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                             const isSkipped = r.selected === null || r.selected === undefined;
 
                             return (
-                                <div key={i} style={{ background: expandedQ === i ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', overflow: 'hidden', transition: 'all 0.2s' }}>
-                                    <button onClick={() => setExpandedQ(expandedQ === i ? null : i)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '16px', color: 'white' }}>
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isSkipped ? '#475569' : isCorrect ? 'rgba(74,222,128,0.2)' : 'rgba(248,113,113,0.2)', color: isSkipped ? 'white' : isCorrect ? '#4ade80' : '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                                <div key={i} style={{ background: expandedQ === i ? '#f8fafc' : 'white', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', transition: 'all 0.2s' }}>
+                                    <button onClick={() => setExpandedQ(expandedQ === i ? null : i)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '16px', color: '#1e293b' }}>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isSkipped ? '#f1f5f9' : isCorrect ? '#dcfce7' : '#fee2e2', color: isSkipped ? '#64748b' : isCorrect ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
                                             {isSkipped ? '—' : isCorrect ? <IoCheckmarkCircle size={18} /> : <IoCloseCircle size={18} />}
                                         </div>
                                         <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: '800', textTransform: 'uppercase', marginBottom: '4px' }}>{r.sectionName} — Q{r.id}</div>
-                                            <div style={{ fontSize: '14px', lineHeight: '1.6', fontWeight: '500', color: '#e2e8f0' }}>{r.question}</div>
+                                            <div style={{ fontSize: '14px', lineHeight: '1.6', fontWeight: '500', color: '#1e293b' }}>{r.question}</div>
                                         </div>
                                     </button>
 
@@ -1263,26 +1263,26 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                                                     const isSelected = j === r.selected;
                                                     const isActualCorrect = j === r.correct;
 
-                                                    let bg = 'rgba(255,255,255,0.02)';
-                                                    let brd = 'rgba(255,255,255,0.05)';
-                                                    let txt = '#94a3b8';
+                                                    let bg = '#f8fafc';
+                                                    let brd = '#e2e8f0';
+                                                    let txt = '#64748b';
 
-                                                    if (isActualCorrect) { bg = 'rgba(74,222,128,0.1)'; brd = 'rgba(74,222,128,0.3)'; txt = '#4ade80'; }
-                                                    else if (isSelected) { bg = 'rgba(248,113,113,0.1)'; brd = 'rgba(248,113,113,0.3)'; txt = '#f87171'; }
+                                                    if (isActualCorrect) { bg = '#dcfce7'; brd = '#86efac'; txt = '#16a34a'; }
+                                                    else if (isSelected) { bg = '#fee2e2'; brd = '#fca5a5'; txt = '#dc2626'; }
 
                                                     return (
                                                         <div key={j} style={{ padding: '10px 14px', borderRadius: '8px', border: `1px solid ${brd}`, background: bg, color: txt, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                             <span><b style={{ opacity: 0.7, marginRight: '8px' }}>{['A', 'B', 'C', 'D'][j]}.</b> {opt}</span>
-                                                            {isActualCorrect && <span style={{ fontSize: '10px', background: 'rgba(74,222,128,0.2)', padding: '2px 8px', borderRadius: '4px' }}>✓ Correct Option</span>}
-                                                            {isSelected && !isActualCorrect && <span style={{ fontSize: '10px', background: 'rgba(248,113,113,0.2)', padding: '2px 8px', borderRadius: '4px' }}>✗ Your Choice</span>}
+                                                            {isActualCorrect && <span style={{ fontSize: '10px', background: '#bbf7d0', padding: '2px 8px', borderRadius: '4px', color: '#16a34a', fontWeight: '600' }}>✓ Correct Option</span>}
+                                                            {isSelected && !isActualCorrect && <span style={{ fontSize: '10px', background: '#fecaca', padding: '2px 8px', borderRadius: '4px', color: '#dc2626', fontWeight: '600' }}>✗ Your Choice</span>}
                                                         </div>
                                                     )
                                                 })}
                                             </div>
                                             {r.explanation && (
-                                                <div style={{ background: 'rgba(59,130,246,0.1)', borderLeft: '3px solid #3b82f6', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
-                                                    <b style={{ color: '#60a5fa', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Solution / Explanation:</b>
-                                                    <span style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: '1.6' }}>{r.explanation}</span>
+                                                <div style={{ background: '#eff6ff', borderLeft: '3px solid #3b82f6', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
+                                                    <b style={{ color: '#2563eb', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Solution / Explanation:</b>
+                                                    <span style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>{r.explanation}</span>
                                                 </div>
                                             )}
                                         </div>
