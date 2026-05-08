@@ -276,7 +276,7 @@ const AdminDashboard = () => {
                                                             </button>
                                                         </div>
                                                     )}
-                                                     {pinMsg && <p className={`text-xs mt-1.5 ${pinMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>{pinMsg}</p>}
+                                                    {pinMsg && <p className={`text-xs mt-1.5 ${pinMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>{pinMsg}</p>}
                                                 </div>
 
                                                 {/* Row 4 — Time Restriction */}
