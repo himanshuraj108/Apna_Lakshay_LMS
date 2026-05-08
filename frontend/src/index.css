@@ -26,7 +26,7 @@
     height: 60vh;
     background: radial-gradient(
       circle,
-      rgba(147, 51, 234, 0.2) 0%,
+      rgba(249, 115, 22, 0.1) 0%,
       transparent 70%
     );
     filter: blur(100px);
@@ -66,7 +66,7 @@
   }
 
   * {
-    @apply scrollbar-thin scrollbar-thumb-primary-600 scrollbar-track-gray-800;
+    @apply scrollbar-thin scrollbar-thumb-orange-400 scrollbar-track-gray-100;
   }
 }
 
@@ -92,13 +92,13 @@
   }
 
   .input:focus {
-    @apply bg-white/15;
+    @apply bg-white border-orange-500 ring-2 ring-orange-500/50;
   }
 
   /* Select and option styling */
   select.input {
     cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     background-size: 1.25rem;
@@ -109,21 +109,22 @@
   }
 
   select.input option {
-    background-color: #1e293b;
-    color: white;
+    background-color: #ffffff;
+    color: #111827;
     padding: 0.75rem;
   }
 
   select.input option:hover,
   select.input option:focus,
   select.input option:checked {
-    background-color: #334155;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-color: #f97316;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    color: white;
   }
 
   select.input option:disabled {
-    color: #64748b;
-    background-color: #0f172a;
+    color: #9ca3af;
+    background-color: #f3f4f6;
   }
 
   .badge-green {
@@ -158,24 +159,25 @@
   height: 8px;
 }
 
-.scrollbar-thumb-primary-600::-webkit-scrollbar-thumb {
-  @apply bg-primary-600 rounded-full;
+.scrollbar-thumb-orange-400::-webkit-scrollbar-thumb {
+  @apply bg-orange-400 rounded-full hover:bg-orange-500;
 }
 
-.scrollbar-track-gray-800::-webkit-scrollbar-track {
-  @apply bg-gray-800 rounded-full;
+.scrollbar-track-gray-100::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
 }
 
 /* ─── Skeleton / Shimmer ─────────────────────────────────────────────────────*/
 .skeleton {
-  background: linear-gradient(
+  background-color: #e5e7eb; /* gray-200 base */
+  background-image: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.12) 40%,
-    rgba(255, 255, 255, 0.04) 80%
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.6) 40%,
+    rgba(255, 255, 255, 0) 80%
   );
   background-size: 300% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
+  animation: shimmer 1.5s infinite linear;
 }
 
 @keyframes shimmer {
