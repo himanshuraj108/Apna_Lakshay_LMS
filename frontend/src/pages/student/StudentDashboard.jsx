@@ -175,9 +175,9 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                                     className="text-lg font-extrabold rounded-2xl shadow-2xl select-none text-center"
                                     style={{
                                         padding: '10px 22px',
-                                        background: '#0e1015',
-                                        border: '1px solid rgba(255,255,255,0.13)',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.8)',
+                                        background: '#ffffff',
+                                        border: '1px solid rgba(0,0,0,0.10)',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
                                         whiteSpace: 'nowrap',
                                     }}
                                 >
@@ -258,21 +258,21 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
 const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#111827] border border-amber-500/25 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
+            className="bg-white border border-amber-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-500 to-orange-500" />
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white"><IoCloseCircle size={22} /></button>
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800"><IoCloseCircle size={22} /></button>
             <div className="text-center mt-2 mb-5">
                 <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto mb-3">
                     <IoAlertCircleOutline className="text-amber-400 text-3xl" />
                 </div>
-                <h3 className="text-white font-bold text-lg">Location Access Needed</h3>
-                <p className="text-gray-400 text-sm mt-2 leading-relaxed">Your attendance needs your location. Click <span className="text-amber-400 font-semibold">Enable Location</span> and allow access in the browser prompt.</p>
+                <h3 className="text-gray-900 font-bold text-lg">Location Access Needed</h3>
+                <p className="text-gray-600 text-sm mt-2 leading-relaxed">Your attendance needs your location. Click <span className="text-amber-600 font-semibold">Enable Location</span> and allow access in the browser prompt.</p>
             </div>
             <button onClick={onEnable} disabled={enabling}
                 className={`w-full py-3 mb-2.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${enabling ? 'bg-gray-600 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-90 shadow-lg shadow-emerald-500/25'}`}>
                 {enabling ? <><IoTimeOutline size={16} className="animate-spin" />Requestingâ€¦</> : <><IoLocation size={16} />Enable Location</>}
             </button>
-            <button onClick={onClose} className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-300 hover:bg-white/5 rounded-xl transition-all font-medium">Dismiss</button>
+            <button onClick={onClose} className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all font-medium">Dismiss</button>
         </motion.div>
     </div>
 );
@@ -283,10 +283,10 @@ const AttendanceResultCard = ({ result, onClose }) => {
     const isAlreadyMarked = result.type === 'already_marked';
     const att = result.attendance || {};
     const theme = isEntry
-        ? { bg: 'linear-gradient(145deg,#0a1f14,#0d2b1c)', border: 'rgba(52,211,153,0.3)', bar: 'from-emerald-400 to-teal-400', iconBg: 'linear-gradient(135deg,#10b981,#14b8a6)', text: '#34d399', chipBg: 'rgba(16,185,129,0.1)', chipBorder: 'rgba(16,185,129,0.25)', glow: '#34d399' }
+        ? { bg: '#ffffff', border: '#a7f3d0', bar: 'from-emerald-400 to-teal-400', iconBg: 'linear-gradient(135deg,#10b981,#14b8a6)', text: '#059669', glow: '#d1fae5' }
         : isAlreadyMarked
-            ? { bg: 'linear-gradient(145deg,#1a1000,#221600)', border: 'rgba(245,158,11,0.3)', bar: 'from-amber-400 to-orange-400', iconBg: 'linear-gradient(135deg,#f59e0b,#ea580c)', text: '#fbbf24', chipBg: 'rgba(245,158,11,0.1)', chipBorder: 'rgba(245,158,11,0.25)', glow: '#fcd34d' }
-            : { bg: 'linear-gradient(145deg,#0a1424,#0d1f38)', border: 'rgba(99,102,241,0.3)', bar: 'from-indigo-400 to-blue-400', iconBg: 'linear-gradient(135deg,#6366f1,#3b82f6)', text: '#818cf8', chipBg: 'rgba(99,102,241,0.1)', chipBorder: 'rgba(99,102,241,0.25)', glow: '#818cf8' };
+            ? { bg: '#ffffff', border: '#fde68a', bar: 'from-amber-400 to-orange-400', iconBg: 'linear-gradient(135deg,#f59e0b,#ea580c)', text: '#d97706', glow: '#fef3c7' }
+            : { bg: '#ffffff', border: '#c7d2fe', bar: 'from-indigo-400 to-blue-400', iconBg: 'linear-gradient(135deg,#6366f1,#3b82f6)', text: '#4f46e5', glow: '#e0e7ff' };
 
     return (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -301,46 +301,46 @@ const AttendanceResultCard = ({ result, onClose }) => {
                         </div>
                         <div>
                             <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: theme.text }}>{isEntry ? 'Entry Marked' : isAlreadyMarked ? 'Already Marked' : 'Exit Marked'}</p>
-                            <h3 className="text-white font-black text-xl">{isEntry ? 'Welcome In' : isAlreadyMarked ? 'Attendance Complete' : 'See You Next Time'}</h3>
+                            <h3 className="text-gray-900 font-black text-xl">{isEntry ? 'Welcome In' : isAlreadyMarked ? 'Attendance Complete' : 'See You Next Time'}</h3>
                         </div>
                     </div>
                     <div className="space-y-2.5 mb-5">
                         {isAlreadyMarked && (
-                            <p className="text-sm text-gray-300 leading-relaxed mb-3">
+                            <p className="text-sm text-gray-600 leading-relaxed mb-3">
                                 You have already completed your attendance for today.
                             </p>
                         )}
                         {/* Entry Time — always shown if present */}
                         {att.entryTime && (
-                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                            <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
                                 <span className="text-xs text-gray-400 uppercase tracking-wider">Entry</span>
-                                <span className="text-sm font-bold text-emerald-400">{att.entryTime}</span>
+                                <span className="text-sm font-bold text-emerald-600">{att.entryTime}</span>
                             </div>
                         )}
                         {/* Exit Time — show for exit and already_marked */}
                         {(isAlreadyMarked || result.type === 'exit') && att.exitTime && (
-                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                            <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
                                 <span className="text-xs text-gray-400 uppercase tracking-wider">Exit</span>
-                                <span className="text-sm font-bold text-red-400">{att.exitTime}</span>
+                                <span className="text-sm font-bold text-red-600">{att.exitTime}</span>
                             </div>
                         )}
                         {/* Duration — show for exit and already_marked */}
                         {(isAlreadyMarked || result.type === 'exit') && att.duration > 0 && (
                             <div className="flex items-center justify-between rounded-xl px-4 py-2.5 border"
-                                style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.2)' }}>
+                                style={{ background: '#e0e7ff', borderColor: '#c7d2fe' }}>
                                 <span className="flex items-center gap-2 text-xs uppercase tracking-wider" style={{ color: '#818cf8' }}>
                                     <IoTimerOutline size={13} />Duration
                                 </span>
-                                <span className="text-sm font-black" style={{ color: '#a5b4fc' }}>
+                                <span className="text-sm font-black" style={{ color: '#4f46e5' }}>
                                     {Math.floor(att.duration / 60)}h {att.duration % 60}m
                                 </span>
                             </div>
                         )}
                         {/* Notes — show for already_marked if present */}
                         {isAlreadyMarked && att.notes && (
-                            <div className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-2.5 border border-white/5">
+                            <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-100">
                                 <span className="text-xs text-gray-400 uppercase tracking-wider">Note</span>
-                                <span className="text-xs text-amber-400 font-medium text-right max-w-[60%]">{att.notes}</span>
+                                <span className="text-xs text-amber-600 font-medium text-right max-w-[60%]">{att.notes}</span>
                             </div>
                         )}
                     </div>
@@ -524,7 +524,7 @@ const StudentDashboard = () => {
 
     /* â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) return (
-        <div className="relative min-h-screen" style={{ background: '#070a10' }}>
+        <div className="relative min-h-screen" style={{ background: '#F8FAFC' }}>
             <style>{DASH_STYLE}</style>
             <div className="relative z-10"><DashboardSkeleton /></div>
             {!showScanner && <SpeedDialFAB loading={loadingScanner} onCamera={handleOpenScanner} onManual={handleWithoutCamera} manualEnabled={manualMarkEnabled} />}
@@ -564,21 +564,21 @@ const StudentDashboard = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 40 }}
                             className="w-full max-w-sm rounded-2xl p-6 shadow-2xl relative"
-                            style={{ background: 'linear-gradient(135deg,#0f1117,#12141c)', border: '1px solid rgba(251,191,36,0.2)' }}
+                            style={{ background: '#ffffff', border: '1px solid #fde68a' }}
                         >
                             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-t-2xl" />
                             <div className="flex items-center justify-between mb-5">
                                 <div className="flex items-center gap-2">
                                     <div className="p-2 bg-amber-500/10 rounded-xl"><IoKeypadOutline size={18} className="text-amber-400" /></div>
                                     <div>
-                                        <h3 className="text-white font-bold text-base">Manual Attendance</h3>
-                                        <p className="text-gray-500 text-xs">
+                                        <h3 className="text-gray-900 font-bold text-base">Manual Attendance</h3>
+                                        <p className="text-gray-600 text-xs">
                                             {pinEnabled ? 'Enter the daily PIN from your admin' : 'Click below to mark your attendance'}
                                         </p>
                                     </div>
                                 </div>
                                 <button onClick={() => { setShowPinModal(false); setPinValue(''); setPinError(''); }}
-                                    className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
+                                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-800 transition-colors">
                                     <IoCloseCircle size={20} />
                                 </button>
                             </div>
@@ -595,20 +595,20 @@ const StudentDashboard = () => {
                                         onKeyDown={e => e.key === 'Enter' && handlePinAttendance()}
                                         placeholder="Enter PIN"
                                         autoFocus
-                                        className="flex-1 bg-white/5 border border-white/10 focus:border-amber-500/50 text-white text-lg font-bold tracking-widest rounded-xl px-4 py-3 outline-none placeholder-gray-700 text-center"
+                                        className="flex-1 bg-gray-50 border border-gray-200 focus:border-amber-400 text-gray-900 text-lg font-bold tracking-widest rounded-xl px-4 py-3 outline-none placeholder-gray-400 text-center"
                                     />
                                 </div>
                             )}
 
                             {/* Direct mode info — shown when PIN is OFF */}
                             {!pinEnabled && (
-                                <div className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/15 rounded-xl px-4 py-3 mb-4">
-                                    <IoFlashOutline size={18} className="text-amber-400 shrink-0" />
-                                    <p className="text-amber-200/80 text-sm">Your attendance will be marked instantly without a PIN.</p>
+                                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                                    <IoFlashOutline size={18} className="text-amber-500 shrink-0" />
+                                    <p className="text-amber-700 text-sm">Your attendance will be marked instantly without a PIN.</p>
                                 </div>
                             )}
 
-                            {pinError && <p className="text-red-400 text-xs text-center mb-3">{pinError}</p>}
+                            {pinError && <p className="text-red-600 text-xs text-center mb-3">{pinError}</p>}
 
                             <button
                                 onClick={pinEnabled ? handlePinAttendance : handleDirectMark}
@@ -626,20 +626,20 @@ const StudentDashboard = () => {
                 )}
                 {showFeeReminder && dashboardData?.feeReminder && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#111827] border border-red-500/25 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+                        <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-red-100 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
                             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-orange-500 rounded-t-2xl" />
                             <div className="text-center mt-2 mb-5">
                                 <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-3"><IoNotificationsOutline className="text-red-400 text-2xl" /></div>
-                                <h3 className="text-white font-bold text-lg">Fee Reminder</h3>
-                                <p className="text-gray-400 text-sm mt-1">{dashboardData.feeReminder.message}</p>
+                                <h3 className="text-gray-900 font-bold text-lg">Fee Reminder</h3>
+                                <p className="text-gray-600 text-sm mt-1">{dashboardData.feeReminder.message}</p>
                             </div>
-                            <div className="flex justify-between items-center bg-white/4 p-4 rounded-xl mb-5 border border-white/8">
+                            <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl mb-5 border border-gray-100">
                                 <span className="text-gray-500 text-xs uppercase tracking-wider">Amount Due</span>
-                                <span className="text-2xl font-black text-white">₹{dashboardData.feeReminder.amount}</span>
+                                <span className="text-2xl font-black text-gray-900">₹{dashboardData.feeReminder.amount}</span>
                             </div>
                             {dashboardData.onlinePaymentEnabled ? (
                                 <div className="flex gap-3">
-                                    <button onClick={() => setShowFeeReminder(false)} className="flex-1 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">Later</button>
+                                    <button onClick={() => setShowFeeReminder(false)} className="flex-1 py-3 bg-gray-50 border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-100 transition-colors">Later</button>
                                     <Link to="/student/fees?pay=now" onClick={() => setShowFeeReminder(false)} className="flex-1 block text-center py-3 bg-gradient-to-r from-orange-500 to-red-500 shadow-lg shadow-orange-500/20 text-white font-bold rounded-xl hover:opacity-90 transition-opacity">Pay</Link>
                                 </div>
                             ) : (
@@ -672,9 +672,6 @@ const StudentDashboard = () => {
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
                     {/* Brand */}
                     <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#F97316' }}>
-                            <IoLibraryOutline size={14} style={{ color: '#fff' }} />
-                        </div>
                         <span className="font-bold text-sm" style={{ color: '#111827' }}>Apna <span style={{ color: '#F97316' }}>Lakshay</span></span>
                     </div>
 
@@ -738,16 +735,16 @@ const StudentDashboard = () => {
                     className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
                 >
                     <Link to="/student/seat">
-                        <div className="group rounded-xl p-4 bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer h-full" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div className="group relative overflow-hidden rounded-xl p-4 bg-white border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all duration-200 cursor-pointer h-full" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.1)' }}>
-                                    <IoBedOutline size={14} className="text-blue-500" />
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                                    <span className="text-orange-500 font-bold text-xs">#</span>
                                 </div>
                                 <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>My Seat</span>
                             </div>
                             <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>{dashboardData?.seat?.number || '—'}</p>
                             {dashboardData?.seat?.shifts && dashboardData.seat.shifts.length > 0 ? (
-                                <div className="flex flex-wrap gap-1 mt-1">
+                                <div className="flex flex-wrap gap-1 mt-1 z-10 relative">
                                     {dashboardData.seat.shifts.map((s, i) => (
                                         <span key={i} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
                                             style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#059669' }}>
@@ -756,7 +753,22 @@ const StudentDashboard = () => {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-[11px]" style={{ color: '#9CA3AF' }}>{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
+                                <p className="text-[11px] z-10 relative" style={{ color: '#9CA3AF' }}>{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
+                            )}
+
+                            {dashboardData?.seat?.number && (
+                                <div className="absolute top-8 right-2 flex items-center justify-center w-[48px] h-[48px] transform rotate-[-18deg] border-[2px] border-emerald-600 text-emerald-600 rounded-full pointer-events-none mix-blend-multiply opacity-60">
+                                    <div className="absolute inset-[1.5px] border-[0.5px] border-emerald-600 rounded-full" />
+                                    <div className="flex flex-col items-center justify-center w-full">
+                                        <p className="font-bold text-[3.5px] tracking-[0.1em] uppercase text-center leading-[1.2] mb-[1px]">
+                                            APNA LAKSHAY<br/>LIBRARY
+                                        </p>
+                                        <div className="w-[85%] h-[0.5px] bg-emerald-600 mb-[1px]" />
+                                        <p className="font-black text-[5.5px] tracking-widest uppercase text-center" style={{ transform: 'scaleY(1.2)' }}>
+                                            CONFIRMED
+                                        </p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </Link>
