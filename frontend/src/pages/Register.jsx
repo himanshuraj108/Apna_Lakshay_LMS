@@ -11,10 +11,10 @@ import {
 import useMobileViewport from '../hooks/useMobileViewport';
 
 const FEATURES = [
-    { icon: IoBookOutline,     text: 'Smart seat assignment & real-time availability' },
+    { icon: IoBookOutline, text: 'Smart seat assignment & real-time availability' },
     { icon: IoCalendarOutline, text: 'Automated attendance with QR & geo-verification' },
     { icon: IoSparklesOutline, text: 'AI-powered mock tests for competitive exams' },
-    { icon: IoPeopleOutline,   text: 'Live discussion rooms & study collaboration' },
+    { icon: IoPeopleOutline, text: 'Live discussion rooms & study collaboration' },
 ];
 
 const Orb = ({ style, className }) => (
@@ -27,13 +27,13 @@ const Register = () => {
     const [formData, setFormData] = useState({
         name: '', email: '', mobile: '', address: '', password: '', confirmPassword: ''
     });
-    const [loading, setLoading]           = useState(false);
-    const [error, setError]               = useState('');
-    const [success, setSuccess]           = useState('');
-    const [emailError, setEmailError]     = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [emailError, setEmailError] = useState('');
     const [checkingEmail, setCheckingEmail] = useState(false);
-    const [showPass, setShowPass]         = useState(true);
-    const [showConfirm, setShowConfirm]   = useState(true);
+    const [showPass, setShowPass] = useState(true);
+    const [showConfirm, setShowConfirm] = useState(true);
 
     const checkEmailAvailability = async (email) => {
         if (!email || !email.includes('@')) { setEmailError(''); return; }
@@ -58,9 +58,9 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(''); setSuccess('');
-        if (emailError)                                      { setError('Please use a different email address'); return; }
-        if (formData.password !== formData.confirmPassword)  { setError('Passwords do not match'); return; }
-        if (formData.password.length < 6)                   { setError('Password must be at least 6 characters'); return; }
+        if (emailError) { setError('Please use a different email address'); return; }
+        if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return; }
+        if (formData.password.length < 6) { setError('Password must be at least 6 characters'); return; }
         setLoading(true);
         try {
             const res = await api.post('/public/register', formData);
@@ -80,7 +80,7 @@ const Register = () => {
         border: '1.5px solid #D1D5DB',
         color: '#111827',
     };
-    const focusIn  = e => { e.target.style.border = '1.5px solid #F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.12)'; };
+    const focusIn = e => { e.target.style.border = '1.5px solid #F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.12)'; };
     const focusOut = e => { e.target.style.border = '1.5px solid #D1D5DB'; e.target.style.boxShadow = 'none'; };
 
     return (
@@ -90,10 +90,10 @@ const Register = () => {
             {/* ══ LEFT BRAND PANEL — desktop only ══ */}
             <div className="hidden lg:flex lg:w-[45%] xl:w-[48%] relative flex-col justify-between p-10 xl:p-14 overflow-hidden" style={{ background: '#FFF8F3', borderRight: '1px solid #FED7AA' }}>
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, #F97316, #FB923C, #FDBA74)' }} />
-                
-                
-                
-                
+
+
+
+
 
                 <div className="relative z-10">
                     {/* Brand */}
@@ -144,8 +144,8 @@ const Register = () => {
             {/* ══ RIGHT FORM PANEL ══ */}
             <div className="flex-1 flex flex-col items-center justify-center relative px-5 sm:px-8 py-8 overflow-y-auto"
                 style={{ background: '#fff' }}>
-                
-                
+
+
 
                 {/* Mobile: brand + back link */}
                 <div className="lg:hidden w-full max-w-sm mb-4 relative z-10">

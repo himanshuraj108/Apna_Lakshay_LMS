@@ -12,7 +12,7 @@ import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
 
 const STATS = [
     { value: '100+', label: 'Students' },
-    { value: '95%',  label: 'Satisfaction' },
+    { value: '95%', label: 'Satisfaction' },
     { value: '24/7', label: 'Access' },
 ];
 
@@ -37,17 +37,17 @@ const Field = ({ label, id, children }) => (
 export default function Login() {
     useMobileViewport();
 
-    const [email, setEmail]               = useState('');
-    const [password, setPassword]         = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(true);
-    const [error, setError]               = useState('');
-    const [shake, setShake]               = useState(false);
-    const [loading, setLoading]           = useState(false);
-    const [focused, setFocused]           = useState('');
+    const [error, setError] = useState('');
+    const [shake, setShake] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [focused, setFocused] = useState('');
 
-    const { login }  = useAuth();
-    const navigate   = useNavigate();
-    const location   = useLocation();
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         if (location.state?.email && location.state?.password) {
@@ -57,8 +57,8 @@ export default function Login() {
         }
     }, [location.state]);
 
-    
-        const handleEmailChange = (e) => {
+
+    const handleEmailChange = (e) => {
         let val = e.target.value;
         if (/^[\d\s]+$/.test(val)) {
             val = val.replace(/\D/g, '');
@@ -67,7 +67,7 @@ export default function Login() {
         setEmail(val);
     };
 
-const progress = (() => {
+    const progress = (() => {
         let eProg = 0;
         if (email.length > 0) {
             if (/^\d+$/.test(email)) {
@@ -157,17 +157,21 @@ const progress = (() => {
 
                     {/* Pill badge */}
                     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px',
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px',
                             background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)',
-                            borderRadius: 100, marginBottom: 24, width: 'fit-content' }}>
+                            borderRadius: 100, marginBottom: 24, width: 'fit-content'
+                        }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F97316', flexShrink: 0 }} className="animate-pulse" />
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#EA6B00', letterSpacing: '0.04em' }}>Trusted by 100+ students</span>
                     </motion.div>
 
                     {/* Headline */}
                     <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
-                        style={{ fontSize: 'clamp(1.9rem, 2.8vw, 2.6rem)', fontWeight: 900,
-                            color: '#111827', lineHeight: 1.15, marginBottom: 16 }}>
+                        style={{
+                            fontSize: 'clamp(1.9rem, 2.8vw, 2.6rem)', fontWeight: 900,
+                            color: '#111827', lineHeight: 1.15, marginBottom: 16
+                        }}>
                         Your Study Space,<br />
                         <span style={{ color: '#F97316' }}>All in One Place.</span>
                     </motion.h1>
@@ -213,17 +217,17 @@ const progress = (() => {
                ══════════════════════════════════════════ */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', background: '#fff', position: 'relative', overflow: 'hidden' }}>
                 {/* Typing Interactive Animations */}
-                <motion.div 
+                <motion.div
                     animate={{ width: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}
                     transition={{ type: 'spring', bounce: 0.2, stiffness: 120 }}
-                    style={{ position: 'absolute', top: 0, left: '50%', x: '-50%', height: '6px', background: 'linear-gradient(90deg, #F97316, #EF4444)', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }} 
+                    style={{ position: 'absolute', top: 0, left: '50%', x: '-50%', height: '6px', background: 'linear-gradient(90deg, #F97316, #EF4444)', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}
                 />
-                <motion.div 
+                <motion.div
                     animate={{ width: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}
                     transition={{ type: 'spring', bounce: 0.2, stiffness: 120 }}
-                    style={{ position: 'absolute', bottom: 0, left: '50%', x: '-50%', height: '6px', background: 'linear-gradient(270deg, #EF4444, #F97316)', borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }} 
+                    style={{ position: 'absolute', bottom: 0, left: '50%', x: '-50%', height: '6px', background: 'linear-gradient(270deg, #EF4444, #F97316)', borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }}
                 />
-                
+
                 {/* Subtle typing glows */}
                 <motion.div
                     animate={{ scale: 1 + (progress * 0.005), opacity: progress > 0 ? 0.15 : 0 }}
@@ -282,9 +286,11 @@ const progress = (() => {
                             <motion.div
                                 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0 }}
-                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px',
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px',
                                     background: '#FEF2F2', border: '1px solid #FECACA',
-                                    borderRadius: 10, fontSize: 13, color: '#B91C1C', marginBottom: 20 }}>
+                                    borderRadius: 10, fontSize: 13, color: '#B91C1C', marginBottom: 20
+                                }}>
                                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
                                 {error}
                             </motion.div>

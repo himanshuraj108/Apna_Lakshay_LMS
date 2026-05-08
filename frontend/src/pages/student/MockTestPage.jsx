@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoTrophyOutline, IoRefreshOutline, IoBookOutline, IoTimeOutline, IoInformationCircleOutline, IoPersonOutline, IoScan, IoAlertCircleOutline, IoArrowForwardOutline } from 'react-icons/io5';
+import { IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoTrophyOutline, IoRefreshOutline, IoBookOutline, IoTimeOutline, IoInformationCircleOutline, IoPersonOutline, IoScan, IoAlertCircleOutline, IoArrowForwardOutline, IoSparklesOutline } from 'react-icons/io5';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -171,16 +171,16 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
                 <div style={{ position: 'fixed', inset: 0, zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(8px)' }} />
                     <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ position: 'relative', width: '100%', maxWidth: '500px', background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-                        <div style={{ background: '#1e293b', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ color: 'white', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <IoInformationCircleOutline size={20} /> {text.title}
+                        <div className="bg-orange-500 px-6 py-4 flex justify-between items-center">
+                            <div className="text-white font-extrabold flex items-center gap-2 text-lg">
+                                <IoInformationCircleOutline size={22} /> {text.title}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                <select value={lang} onChange={(e) => setLang(e.target.value)} style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none', cursor: 'pointer' }}>
-                                    <option value="en" style={{ color: 'black' }}>English</option>
-                                    <option value="hi" style={{ color: 'black' }}>हिंदी (Hindi)</option>
+                            <div className="flex items-center gap-4">
+                                <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-white/20 text-white border border-white/30 px-3 py-1.5 rounded-lg text-sm outline-none cursor-pointer font-semibold">
+                                    <option value="en" className="text-gray-900">English</option>
+                                    <option value="hi" className="text-gray-900">हिंदी (Hindi)</option>
                                 </select>
-                                <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><IoCloseCircle size={24} /></button>
+                                <button onClick={onClose} className="text-white hover:text-orange-100 transition-colors"><IoCloseCircle size={26} /></button>
                             </div>
                         </div>
                         <div style={{ padding: '24px', maxHeight: '70vh', overflowY: 'auto' }}>
@@ -220,16 +220,7 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
                             <button
                                 onClick={requireCheckbox ? onAccept : onClose}
                                 disabled={requireCheckbox && !isChecked}
-                                style={{
-                                    background: (requireCheckbox && !isChecked) ? '#94a3b8' : '#1a3a6a',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '10px 24px',
-                                    fontWeight: '700',
-                                    cursor: (requireCheckbox && !isChecked) ? 'not-allowed' : 'pointer',
-                                    transition: 'all 0.2s'
-                                }}
+                                className={`px-6 py-2.5 rounded-xl font-bold transition-all ${requireCheckbox && !isChecked ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md'}`}
                             >
                                 {text.btn}
                             </button>
@@ -278,10 +269,10 @@ const AttemptHistory = ({ onViewHistory }) => {
                         </span>
                     </div>
                     {att.status === 'completed' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: '#f8fafc', padding: '10px', borderRadius: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', background: '#fff7ed', padding: '10px', borderRadius: '8px' }}>
                             <div>
                                 <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>SCORE</div>
-                                <div style={{ fontSize: '16px', fontWeight: '900', color: '#2563eb' }}>{att.score} <span style={{fontSize:'12px', color:'#94a3b8'}}>/ {att.maxScore}</span></div>
+                                <div style={{ fontSize: '16px', fontWeight: '900', color: '#ea580c' }}>{att.score} <span style={{fontSize:'12px', color:'#94a3b8'}}>/ {att.maxScore}</span></div>
                             </div>
                             <div>
                                 <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>PERCENTAGE</div>
@@ -335,22 +326,25 @@ const ExamSelect = ({ onSelect, onViewHistory }) => {
             <style>{MOBILE_CSS}</style>
             <InstructionsModal isOpen={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} type="credits" />
 
-            <div className="exam-header" style={{ background: '#1a3a6a', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ color: 'white', flexShrink: 0 }}>
-                    <div style={{ fontWeight: '800', fontSize: '18px', letterSpacing: '0.5px' }}>Apna Lakshay</div>
-                    <div style={{ fontSize: '11px', opacity: 0.7 }}>Advanced AI Mock Test Portal</div>
+            <div className="exam-header sticky top-0 z-50 px-4 pt-4 pb-4 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between shadow-sm">
+                <div className="flex-shrink-0">
+                    <div className="font-extrabold text-xl tracking-tight text-gray-900 flex items-center gap-2">
+                        <span className="bg-orange-500 text-white p-1.5 rounded-lg shadow-sm"><IoSparklesOutline size={18} /></span>
+                        Apna Lakshay
+                    </div>
+                    <div className="text-xs font-medium text-gray-500 mt-0.5">Advanced AI Mock Test Portal</div>
                 </div>
-                <div className="exam-header-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div className="exam-credits-label" style={{ color: isLocked ? '#fca5a5' : '#93c5fd', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', flexWrap: 'wrap' }}>
-                        <span>Credits: <span style={{ color: 'white' }}>{credits}/2</span></span>
-                        {isLocked && <span style={{ fontSize: '11px', background: '#dc2626', color: 'white', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>Unlocks in {timeLeftToReset}</span>}
-                        <button onClick={() => setShowInstructionsModal(true)} style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', display: 'flex', padding: 0 }} title="Instructions">
-                            <IoInformationCircleOutline size={18} />
+                <div className="exam-header-right flex items-center gap-4">
+                    <div className={`exam-credits-label text-sm flex items-center gap-2 font-semibold flex-wrap ${isLocked ? 'text-red-500' : 'text-orange-600'}`}>
+                        <span className="bg-orange-50 px-2 py-1 rounded-md border border-orange-100">Credits: <span className="text-gray-900 font-bold">{credits}/2</span></span>
+                        {isLocked && <span className="text-[11px] bg-red-500 text-white px-2 py-1 rounded-md whitespace-nowrap shadow-sm">Unlocks in {timeLeftToReset}</span>}
+                        <button onClick={() => setShowInstructionsModal(true)} className="text-gray-400 hover:text-orange-500 transition-colors p-1" title="Instructions">
+                            <IoInformationCircleOutline size={20} />
                         </button>
                     </div>
                     <Link to="/student">
-                        <button style={{ color: 'white', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-                            <IoArrowBack size={14} /> Dashboard
+                        <button className="text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 whitespace-nowrap shadow-sm transition-all">
+                            <IoArrowBack size={16} /> Dashboard
                         </button>
                     </Link>
                 </div>
@@ -433,8 +427,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
         <div className="flex gap-2 flex-wrap">
             {options.map(o => (
                 <button key={o.v} onClick={() => onChange(o.v)}
-                    className="px-4 py-2 rounded-xl text-sm font-bold border transition-all"
-                    style={val === o.v ? { background: '#1a3a6a', color: 'white', borderColor: '#1a3a6a', boxShadow: '0 4px 12px rgba(26,58,106,0.3)' } : { background: 'white', color: '#4b5563', borderColor: '#d1d5db' }}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${val === o.v ? 'bg-orange-500 text-white border-orange-600 shadow-[0_4px_12px_rgba(234,88,12,0.3)]' : 'bg-white text-gray-600 border-gray-300 hover:border-orange-300'}`}
                 >{o.l}</button>
             ))}
         </div>
@@ -444,26 +437,26 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
         <div style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '60px' }}>
             <style>{MOBILE_CSS}</style>
             {/* Header */}
-            <div style={{ background: '#1a3a6a', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '200px', height: '200px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}></div>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-10 relative overflow-hidden">
+                <div className="absolute top-[-50px] right-[-50px] w-[200px] h-[200px] bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div className="max-w-5xl mx-auto relative z-10">
-                    <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '600' }}>
+                    <button onClick={onBack} className="flex items-center gap-2 text-white/80 hover:text-white mb-4 text-sm font-semibold transition-colors">
                         <IoArrowBack /> Back to Exams
                     </button>
-                    <h1 style={{ color: 'white', fontSize: '32px', fontWeight: '900', marginBottom: '8px' }}>{pattern.name}</h1>
-                    <div style={{ color: '#93c5fd', fontSize: '15px', fontWeight: '500', marginBottom: '24px' }}>{pattern.type} — {pattern.desc}</div>
+                    <h1 className="text-white text-3xl font-black mb-2">{pattern.name}</h1>
+                    <div className="text-orange-100 text-base font-medium mb-6">{pattern.type} — {pattern.desc}</div>
 
-                    <div className="info-stats" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-                        <div className="info-stat-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div><div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', fontWeight: '700' }}>Real Exam Duration</div><div style={{ fontWeight: '700', fontSize: '15px' }}>{pattern.duration} Minutes</div></div>
+                    <div className="info-stats flex gap-5 flex-wrap">
+                        <div className="info-stat-card bg-black/10 backdrop-blur-md px-5 py-3 rounded-xl text-white flex items-center gap-3 shadow-inner">
+                            <div><div className="text-[11px] text-orange-200 uppercase font-bold tracking-wider">Real Exam Duration</div><div className="font-bold text-[15px]">{pattern.duration} Minutes</div></div>
                         </div>
-                        <div className="info-stat-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div><div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', fontWeight: '700' }}>Real Marking Scheme</div><div style={{ fontWeight: '700', fontSize: '15px' }}>+{pattern.positive} Correct / {pattern.negative > 0 ? `−${pattern.negative} Incorrect` : 'No Ngtv'}</div></div>
+                        <div className="info-stat-card bg-black/10 backdrop-blur-md px-5 py-3 rounded-xl text-white flex items-center gap-3 shadow-inner">
+                            <div><div className="text-[11px] text-orange-200 uppercase font-bold tracking-wider">Real Marking Scheme</div><div className="font-bold text-[15px]">+{pattern.positive} Correct / {pattern.negative > 0 ? `−${pattern.negative} Incorrect` : 'No Ngtv'}</div></div>
                         </div>
-                        <div className="info-stat-card" style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div><div style={{ fontSize: '11px', opacity: 0.7, textTransform: 'uppercase', fontWeight: '700' }}>Questions</div><div style={{ fontWeight: '700', fontSize: '15px' }}>{pattern.totalQuestions} Questions</div></div>
+                        <div className="info-stat-card bg-black/10 backdrop-blur-md px-5 py-3 rounded-xl text-white flex items-center gap-3 shadow-inner">
+                            <div><div className="text-[11px] text-orange-200 uppercase font-bold tracking-wider">Questions</div><div className="font-bold text-[15px]">{pattern.totalQuestions} Questions</div></div>
                         </div>
-                        <button onClick={() => setShowInstructions(true)} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', padding: '12px 20px', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '700', transition: 'all 0.2s' }}>
+                        <button onClick={() => setShowInstructions(true)} className="bg-white/15 border border-white/30 hover:bg-white/25 px-5 py-3 rounded-xl text-white flex items-center gap-2 font-bold transition-all shadow-sm">
                             <IoInformationCircleOutline size={22} />
                             View Instructions
                         </button>
@@ -476,13 +469,13 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 
                     {/* Left Col: Syllabus & Sections */}
                     <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#1a3a6a', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <IoBookOutline color="#3b82f6" /> Syllabus & Sections
+                        <h2 className="text-lg font-extrabold text-orange-600 mb-5 flex items-center gap-2">
+                            <IoBookOutline size={22} /> Syllabus & Sections
                         </h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {pattern.sections.map((sec, idx) => (
-                                <div key={sec.id} style={{ display: 'flex', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ width: '40px', height: '40px', background: '#e0e7ff', color: '#4f46e5', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '16px', flexShrink: 0 }}>{idx + 1}</div>
+                                <div key={sec.id} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-lg flex items-center justify-center font-bold text-base flex-shrink-0">{idx + 1}</div>
                                     <div>
                                         <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '15px', marginBottom: '4px' }}>{sec.name}</div>
                                         <div style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', marginBottom: '8px' }}>Weightage: {sec.weight}% of Exam</div>
@@ -495,7 +488,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 
                     {/* Right Col: Mock Test Setup */}
                     <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', height: 'fit-content', position: 'sticky', top: '24px' }}>
-                        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#1a3a6a', marginBottom: '24px', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px' }}>Setup Mock Test</h2>
+                        <h2 className="text-lg font-extrabold text-gray-900 mb-6 border-b-2 border-gray-100 pb-3">Setup Mock Test</h2>
 
                         <div style={{ marginBottom: '20px' }}>
                             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Test Type</label>
@@ -508,7 +501,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 
                         <div style={{ marginBottom: '24px' }}>
                             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Simulation Engine Profile</label>
-                            <div style={{ padding: '12px 16px', background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '10px', fontSize: '13px', color: '#3730a3', lineHeight: '1.6' }}>
+                            <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-[13px] text-orange-800 leading-relaxed shadow-sm">
                                 <b>Auto-Configured:</b> The AI will automatically map exact difficulty algorithms, sub-topic spread, and question counts mirroring the real {pattern.name} standard. {sectionId === 'all' ? `(${pattern.totalQuestions} Questions total across ${pattern.sections.length} sections)` : `(Focusing only on ${pattern.sections.find(s => s.id === sectionId)?.name})`}
                             </div>
                         </div>
@@ -543,7 +536,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                                 } finally { setGenLoading(false); }
                             }}
                             disabled={genLoading}
-                            style={{ width: '100%', background: 'linear-gradient(to right, #2563eb, #1d4ed8)', color: 'white', border: 'none', borderRadius: '12px', padding: '16px', fontWeight: '800', fontSize: '15px', cursor: genLoading ? 'not-allowed' : 'pointer', opacity: genLoading ? 0.8 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}
+                            className={`w-full rounded-xl p-4 font-extrabold text-[15px] flex items-center justify-center gap-2 transition-all ${genLoading ? 'bg-orange-400 cursor-not-allowed text-white/90' : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-[0_4px_12px_rgba(234,88,12,0.3)] hover:shadow-[0_6px_16px_rgba(234,88,12,0.4)]'}`}
                         >
                             {genLoading ? 'Building Test Engine...' : 'START EXAM SESSION →'}
                         </button>
@@ -755,34 +748,34 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
         <div style={{ background: '#f1f5f9', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
             <style>{MOBILE_CSS}</style>
             {/* Top Bar */}
-            <div className="test-topbar" style={{ background: '#1a3a6a', padding: '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                <div className="test-topbar-left" style={{ color: 'white', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ fontWeight: '900', fontSize: '20px', letterSpacing: '1px', textTransform: 'uppercase', borderRight: '2px solid rgba(255,255,255,0.3)', paddingRight: '16px' }}>
+            <div className="test-topbar bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 flex items-center justify-between gap-3 flex-wrap shadow-md">
+                <div className="test-topbar-left text-white flex items-center gap-4">
+                    <div className="font-black text-lg tracking-wider uppercase border-r-2 border-white/30 pr-4">
                         APNA LAKSHAY
                     </div>
                     <div>
-                        <div className="exam-title" style={{ fontWeight: '800', fontSize: '15px' }}>{pattern.name} | CBT</div>
-                        <div style={{ fontSize: '11px', opacity: 0.7 }}>Candidate Mock Session</div>
+                        <div className="exam-title font-extrabold text-[15px]">{pattern.name} | CBT</div>
+                        <div className="text-[11px] text-orange-100 font-medium">Candidate Mock Session</div>
                     </div>
                 </div>
 
-                <div className="test-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <button onClick={() => setShowInfo(true)} title="Instructions" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '8px', padding: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                <div className="test-topbar-right flex items-center gap-5">
+                    <button onClick={() => setShowInfo(true)} title="Instructions" className="bg-white/20 hover:bg-white/30 text-white rounded-lg p-2 transition-all">
                         <IoInformationCircleOutline size={20} />
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '4px' }}>
+                    <div className="flex items-center gap-1 bg-black/20 rounded-lg p-1">
                         {['en', 'hi'].map(l => (
                             <button key={l} onClick={() => setDisplayLang(l)}
-                                style={{ padding: '4px 12px', borderRadius: '4px', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer', background: displayLang === l ? 'white' : 'transparent', color: displayLang === l ? '#1a3a6a' : 'rgba(255,255,255,0.7)', transition: 'all 0.2s' }}
+                                className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${displayLang === l ? 'bg-white text-orange-600 shadow-sm' : 'bg-transparent text-white/80 hover:text-white'}`}
                             >{l === 'en' ? 'EN' : 'हिं'}</button>
                         ))}
                     </div>
-                    <div style={{ color: urgent ? '#fca5a5' : '#86efac', fontWeight: '800', fontSize: '18px', fontFamily: 'monospace', background: 'rgba(0,0,0,0.3)', padding: '6px 16px', borderRadius: '8px', border: urgent ? '1px solid #dc2626' : '1px solid transparent' }}>
+                    <div className={`font-mono text-lg font-black bg-black/20 px-4 py-1.5 rounded-lg border ${urgent ? 'text-red-300 border-red-500 animate-pulse' : 'text-green-300 border-transparent'}`}>
                         ⏱ {fmtTime(timeLeft)}
                     </div>
-                    <button className="submit-btn" onClick={() => setShowSubmitModal(true)}
-                        style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 24px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(220,38,38,0.4)', transition: 'all 0.2s', textTransform: 'uppercase' }}
-                    >SUBMIT EXAM</button>
+                    <button className="submit-btn bg-red-500 hover:bg-red-600 text-white rounded-lg px-6 py-2 text-[13px] font-black tracking-wide uppercase shadow-[0_2px_8px_rgba(239,68,68,0.4)] transition-all" onClick={() => setShowSubmitModal(true)}>
+                        SUBMIT EXAM
+                    </button>
                 </div>
             </div>
 
@@ -797,7 +790,7 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                                 const firstQInSet = initialQuestions.findIndex(x => x.sectionId === sId);
                                 if (firstQInSet !== -1) goTo(firstQInSet);
                             }}
-                                style={{ padding: '14px 20px', background: 'none', border: 'none', borderBottom: activeTab === sId ? '3px solid #1d4ed8' : '3px solid transparent', color: activeTab === sId ? '#1d4ed8' : '#64748b', fontWeight: activeTab === sId ? '800' : '600', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                className={`px-5 py-3.5 text-[13px] whitespace-nowrap border-b-[3px] transition-all ${activeTab === sId ? 'border-orange-500 text-orange-600 font-extrabold' : 'border-transparent text-gray-500 font-semibold hover:text-orange-500 hover:border-orange-200'}`}
                             >{secName}</button>
                         );
                     })}
@@ -831,22 +824,21 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                         </div>
                     </div>
 
-                    <div className="q-action-bar" style={{ padding: '16px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', flexWrap: 'wrap', background: '#f8fafc' }}>
-                        <button onClick={saveAndNext} style={btnStyle('#16a34a')}>SAVE & NEXT</button>
-                        <button onClick={clearResponse} style={btnStyle('white', '#475569')}>CLEAR RESPONSE</button>
-                        <button onClick={() => { setStatuses(p => ({ ...p, [current]: answers[current] !== undefined ? 'answered_marked' : 'marked' })); }} style={btnStyle('#ea580c')}>SAVE & MARK FOR REVIEW</button>
-                        <button onClick={markAndNext} style={btnStyle('#7c3aed')}>MARK FOR REVIEW & NEXT</button>
+                    <div className="q-action-bar p-4 border-t border-gray-200 flex gap-3 flex-wrap bg-gray-50">
+                        <button onClick={saveAndNext} className="bg-green-600 hover:bg-green-700 text-white border border-green-600 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">SAVE & NEXT</button>
+                        <button onClick={clearResponse} className="bg-white hover:bg-gray-100 text-gray-600 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">CLEAR RESPONSE</button>
+                        <button onClick={() => { setStatuses(p => ({ ...p, [current]: answers[current] !== undefined ? 'answered_marked' : 'marked' })); }} className="bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">SAVE & MARK FOR REVIEW</button>
+                        <button onClick={markAndNext} className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-600 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">MARK FOR REVIEW & NEXT</button>
                     </div>
 
-                    <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white' }}>
-                        <button onClick={() => goTo(Math.max(0, current - 1))} disabled={current === 0} style={{ ...btnStyle('white', '#475569'), opacity: current === 0 ? 0.5 : 1 }}>&lt;&lt; BACK</button>
+                    <div className="p-3 border-t border-gray-200 flex justify-between items-center bg-white">
+                        <button onClick={() => goTo(Math.max(0, current - 1))} disabled={current === 0} className={`bg-white text-gray-700 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all ${current === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}>&lt;&lt; BACK</button>
                         {/* Mobile palette toggle */}
                         <button
-                            className="palette-toggle-btn"
+                            className="palette-toggle-btn bg-orange-600 text-white border-none rounded-lg px-4 py-2 font-bold text-xs cursor-pointer shadow-sm hidden"
                             onClick={() => setShowPalette(p => !p)}
-                            style={{ display: 'none', background: '#1a3a6a', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 14px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
                         >{showPalette ? 'Hide Panel' : 'Question Palette'}</button>
-                        <button onClick={() => goTo(Math.max(initialQuestions.length - 1, current + 1))} disabled={current === initialQuestions.length - 1} style={{ ...btnStyle('white', '#475569'), opacity: current === initialQuestions.length - 1 ? 0.5 : 1 }}>NEXT &gt;&gt;</button>
+                        <button onClick={() => goTo(Math.max(initialQuestions.length - 1, current + 1))} disabled={current === initialQuestions.length - 1} className={`bg-white text-gray-700 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all ${current === initialQuestions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}>NEXT &gt;&gt;</button>
                     </div>
                 </div>
 
@@ -878,8 +870,10 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                     </div>
 
                     {/* Palette */}
-                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                        <div style={{ background: '#1a3a6a', padding: '12px 16px', color: 'white', fontWeight: '800', fontSize: '14px' }}>Question Palette {sectionIdsPresent.length > 1 && `(${activeTab})`}</div>
+                    <div className="bg-white rounded-xl border border-gray-300 flex flex-col flex-1 min-h-0 overflow-hidden shadow-sm">
+                        <div className="bg-gray-900 px-4 py-3 text-white font-extrabold text-sm border-b border-gray-800">
+                            Question Palette {sectionIdsPresent.length > 1 && <span className="text-gray-300 font-semibold ml-1">({activeTab})</span>}
+                        </div>
 
                         <div style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -997,9 +991,9 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSubmitModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(8px)' }} />
 
                         <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ position: 'relative', width: '100%', maxWidth: '500px', background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-                            <div style={{ background: '#1e293b', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <IoAlertCircleOutline size={28} color="#facc15" />
-                                <div style={{ color: 'white', fontWeight: '800', fontSize: '18px' }}>Submit Test Confirmation</div>
+                            <div className="bg-orange-500 px-6 py-5 flex items-center gap-3">
+                                <IoAlertCircleOutline size={28} color="white" />
+                                <div className="text-white font-extrabold text-xl">Submit Test Confirmation</div>
                             </div>
 
                             <div style={{ padding: '24px' }}>
@@ -1088,8 +1082,8 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
 
 // ─── 4. Advanced Result Dashboard ───────────────────────────────────────
 const DashboardCSS = `
-.gl-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-.g-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.gl-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.g-text { background: linear-gradient(135deg, #f97316, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .circ-prog { width: 140px; height: 140px; border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
 .circ-prog::before { content: ""; position: absolute; inset: 10px; border-radius: 50%; background: #ffffff; }
 .circ-val { position: relative; z-index: 10; font-size: 36px; font-weight: 900; }
@@ -1160,14 +1154,14 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
             <style>{MOBILE_CSS}</style>
 
             {/* Header */}
-            <div className="result-header" style={{ borderBottom: '1px solid #e2e8f0', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div className="result-header sticky top-0 z-[100] bg-white/80 backdrop-blur-xl border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm">
                 <div>
-                    <h1 style={{ fontSize: '22px', fontWeight: '900', margin: 0 }}><span className="g-text">Analytics Report</span></h1>
-                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>{pattern.name}</div>
+                    <h1 className="text-2xl font-black m-0"><span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">Analytics Report</span></h1>
+                    <div className="text-gray-500 text-sm mt-1 font-semibold">{pattern.name}</div>
                 </div>
-                <div className="result-header-btns" style={{ display: 'flex', gap: '12px' }}>
-                    <button onClick={onRetry} style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Start New Test</button>
-                    <Link to="/student"><button style={{ padding: '10px 20px', background: 'linear-gradient(to right, #3b82f6, #8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>Exit to Dashboard</button></Link>
+                <div className="result-header-btns flex gap-3">
+                    <button onClick={onRetry} className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-xl px-5 py-2.5 font-bold text-sm shadow-sm transition-all">Start New Test</button>
+                    <Link to="/student"><button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl px-5 py-2.5 font-bold text-sm shadow-[0_4px_12px_rgba(234,88,12,0.3)] hover:shadow-[0_6px_16px_rgba(234,88,12,0.4)] transition-all">Exit to Dashboard</button></Link>
                 </div>
             </div>
 
@@ -1209,7 +1203,7 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                 {sectionStats.length > 1 && (
                     <div className="gl-card" style={{ marginBottom: '24px' }}>
                         <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '4px', height: '18px', background: '#3b82f6', borderRadius: '4px' }}></div>
+                            <div style={{ width: '4px', height: '18px', background: '#ea580c', borderRadius: '4px' }}></div>
                             Section-Wise Performance Radar
                         </h2>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
@@ -1235,7 +1229,7 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                 {/* Detailed Q&A Review */}
                 <div className="gl-card">
                     <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '4px', height: '18px', background: '#a78bfa', borderRadius: '4px' }}></div>
+                        <div style={{ width: '4px', height: '18px', background: '#ea580c', borderRadius: '4px' }}></div>
                         Detailed Question Review
                     </h2>
 
@@ -1280,8 +1274,8 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                                                 })}
                                             </div>
                                             {r.explanation && (
-                                                <div style={{ background: '#eff6ff', borderLeft: '3px solid #3b82f6', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
-                                                    <b style={{ color: '#2563eb', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Solution / Explanation:</b>
+                                                <div style={{ background: '#fff7ed', borderLeft: '3px solid #f97316', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
+                                                    <b style={{ color: '#ea580c', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Solution / Explanation:</b>
                                                     <span style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>{r.explanation}</span>
                                                 </div>
                                             )}

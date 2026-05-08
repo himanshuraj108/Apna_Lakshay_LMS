@@ -130,59 +130,44 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.18 }}
-                        className="fixed inset-0 z-[61] flex flex-col items-center justify-center gap-8"
+                        className="fixed inset-0 z-[61] flex flex-col items-end justify-end pb-24 pr-5 gap-3.5"
                         style={{ pointerEvents: 'none' }}
                     >
                         {subBtns.map((btn, i) => (
                             <motion.div
                                 key={btn.key}
-                                initial={{ opacity: 0, scale: 0.6, y: 40 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.6, y: 30 }}
-                                transition={{ type: 'spring', stiffness: 380, damping: 24, delay: i * 0.1 }}
-                                className="flex flex-col items-center gap-3 cursor-pointer"
-                                style={{ pointerEvents: 'auto' }}
+                                initial={{ opacity: 0, scale: 0.8, x: 20, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, x: 20, y: 20 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 25, delay: i * 0.05 }}
+                                className="flex items-center gap-4 cursor-pointer bg-white rounded-2xl p-3.5 w-[240px]"
+                                style={{
+                                    pointerEvents: 'auto',
+                                    boxShadow: `0 12px 30px ${btn.shadow}, 0 0 0 1px rgba(0,0,0,0.03)`
+                                }}
+                                whileHover={{ scale: 1.03, x: -5 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={btn.onClick}
                             >
-                                {/* Icon square */}
-                                <motion.button
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.88 }}
-                                    className="w-24 h-24 rounded-3xl flex items-center justify-center shrink-0 relative overflow-hidden"
-                                    style={{
-                                        background: btn.bgBtn,
-                                        boxShadow: `0 10px 40px ${btn.shadow}, 0 0 0 2px rgba(0,0,0,0.08)`,
-                                    }}
-                                >
+                                {/* Icon box */}
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden"
+                                    style={{ background: btn.bgBtn, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)' }}>
                                     {btn.key === 'camera'
-                                        ? <IoCameraOutline size={48} color="#111" />
-                                        : <NoCameraIcon size={48} />
+                                        ? <IoCameraOutline size={28} color="#111" />
+                                        : <NoCameraIcon size={28} />
                                     }
-                                    {/* Red slash for Without Camera */}
                                     {btn.key === 'manual' && (
-                                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 96 96" fill="none" style={{ pointerEvents: 'none', borderRadius: 'inherit' }}>
-                                            <line x1="8" y1="8" x2="88" y2="88" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" />
-                                        </svg>
+                                        <div className="absolute inset-0 pointer-events-none rounded-xl" style={{ border: '2px solid rgba(239,68,68,0.2)' }} />
                                     )}
-                                </motion.button>
+                                </div>
 
-                                {/* Label below icon */}
-                                <motion.span
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 8 }}
-                                    transition={{ delay: i * 0.1 + 0.08 }}
-                                    className="text-lg font-extrabold rounded-2xl shadow-2xl select-none text-center"
-                                    style={{
-                                        padding: '10px 22px',
-                                        background: '#ffffff',
-                                        border: '1px solid rgba(0,0,0,0.10)',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
-                                    <span className={btn.labelClass}>{btn.label}</span>
-                                </motion.span>
+                                {/* Text */}
+                                <div className="flex-1 text-left">
+                                    <span className={`text-[15px] font-extrabold ${btn.labelClass}`}>{btn.label}</span>
+                                    <p className="text-[11px] text-gray-500 font-medium mt-0.5 tracking-wide">
+                                        {btn.key === 'camera' ? 'Scan QR Code' : 'Enter manually'}
+                                    </p>
+                                </div>
                             </motion.div>
                         ))}
                     </motion.div>
