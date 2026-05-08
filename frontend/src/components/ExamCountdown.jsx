@@ -58,9 +58,9 @@ const ExamCountdown = () => {
     };
 
     return (
-        <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-bold flex items-center gap-2">
+                <h3 className="text-gray-900 font-bold flex items-center gap-2">
                     <IoTimeOutline className="text-blue-400" />
                     Exam Countdown
                 </h3>
@@ -81,7 +81,7 @@ const ExamCountdown = () => {
                                 key={exam._id}
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="flex-none w-56 bg-gray-800 border border-gray-700 rounded-xl p-4 relative group snap-start shadow-lg"
+                                className="flex-none w-56 bg-white border border-gray-200 rounded-xl p-4 relative group snap-start shadow-sm hover:shadow-md transition-shadow"
                             >
                                 {/* Color accent line */}
                                 <div
@@ -100,10 +100,10 @@ const ExamCountdown = () => {
                                     <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1 flex items-center gap-1">
                                         <IoBookOutline /> {exam.subject}
                                     </div>
-                                    <h4 className="font-bold text-lg text-white mb-3 truncate pr-4" title={exam.title}>{exam.title}</h4>
+                                    <h4 className="font-bold text-lg text-gray-900 mb-3 truncate pr-4" title={exam.title}>{exam.title}</h4>
 
-                                    <div className="bg-gray-900/50 rounded-lg p-2 border border-gray-700/50 flex items-center justify-between">
-                                        <span className="text-xs text-gray-400 font-medium">Days Left:</span>
+                                    <div className="bg-gray-50 rounded-lg p-2 border border-gray-200 flex items-center justify-between">
+                                        <span className="text-xs text-gray-500 font-medium">Days Left:</span>
                                         <span className={`text-xl font-bold ${daysLeft <= 3 ? 'text-red-400 animate-pulse' : daysLeft <= 7 ? 'text-yellow-400' : 'text-green-400'}`}>
                                             {daysLeft < 0 ? 'Done' : daysLeft}
                                         </span>
@@ -117,68 +117,68 @@ const ExamCountdown = () => {
                         );
                     })
                 ) : (
-                    <div className="w-full text-center py-6 border-2 border-dashed border-gray-700 rounded-xl bg-gray-800/30">
+                    <div className="w-full text-center py-6 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50">
                         <button
                             onClick={() => setShowModal(true)}
                             className="inline-flex items-center gap-1.5 px-4 py-2 mb-3 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 hover:text-blue-300 rounded-xl text-xs font-semibold transition-all"
                         >
                             <IoAdd size={14} /> Add your first exam
                         </button>
-                        <p className="text-gray-600 text-xs italic">No upcoming exams.</p>
+                        <p className="text-gray-500 text-xs italic">No upcoming exams.</p>
                     </div>
                 )}
             </div>
 
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Exam">
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add Exam" theme="light" accentColor="from-orange-400 to-orange-600">
                 <form onSubmit={handleCreateExam} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-300">Exam Title</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Exam Title</label>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                            className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:border-blue-500"
                             placeholder="e.g. Maths Final"
                             required
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-300">Date</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">Date</label>
                             <input
                                 type="date"
                                 value={formData.date}
                                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:border-blue-500"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-gray-300">Subject</label>
+                            <label className="block text-sm font-medium mb-1 text-gray-700">Subject</label>
                             <input
                                 type="text"
                                 value={formData.subject}
                                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500"
+                                className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 text-gray-900 outline-none focus:border-blue-500"
                                 placeholder="e.g. Physics"
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1 text-gray-300">Color Tag</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700">Color Tag</label>
                         <div className="flex gap-2">
                             {['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6'].map(color => (
                                 <button
                                     key={color}
                                     type="button"
                                     onClick={() => setFormData({ ...formData, color })}
-                                    className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color ? 'border-white scale-110' : 'border-transparent'}`}
+                                    className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color ? 'border-gray-900 scale-110' : 'border-transparent'}`}
                                     style={{ backgroundColor: color }}
                                 />
                             ))}
                         </div>
                     </div>
-                    <Button type="submit" className="w-full mt-4">Add Countdown</Button>
+                    <Button type="submit" className="w-full mt-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 hover:from-orange-600 hover:to-orange-700 shadow-lg shadow-orange-500/30">Add Countdown</Button>
                 </form>
             </Modal>
         </div>
