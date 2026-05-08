@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import {
     IoMail, IoLockClosed, IoArrowForward,
     IoEye, IoEyeOff, IoCheckmarkCircle,
-    IoGridOutline, IoLocationOutline,
+    IoGridOutline, IoLocationOutline, IoLibraryOutline,
 } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
@@ -39,7 +39,7 @@ export default function Login() {
 
     const [email, setEmail]               = useState('');
     const [password, setPassword]         = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(true);
     const [error, setError]               = useState('');
     const [shake, setShake]               = useState(false);
     const [loading, setLoading]           = useState(false);
@@ -56,6 +56,32 @@ export default function Login() {
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
+
+    
+        const handleEmailChange = (e) => {
+        let val = e.target.value;
+        if (/^[\d\s]+$/.test(val)) {
+            val = val.replace(/\D/g, '');
+            if (val.length > 10) val = val.slice(0, 10);
+        }
+        setEmail(val);
+    };
+
+const progress = (() => {
+        let eProg = 0;
+        if (email.length > 0) {
+            if (/^\d+$/.test(email)) {
+                eProg = Math.min((email.length / 10) * 100, 100);
+            } else {
+                eProg = Math.min((email.length / 12) * 100, 100);
+                if (email.toLowerCase().includes('gmail.') || email.toLowerCase().includes('@')) {
+                    eProg = 100;
+                }
+            }
+        }
+        let pProg = Math.min((password.length / 6) * 100, 100);
+        return Math.min(100, Math.max(0, 100 - eProg + pProg));
+    })();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -109,25 +135,15 @@ export default function Login() {
                 {/* Top nav */}
                 <div style={{ padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     {/* Logo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                            width: 36, height: 36, borderRadius: 8,
-                            background: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
-                                stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                            </svg>
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
                         <div>
-                            <p style={{ fontWeight: 900, fontSize: 15, color: '#111827', lineHeight: 1 }}>Apna Lakshay</p>
-                            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: '#F97316', textTransform: 'uppercase', marginTop: 2 }}>Library System</p>
+                            <p style={{ fontWeight: 900, fontSize: 18, color: '#111827', lineHeight: 1 }}>Apna Lakshay</p>
+                            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', color: '#F97316', textTransform: 'uppercase', marginTop: 4 }}>Library System</p>
                         </div>
                     </div>
                     {/* Nav links */}
                     <div style={{ display: 'flex', gap: 20 }}>
-                        <Link to="/public-seats" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 500, color: '#6B7280', textDecoration: 'none' }}>
+                        <Link to="/public-seats" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, color: '#EA580C', background: '#FFF7ED', border: '1px solid #FED7AA', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', transition: 'all 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#FFEDD5'} onMouseOut={e => e.currentTarget.style.background = '#FFF7ED'}>
                             <IoGridOutline size={14} /> Seats
                         </Link>
                         <Link to="/contact" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 500, color: '#6B7280', textDecoration: 'none' }}>
@@ -195,25 +211,45 @@ export default function Login() {
             {/* ══════════════════════════════════════════
                 RIGHT PANEL — login form
                ══════════════════════════════════════════ */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', background: '#fff' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', background: '#fff', position: 'relative', overflow: 'hidden' }}>
+                {/* Typing Interactive Animations */}
+                <motion.div 
+                    animate={{ width: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}
+                    transition={{ type: 'spring', bounce: 0.2, stiffness: 120 }}
+                    style={{ position: 'absolute', top: 0, left: '50%', x: '-50%', height: '6px', background: 'linear-gradient(90deg, #F97316, #EF4444)', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }} 
+                />
+                <motion.div 
+                    animate={{ width: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}
+                    transition={{ type: 'spring', bounce: 0.2, stiffness: 120 }}
+                    style={{ position: 'absolute', bottom: 0, left: '50%', x: '-50%', height: '6px', background: 'linear-gradient(270deg, #EF4444, #F97316)', borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }} 
+                />
+                
+                {/* Subtle typing glows */}
+                <motion.div
+                    animate={{ scale: 1 + (progress * 0.005), opacity: progress > 0 ? 0.15 : 0 }}
+                    transition={{ type: 'spring' }}
+                    style={{ position: 'absolute', top: -150, left: '50%', x: '-50%', width: 300, height: 300, background: 'radial-gradient(circle, #F97316 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}
+                />
+                <motion.div
+                    animate={{ scale: 1 + (progress * 0.005), opacity: progress > 0 ? 0.15 : 0 }}
+                    transition={{ type: 'spring' }}
+                    style={{ position: 'absolute', bottom: -150, left: '50%', x: '-50%', width: 300, height: 300, background: 'radial-gradient(circle, #EF4444 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}
+                />
+
+
 
                 {/* Mobile brand */}
                 <div className="lg:hidden" style={{ width: '100%', maxWidth: 380, marginBottom: 28 }}>
                     <div style={{ height: 3, background: 'linear-gradient(90deg,#F97316,#FB923C)', borderRadius: 99, marginBottom: 20 }} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                                </svg>
-                            </div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
                             <div>
-                                <p style={{ fontWeight: 900, fontSize: 14, color: '#111827', lineHeight: 1 }}>Apna Lakshay</p>
-                                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: '#F97316', textTransform: 'uppercase', marginTop: 2 }}>Library System</p>
+                                <p style={{ fontWeight: 900, fontSize: 16, color: '#111827', lineHeight: 1 }}>Apna Lakshay</p>
+                                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: '#F97316', textTransform: 'uppercase', marginTop: 3 }}>Library System</p>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                            <Link to="/public-seats" style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #E5E7EB', borderRadius: 8 }}>
+                            <Link to="/public-seats" style={{ fontSize: 12, fontWeight: 700, color: '#EA580C', background: '#FFF7ED', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #FED7AA', borderRadius: 8 }}>
                                 <IoGridOutline size={12} /> Seats
                             </Link>
                             <Link to="/contact" style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #E5E7EB', borderRadius: 8 }}>
@@ -236,7 +272,7 @@ export default function Login() {
                             Welcome back 👋
                         </h2>
                         <p style={{ fontSize: 14, color: '#6B7280' }}>
-                            Sign in to access your library dashboard
+                            Login to access your library dashboard
                         </p>
                     </div>
 
@@ -263,9 +299,9 @@ export default function Login() {
                                 <IoMail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'email' ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} />
                                 <input
                                     id="email" type="text" value={email} required
-                                    onChange={e => setEmail(e.target.value)}
+                                    onChange={handleEmailChange}
                                     placeholder="you@example.com or 10-digit mobile"
-                                    style={inputStyle('email')}
+                                    style={{ ...inputStyle('email'), letterSpacing: /^[\d]+$/.test(email) && email.length > 0 ? '6px' : 'normal' }}
                                     onFocus={() => setFocused('email')}
                                     onBlur={() => setFocused('')}
                                 />
@@ -281,7 +317,7 @@ export default function Login() {
                                     value={password} required
                                     onChange={e => setPassword(e.target.value)}
                                     placeholder="Enter your password"
-                                    style={inputStyle('password')}
+                                    style={{ ...inputStyle('password'), letterSpacing: showPassword && /^[\d]+$/.test(password) && password.length > 0 ? '6px' : 'normal' }}
                                     onFocus={() => setFocused('password')}
                                     onBlur={() => setFocused('')}
                                 />
@@ -320,15 +356,12 @@ export default function Login() {
                                     Signing in…
                                 </>
                             ) : (
-                                <>Sign In <IoArrowForward size={15} /></>
+                                <>Login <IoArrowForward size={15} /></>
                             )}
                         </motion.button>
                     </form>
 
                     {/* Footer */}
-                    <p style={{ textAlign: 'center', fontSize: 12, color: '#D1D5DB', marginTop: 24 }}>
-                        🔒 Secure access · Contact your admin for credentials
-                    </p>
                 </motion.div>
             </div>
 
