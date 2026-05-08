@@ -36,21 +36,20 @@ const PublicSeatView = () => {
     if (loading) return <PublicSeatViewSkeleton />;
 
     return (
-        <div className="min-h-screen p-4 sm:p-6 dark relative">
+        <div className="min-h-screen p-4 sm:p-6 relative text-gray-900" style={{ background: "#F8FAFC" }}>
             {/* ── Fixed full-screen background ── */}
-            <div className="fixed inset-0 -z-10" style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.09) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.07) 0%, transparent 55%), #030712' }} />
-            <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-600/8 blur-[140px] pointer-events-none -z-10" />
+            <div className="fixed inset-0 -z-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
             <div className="max-w-7xl mx-auto">
                 {/* ── Top navbar row: brand left, LOGIN right ── */}
                 <div className="flex items-start justify-between mb-6 pt-1">
                     {/* Brand */}
                     <div>
-                        <p className="text-white font-black text-base sm:text-lg leading-tight">
+                        <p className="text-gray-900 font-black text-base sm:text-lg leading-tight">
                             Apna <span className="bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Lakshay</span>
                         </p>
                         <p className="text-gray-500 text-[10px] uppercase tracking-widest mt-0.5">Library Management System</p>
-                        <p className="text-gray-300 text-xs font-semibold mt-1">Library Seat Availability</p>
+                        <p className="text-gray-600 text-xs font-semibold mt-1">Library Seat Availability</p>
                     </div>
 
                     {/* LOGIN */}
@@ -77,7 +76,7 @@ const PublicSeatView = () => {
                             onClick={() => setSelectedFloor(index)}
                             className={`px-5 py-2 rounded-xl font-semibold transition-all whitespace-nowrap text-sm border ${selectedFloor === index
                                 ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-transparent shadow-lg shadow-orange-500/25'
-                                : 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-800 shadow-sm'
                                 }`}
                         >
                             {floor.name}
@@ -90,7 +89,7 @@ const PublicSeatView = () => {
                     <div className="space-y-6">
                         {floors[selectedFloor].rooms.map((room) => (
                             <div key={room._id} className="rounded-2xl overflow-hidden"
-                                style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                style={{ background: '#fff', border: '1px solid #E5E7EB', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
                                 <div className="overflow-x-auto">
                                     <div className="min-w-[520px]">
                                         <StudentRoomGrid room={room} onSeatClick={handleSeatClick} />
@@ -100,15 +99,15 @@ const PublicSeatView = () => {
                         ))}
 
                         {/* Floor Summary */}
-                        <div className="bg-white/4 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-                            <h3 className="text-lg font-bold text-white mb-5">Floor Summary</h3>
+                        <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-5">Floor Summary</h3>
                             <div className="grid grid-cols-3 gap-4">
                                 {[
-                                    { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.length, 0), color: 'text-white' },
-                                    { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-400' },
-                                    { label: 'Available', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-400' },
+                                    { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.length, 0), color: 'text-gray-900' },
+                                    { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-600' },
+                                    { label: 'Available', value: floors[selectedFloor].rooms.reduce((acc, r) => acc + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-600' },
                                 ].map(({ label, value, color }) => (
-                                    <div key={label} className="bg-white/5 border border-white/8 rounded-xl p-4 text-center">
+                                    <div key={label} className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
                                         <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">{label}</p>
                                         <p className={`text-3xl font-black ${color}`}>{value}</p>
                                     </div>
