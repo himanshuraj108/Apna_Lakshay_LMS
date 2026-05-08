@@ -6,11 +6,11 @@ const AchievementBadge = ({ achievement, locked = false }) => {
         <motion.div
             whileHover={{ scale: 1.05 }}
             className={`relative p-4 rounded-xl border flex flex-col items-center justify-center text-center w-full aspect-square ${locked
-                ? 'bg-gray-900/60 border-gray-800 text-gray-400'
-                : 'bg-gradient-to-br from-gray-800 to-gray-900 border-yellow-500/30 shadow-lg shadow-yellow-500/10'
+                ? 'bg-gray-50 border-gray-200 text-gray-500'
+                : 'bg-white border-yellow-300 shadow-sm shadow-yellow-100'
                 }`}
         >
-            <div className={`p-4 rounded-full mb-3 ${locked ? 'bg-gray-700' : 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-inner'}`}>
+            <div className={`p-4 rounded-full mb-3 ${locked ? 'bg-gray-200' : 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-inner'}`}>
                 {locked ? (
                     <IoLockClosed className="text-gray-400 text-2xl" />
                 ) : (
@@ -20,7 +20,7 @@ const AchievementBadge = ({ achievement, locked = false }) => {
                 )}
             </div>
 
-            <h4 className={`font-bold text-sm ${locked ? 'text-gray-500' : 'text-gray-200'}`}>
+            <h4 className={`font-bold text-sm ${locked ? 'text-gray-400' : 'text-gray-900'}`}>
                 {achievement.title}
             </h4>
 
@@ -35,7 +35,7 @@ const AchievementBadge = ({ achievement, locked = false }) => {
                         <span>Progress</span>
                         <span className="text-blue-400 font-bold">{achievement.progress} / {achievement.total}</span>
                     </div>
-                    <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden border border-white/5">
+                    <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
                         <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${Math.min((achievement.progress / achievement.total) * 100, 100)}%` }}
