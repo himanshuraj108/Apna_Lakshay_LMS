@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoGridOutline, IoDownload, IoClose } from 'react-icons/io5';
+import { IoGridOutline, IoDownload, IoClose, IoFlash, IoCloudOffline, IoPhonePortrait } from 'react-icons/io5';
 
 const PwaInstallBanner = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(window.deferredPwaPrompt || null);
@@ -77,9 +77,9 @@ const PwaInstallBanner = () => {
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-2 mb-5">
-                            {[['⚡', 'Fast'], ['📴', 'Offline'], ['📱', 'Native']].map(([icon, label]) => (
+                            {[[<IoFlash size={18} />, 'Fast'], [<IoCloudOffline size={18} />, 'Offline'], [<IoPhonePortrait size={18} />, 'Native']].map(([icon, label]) => (
                                 <div key={label} className="bg-white/10 rounded-xl p-2.5 flex flex-col items-center gap-1.5 text-center">
-                                    <span className="text-lg">{icon}</span>
+                                    <div className="text-white/90">{icon}</div>
                                     <span className="text-[10px] font-semibold text-white uppercase tracking-wider">{label}</span>
                                 </div>
                             ))}
