@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose } from 'react-icons/io5';
 
-const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl', accentColor = 'from-violet-500 via-blue-500 to-cyan-500' }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl', accentColor = 'from-orange-400 via-orange-500 to-amber-500', theme = 'light' }) => {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -23,8 +23,8 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl', accen
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.94, y: 24 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                            className={`relative w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl`}
-                            style={{ background: 'linear-gradient(135deg, rgba(15,15,25,0.98) 0%, rgba(20,20,35,0.98) 100%)' }}
+                            className={`relative w-full ${maxWidth} max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl ${theme === 'light' ? 'bg-white border-gray-200' : 'border-white/10'}`}
+                            style={theme === 'dark' ? { background: 'linear-gradient(135deg, rgba(15,15,25,0.98) 0%, rgba(20,20,35,0.98) 100%)' } : {}}
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Top accent bar */}
@@ -35,17 +35,17 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl', accen
 
                             {/* Header */}
                             <div className="flex items-center justify-between px-6 pt-7 pb-4">
-                                <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
+                                <h2 className={`text-xl font-bold tracking-tight ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>{title}</h2>
                                 <button
                                     onClick={onClose}
-                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white transition-all duration-200"
+                                    className={`p-2 rounded-xl transition-all duration-200 ${theme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900' : 'bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white'}`}
                                 >
                                     <IoClose size={20} />
                                 </button>
                             </div>
 
                             {/* Divider */}
-                            <div className="mx-6 h-px bg-white/6 mb-5" />
+                            <div className={`mx-6 h-px mb-5 ${theme === 'light' ? 'bg-gray-200' : 'bg-white/6'}`} />
 
                             {/* Content */}
                             <div className="px-6 pb-6">
