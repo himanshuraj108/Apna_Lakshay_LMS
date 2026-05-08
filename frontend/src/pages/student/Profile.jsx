@@ -184,9 +184,9 @@ const Profile = () => {
     // ─── derived ──────────────────────────────────────────────────────
     const memberStatus = !profile?.isActive ? 'inactive' : !profile?.seat ? 'pending' : 'active';
     const statusConfig = {
-        active: { label: 'Active Member', color: 'from-green-400 to-emerald-500', border: 'border-green-500/30', bg: 'bg-green-500/10', text: 'text-green-400', dot: 'bg-green-400' },
-        pending: { label: 'Pending Allocation', color: 'from-yellow-400 to-amber-500', border: 'border-yellow-500/30', bg: 'bg-yellow-500/10', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-        inactive: { label: 'Inactive', color: 'from-red-400 to-rose-500', border: 'border-red-500/30', bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
+        active:  { label: 'Active Member',      color: 'from-green-400 to-emerald-500', border: 'border-green-200',  bg: 'bg-green-50',  text: 'text-green-600', dot: 'bg-green-400' },
+        pending: { label: 'Pending Allocation', color: 'from-yellow-400 to-amber-500',  border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-600', dot: 'bg-amber-400' },
+        inactive:{ label: 'Inactive',           color: 'from-red-400 to-rose-500',      border: 'border-red-200',    bg: 'bg-red-50',    text: 'text-red-500',  dot: 'bg-red-400' },
     }[memberStatus];
 
     const initials = (profile?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
@@ -195,31 +195,25 @@ const Profile = () => {
         : null;
 
     const InfoRow = ({ icon: Icon, label, value, color = 'text-gray-400' }) => (
-        <div className="flex items-center gap-4 py-3.5 border-b border-white/5 last:border-0 group">
-            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors">
+        <div className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 group">
+            <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 transition-colors">
                 <Icon size={15} className={color} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-600">{label}</p>
-                <p className="text-sm text-gray-200 font-medium truncate mt-0.5">{value || '—'}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>{label}</p>
+                <p className="text-sm font-medium truncate mt-0.5" style={{ color: '#111827' }}>{value || '—'}</p>
             </div>
         </div>
     );
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden pb-16" style={{ background: '#050508' }}>
-            {/* ── Animated background orbs ── */}
+        <div className="relative min-h-screen overflow-x-hidden pb-16" style={{ background: '#F8FAFC', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
             <style>{`
-                @keyframes orbA{0%,100%{transform:translate(0,0) scale(1);}40%{transform:translate(35px,-45px) scale(1.1);}70%{transform:translate(-20px,15px) scale(0.95);}}
-                @keyframes orbB{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-30px,30px) scale(1.12);}}
                 @keyframes shimmerP{0%{background-position:200% center;}100%{background-position:-200% center;}}
-                .shimmer-p{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmerP 4s linear infinite;}
-                .glass-card{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.07);}
+                .shimmer-p{background:linear-gradient(90deg,#F97316,#FB923C,#FBBF24,#FB923C,#F97316);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmerP 4s linear infinite;}
             `}</style>
-            <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div style={{ animation: 'orbA 14s ease-in-out infinite' }} className="absolute top-[-15%] right-[-10%] w-[600px] h-[600px] rounded-full bg-violet-600/8 blur-3xl" />
-                <div style={{ animation: 'orbB 17s ease-in-out infinite' }} className="absolute bottom-[-10%] left-[-8%] w-[500px] h-[500px] rounded-full bg-blue-600/7 blur-3xl" />
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0)', backgroundSize: '48px 48px' }} />
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             </div>
 
             {/* ── Content ── */}
@@ -229,14 +223,15 @@ const Profile = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-3">
                     <Link to="/student">
                         <motion.button whileHover={{ scale: 1.05, x: -3 }} whileTap={{ scale: 0.97 }}
-                            className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                            style={{ color: '#374151' }}
                         >
                             <IoArrowBack size={16} /> Back to Dashboard
                         </motion.button>
                     </Link>
                     <div className="flex items-center gap-2">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 rounded-xl text-sm font-medium transition-all"
+                            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 text-red-500 rounded-xl text-sm font-medium transition-all"
                         >
                             <IoLogOut size={15} /> Logout
                         </motion.button>
@@ -245,23 +240,24 @@ const Profile = () => {
 
                 {/* ── Toast alerts ── */}
                 {success && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-green-500/10 border border-green-500/25 text-green-400 rounded-xl text-sm font-medium">
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-green-50 border border-green-200 text-green-600 rounded-xl text-sm font-medium">
                         <IoCheckmarkCircleOutline size={18} /> {success}
                     </motion.div>
                 )}
                 {error && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-red-500/10 border border-red-500/25 text-red-400 rounded-xl text-sm font-medium">
+                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-red-50 border border-red-200 text-red-500 rounded-xl text-sm font-medium">
                         <IoCloseCircleOutline size={18} /> {error}
                     </motion.div>
                 )}
 
                 {/* ── Hero Profile Banner ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                    className="glass-card relative rounded-2xl overflow-hidden mb-6"
+                    className="bg-white border border-gray-200 relative rounded-2xl overflow-hidden mb-6"
+                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}
                 >
                     {/* Gradient banner */}
-                    <div className="min-h-[7rem] bg-gradient-to-br from-violet-600/30 via-indigo-600/20 to-blue-600/30 relative flex flex-col justify-center">
-                        <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, rgba(139,92,246,0.3), transparent 60%), radial-gradient(circle at 70% 50%, rgba(59,130,246,0.2), transparent 60%)' }} />
+                    <div className="min-h-[7rem] relative flex flex-col justify-center" style={{ background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)' }}>
+                        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #F97316, #FB923C, #FBBF24)' }} />
                         <div className="relative z-10 w-full pl-36 pr-6 py-4">
                             <MotivationBanner />
                         </div>
@@ -271,11 +267,11 @@ const Profile = () => {
                         {/* Avatar */}
                         <div className="relative -mt-12 mb-4 flex items-end justify-between flex-wrap gap-4">
                             <div className="relative">
-                                <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-gray-950 shadow-2xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+                                <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
                                     {imgSrc ? (
                                         <img src={imgSrc} alt={profile?.name} className="w-full h-full object-cover" crossOrigin="anonymous" />
                                     ) : (
-                                        <IoPerson size={44} className="text-white/40" />
+                                        <IoPerson size={44} className="text-white/70" />
                                     )}
                                 </div>
                                 {/* Upload overlay */}
@@ -284,14 +280,14 @@ const Profile = () => {
                                 </label>
                                 <input type="file" id="image-upload" accept="image/*" onChange={handleImageUpload} className="hidden" />
                                 {memberStatus === 'active' && (
-                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-gray-950 shadow" />
+                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white shadow" />
                                 )}
                             </div>
 
                             <div className="flex gap-2">
                                 {profile?.profileImage && (
                                     <motion.button whileTap={{ scale: 0.95 }} onClick={handleImageDelete}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-lg text-xs font-medium transition-all"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-500 hover:bg-red-100 rounded-lg text-xs font-medium transition-all"
                                     >
                                         <IoTrash size={13} /> Remove Photo
                                     </motion.button>
@@ -302,22 +298,22 @@ const Profile = () => {
                         <div className="flex items-start justify-between flex-wrap gap-3">
                             <div>
                                 <h1 className="shimmer-p text-3xl font-black">{profile?.name}</h1>
-                                <p className="text-gray-500 text-sm mt-1 flex items-center gap-1.5">
+                                <p className="text-sm mt-1 flex items-center gap-1.5" style={{ color: '#6B7280' }}>
                                     <IoMail size={13} /> {profile?.email}
                                 </p>
-                                {/* ── Download buttons below email ── */}
+                                {/* Download buttons */}
                                 <div className="flex gap-2 mt-3 flex-wrap">
                                     <motion.button
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                         onClick={() => setShowAdmissionModal(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-blue-500/25 transition-all"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
                                     >
                                         <IoDocumentTextOutline size={13} /> Download Admission Form
                                     </motion.button>
                                     <motion.button
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                         onClick={() => { fetchFirstFee(); setShowReceiptModal(true); }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-rose-500/25 transition-all"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-400 hover:to-red-400 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
                                     >
                                         <IoReceiptOutline size={13} /> Download Receipt
                                     </motion.button>
@@ -336,35 +332,36 @@ const Profile = () => {
 
                     {/* QR / ID Card */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="glass-card rounded-2xl p-5 flex flex-col items-center text-center overflow-hidden relative"
+                        className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center text-center overflow-hidden relative"
+                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                     >
-                        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+                        <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #F97316, #FB923C, transparent)' }} />
                         <div className="flex items-center gap-2 mb-4 self-start">
-                            <IoQrCode className="text-violet-400" size={16} />
-                            <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Digital ID</span>
+                            <IoQrCode className="text-orange-400" size={16} />
+                            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>Digital ID</span>
                         </div>
 
                         {profile?.isActive && profile?.seat ? (
                             <>
-                                <div className="p-3 bg-white rounded-xl shadow-2xl shadow-violet-500/20 mb-4">
+                                <div className="p-3 bg-white rounded-xl shadow-md border border-gray-100 mb-4">
                                     <QRCodeSVG
                                         value={JSON.stringify({ token: user.qrToken, id: user.id })}
                                         size={140} level="H" includeMargin={false}
                                     />
                                 </div>
-                                <p className="text-white font-bold text-base">{user?.name}</p>
-                                <p className="text-violet-400 text-xs mt-1 font-mono">
+                                <p className="font-bold text-base" style={{ color: '#111827' }}>{user?.name}</p>
+                                <p className="text-orange-500 text-xs mt-1 font-mono">
                                     {user?.qrToken ? '🔒 Secure Token Active' : 'Legacy ID Mode'}
                                 </p>
-                                <p className="text-gray-600 text-xs mt-3">Scan for Entry / Exit</p>
+                                <p className="text-xs mt-3" style={{ color: '#9CA3AF' }}>Scan for Entry / Exit</p>
                             </>
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center py-6">
-                                <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-                                    <IoLockClosed size={28} className="text-gray-600" />
+                                <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-4">
+                                    <IoLockClosed size={28} style={{ color: '#D1D5DB' }} />
                                 </div>
-                                <p className="text-gray-400 font-semibold text-sm">ID Unavailable</p>
-                                <p className="text-gray-600 text-xs mt-1.5 max-w-[140px] leading-relaxed">
+                                <p className="font-semibold text-sm" style={{ color: '#6B7280' }}>ID Unavailable</p>
+                                <p className="text-xs mt-1.5 max-w-[140px] leading-relaxed" style={{ color: '#9CA3AF' }}>
                                     {memberStatus === 'inactive' ? 'Membership inactive' : 'Pending seat allocation'}
                                 </p>
                             </div>
@@ -373,24 +370,25 @@ const Profile = () => {
 
                     {/* Info Card */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                        className="glass-card rounded-2xl p-5 md:col-span-2 relative overflow-hidden"
+                        className="bg-white border border-gray-200 rounded-2xl p-5 md:col-span-2 relative overflow-hidden"
+                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                     >
-                        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+                        <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #3B82F6, #6366F1, transparent)' }} />
                         <div className="flex items-center gap-2 mb-4">
-                            <IoPerson className="text-blue-400" size={16} />
-                            <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Profile Information</span>
+                            <IoPerson className="text-blue-500" size={16} />
+                            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>Profile Information</span>
                         </div>
 
-                        <InfoRow icon={IoPerson} label="Full Name" value={profile?.name} color="text-purple-400" />
-                        <InfoRow icon={IoMail} label="Email Address" value={profile?.email} color="text-blue-400" />
-                        <InfoRow icon={IoCall} label="Phone Number" value={profile?.mobile || 'Not provided'} color="text-green-400" />
-                        <InfoRow icon={IoLocation} label="Address" value={profile?.address || 'Not provided'} color="text-orange-400" />
-                        <InfoRow icon={IoBedOutline} label="Seat Number" value={profile?.seatNumber || 'Not Assigned'} color="text-cyan-400" />
-                        <InfoRow icon={IoCalendar} label="Member Since"
+                        <InfoRow icon={IoPerson}    label="Full Name"    value={profile?.name}                    color="text-purple-500" />
+                        <InfoRow icon={IoMail}      label="Email Address" value={profile?.email}                  color="text-blue-500" />
+                        <InfoRow icon={IoCall}      label="Phone Number"  value={profile?.mobile || 'Not provided'} color="text-green-500" />
+                        <InfoRow icon={IoLocation}  label="Address"       value={profile?.address || 'Not provided'} color="text-orange-500" />
+                        <InfoRow icon={IoBedOutline} label="Seat Number"  value={profile?.seatNumber || 'Not Assigned'} color="text-cyan-500" />
+                        <InfoRow icon={IoCalendar}  label="Member Since"
                             value={profile?.createdAt
                                 ? new Date(profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
                                 : 'Not available'
-                            } color="text-pink-400"
+                            } color="text-pink-500"
                         />
                     </motion.div>
                 </div>
@@ -481,35 +479,29 @@ const Profile = () => {
 
                 {/* ── Security Settings ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                    className="rounded-2xl overflow-hidden"
-                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}
+                    className="rounded-2xl overflow-hidden bg-white border border-gray-200"
+                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                 >
-                    <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-                            style={{ background: 'rgba(239,68,68,0.12)' }}>
-                            <IoShieldCheckmark size={13} className="text-red-400" />
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                            <IoShieldCheckmark size={13} className="text-red-500" />
                         </div>
-                        <p className="text-white font-bold text-sm">Security Settings</p>
+                        <p className="font-bold text-sm" style={{ color: '#111827' }}>Security Settings</p>
                     </div>
                     <div className="p-4">
                         <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
                             onClick={() => { setRequestType('password'); setShowRequestModal(true); }}
                             className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
-                            style={{
-                                background: 'linear-gradient(145deg, rgba(239,68,68,0.07), rgba(255,255,255,0.02))',
-                                border: '1px solid rgba(239,68,68,0.15)',
-                                padding: '14px 16px',
-                            }}>
+                            style={{ background: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.12)', padding: '14px 16px' }}>
                             <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#ef4444' }} />
-                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                                style={{ background: 'rgba(239,68,68,0.1)' }}>
-                                <IoLockClosed size={16} style={{ color: '#f87171' }} />
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.08)' }}>
+                                <IoLockClosed size={16} style={{ color: '#ef4444' }} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-white font-bold text-sm">Change Password</p>
-                                <p className="text-[12px] mt-0.5" style={{ color: 'rgba(248,113,113,0.8)' }}>Update your login credentials</p>
+                                <p className="font-bold text-sm" style={{ color: '#111827' }}>Change Password</p>
+                                <p className="text-[12px] mt-0.5" style={{ color: '#f87171' }}>Update your login credentials</p>
                             </div>
-                            <IoChevronForward size={16} className="text-gray-600 shrink-0" />
+                            <IoChevronForward size={16} style={{ color: '#9CA3AF' }} className="shrink-0" />
                         </motion.div>
                     </div>
                 </motion.div>
