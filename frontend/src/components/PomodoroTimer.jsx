@@ -176,7 +176,7 @@ const PomodoroTimer = ({ onSessionComplete }) => {
     };
 
     return (
-        <div className="bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl relative overflow-hidden">
+        <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm relative overflow-hidden">
             <div className={`absolute -top-20 -right-20 w-40 h-40 ${MODES[mode].bg} opacity-20 blur-[50px] transition-colors duration-500`}></div>
 
             <div className="flex justify-between items-center mb-8 relative z-10">
@@ -187,7 +187,7 @@ const PomodoroTimer = ({ onSessionComplete }) => {
                             onClick={() => changeMode(m)}
                             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${mode === m
                                 ? `${MODES[m].bg} text-white shadow-lg`
-                                : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                 }`}
                         >
                             {MODES[m].label}
@@ -196,7 +196,7 @@ const PomodoroTimer = ({ onSessionComplete }) => {
                 </div>
                 <button
                     onClick={() => setShowSettings(true)}
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-gray-500 hover:text-gray-900 transition-colors"
                 >
                     <IoSettings size={20} />
                 </button>
@@ -211,7 +211,7 @@ const PomodoroTimer = ({ onSessionComplete }) => {
                         stroke="currentColor"
                         strokeWidth="8"
                         fill="transparent"
-                        className="text-gray-700"
+                        className="text-gray-100"
                     />
                     <circle
                         cx="128"
@@ -236,7 +236,7 @@ const PomodoroTimer = ({ onSessionComplete }) => {
                     >
                         {formatTime(timeLeft)}
                     </motion.div>
-                    <p className="text-gray-400 mt-2 font-medium tracking-widest uppercase text-xs">
+                    <p className="text-gray-500 mt-2 font-medium tracking-widest uppercase text-xs">
                         {isActive ? 'Running' : 'Paused'}
                     </p>
                 </div>
@@ -245,7 +245,7 @@ const PomodoroTimer = ({ onSessionComplete }) => {
             <div className="flex justify-center gap-4 relative z-10">
                 <Button
                     onClick={toggleTimer}
-                    className={`w-16 h-16 !rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform active:scale-95 ${isActive ? 'bg-gray-700 hover:bg-gray-600' : `${MODES[mode].bg} hover:opacity-90`}`}
+                    className={`w-16 h-16 !rounded-full flex items-center justify-center text-2xl shadow-lg transition-transform active:scale-95 ${isActive ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : `${MODES[mode].bg} hover:opacity-90`}`}
                 >
                     {isActive ? <IoPause /> : <IoPlay className="ml-1" />}
                 </Button>
@@ -265,52 +265,52 @@ const PomodoroTimer = ({ onSessionComplete }) => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 20 }}
-                        className="absolute inset-0 bg-gray-900/95 z-20 flex flex-col p-6"
+                        className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex flex-col p-6"
                     >
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                                 <IoSettings /> Settings
                             </h3>
-                            <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-white">
+                            <button onClick={() => setShowSettings(false)} className="text-gray-500 hover:text-gray-900">
                                 <IoClose size={24} />
                             </button>
                         </div>
 
                         <div className="space-y-4 flex-1">
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Focus Time (minutes)</label>
+                                <label className="block text-sm text-gray-600 mb-1">Focus Time (minutes)</label>
                                 <input
                                     type="number"
                                     value={tempSettings.focus}
                                     onChange={(e) => setTempSettings({ ...tempSettings, focus: parseInt(e.target.value) || 25 })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-blue-500"
                                     min="1" max="180"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Short Break (minutes)</label>
+                                <label className="block text-sm text-gray-600 mb-1">Short Break (minutes)</label>
                                 <input
                                     type="number"
                                     value={tempSettings.short_break}
                                     onChange={(e) => setTempSettings({ ...tempSettings, short_break: parseInt(e.target.value) || 5 })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-green-500"
+                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-green-500"
                                     min="1" max="60"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm text-gray-400 mb-1">Long Break (minutes)</label>
+                                <label className="block text-sm text-gray-600 mb-1">Long Break (minutes)</label>
                                 <input
                                     type="number"
                                     value={tempSettings.long_break}
                                     onChange={(e) => setTempSettings({ ...tempSettings, long_break: parseInt(e.target.value) || 15 })}
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500"
+                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-900 outline-none focus:border-blue-500"
                                     min="1" max="60"
                                 />
                             </div>
 
                             <button
                                 onClick={handleResetDefaults}
-                                className="text-xs text-gray-400 hover:text-white flex items-center gap-1 mt-2 underline"
+                                className="text-xs text-gray-500 hover:text-gray-900 flex items-center gap-1 mt-2 underline"
                             >
                                 <IoReload /> Reset to defaults
                             </button>
