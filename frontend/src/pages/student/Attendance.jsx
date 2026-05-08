@@ -15,13 +15,9 @@ import AttendanceScanner from '../../components/student/AttendanceScanner';
 /* ─── Background ────────────────────────────────────────────────────── */
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#070a10' }} />
-        <div className="fixed top-[-15%] left-[-5%] w-[500px] h-[500px] rounded-full -z-10 blur-[130px]"
-            style={{ background: 'rgba(124,58,237,0.08)' }} />
-        <div className="fixed bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full -z-10 blur-[100px]"
-            style={{ background: 'rgba(59,130,246,0.07)' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.02) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
     </>
 );
 
@@ -32,9 +28,8 @@ const StatChip = ({ label, value, accentColor, icon: Icon, delay = 0 }) => (
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay, type: 'spring', stiffness: 120 }}
         className="relative flex flex-col justify-between overflow-hidden rounded-2xl"
+        className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm"
         style={{
-            background: `linear-gradient(145deg, ${accentColor}0d, rgba(255,255,255,0.02))`,
-            border: '1px solid rgba(255,255,255,0.06)',
             padding: '16px',
             minHeight: '100px',
         }}
@@ -51,9 +46,8 @@ const StatChip = ({ label, value, accentColor, icon: Icon, delay = 0 }) => (
             <Icon size={15} style={{ color: accentColor }} />
         </div>
         <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5"
-                style={{ color: 'rgba(156,163,175,0.7)' }}>{label}</p>
-            <p className="text-xl font-black text-white leading-none">{value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-gray-500">{label}</p>
+            <p className="text-xl font-black text-gray-900 leading-none">{value}</p>
         </div>
     </motion.div>
 );
@@ -141,7 +135,7 @@ const Attendance = () => {
     const pctColor = pct >= 76 ? '#22c55e' : pct >= 61 ? '#3b82f6' : pct >= 41 ? '#f97316' : '#ef4444';
 
     return (
-        <div className="min-h-screen text-white">
+        <div className="min-h-screen text-gray-900">
             <PageBg />
 
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
@@ -150,20 +144,20 @@ const Attendance = () => {
             {showLocationPrompt && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                        className="rounded-2xl p-6 max-w-sm w-full relative"
-                        style={{ background: '#0f1117', border: '1px solid rgba(245,158,11,0.3)' }}>
+                        className="rounded-2xl p-6 max-w-sm w-full relative bg-white border border-amber-200 shadow-xl"
+                        style={{}}>
                         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl"
                             style={{ background: 'linear-gradient(90deg, #f59e0b, transparent)' }} />
                         <button onClick={() => setShowLocationPrompt(false)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition-colors">
                             <IoCloseCircle size={22} />
                         </button>
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
                             style={{ background: 'rgba(245,158,11,0.12)' }}>
                             <IoAlertCircleOutline size={24} className="text-amber-400" />
                         </div>
-                        <h3 className="text-white font-bold text-lg mb-2">Location Access Needed</h3>
-                        <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                        <h3 className="text-gray-900 font-bold text-lg mb-2">Location Access Needed</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed mb-5">
                             Admin has enabled location restrictions. Please allow location access in your browser settings to mark attendance via QR scan.
                         </p>
                         <button onClick={() => setShowLocationPrompt(false)}
@@ -183,39 +177,25 @@ const Attendance = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/student">
                             <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all"
-                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 bg-white border border-gray-200 transition-all shadow-sm">
                                 <IoArrowBack size={15} />
                                 <span className="hidden sm:inline">Dashboard</span>
                             </motion.button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Attendance</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Attendance</h1>
                             <p className="text-gray-500 text-sm mt-0.5">Your study presence tracker</p>
                         </div>
                     </div>
                     <div className="flex gap-2.5">
-                        {user?.seat && (
-                            <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
-                                onClick={handleOpenScanner} disabled={loadingScanner}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all"
-                                style={{
-                                    background: loadingScanner ? 'rgba(99,102,241,0.3)' : 'linear-gradient(135deg, #7c3aed, #6366f1)',
-                                    boxShadow: loadingScanner ? 'none' : '0 6px 20px rgba(124,58,237,0.3)',
-                                }}>
-                                {loadingScanner
-                                    ? <IoTimeOutline size={16} className="animate-spin" />
-                                    : <IoScan size={16} />}
-                                Mark Attendance
-                            </motion.button>
-                        )}
+
                         <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.97 }}
                             onClick={() => setShowAnalytics(!showAnalytics)}
                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
                             style={{
-                                background: showAnalytics ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                                border: showAnalytics ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                                color: showAnalytics ? '#a5b4fc' : '#9ca3af',
+                                background: showAnalytics ? '#e0e7ff' : '#ffffff',
+                                border: showAnalytics ? '1px solid #a5b4fc' : '1px solid #e2e8f0',
+                                color: showAnalytics ? '#4f46e5' : '#4b5563',
                             }}>
                             <IoAnalytics size={15} />
                             {showAnalytics ? 'Show Logs' : 'Analytics'}
@@ -235,34 +215,34 @@ const Attendance = () => {
                             {scanMessage.type === 'error'
                                 ? <IoCloseCircle size={20} className="text-red-400 shrink-0" />
                                 : <IoCheckmarkCircle size={20} className="text-green-400 shrink-0" />}
-                            <p className="font-semibold text-sm text-white">{scanMessage.text}</p>
+                            <p className="font-semibold text-sm text-gray-900">{scanMessage.text}</p>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
                 {/* ── Stat chips ───────────────────────────────────── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-                    <StatChip label="Days Logged"    value={summary.total || 0}           accentColor="#94a3b8" icon={IoCalendar}        delay={0} />
-                    <StatChip label="Present"        value={summary.present || 0}         accentColor="#22c55e" icon={IoCheckmarkCircle}  delay={0.07} />
-                    <StatChip label="Attendance"     value={`${pct}%`}                    accentColor={pctColor} icon={IoAnalytics}       delay={0.13} />
-                    <StatChip label="Study Hours"    value={`${totalHrs}h ${totalMins}m`} accentColor="#a855f7" icon={IoHourglassOutline} delay={0.19} />
+                    <StatChip label="Days Logged" value={summary.total || 0} accentColor="#94a3b8" icon={IoCalendar} delay={0} />
+                    <StatChip label="Present" value={summary.present || 0} accentColor="#22c55e" icon={IoCheckmarkCircle} delay={0.07} />
+                    <StatChip label="Attendance" value={`${pct}%`} accentColor={pctColor} icon={IoAnalytics} delay={0.13} />
+                    <StatChip label="Study Hours" value={`${totalHrs}h ${totalMins}m`} accentColor="#a855f7" icon={IoHourglassOutline} delay={0.19} />
                 </div>
 
                 {/* ── Progress bar ─────────────────────────────────── */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
                     className="mb-5 rounded-2xl overflow-hidden"
-                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', padding: '16px 20px' }}>
+                    style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <IoFlashOutline size={14} style={{ color: pctColor }} />
-                            <span className="text-white text-sm font-semibold">Attendance Progress</span>
+                            <span className="text-gray-900 text-sm font-semibold">Attendance Progress</span>
                         </div>
                         <div className="flex items-center gap-2">
                             {pct < 76 && <span className="text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">Below target</span>}
                             <span className="text-sm font-black" style={{ color: pctColor }}>{pct}%</span>
                         </div>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#e2e8f0' }}>
                         <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                             transition={{ duration: 1.1, ease: 'easeOut', delay: 0.3 }}
                             className="h-full rounded-full"
@@ -279,12 +259,12 @@ const Attendance = () => {
                         /* ── ANALYTICS ── */
                         <motion.div key="analytics" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
                             className="rounded-2xl overflow-hidden"
-                            style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
+                            style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
                                 <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.15)' }}>
                                     <IoAnalytics size={13} className="text-indigo-400" />
                                 </div>
-                                <p className="text-white font-bold text-sm">Monthly Trends</p>
+                                <p className="text-gray-900 font-bold text-sm">Monthly Trends</p>
                             </div>
                             <div className="p-5">
                                 <div className="h-56 flex items-stretch gap-1 overflow-x-auto pb-2">
@@ -304,7 +284,7 @@ const Attendance = () => {
                                         return data.map((item, idx) => (
                                             <div key={idx} className="flex-1 min-w-[18px] h-full flex flex-col justify-end items-center gap-1 group relative">
                                                 <div className="absolute -top-9 left-1/2 -translate-x-1/2 text-[10px] px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10"
-                                                    style={{ background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                    style={{ background: 'white', border: '1px solid #e2e8f0', color: '#111827' }}>
                                                     Day {item.label}: {item.value.toFixed(1)}h
                                                 </div>
                                                 <motion.div
@@ -313,7 +293,7 @@ const Attendance = () => {
                                                     transition={{ delay: idx * 0.02, duration: 0.5 }}
                                                     className="w-full rounded-t-sm"
                                                     style={{
-                                                        background: item.value > 8 ? '#22c55e' : item.value > 4 ? '#6366f1' : item.value > 0 ? '#a855f7' : 'rgba(255,255,255,0.04)',
+                                                        background: item.value > 8 ? '#22c55e' : item.value > 4 ? '#6366f1' : item.value > 0 ? '#a855f7' : '#f8fafc',
                                                         opacity: item.value > 0 ? 0.85 : 1,
                                                     }}
                                                 />
@@ -330,12 +310,12 @@ const Attendance = () => {
 
                             {/* Daily Log */}
                             <div className="rounded-2xl overflow-hidden"
-                                style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
+                                style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+                                <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
                                     <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.12)' }}>
                                         <IoCalendar size={13} className="text-emerald-400" />
                                     </div>
-                                    <p className="text-white font-bold text-sm">Daily Log</p>
+                                    <p className="text-gray-900 font-bold text-sm">Daily Log</p>
                                 </div>
                                 <div className="p-4 space-y-2 max-h-[520px] overflow-y-auto">
                                     {myAttendance.length === 0 && (
@@ -353,7 +333,7 @@ const Attendance = () => {
                                             iconColor = '#f59e0b'; badgeStyle = { background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' };
                                             badgeText = holidayFestivalName.toUpperCase();
                                         } else if (record.status === 'present' || attendedOnHoliday) {
-                                            cardBg = 'rgba(255,255,255,0.02)'; borderColor = 'rgba(255,255,255,0.06)';
+                                            cardBg = '#f8fafc'; borderColor = '#e2e8f0';
                                             iconColor = '#22c55e'; badgeStyle = { background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' };
                                             badgeText = 'PRESENT';
                                         } else {
@@ -379,7 +359,7 @@ const Attendance = () => {
                                                 </div>
                                                 {/* Date + badge */}
                                                 <div className="shrink-0 min-w-[110px]">
-                                                    <p className="font-bold text-white text-sm leading-snug">
+                                                    <p className="font-bold text-gray-900 text-sm leading-snug">
                                                         {new Date(record.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
                                                     </p>
                                                     {badgeText && (
@@ -398,10 +378,10 @@ const Attendance = () => {
                                                                 { icon: <IoHourglassOutline className="text-amber-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' },
                                                             ].map(({ icon, label, value }) => (
                                                                 <div key={label} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] shrink-0"
-                                                                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                                                    style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
                                                                     {icon}
                                                                     <span className="text-gray-600 uppercase">{label}</span>
-                                                                    <span className="font-mono font-bold text-white">{value}</span>
+                                                                    <span className="font-mono font-bold text-gray-900">{value}</span>
                                                                 </div>
                                                             ))}
                                                         </>
@@ -415,7 +395,7 @@ const Attendance = () => {
                                                     )}
                                                     {!isHoliday && record.notes && (
                                                         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs ml-auto"
-                                                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                                            style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
                                                             <IoDocumentTextOutline className="text-gray-600" />
                                                             <p className="italic text-gray-600 max-w-[130px] truncate">"{record.notes}"</p>
                                                         </div>
@@ -429,17 +409,17 @@ const Attendance = () => {
 
                             {/* Rankings */}
                             <div className="rounded-2xl overflow-hidden"
-                                style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
+                                style={{ background: 'white', border: '1px solid #e2e8f0' }}>
+                                <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
                                     <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(234,179,8,0.12)' }}>
                                         <IoTrophyOutline size={13} className="text-yellow-400" />
                                     </div>
-                                    <p className="text-white font-bold text-sm">Attendance Rankings</p>
+                                    <p className="text-gray-900 font-bold text-sm">Attendance Rankings</p>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                                                 {['Rank', 'Student', '%'].map(h => (
                                                     <th key={h} className={`px-5 py-3 text-[11px] uppercase tracking-widest font-semibold ${h === '%' ? 'text-right' : 'text-left'}`}
                                                         style={{ color: 'rgba(107,114,128,0.8)' }}>{h}</th>
@@ -454,59 +434,59 @@ const Attendance = () => {
                                                     : (rankings[rankings.length - 1]?.rank ?? 5);
 
                                                 return rankings.map((student) => {
-                                                const isTop5 = student.rank <= top5Cutoff;
-                                                const rankColors = {
-                                                    1: { bg: 'rgba(234,179,8,0.15)',   color: '#fbbf24', label: '1st' },
-                                                    2: { bg: 'rgba(156,163,175,0.12)', color: '#d1d5db', label: '2nd' },
-                                                    3: { bg: 'rgba(249,115,22,0.13)',  color: '#fb923c', label: '3rd' },
-                                                };
-                                                const rc = rankColors[student.rank] || { bg: 'rgba(255,255,255,0.04)', color: '#6b7280', label: `#${student.rank}` };
+                                                    const isTop5 = student.rank <= top5Cutoff;
+                                                    const rankColors = {
+                                                        1: { bg: 'rgba(234,179,8,0.15)', color: '#fbbf24', label: '1st' },
+                                                        2: { bg: 'rgba(156,163,175,0.12)', color: '#d1d5db', label: '2nd' },
+                                                        3: { bg: 'rgba(249,115,22,0.13)', color: '#fb923c', label: '3rd' },
+                                                    };
+                                                    const rc = rankColors[student.rank] || { bg: '#f8fafc', color: '#6b7280', label: `#${student.rank}` };
 
-                                                let rowBg = 'transparent';
-                                                if (student.isMe) rowBg = 'rgba(124,58,237,0.08)';
-                                                else if (isTop5) rowBg = 'rgba(34,197,94,0.05)';
+                                                    let rowBg = 'transparent';
+                                                    if (student.isMe) rowBg = '#f3f4f6';
+                                                    else if (isTop5) rowBg = '#f0fdf4';
 
-                                                return (
-                                                    <tr key={student.studentId}
-                                                        style={{
-                                                            borderBottom: '1px solid rgba(255,255,255,0.04)',
-                                                            background: rowBg,
-                                                            borderLeft: isTop5 && !student.isMe ? '3px solid rgba(34,197,94,0.35)' : student.isMe ? '3px solid rgba(124,58,237,0.4)' : '3px solid transparent',
-                                                        }}>
-                                                        <td className="px-5 py-3.5">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
-                                                                    style={{ background: rc.bg, color: rc.color }}>
-                                                                    {student.rank}
-                                                                </div>
-                                                                {student.rank <= 3 && (
-                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                                                    return (
+                                                        <tr key={student.studentId}
+                                                            style={{
+                                                                borderBottom: '1px solid #e2e8f0',
+                                                                background: rowBg,
+                                                                borderLeft: isTop5 && !student.isMe ? '3px solid rgba(34,197,94,0.35)' : student.isMe ? '3px solid rgba(124,58,237,0.4)' : '3px solid transparent',
+                                                            }}>
+                                                            <td className="px-5 py-3.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-black"
                                                                         style={{ background: rc.bg, color: rc.color }}>
-                                                                        {rc.label}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-5 py-3.5 text-sm font-medium">
-                                                            <div className="flex items-center gap-2">
-                                                                {isTop5 && !student.isMe && (
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                                                                )}
-                                                                <span className={isTop5 ? 'text-white font-semibold' : 'text-gray-300'}>{student.name}</span>
-                                                                {student.isMe && (
-                                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                                                                        style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.25)' }}>You</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-5 py-3.5 text-right">
-                                                            <span className="text-base font-black"
-                                                                style={{ color: student.percentage >= 90 ? '#4ade80' : student.percentage >= 75 ? '#fbbf24' : '#f87171' }}>
-                                                                {student.percentage}%
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                );
+                                                                        {student.rank}
+                                                                    </div>
+                                                                    {student.rank <= 3 && (
+                                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                                                                            style={{ background: rc.bg, color: rc.color }}>
+                                                                            {rc.label}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-5 py-3.5 text-sm font-medium">
+                                                                <div className="flex items-center gap-2">
+                                                                    {isTop5 && !student.isMe && (
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                                                    )}
+                                                                    <span className={isTop5 ? 'text-gray-900 font-semibold' : 'text-gray-600'}>{student.name}</span>
+                                                                    {student.isMe && (
+                                                                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                                                                            style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.25)' }}>You</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-5 py-3.5 text-right">
+                                                                <span className="text-base font-black"
+                                                                    style={{ color: student.percentage >= 90 ? '#4ade80' : student.percentage >= 75 ? '#fbbf24' : '#f87171' }}>
+                                                                    {student.percentage}%
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
                                                 });
                                             })()}
                                         </tbody>
