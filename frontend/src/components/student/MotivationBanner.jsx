@@ -73,7 +73,7 @@ const MotivationBanner = () => {
 
                     <div className="relative flex gap-4 items-start sm:items-center">
                         {/* Icon */}
-                        <div className="shrink-0 p-2.5 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                        <div className="shrink-0 p-2.5 rounded-xl bg-orange-50 border border-orange-200 text-orange-500 shadow-sm">
                             <IoSparklesOutline size={20} className="animate-pulse" />
                         </div>
 
@@ -90,10 +90,10 @@ const MotivationBanner = () => {
                                     animate={{ opacity: 1, filter: "blur(0px)" }}
                                     transition={{ duration: 0.5 }}
                                 >
-                                    <p className="text-gray-200 text-sm sm:text-base italic leading-relaxed font-medium">
+                                    <p className="text-gray-700 text-sm sm:text-base italic leading-relaxed font-medium">
                                         "{quote.content}"
                                     </p>
-                                    <p className="text-purple-400 text-xs sm:text-sm font-semibold mt-1.5 tracking-wide uppercase">
+                                    <p className="text-orange-500 text-xs sm:text-sm font-semibold mt-1.5 tracking-wide uppercase">
                                         — {quote.author}
                                     </p>
                                 </motion.div>
