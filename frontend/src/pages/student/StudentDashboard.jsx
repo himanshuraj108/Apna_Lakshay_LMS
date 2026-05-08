@@ -447,7 +447,12 @@ const StudentDashboard = () => {
             let coords = {};
             if (isLocationRequired) { try { coords = await getLocation(); } catch (e) { setScanMessage({ type: 'error', text: e.message }); setTimeout(() => setScanMessage(null), 6000); return; } }
             const res = await api.post('/student/attendance/qr-scan', { qrToken: token, ...coords });
-            if (res.data.success) { setAttendanceResult({ type: res.data.type, attendance: res.data.attendance }); fetchDashboardData(); }
+            if (res.data.success) {
+                const isNew = res.data.type !== 'already_marked';
+                if (isNew) playSuccessBeep();
+                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
+                fetchDashboardData();
+            }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
     const handleQuickAttendance = async () => {
@@ -456,7 +461,12 @@ const StudentDashboard = () => {
             let coords = {};
             if (isLocationRequired) { try { coords = await getLocation(); } catch (e) { setScanMessage({ type: 'error', text: e.message }); setTimeout(() => setScanMessage(null), 6000); return; } }
             const res = await api.post('/student/attendance/mark-self', coords);
-            if (res.data.success) { setAttendanceResult({ type: res.data.type, attendance: res.data.attendance }); fetchDashboardData(); }
+            if (res.data.success) {
+                const isNew = res.data.type !== 'already_marked';
+                if (isNew) playSuccessBeep();
+                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
+                fetchDashboardData();
+            }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
 
