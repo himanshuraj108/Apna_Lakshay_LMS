@@ -395,16 +395,14 @@ const Profile = () => {
 
                 {/* ── Change Requests ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="rounded-2xl overflow-hidden mb-4"
-                    style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}
+                    className="rounded-2xl overflow-hidden mb-4 bg-white border border-gray-200 shadow-sm"
                 >
                     {/* Panel header */}
-                    <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-                            style={{ background: 'rgba(249,115,22,0.12)' }}>
-                            <IoSend size={12} className="text-orange-400" />
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-orange-50">
+                            <IoSend size={12} className="text-orange-500" />
                         </div>
-                        <p className="text-white font-bold text-sm">Request Changes</p>
+                        <p className="text-gray-900 font-bold text-sm">Request Changes</p>
                     </div>
 
                     <div className="p-4">
@@ -414,60 +412,49 @@ const Profile = () => {
                                 {/* Shift Change */}
                                 <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
                                     onClick={() => { setRequestType('shift'); fetchAvailableShifts(); setShowRequestModal(true); }}
-                                    className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
-                                    style={{
-                                        background: 'linear-gradient(145deg, rgba(59,130,246,0.07), rgba(255,255,255,0.02))',
-                                        border: '1px solid rgba(59,130,246,0.15)',
-                                        padding: '14px 16px',
-                                    }}>
+                                    className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer bg-blue-50 border border-blue-100 px-4 py-3.5"
+                                >
                                     {/* Accent left line */}
-                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#3b82f6' }} />
-                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                                        style={{ background: 'rgba(59,130,246,0.12)' }}>
-                                        <IoTime size={17} style={{ color: '#60a5fa' }} />
+                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full bg-blue-500" />
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-blue-100/50">
+                                        <IoTime size={17} className="text-blue-500" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-white font-bold text-sm">Request Shift Change</p>
-                                        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(96,165,250,0.8)' }}>Change your study session timing</p>
+                                        <p className="text-gray-900 font-bold text-sm">Request Shift Change</p>
+                                        <p className="text-[12px] mt-0.5 text-blue-500">Change your study session timing</p>
                                     </div>
-                                    <IoChevronForward size={16} className="text-gray-600 shrink-0" />
+                                    <IoChevronForward size={16} className="text-gray-400 shrink-0" />
                                 </motion.div>
 
                                 {/* Seat Change */}
                                 <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
                                     onClick={() => setShowSeatChangeModal(true)}
-                                    className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
-                                    style={{
-                                        background: 'linear-gradient(145deg, rgba(124,58,237,0.07), rgba(255,255,255,0.02))',
-                                        border: '1px solid rgba(124,58,237,0.15)',
-                                        padding: '14px 16px',
-                                    }}>
-                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#7c3aed' }} />
-                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                                        style={{ background: 'rgba(124,58,237,0.12)' }}>
-                                        <IoBedOutline size={17} style={{ color: '#a78bfa' }} />
+                                    className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer bg-purple-50 border border-purple-100 px-4 py-3.5"
+                                >
+                                    <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full bg-purple-500" />
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-purple-100/50">
+                                        <IoBedOutline size={17} className="text-purple-500" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-white font-bold text-sm">Request Seat Change</p>
-                                        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(167,139,250,0.8)' }}>Move to a different seat</p>
+                                        <p className="text-gray-900 font-bold text-sm">Request Seat Change</p>
+                                        <p className="text-[12px] mt-0.5 text-purple-500">Move to a different seat</p>
                                     </div>
-                                    <IoChevronForward size={16} className="text-gray-600 shrink-0" />
+                                    <IoChevronForward size={16} className="text-gray-400 shrink-0" />
                                 </motion.div>
                             </div>
 
-                            <div className="mt-3 flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
-                                style={{ background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)' }}>
-                                <IoHelpCircle size={13} className="text-blue-400 shrink-0" />
+                            <div className="mt-3 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200">
+                                <IoHelpCircle size={13} className="text-gray-400 shrink-0" />
                                 <p className="text-gray-500 text-xs">Change requests need admin approval. You'll be notified once reviewed.</p>
                             </div>
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                                <IoLockClosed size={20} className="text-gray-600" />
+                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 bg-gray-50 border border-gray-200">
+                                <IoLockClosed size={20} className="text-gray-400" />
                             </div>
-                            <p className="text-gray-400 font-semibold text-sm">Requests Unavailable</p>
-                            <p className="text-gray-600 text-xs mt-1.5 max-w-xs leading-relaxed">
+                            <p className="text-gray-700 font-semibold text-sm">Requests Unavailable</p>
+                            <p className="text-gray-500 text-xs mt-1.5 max-w-xs leading-relaxed">
                                 {memberStatus === 'inactive'
                                     ? 'Your account is currently inactive. Please reactivate your membership.'
                                     : 'You are pending seat allocation. Requests will be available once a seat is assigned.'}
@@ -512,36 +499,36 @@ const Profile = () => {
                 title={requestType === 'password' ? 'Change Password' : `Request ${requestType === 'shift' ? 'Shift' : 'Seat'} Change`}
             >
                 <div className="space-y-4">
-                    <p className="text-gray-400 text-sm">Describe your requested {requestType} change below:</p>
+                    <p className="text-gray-500 text-sm mb-2">Describe your requested {requestType} change below:</p>
 
                     {requestType === 'shift' && (
                         <div>
                             {profile?.currentShift && (
-                                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                                    <p className="text-xs text-gray-400 mb-1">Current Shift</p>
-                                    <p className="text-white font-bold">
+                                <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                    <p className="text-xs text-gray-500 mb-1">Current Shift</p>
+                                    <p className="text-gray-900 font-bold">
                                         {shifts.find(s => s.id === profile.currentShift)?.name || profile.currentShift}
-                                        <span className="text-sm text-gray-400 ml-2">({getShiftTimeRange(shifts.find(s => s.id === profile.currentShift) || { id: profile.currentShift })})</span>
+                                        <span className="text-sm text-gray-500 ml-2">({getShiftTimeRange(shifts.find(s => s.id === profile.currentShift) || { id: profile.currentShift })})</span>
                                     </p>
                                 </div>
                             )}
                             {occupiedShifts.length > 0 && (
-                                <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                                    <p className="text-xs text-yellow-500 font-semibold mb-2">⚠️ Unavailable Shifts (Occupied)</p>
+                                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-xs text-amber-600 font-bold mb-2">⚠️ Unavailable Shifts (Occupied)</p>
                                     {occupiedShifts.map((o, i) => (
-                                        <div key={i} className="text-sm text-gray-400 mb-1">• {o.name} ({o.startTime} - {o.endTime}) - {o.occupiedBy}</div>
+                                        <div key={i} className="text-sm text-amber-800 mb-1">• {o.name} ({o.startTime} - {o.endTime}) - {o.occupiedBy}</div>
                                     ))}
                                 </div>
                             )}
                             <label className="block text-sm font-medium mb-2">New Shift</label>
                             {loadingShifts ? (
-                                <div className="flex items-center gap-2 py-4 bg-gray-800/30 border border-gray-700 rounded-lg px-4">
-                                    <div className="w-5 h-5 border-2 border-gray-400 border-t-white rounded-full animate-spin" />
-                                    <span className="text-gray-400 text-sm">Loading shifts...</span>
+                                <div className="flex items-center gap-2 py-4 bg-gray-50 border border-gray-200 rounded-lg px-4">
+                                    <div className="w-5 h-5 border-2 border-gray-300 border-t-orange-500 rounded-full animate-spin" />
+                                    <span className="text-gray-500 text-sm">Loading shifts...</span>
                                 </div>
                             ) : (
                                 <select value={requestData.shift || ''} onChange={(e) => setRequestData({ shift: e.target.value })}
-                                    className="input" disabled={loadingShifts || availableShifts.length === 0}
+                                    className="input !text-gray-900 !bg-white !border-gray-300" disabled={loadingShifts || availableShifts.length === 0}
                                 >
                                     <option value="">Select an available shift...</option>
                                     {availableShifts.length > 0
@@ -550,21 +537,21 @@ const Profile = () => {
                                     }
                                 </select>
                             )}
-                            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                                <p className="text-xs text-blue-400 mb-2">💡 Looking for different options?</p>
-                                <Button variant="primary" className="w-full" onClick={() => { setShowRequestModal(false); setShowCombinedChangeModal(true); }}>
+                            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                <p className="text-xs text-orange-600 font-semibold mb-2">💡 Looking for different options?</p>
+                                <Button variant="primary" className="w-full !bg-gradient-to-r !from-orange-500 !to-amber-500 hover:!from-orange-400 hover:!to-amber-400 !border-none !text-white" onClick={() => { setShowRequestModal(false); setShowCombinedChangeModal(true); }}>
                                     Shift not available? Want to change seat? CLICK HERE
                                 </Button>
                             </div>
                             {availableShifts.length === 0 && !loadingShifts && (
-                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                                    <p className="text-sm text-red-400">❌ No shifts available on your current seat (#{profile?.seat?.number || profile?.seat})</p>
+                                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-sm text-red-600">❌ No shifts available on your current seat (#{profile?.seat?.number || profile?.seat})</p>
                                 </div>
                             )}
                             {availableShifts.length > 0 && !loadingShifts && (
-                                <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                                    <p className="text-xs text-green-500 font-semibold mb-1">✓ {availableShifts.length} Available Shift{availableShifts.length !== 1 ? 's' : ''}</p>
-                                    <p className="text-sm text-gray-400">Select one to submit your request.</p>
+                                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-xs text-green-600 font-bold mb-1">✓ {availableShifts.length} Available Shift{availableShifts.length !== 1 ? 's' : ''}</p>
+                                    <p className="text-sm text-gray-600">Select one to submit your request.</p>
                                 </div>
                             )}
                         </div>
@@ -574,7 +561,7 @@ const Profile = () => {
                         <div>
                             <label className="block text-sm font-medium mb-2">Reason for Change</label>
                             <textarea value={requestData.reason || ''} onChange={(e) => setRequestData({ ...requestData, reason: e.target.value })}
-                                className="input min-h-[100px]" placeholder="Please explain why you need a seat change..."
+                                className="input !text-gray-900 !bg-white !border-gray-300 min-h-[100px]" placeholder="Please explain why you need a seat change..."
                             />
                         </div>
                     )}
@@ -584,17 +571,17 @@ const Profile = () => {
                             {[['currentPassword', 'Current Password', 'Enter current password'], ['newPassword', 'New Password', 'Enter new password'], ['confirmPassword', 'Confirm New Password', 'Confirm new password']].map(([field, label, ph]) => (
                                 <div key={field}>
                                     <label className="block text-sm font-medium mb-2">{label}</label>
-                                    <input type="password" className="input" placeholder={ph} onChange={(e) => setRequestData({ ...requestData, [field]: e.target.value })} />
+                                    <input type="password" className="input !text-gray-900 !bg-white !border-gray-300" placeholder={ph} onChange={(e) => setRequestData({ ...requestData, [field]: e.target.value })} />
                                 </div>
                             ))}
                         </div>
                     )}
 
                     <div className="flex gap-3 pt-2">
-                        <Button variant="primary" onClick={submitRequest} className="flex-1" disabled={submittingRequest}>
+                        <Button variant="primary" onClick={submitRequest} className="flex-1 !bg-gradient-to-r !from-orange-500 !to-amber-500 hover:!from-orange-400 hover:!to-amber-400 !border-none !text-white" disabled={submittingRequest}>
                             {submittingRequest ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />Submitting...</>) : 'Submit Request'}
                         </Button>
-                        <Button variant="secondary" onClick={() => setShowRequestModal(false)} className="flex-1">Cancel</Button>
+                        <Button variant="secondary" onClick={() => setShowRequestModal(false)} className="flex-1 !bg-gray-100 !text-gray-700 !border-gray-300 hover:!bg-gray-200">Cancel</Button>
                     </div>
                 </div>
             </Modal>
@@ -622,7 +609,7 @@ const Profile = () => {
                             exit={{ opacity: 0, scale: 0.92, y: 30 }}
                             transition={{ type: 'spring', stiffness: 240, damping: 22 }}
                             onClick={e => e.stopPropagation()}
-                            className="bg-[#0a0a12] border border-white/10 rounded-2xl p-6 w-full max-w-3xl my-6"
+                            className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-3xl my-6 shadow-xl"
                         >
                             {/* Modal header */}
                             <div className="flex items-center justify-between mb-5">
@@ -631,14 +618,14 @@ const Profile = () => {
                                         <IoDocumentTextOutline size={16} className="text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-white">Admission Form</h3>
+                                        <h3 className="text-base font-bold text-gray-900">Admission Form</h3>
                                         <p className="text-xs text-gray-500">Apna Lakshya Library — Download your form</p>
                                     </div>
                                 </div>
                                 <motion.button
                                     whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                                     onClick={() => setShowAdmissionModal(false)}
-                                    className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400"
+                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
                                 >
                                     <IoClose size={18} />
                                 </motion.button>
@@ -666,7 +653,7 @@ const Profile = () => {
                             exit={{ opacity: 0, scale: 0.92, y: 30 }}
                             transition={{ type: 'spring', stiffness: 240, damping: 22 }}
                             onClick={e => e.stopPropagation()}
-                            className="bg-[#0a0a12] border border-white/10 rounded-2xl p-6 w-full max-w-2xl my-6"
+                            className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-2xl my-6 shadow-xl"
                         >
                             <div className="flex items-center justify-between mb-5">
                                 <div className="flex items-center gap-2.5">
@@ -674,7 +661,7 @@ const Profile = () => {
                                         <IoReceiptOutline size={16} className="text-white" />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-white">Payment Receipt</h3>
+                                        <h3 className="text-base font-bold text-gray-900">Payment Receipt</h3>
                                         <p className="text-xs text-gray-500">Apna Lakshya Library</p>
                                     </div>
                                 </div>
