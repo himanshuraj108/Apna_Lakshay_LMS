@@ -540,14 +540,12 @@ const StudentDashboard = () => {
 
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     return (
-        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#070a10' }}>
+        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#F8FAFC', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
             <style>{DASH_STYLE}</style>
 
-            {/* === Subtle background === */}
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div style={{ animation: 'orb1 16s ease-in-out infinite' }} className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-700/7 blur-[120px]" />
-                <div style={{ animation: 'orb2 20s ease-in-out infinite' }} className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-700/6 blur-[120px]" />
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
+            {/* === Light dot grid background === */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             </div>
 
             {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -670,28 +668,30 @@ const StudentDashboard = () => {
             {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                   TOP NAVBAR
                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <header className="sticky top-0 z-40 border-b border-white/5" style={{ background: 'rgba(7,10,16,0.85)', backdropFilter: 'blur(20px)' }}>
+            <header className="sticky top-0 z-40 bg-white border-b border-gray-200" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
                     {/* Brand */}
-                    <div className="flex items-center">
-                        <span className="font-bold text-white text-sm">Apna <span className="text-orange-400">Lakshay</span></span>
+                    <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#F97316' }}>
+                            <IoLibraryOutline size={14} style={{ color: '#fff' }} />
+                        </div>
+                        <span className="font-bold text-sm" style={{ color: '#111827' }}>Apna <span style={{ color: '#F97316' }}>Lakshay</span></span>
                     </div>
 
                     {/* Nav right */}
                     <div className="flex items-center gap-2">
-                        <Link to="/student/notifications" className="relative p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/8 transition-all">
+                        <Link to="/student/notifications" className="relative p-2.5 rounded-xl hover:bg-gray-100 transition-all" style={{ color: '#6B7280' }}>
                             <IoNotificationsOutline size={20} />
                             {dashboardData?.unreadNotifications > 0 && (
                                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
                             )}
                         </Link>
-                        <Link to="/student/profile" className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-white/8 transition-all group">
-                            <div className="w-8 h-8 rounded-lg bg-white/6 border border-white/8 flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-white/10 transition-all">
+                        <Link to="/student/profile" className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-100 transition-all">
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center" style={{ color: '#6B7280' }}>
                                 <IoPersonOutline size={16} />
                             </div>
-                            <span className="text-gray-300 text-sm font-medium hidden sm:block group-hover:text-white transition-colors">{user?.name?.split(' ')[0]}</span>
+                            <span className="text-sm font-medium hidden sm:block" style={{ color: '#374151' }}>{user?.name?.split(' ')[0]}</span>
                         </Link>
-
                     </div>
                 </div>
             </header>
@@ -706,31 +706,26 @@ const StudentDashboard = () => {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
-                    className="mb-5 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl"
-                    style={{
-                        background: "linear-gradient(120deg,rgba(124,58,237,0.10),rgba(59,130,246,0.07),rgba(16,185,129,0.05))",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        backdropFilter: "blur(12px)",
-                    }}
+                    className="mb-5 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl"
+                    style={{ background: '#FFF7ED', border: '1px solid #FED7AA' }}
                 >
                     <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
-                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 blur-sm opacity-50 scale-110" />
-                            <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-white font-black text-sm shadow-lg border border-white/15">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-md">
                                 {initials}
                             </div>
-                            {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#070a10]" />}
+                            {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#FFF7ED]" />}
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-sm leading-none">{user?.name?.split(" ")[0]}</span>
+                            <span className="font-bold text-sm" style={{ color: '#111827' }}>{user?.name?.split(" ")[0]}</span>
                             <span className="text-sm">{String.fromCodePoint(0x1F44B)}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className="text-gray-500 text-[11px] hidden sm:block">{today}</span>
+                        <span className="text-[11px] hidden sm:block" style={{ color: '#9CA3AF' }}>{today}</span>
                         {isActive
-                            ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />Active</span>
-                            : <span className="inline-flex items-center gap-1 text-[10px] bg-red-500/10 border border-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-semibold">Inactive</span>}
+                            ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-2 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />Active</span>
+                            : <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 border border-red-200 text-red-500 px-2 py-0.5 rounded-full font-semibold">Inactive</span>}
                     </div>
                 </motion.div>
 
@@ -742,45 +737,43 @@ const StudentDashboard = () => {
                     transition={{ delay: 0.1, duration: 0.45 }}
                     className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
                 >
-                    {/* Seat */}
                     <Link to="/student/seat">
-                        <div className="group rounded-xl p-4 border border-white/6 hover:border-blue-500/30 transition-all duration-200 cursor-pointer h-full" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="group rounded-xl p-4 bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer h-full" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.15)' }}>
-                                    <IoBedOutline size={14} className="text-blue-400" />
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.1)' }}>
+                                    <IoBedOutline size={14} className="text-blue-500" />
                                 </div>
-                                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">My Seat</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>My Seat</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black text-white mb-0.5">{dashboardData?.seat?.number || '—'}</p>
-                            {/* Multi-shift support */}
+                            <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>{dashboardData?.seat?.number || '—'}</p>
                             {dashboardData?.seat?.shifts && dashboardData.seat.shifts.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 mt-1">
                                     {dashboardData.seat.shifts.map((s, i) => (
                                         <span key={i} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                            style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+                                            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#059669' }}>
                                             {s.name}{s.startTime ? ` ${s.startTime}–${s.endTime}` : ''} 
                                         </span>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-[11px] text-gray-400">{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
+                                <p className="text-[11px]" style={{ color: '#9CA3AF' }}>{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
                             )}
                         </div>
                     </Link>
 
                     {/* Attendance */}
                     <Link to="/student/attendance">
-                        <div className="group relative rounded-xl p-4 border border-white/6 hover:border-emerald-500/30 transition-all duration-200 cursor-pointer h-full" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="group relative rounded-xl p-4 bg-white border border-gray-200 hover:border-emerald-300 hover:shadow-md transition-all duration-200 cursor-pointer h-full" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.15)' }}>
-                                    <IoCalendarOutline size={14} className="text-emerald-400" />
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                                    <IoCalendarOutline size={14} className="text-emerald-500" />
                                 </div>
-                                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Attendance</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Attendance</span>
                             </div>
                             <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: attColor }}>{attPct}%</p>
-                            <p className="text-[11px] text-gray-400">{dashboardData?.attendance?.present || 0} / {dashboardData?.attendance?.total || 0} days</p>
+                            <p className="text-[11px]" style={{ color: '#9CA3AF' }}>{dashboardData?.attendance?.present || 0} / {dashboardData?.attendance?.total || 0} days</p>
                             {dashboardData?.attendance?.rank && (
-                                <span className="absolute bottom-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-md" style={{ background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.25)', color: '#a78bfa' }}>
+                                <span className="absolute bottom-3 right-3 text-[10px] font-black px-2 py-0.5 rounded-md" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', color: '#7C3AED' }}>
                                     Rank #{dashboardData.attendance.rank}
                                 </span>
                             )}
@@ -788,15 +781,15 @@ const StudentDashboard = () => {
                     </Link>
 
                     {/* Fee */}
-                    <div onClick={() => navigate('/student/fees')} className="group rounded-xl p-4 border border-white/6 hover:border-amber-500/30 transition-all duration-200 cursor-pointer h-full flex flex-col justify-between" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <div onClick={() => navigate('/student/fees')} className="group rounded-xl p-4 bg-white border border-gray-200 hover:border-amber-300 hover:shadow-md transition-all duration-200 cursor-pointer h-full flex flex-col justify-between" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                         <div className="flex items-center gap-2 mb-3">
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.15)' }}>
-                                <IoCashOutline size={14} className="text-amber-400" />
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)' }}>
+                                <IoCashOutline size={14} className="text-amber-500" />
                             </div>
-                            <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Fee Status</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Fee Status</span>
                         </div>
 
-                        <p className="text-xl sm:text-2xl font-black text-white mb-2">
+                        <p className="text-xl sm:text-2xl font-black mb-2" style={{ color: '#111827' }}>
                             {dashboardData?.fee ? `₹${dashboardData.fee.status === 'partial' ? (dashboardData.fee.outstanding ?? dashboardData.fee.amount) : dashboardData.fee.amount}` : '—'}
                         </p>
 
@@ -804,18 +797,18 @@ const StudentDashboard = () => {
                             {dashboardData?.fee?.status ? (
                                 <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit ${
                                     dashboardData.fee.status === 'paid'
-                                        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                                         : dashboardData.fee.status === 'overdue'
-                                        ? 'bg-red-500/10 border-red-500/25 text-red-400'
+                                        ? 'bg-red-50 border-red-200 text-red-500'
                                         : dashboardData.fee.status === 'partial'
-                                        ? 'bg-orange-500/10 border-orange-500/25 text-orange-400'
-                                        : 'bg-amber-500/10 border-amber-500/25 text-amber-400'
+                                        ? 'bg-orange-50 border-orange-200 text-orange-500'
+                                        : 'bg-amber-50 border-amber-200 text-amber-600'
                                 }`}>
                                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: dashboardData.fee.status === 'paid' ? '#34d399' : dashboardData.fee.status === 'overdue' ? '#f87171' : dashboardData.fee.status === 'partial' ? '#fb923c' : '#fbbf24' }} />
                                     {dashboardData.fee.status.charAt(0).toUpperCase() + dashboardData.fee.status.slice(1)}
                                 </span>
                             ) : (
-                                <p className="text-[11px] text-gray-400">No record</p>
+                                <p className="text-[11px]" style={{ color: '#9CA3AF' }}>No record</p>
                             )}
 
                             {dashboardData?.fee?.status && dashboardData.fee.status !== 'paid' && dashboardData.onlinePaymentEnabled && (
@@ -824,7 +817,8 @@ const StudentDashboard = () => {
                                         e.stopPropagation();
                                         navigate('/student/fees?pay=now');
                                     }}
-                                    className="px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-[10px] font-bold rounded-lg shadow-lg shadow-orange-500/20 hover:opacity-90 transition-opacity"
+                                    className="px-3 py-1 text-white text-[10px] font-bold rounded-lg hover:opacity-90 transition-opacity"
+                                    style={{ background: '#F97316' }}
                                 >
                                     Pay Online
                                 </button>
@@ -834,15 +828,15 @@ const StudentDashboard = () => {
 
                     {/* Notifications */}
                     <Link to="/student/notifications">
-                        <div className="group rounded-xl p-4 border border-white/6 hover:border-pink-500/30 transition-all duration-200 cursor-pointer h-full" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="group rounded-xl p-4 bg-white border border-gray-200 hover:border-pink-300 hover:shadow-md transition-all duration-200 cursor-pointer h-full" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(236,72,153,0.15)' }}>
-                                    <IoNotificationsOutline size={14} className="text-pink-400" />
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(236,72,153,0.1)' }}>
+                                    <IoNotificationsOutline size={14} className="text-pink-500" />
                                 </div>
-                                <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Alerts</span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Alerts</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black text-white mb-0.5">{dashboardData?.unreadNotifications || 0}</p>
-                            <p className="text-[11px] text-gray-400">Unread notifications</p>
+                            <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>{dashboardData?.unreadNotifications || 0}</p>
+                            <p className="text-[11px]" style={{ color: '#9CA3AF' }}>Unread notifications</p>
                         </div>
                     </Link>
                 </motion.div>
@@ -855,16 +849,16 @@ const StudentDashboard = () => {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.18, duration: 0.45 }}
-                        className="lg:col-span-3 rounded-2xl border border-white/6 overflow-hidden"
-                        style={{ background: 'rgba(255,255,255,0.025)' }}
+                        className="lg:col-span-3 rounded-2xl border border-gray-200 overflow-hidden bg-white"
+                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                     >
                         {/* Header */}
-                        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+                        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                    <IoFlashOutline size={14} className="text-purple-400" />
+                                <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                                    <IoFlashOutline size={14} className="text-orange-500" />
                                 </div>
-                                <h2 className="text-white font-bold text-sm">Quick Actions</h2>
+                                <h2 className="font-bold text-sm" style={{ color: '#111827' }}>Quick Actions</h2>
                             </div>
                         </div>
 
@@ -900,7 +894,7 @@ const StudentDashboard = () => {
                                         className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group"
                                         style={{
                                             background: `linear-gradient(145deg, ${item.accentBg}, rgba(255,255,255,0.02))`,
-                                            border: '1px solid rgba(255,255,255,0.06)',
+                                            border: '1px solid #F3F4F6',
                                             padding: '14px 14px 16px',
                                             minHeight: '110px',
                                             transition: 'border-color 0.2s, box-shadow 0.2s',
@@ -955,7 +949,7 @@ const StudentDashboard = () => {
                                         </div>
 
                                         {/* Label + optional desc */}
-                                        <p className="relative text-[13px] font-bold text-white leading-snug">{item.label}</p>
+                                        <p className="relative text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
                                         {item.desc && <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>{item.desc}</p>}
                                     </motion.div>
                                 );
@@ -974,12 +968,12 @@ const StudentDashboard = () => {
                         className="lg:col-span-2 flex flex-col gap-4"
                     >
                         {/* Learning section */}
-                        <div className="rounded-2xl border border-white/6 overflow-hidden" style={{ background: 'rgba(255,255,255,0.025)' }}>
-                            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                                    <IoLibraryOutline size={14} className="text-cyan-400" />
+                        <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-cyan-50 flex items-center justify-center">
+                                    <IoLibraryOutline size={14} className="text-cyan-500" />
                                 </div>
-                                <h2 className="text-white font-bold text-sm">Learning</h2>
+                                <h2 className="font-bold text-sm" style={{ color: '#111827' }}>Learning</h2>
                             </div>
                             <div className="p-4 flex flex-col gap-3">
                                 {(() => {
@@ -1006,7 +1000,7 @@ const StudentDashboard = () => {
                                             className={`relative flex flex-col justify-between overflow-hidden rounded-2xl ${item.locked ? 'opacity-55' : 'cursor-pointer'}`}
                                             style={{
                                                 background: `linear-gradient(145deg, ${item.accentBg}, rgba(255,255,255,0.015))`,
-                                                border: '1px solid rgba(255,255,255,0.06)',
+                                                border: '1px solid #F3F4F6',
                                                 padding: '14px 14px 16px',
                                                 minHeight: '100px',
                                                 transition: 'border-color 0.2s, box-shadow 0.2s',
@@ -1018,7 +1012,7 @@ const StudentDashboard = () => {
                                                 }
                                             }}
                                             onMouseLeave={e => {
-                                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                                                e.currentTarget.style.borderColor = '#F3F4F6';
                                                 e.currentTarget.style.boxShadow = 'none';
                                             }}
                                         >
@@ -1046,8 +1040,8 @@ const StudentDashboard = () => {
 
                                             {/* Label + desc */}
                                             <div className="relative">
-                                                <p className="text-[13px] font-bold text-white leading-snug">{item.label}</p>
-                                                <p className="text-[11px] mt-0.5" style={{ color: 'rgba(156,163,175,0.7)' }}>{item.desc}</p>
+                                                <p className="text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
+                                                <p className="text-[11px] mt-0.5" style={{ color: '#9CA3AF' }}>{item.desc}</p>
                                             </div>
                                         </motion.div>
                                     );
