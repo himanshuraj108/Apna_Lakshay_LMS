@@ -52,9 +52,9 @@ const StudyAnalytics = ({ stats }) => {
                         <div className="p-2 bg-orange-500/20 rounded-lg text-orange-500">
                             <IoFlame size={20} />
                         </div>
-                        <span className="text-gray-400 text-sm">Current Streak</span>
+                        <span className="text-gray-500 text-sm">Current Streak</span>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.currentStreak} Days</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.currentStreak} Days</p>
                     <p className="text-xs text-gray-500 mt-1">Best: {stats.longestStreak} Days</p>
                 </Card>
 
@@ -63,9 +63,9 @@ const StudyAnalytics = ({ stats }) => {
                         <div className="p-2 bg-blue-500/20 rounded-lg text-blue-500">
                             <IoTime size={20} />
                         </div>
-                        <span className="text-gray-400 text-sm">Focus Time</span>
+                        <span className="text-gray-500 text-sm">Focus Time</span>
                     </div>
-                    <p className="text-3xl font-bold text-white">{formatTime(stats.totalFocusTime)}</p>
+                    <p className="text-3xl font-bold text-gray-900">{formatTime(stats.totalFocusTime)}</p>
                     <p className="text-xs text-gray-500 mt-1">Total accumulated</p>
                 </Card>
 
@@ -74,9 +74,9 @@ const StudyAnalytics = ({ stats }) => {
                         <div className="p-2 bg-purple-500/20 rounded-lg text-purple-500">
                             <IoTrophy size={20} />
                         </div>
-                        <span className="text-gray-400 text-sm">Total XP</span>
+                        <span className="text-gray-500 text-sm">Total XP</span>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.totalXP.toLocaleString()}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.totalXP.toLocaleString()}</p>
                     <p className="text-xs text-gray-500 mt-1">Level {stats.level}</p>
                 </Card>
 
@@ -85,16 +85,16 @@ const StudyAnalytics = ({ stats }) => {
                         <div className="p-2 bg-green-500/20 rounded-lg text-green-500">
                             <IoCheckmarkDone size={20} />
                         </div>
-                        <span className="text-gray-400 text-sm">Tasks Done</span>
+                        <span className="text-gray-500 text-sm">Tasks Done</span>
                     </div>
-                    <p className="text-3xl font-bold text-white">{stats.tasksCompleted}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.tasksCompleted}</p>
                     <p className="text-xs text-gray-500 mt-1">All time</p>
                 </Card>
             </div>
 
             {/* Contribution Heatmap */}
             <Card className="overflow-hidden">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <IoFlame className="text-orange-500" />
                     Study Activity
                 </h3>
@@ -107,7 +107,7 @@ const StudyAnalytics = ({ stats }) => {
                                     <div
                                         key={dayIndex}
                                         title={`${day.date.toDateString()}: ${day.count} tasks completed`}
-                                        className={`w-3 h-3 rounded-sm ${day.intensity === 0 ? 'bg-gray-800' :
+                                        className={`w-3 h-3 rounded-sm ${day.intensity === 0 ? 'bg-gray-100' :
                                             day.intensity === 1 ? 'bg-green-900' :
                                                 day.intensity === 2 ? 'bg-green-700' :
                                                     day.intensity === 3 ? 'bg-green-500' :
@@ -122,7 +122,7 @@ const StudyAnalytics = ({ stats }) => {
                 <div className="flex justify-end items-center gap-2 mt-2 text-xs text-gray-400">
                     <span>Less</span>
                     <div className="flex gap-1">
-                        <div className="w-3 h-3 rounded-sm bg-gray-800"></div>
+                        <div className="w-3 h-3 rounded-sm bg-gray-100"></div>
                         <div className="w-3 h-3 rounded-sm bg-green-900"></div>
                         <div className="w-3 h-3 rounded-sm bg-green-700"></div>
                         <div className="w-3 h-3 rounded-sm bg-green-500"></div>
