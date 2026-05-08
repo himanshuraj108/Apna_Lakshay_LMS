@@ -1,8 +1,8 @@
-const CACHE_NAME = 'hamara-lakshya-v3';
+const CACHE_NAME = 'hamara-lakshya-v5';
 const urlsToCache = [
     '/manifest.json',
-    '/pwa-192x192.png',
-    '/pwa-512x512.png'
+    '/app-icon-192.png',
+    '/app-icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
