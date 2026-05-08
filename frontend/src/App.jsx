@@ -26,7 +26,7 @@ const PageLoader = () => {
 
     return (
         <div className="fixed inset-0 flex flex-col items-center justify-center z-50"
-            style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(249,115,22,0.1) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(239,68,68,0.08) 0%, transparent 60%), #030712' }}>
+            style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(249,115,22,0.15) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(239,68,68,0.1) 0%, transparent 60%), #f8fafc' }}>
             {/* Logo card */}
             <div className="relative flex flex-col items-center gap-6">
                 {/* Spinning ring */}
@@ -57,10 +57,10 @@ const PageLoader = () => {
 
                 {/* Text */}
                 <div className="loader-text flex flex-col items-center gap-2">
-                    <h2 className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent tracking-wide">
+                    <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent tracking-wide">
                         Study Portal
                     </h2>
-                    <p className="text-gray-500 text-sm">Loading, please wait…</p>
+                    <p className="text-gray-600 text-sm">Loading, please wait…</p>
 
                     {/* Inline dots */}
                     <div className="flex gap-1.5 mt-1">
