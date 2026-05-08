@@ -652,19 +652,15 @@ const DiscussionRoom = () => {
     // Ensure we are checking the correct property.
     if (user && user.isActive === false) {
         return (
-            <div className="min-h-screen p-4 flex items-center justify-center bg-gray-900 text-white">
-                <div className="max-w-md w-full text-center p-8 bg-gray-800 rounded-2xl border border-gray-700 shadow-2xl">
-                    <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="min-h-screen p-4 flex items-center justify-center bg-gray-50">
+                <div className="max-w-md w-full text-center p-8 bg-white rounded-2xl border border-gray-200 shadow-xl">
+                    <div className="w-20 h-20 bg-red-50 border border-red-200 rounded-full flex items-center justify-center mx-auto mb-6">
                         <IoBan size={40} className="text-red-500" />
                     </div>
-                    <h1 className="text-2xl font-bold mb-2">Chat Access Disabled</h1>
-                    <p className="text-gray-400 mb-6">
-                        Discussion Room access is reserved for active members only.
-                    </p>
+                    <h1 className="text-2xl font-bold mb-2 text-gray-900">Chat Access Disabled</h1>
+                    <p className="text-gray-500 mb-6">Discussion Room access is reserved for active members only.</p>
                     <Link to="/student">
-                        <Button variant="secondary" className="w-full">
-                            Back to Dashboard
-                        </Button>
+                        <Button variant="secondary" className="w-full">Back to Dashboard</Button>
                     </Link>
                 </div>
             </div>
@@ -694,20 +690,20 @@ const DiscussionRoom = () => {
     }, []);
 
     return (
-        <div className={`h-[100dvh] overflow-hidden flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`} style={{ background: 'radial-gradient(ellipse at top left, rgba(249,115,22,0.08) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(239,68,68,0.06) 0%, transparent 50%), #030712' }}>
+        <div className={`h-[100dvh] overflow-hidden flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`} style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3 md:px-6 md:pt-5 shrink-0">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+                    <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all shadow-sm">
                         <IoArrowBack size={16} /> <span className="hidden sm:inline">Dashboard</span>
                     </button>
-                    <div className="h-5 w-px bg-white/10 hidden sm:block" />
-                    <h1 className="text-lg md:text-2xl font-bold text-white flex items-center gap-2">
+                    <div className="h-5 w-px bg-gray-200 hidden sm:block" />
+                    <h1 className="text-lg md:text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <span className="p-1.5 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg shadow-lg shadow-orange-500/30">
                             <IoChatbubblesOutline size={18} className="text-white" />
                         </span>
-                        <span className="hidden sm:inline bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">Discussion Room</span>
-                        <span className="sm:hidden text-white">Chat</span>
+                        <span className="hidden sm:inline bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Discussion Room</span>
+                        <span className="sm:hidden text-gray-900">Chat</span>
                     </h1>
                 </div>
                 <div className="flex items-center gap-3">
@@ -735,7 +731,7 @@ const DiscussionRoom = () => {
 
             {/* Tab Navigation */}
             <div className="shrink-0 px-4 md:px-6 mb-3">
-                <div className="flex items-center bg-white/5 border border-white/10 rounded-2xl p-1 gap-1 backdrop-blur-sm">
+                <div className="flex items-center bg-white border border-gray-200 rounded-2xl p-1 gap-1 shadow-sm">
                     {[['public', <IoPeople size={15} />, 'Public'],
                     ['groups', <IoPeople size={15} />, 'Groups'],
                     ['private', <IoPersonOutline size={15} />, 'Private']
@@ -751,13 +747,13 @@ const DiscussionRoom = () => {
                                 }
                             }}
                             className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab
-                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/25'
-                                : 'text-gray-400 hover:text-gray-200'
+                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
+                                : 'text-gray-500 hover:text-gray-800'
                                 }`}
                         >
                             {icon} <span>{label}</span>
                             {tab === 'groups' && groups.length > 0 && (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-white/10 text-gray-400'
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${activeTab === tab ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
                                     }`}>{groups.length}</span>
                             )}
                         </button>
@@ -841,7 +837,7 @@ const DiscussionRoom = () => {
                                             setGroupModalMode('private');
                                             setShowGroupModal(true);
                                         }}
-                                        className="w-full justify-center bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-500 hover:via-indigo-500 hover:to-violet-500 text-white shadow-xl shadow-indigo-500/20 border border-indigo-400/30 py-8 rounded-2xl group transition-all duration-500 transform hover:scale-[1.02] relative overflow-hidden"
+                                        className="w-full justify-center bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white shadow-xl shadow-orange-500/20 border-0 py-8 rounded-2xl group transition-all duration-500 transform hover:scale-[1.02] relative overflow-hidden"
                                     >
                                         <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                         <div className="flex flex-col items-center gap-3 relative z-10">
@@ -850,7 +846,7 @@ const DiscussionRoom = () => {
                                             </div>
                                             <div className="flex flex-col items-center">
                                                 <span className="font-bold text-lg tracking-wider uppercase text-white/90 group-hover:text-white">Start New Chat</span>
-                                                <span className="text-xs text-indigo-200 group-hover:text-white/80 font-medium mt-1">Direct Message a Student</span>
+                                                <span className="text-xs text-orange-100 group-hover:text-white/80 font-medium mt-1">Direct Message a Student</span>
                                             </div>
                                         </div>
                                     </Button>
@@ -885,8 +881,8 @@ const DiscussionRoom = () => {
                                                     }
                                                 }}
                                                 className={`p-3 rounded-xl cursor-pointer transition-all ${currentRoom?._id === room._id
-                                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg border border-white/20'
-                                                    : 'bg-white/5 hover:bg-white/10 border border-white/5'
+                                                    ? 'bg-gradient-to-r from-orange-500 to-red-500 shadow-md text-white border border-orange-300'
+                                                    : 'bg-white hover:bg-gray-50 border border-gray-200'
                                                     }`}
                                             >
                                                 <div className="flex items-center gap-3">
@@ -904,14 +900,14 @@ const DiscussionRoom = () => {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-bold text-white">{otherUser?.name || 'Unknown User'}</h3>
+                                                        <h3 className="font-bold text-gray-900">{otherUser?.name || 'Unknown User'}</h3>
                                                         {/* Seat Info */}
                                                         {(() => {
                                                             const studentInfo = students?.find(s => s._id === otherUser?._id);
                                                             if (studentInfo?.seatInfo) {
-                                                                return <p className="text-xs text-white/80">{studentInfo.seatInfo.number} | {studentInfo.seatInfo.shift}</p>;
+                                                                return <p className={`text-xs ${currentRoom?._id === room._id ? 'text-white/80' : 'text-gray-500'}`}>{studentInfo.seatInfo.number} | {studentInfo.seatInfo.shift}</p>;
                                                             }
-                                                            return <p className="text-xs text-gray-400">{room.isActive ? 'Private Chat' : 'Request Pending'}</p>;
+                                                            return <p className={`text-xs ${currentRoom?._id === room._id ? 'text-white/80' : 'text-gray-400'}`}>{room.isActive ? 'Private Chat' : 'Request Pending'}</p>;
                                                         })()}
                                                     </div>
                                                 </div>
@@ -926,11 +922,11 @@ const DiscussionRoom = () => {
                 {
                     (activeTab === 'public' || ((activeTab === 'groups' || activeTab === 'private') && currentRoom)) && (
                         <div className={`flex-1 flex flex-col h-full z-20 ${!currentRoom && 'hidden lg:flex'}`}>
-                            <div className="flex flex-col h-full bg-white/3 backdrop-blur-sm border border-white/8 rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                            <div className="flex flex-col h-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                 {/* Chat Header */}
-                                <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 bg-white/3 shrink-0">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0">
                                     <div className="flex items-center gap-3">
-                                        <button onClick={() => setCurrentRoom(null)} className="lg:hidden p-1.5 -ml-1 text-gray-400 hover:text-white transition-colors">
+                                        <button onClick={() => setCurrentRoom(null)} className="lg:hidden p-1.5 -ml-1 text-gray-400 hover:text-gray-700 transition-colors">
                                             <IoArrowBack size={22} />
                                         </button>
                                         <div className="p-2 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl shadow-lg shadow-orange-500/30">
@@ -938,7 +934,7 @@ const DiscussionRoom = () => {
                                         </div>
                                         <div onClick={() => currentRoom?.type === 'group' && setShowGroupSettings(true)}
                                             className={currentRoom?.type === 'group' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}>
-                                            <h3 className="font-bold text-white">
+                                            <h3 className="font-bold text-gray-900">
                                                 {currentRoom?.type === 'group' ? currentRoom.name
                                                     : currentRoom?.type === 'private' ? (currentRoom.participants.find(p => p._id !== user.id)?.name || 'Private Chat')
                                                         : 'Public Study Chat'}
@@ -953,22 +949,22 @@ const DiscussionRoom = () => {
                                     <div className="flex items-center gap-2">
                                         {(currentRoom?.type === 'group' || currentRoom?.type === 'private') && (
                                             <button onClick={() => setCurrentRoom(null)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-all">
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg transition-all">
                                                 <IoArrowBack size={13} /> Back
                                             </button>
                                         )}
                                         {currentRoom?.type === 'private' && (
                                             <div className="relative">
                                                 <button onClick={() => setShowPrivateMenu(!showPrivateMenu)}
-                                                    className="p-2 hover:bg-white/10 rounded-xl transition-colors text-gray-400 hover:text-white">
+                                                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400 hover:text-gray-700">
                                                     <IoEllipsisVertical size={18} />
                                                 </button>
                                                 {showPrivateMenu && (
-                                                    <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
-                                                        <button onClick={handleDeleteForMe} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors text-gray-300">
+                                                    <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                                                        <button onClick={handleDeleteForMe} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition-colors text-gray-700">
                                                             <IoEyeOff size={15} /> Delete for Me
                                                         </button>
-                                                        <button onClick={handleDeleteEveryone} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/20 text-red-400 transition-colors">
+                                                        <button onClick={handleDeleteEveryone} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-50 text-red-500 transition-colors">
                                                             <IoTrash size={15} /> Delete for Everyone
                                                         </button>
                                                     </div>
@@ -982,8 +978,8 @@ const DiscussionRoom = () => {
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3" onClick={() => setShowPrivateMenu(false)}>
                                     {messages.length === 0 ? (
                                         <div className="text-center py-20 text-gray-400">
-                                            <IoChatbubblesOutline size={48} className="mx-auto mb-4 opacity-50" />
-                                            <p>No messages yet. Start the conversation!</p>
+                                            <IoChatbubblesOutline size={48} className="mx-auto mb-4 opacity-30" />
+                                            <p className="text-gray-400">No messages yet. Start the conversation!</p>
                                         </div>
                                     ) : (
                                         messages.map((msg) => {
@@ -1015,7 +1011,7 @@ const DiscussionRoom = () => {
                                                     }}
                                                 >
                                                     {/* Profile Image Placeholder */}
-                                                    <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden border ${msg.sender?.role === 'admin' ? 'border-red-500 bg-black shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'border-white/10 bg-gray-700'}`}>
+                                                    <div className={`w-10 h-10 rounded-full flex-shrink-0 overflow-hidden border ${msg.sender?.role === 'admin' ? 'border-red-400 bg-red-50 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'border-gray-200 bg-gray-100'}`}>
                                                         {msg.sender?.role === 'admin' ? (
                                                             <div className="w-full h-full flex items-center justify-center text-red-500 animate-pulse">
                                                                 <IoSkull size={24} />
@@ -1034,16 +1030,16 @@ const DiscussionRoom = () => {
                                                     </div>
                                                     <div className={`flex-1 ${isOwnMessage ? 'flex flex-col items-end' : ''}`}>
                                                         <div className={`flex items-center gap-2 mb-1 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-                                                            <span className="font-semibold text-sm">{msg.sender?.name || 'Unknown'}</span>
+                                                            <span className="font-semibold text-sm text-gray-900">{msg.sender?.name || 'Unknown'}</span>
                                                             <span className="text-xs text-gray-500">
                                                                 {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </span>
                                                         </div>
                                                         <div className={`rounded-2xl px-4 py-2.5 border max-w-[75%] sm:max-w-[65%] ${isOwnMessage
-                                                            ? 'bg-gradient-to-br from-orange-500/25 to-red-500/20 border-orange-500/25'
+                                                            ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 text-gray-900'
                                                             : msg.sender?.role === 'admin'
-                                                                ? 'bg-gradient-to-br from-red-900/90 to-black border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                                                                : 'bg-white/5 border-white/8'
+                                                                ? 'bg-gradient-to-br from-red-900/90 to-black border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-white'
+                                                                : 'bg-white border-gray-200 text-gray-800'
                                                             }`}>
                                                             {/* Reply indicator */}
                                                             {msg.replyTo && (
@@ -1101,7 +1097,7 @@ const DiscussionRoom = () => {
                                 </div>
 
                                 {/* Input Area */}
-                                <div className="px-4 py-3 border-t border-white/8 shrink-0 relative">
+                                <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0 relative">
                                     {/* Mention Autocomplete Dropdown */}
                                     <AnimatePresence>
                                         {showMentionDropdown && (
@@ -1109,7 +1105,7 @@ const DiscussionRoom = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 10 }}
-                                                className="absolute bottom-full left-4 right-4 mb-2 bg-gray-800 border border-white/20 rounded-lg shadow-2xl max-h-48 overflow-y-auto z-50"
+                                                className="absolute bottom-full left-4 right-4 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50"
                                             >
                                                 {(() => {
                                                     // Get unique students from messages (left-side students)
@@ -1138,7 +1134,7 @@ const DiscussionRoom = () => {
                                                                 <div
                                                                     key={student._id}
                                                                     onClick={() => handleMentionSelect(student)}
-                                                                    className="px-4 py-3 hover:bg-white/10 cursor-pointer transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                                                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-3 border-b border-gray-100 last:border-0"
                                                                 >
                                                                     <div className="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden border border-white/10 bg-gray-700">
                                                                         {student.profileImage ? (
@@ -1154,7 +1150,7 @@ const DiscussionRoom = () => {
                                                                         )}
                                                                     </div>
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-white font-medium">{student.name}</span>
+                                                                        <span className="text-gray-900 font-medium">{student.name}</span>
                                                                         {seatDisplay && (
                                                                             <span className="text-xs text-gray-400">{seatDisplay}</span>
                                                                         )}
@@ -1177,20 +1173,20 @@ const DiscussionRoom = () => {
                                         <motion.div
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="mb-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-3"
+                                            className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3"
                                         >
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1 border-l-2 border-blue-400 pl-3">
                                                     <div className="text-xs font-semibold text-blue-400">
                                                         Replying to {replyToMessage.sender?.name}
                                                     </div>
-                                                    <div className="text-sm text-gray-300 truncate mt-1">
+                                                    <div className="text-sm text-gray-600 truncate mt-1">
                                                         {replyToMessage.content}
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => setReplyToMessage(null)}
-                                                    className="text-gray-400 hover:text-white transition-colors"
+                                                    className="text-gray-400 hover:text-gray-700 transition-colors"
                                                 >
                                                     <IoClose size={20} />
                                                 </button>
@@ -1200,10 +1196,10 @@ const DiscussionRoom = () => {
 
                                     {/* File Preview */}
                                     {selectedFile && (
-                                        <div className="mb-3 bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
+                                        <div className="mb-3 bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <IoAttach className="text-blue-400" size={20} />
-                                                <span className="text-sm text-gray-300">{selectedFile.name}</span>
+                                                <span className="text-sm text-gray-700">{selectedFile.name}</span>
                                                 <span className="text-xs text-gray-500">
                                                     ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                                                 </span>
@@ -1222,9 +1218,9 @@ const DiscussionRoom = () => {
 
                                     {/* Chat Disabled Warning */}
                                     {!isGlobalChatEnabled && (
-                                        <div className="mb-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-3">
+                                        <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-3">
                                             <IoBan className="text-red-500" size={20} />
-                                            <span className="text-red-400 text-sm font-semibold">
+                                            <span className="text-red-600 text-sm font-semibold">
                                                 Messaging is disabled by administrator
                                             </span>
                                         </div>
@@ -1232,9 +1228,9 @@ const DiscussionRoom = () => {
 
                                     {/* User Blocked Warning */}
                                     {isGlobalChatEnabled && user?.isChatBlocked && (
-                                        <div className="mb-3 bg-red-600/20 border border-red-600/50 rounded-lg p-4 flex items-center gap-3">
+                                        <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
                                             <IoBan className="text-red-500" size={24} />
-                                            <span className="text-red-300 text-sm font-semibold">
+                                            <span className="text-red-600 text-sm font-semibold">
                                                 You are blocked from this chat due to unacceptable behaviour
                                             </span>
                                         </div>
@@ -1242,15 +1238,15 @@ const DiscussionRoom = () => {
 
                                     {/* Room Disabled Warning */}
                                     {isGlobalChatEnabled && !user?.isChatBlocked && currentRoom?.isDisabled && (
-                                        <div className="mb-3 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 flex items-center gap-3">
-                                            <IoBan className="text-orange-500" size={20} />
-                                            <span className="text-orange-400 text-sm font-semibold">
+                                        <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3">
+                                            <IoBan className="text-amber-500" size={20} />
+                                            <span className="text-amber-700 text-sm font-semibold">
                                                 This room has been disabled by administrator
                                             </span>
                                         </div>
                                     )}
 
-                                    <div className={`flex items-center gap-2 md:gap-3 border rounded-lg px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-800/50 border-gray-700 opacity-60' : 'bg-white/5 border-white/10'}`}>
+                                    <div className={`flex items-center gap-2 md:gap-3 border rounded-xl px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
                                         {/* File Input Hidden */}
                                         <input
                                             ref={fileInputRef}
@@ -1268,7 +1264,7 @@ const DiscussionRoom = () => {
                                             onChange={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleInputChange}
                                             onKeyPress={(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? undefined : handleKeyPress}
                                             placeholder={isGlobalChatEnabled && !user?.isChatBlocked && !currentRoom?.isDisabled ? `Message...` : ""}
-                                            className="flex-1 min-w-0 bg-transparent border-none text-white focus:ring-0 focus:outline-none placeholder-gray-500 text-sm md:text-base py-1"
+                                            className="flex-1 min-w-0 bg-transparent border-none text-gray-900 focus:ring-0 focus:outline-none placeholder-gray-400 text-sm md:text-base py-1"
                                             readOnly={!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled}
                                         />
 
