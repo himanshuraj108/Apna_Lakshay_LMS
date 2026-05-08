@@ -69,15 +69,15 @@ const CalendarView = ({ tasks, exams = [] }) => {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                     <IoCalendarOutline />
                     {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </h2>
-                <div className="flex bg-white dark:bg-gray-800 rounded-lg p-1 border border-gray-200 dark:border-white/10">
-                    <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <div className="flex bg-white rounded-lg p-1 border border-gray-200">
+                    <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-md text-gray-600 hover:text-gray-900 transition-colors">
                         <IoChevronBack size={18} />
                     </button>
-                    <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-md text-gray-600 hover:text-gray-900 transition-colors">
                         <IoChevronForward size={18} />
                     </button>
                 </div>
@@ -113,8 +113,8 @@ const CalendarView = ({ tasks, exams = [] }) => {
                                 : dayExams.length > 0
                                     ? 'text-white shadow-md'
                                     : hasEvents
-                                        ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-blue-500/50 text-gray-900 dark:text-white'
-                                        : 'bg-white dark:bg-white/5 border-transparent text-gray-500 hover:bg-gray-50 dark:hover:bg-white/10'
+                                        ? 'bg-gray-50 border-gray-200 hover:border-blue-500/50 text-gray-900'
+                                        : 'bg-white border-transparent text-gray-500 hover:bg-gray-50'
                                 }`}
                             style={!isSelected && dayExams.length > 0 ? {
                                 backgroundColor: dayExams[0].color + '40', // 25% opacity
@@ -152,7 +152,7 @@ const CalendarView = ({ tasks, exams = [] }) => {
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                     >
-                        <Card className="bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+                        <Card className="bg-white border border-gray-200 shadow-sm">
                             <h3 className="text-sm uppercase tracking-wider text-gray-400 font-bold mb-3">
                                 Schedule for {monthNames[currentDate.getMonth()]} {selectedDate}
                             </h3>
@@ -162,13 +162,13 @@ const CalendarView = ({ tasks, exams = [] }) => {
                                     <div className="space-y-2">
                                         <h4 className="text-xs font-semibold text-blue-400 uppercase">Exams</h4>
                                         {getExamsForDay(selectedDate).map(exam => (
-                                            <div key={exam._id} className="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+                                            <div key={exam._id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200 relative overflow-hidden">
                                                 <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: exam.color }} />
                                                 <div className="flex-1">
-                                                    <h4 className="font-bold text-gray-900 dark:text-white leading-tight">{exam.title}</h4>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-400">{exam.subject}</p>
+                                                    <h4 className="font-bold text-gray-900 leading-tight">{exam.title}</h4>
+                                                    <p className="text-xs text-gray-600">{exam.subject}</p>
                                                 </div>
-                                                <div className="px-2 py-1 rounded bg-gray-100 dark:bg-white/5 text-xs font-mono text-gray-500 dark:text-gray-300 border border-gray-200 dark:border-white/10">
+                                                <div className="px-2 py-1 rounded bg-white text-xs font-mono text-gray-500 border border-gray-200">
                                                     EXAM
                                                 </div>
                                             </div>
@@ -183,12 +183,12 @@ const CalendarView = ({ tasks, exams = [] }) => {
                                     )}
                                     {getTasksForDay(selectedDate).length > 0 ? (
                                         getTasksForDay(selectedDate).map(task => (
-                                            <div key={task._id} className="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                            <div key={task._id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-200">
                                                 <div className={`w-2 h-2 rounded-[2px] ${task.completed ? 'bg-green-400/80' : task.priority === 'high' ? 'bg-purple-500' : 'bg-gray-400'}`} />
-                                                <p className={`text-sm text-gray-700 dark:text-gray-200 flex-1 ${task.completed ? 'line-through opacity-50' : ''}`}>
+                                                <p className={`text-sm text-gray-700 flex-1 ${task.completed ? 'line-through opacity-50' : ''}`}>
                                                     {task.title}
                                                 </p>
-                                                <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 dark:bg-gray-900 rounded">
+                                                <span className="text-xs text-gray-500 px-2 py-1 bg-white rounded">
                                                     {task.estimatedTime}m
                                                 </span>
                                             </div>
