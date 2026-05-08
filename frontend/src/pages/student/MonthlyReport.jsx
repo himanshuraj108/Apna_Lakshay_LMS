@@ -205,17 +205,17 @@ const MonthlyReport = () => {
     const years = [];
     for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) years.push(y);
 
-    const attColor = !report ? '#fff' : report.percentage >= 75 ? '#22c55e' : report.percentage >= 50 ? '#f59e0b' : '#ef4444';
+    const attColor = !report ? '#111827' : report.percentage >= 75 ? '#16a34a' : report.percentage >= 50 ? '#d97706' : '#dc2626';
 
     return (
-        <div className="min-h-screen" style={{ background: '#070a10' }}>
+        <div className="min-h-screen" style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
             {/* Header */}
-            <div className="sticky top-0 z-30 border-b border-white/5" style={{ background: 'rgba(7,10,16,0.9)', backdropFilter: 'blur(16px)' }}>
+            <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-md">
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/student" className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all">
+                    <Link to="/student" className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
                         <IoArrowBack size={18} />
                     </Link>
-                    <h1 className="text-white font-bold text-base flex-1">Monthly Performance Report</h1>
+                    <h1 className="text-gray-900 font-bold text-base flex-1">Monthly Performance Report</h1>
                     <button
                         onClick={handleDownload}
                         disabled={!report || downloading || loading}
@@ -235,18 +235,16 @@ const MonthlyReport = () => {
                     {/* Month */}
                     <div className="relative flex-1">
                         <select value={month} onChange={e => setMonth(Number(e.target.value))}
-                            className="w-full appearance-none rounded-xl px-4 py-3 text-white text-sm font-medium pr-9 border border-white/8 focus:outline-none focus:border-yellow-400/40 transition-all cursor-pointer"
-                            style={{ background: 'rgba(255,255,255,0.04)' }}>
-                            {MONTHS.map((m, i) => <option key={i} value={i + 1} style={{ background: '#111' }}>{m}</option>)}
+                            className="w-full appearance-none rounded-xl px-4 py-3 text-gray-900 text-sm font-medium pr-9 border border-gray-200 bg-white focus:outline-none focus:border-yellow-400 transition-all cursor-pointer shadow-sm">
+                            {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
                         </select>
                         <IoChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
                     {/* Year */}
                     <div className="relative">
                         <select value={year} onChange={e => setYear(Number(e.target.value))}
-                            className="appearance-none rounded-xl px-4 py-3 text-white text-sm font-medium pr-9 border border-white/8 focus:outline-none focus:border-yellow-400/40 transition-all cursor-pointer"
-                            style={{ background: 'rgba(255,255,255,0.04)' }}>
-                            {years.map(y => <option key={y} value={y} style={{ background: '#111' }}>{y}</option>)}
+                            className="appearance-none rounded-xl px-4 py-3 text-gray-900 text-sm font-medium pr-9 border border-gray-200 bg-white focus:outline-none focus:border-yellow-400 transition-all cursor-pointer shadow-sm">
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                         <IoChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                     </div>
@@ -259,32 +257,32 @@ const MonthlyReport = () => {
                 )}
 
                 {error && !loading && (
-                    <div className="rounded-xl p-4 text-red-400 text-sm border border-red-500/20 bg-red-500/8">{error}</div>
+                    <div className="rounded-xl p-4 text-red-600 text-sm border border-red-200 bg-red-50">{error}</div>
                 )}
 
                 {report && !loading && (
                     <>
                         {/* Black header card with yellow accent */}
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                            className="rounded-2xl overflow-hidden border border-white/6">
-                            <div className="p-5" style={{ background: '#0d0d0d' }}>
+                            className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+                            <div className="p-5 bg-white">
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-1 h-8 rounded-full" style={{ background: '#FACC15' }} />
+                                    <div className="w-1 h-8 rounded-full bg-yellow-400" />
                                     <div>
-                                        <p className="text-xs text-gray-500 font-medium">Report for</p>
-                                        <h2 className="text-white font-black text-lg">{report.monthName} {report.year}</h2>
+                                        <p className="text-xs text-gray-400 font-medium">Report for</p>
+                                        <h2 className="text-gray-900 font-black text-lg">{report.monthName} {report.year}</h2>
                                     </div>
                                 </div>
                                 {/* 4 stat boxes */}
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {[
-                                        { icon: IoCalendarOutline, label: 'Attendance', value: `${report.percentage}%`, color: attColor },
-                                        { icon: IoCalendarOutline, label: 'Days Present', value: `${report.presentDays}/${report.totalDays}`, color: '#fff' },
-                                        { icon: IoTimeOutline,     label: 'Study Hours', value: `${report.totalStudyHours}h ${report.totalStudyMins}m`, color: '#a78bfa' },
-                                        { icon: IoTrophyOutline,   label: 'Overall Rank', value: report.rank ? `#${report.rank}` : 'N/A', color: '#FACC15' },
+                                        { label: 'Attendance',  value: `${report.percentage}%`,                              color: attColor      },
+                                        { label: 'Days Present', value: `${report.presentDays}/${report.totalDays}`,           color: '#111827'     },
+                                        { label: 'Study Hours', value: `${report.totalStudyHours}h ${report.totalStudyMins}m`, color: '#7c3aed'     },
+                                        { label: 'Overall Rank', value: report.rank ? `#${report.rank}` : 'N/A',               color: '#b45309'     },
                                     ].map((s, i) => (
-                                        <div key={i} className="rounded-xl p-3 border border-white/6" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{s.label}</p>
+                                        <div key={i} className="rounded-xl p-3 border border-gray-100 bg-gray-50">
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{s.label}</p>
                                             <p className="text-xl font-black" style={{ color: s.color }}>{s.value}</p>
                                         </div>
                                     ))}
@@ -311,16 +309,16 @@ const MonthlyReport = () => {
 
                         {/* Daily breakdown table */}
                         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                            className="rounded-2xl overflow-hidden border border-white/6" style={{ background: 'rgba(255,255,255,0.025)' }}>
-                            <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
-                                <div className="w-1 h-5 rounded-full" style={{ background: '#FACC15' }} />
-                                <h3 className="text-white font-bold text-sm">Daily Breakdown</h3>
-                                <span className="ml-auto text-xs text-gray-500">{report.dailyBreakdown.length} records</span>
+                            className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                                <div className="w-1 h-5 rounded-full bg-yellow-400" />
+                                <h3 className="text-gray-900 font-bold text-sm">Daily Breakdown</h3>
+                                <span className="ml-auto text-xs text-gray-400">{report.dailyBreakdown.length} records</span>
                             </div>
                             {report.dailyBreakdown.length === 0 ? (
-                                <div className="py-10 text-center text-gray-500 text-sm">No attendance records for this month</div>
+                                <div className="py-10 text-center text-gray-400 text-sm">No attendance records for this month</div>
                             ) : (
-                                <div className="divide-y divide-white/4 max-h-96 overflow-y-auto">
+                                <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
                                     {report.dailyBreakdown.map((day, i) => {
                                         const d = new Date(day.date);
                                         const hrs = Math.floor((day.durationMins || 0) / 60);
@@ -328,18 +326,18 @@ const MonthlyReport = () => {
                                         const isPresent = day.status === 'present' || day.status === 'holiday';
                                         return (
                                             <div key={i} className="flex items-center gap-3 px-5 py-3">
-                                                <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ background: '#FACC15', opacity: isPresent ? 1 : 0.2 }} />
+                                                <div className="w-1 h-8 rounded-full flex-shrink-0 bg-yellow-400" style={{ opacity: isPresent ? 1 : 0.2 }} />
                                                 <div className="min-w-[56px]">
-                                                    <p className="text-white text-sm font-bold">{d.getDate()} {MONTHS[d.getMonth()].slice(0,3)}</p>
-                                                    <p className="text-gray-500 text-[10px]">{d.toLocaleDateString('en-IN', { weekday: 'short' })}</p>
+                                                    <p className="text-gray-900 text-sm font-bold">{d.getDate()} {MONTHS[d.getMonth()].slice(0,3)}</p>
+                                                    <p className="text-gray-400 text-[10px]">{d.toLocaleDateString('en-IN', { weekday: 'short' })}</p>
                                                 </div>
                                                 <div className="flex-1 flex items-center gap-2 flex-wrap">
-                                                    {day.entryTime && <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">In {day.entryTime}</span>}
-                                                    {day.exitTime  && <span className="text-[11px] text-red-400 bg-red-500/10 px-2 py-0.5 rounded">Out {day.exitTime}</span>}
+                                                    {day.entryTime && <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">In {day.entryTime}</span>}
+                                                    {day.exitTime  && <span className="text-[11px] text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded">Out {day.exitTime}</span>}
                                                 </div>
                                                 <div className="text-right flex-shrink-0">
                                                     {isPresent ? (
-                                                        <IoCheckmarkCircle size={16} className="text-emerald-400 inline" />
+                                                        <IoCheckmarkCircle size={16} className="text-emerald-500 inline" />
                                                     ) : (
                                                         <IoCloseCircle size={16} className="text-red-400 inline" />
                                                     )}
