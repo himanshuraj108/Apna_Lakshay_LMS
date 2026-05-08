@@ -18,6 +18,7 @@ const ForgotPassword = () => {
     const [otp, setOtp] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [focused, setFocused] = useState('');
 
     // Step 1: Send OTP
     const handleSendOTP = async (e) => {
@@ -80,147 +81,132 @@ const ForgotPassword = () => {
         }
     };
 
+    const inputStyle = (name) => ({
+        width: '100%',
+        padding: '12px 16px 12px 42px',
+        border: focused === name ? '1.5px solid #F97316' : '1.5px solid #D1D5DB',
+        borderRadius: '10px',
+        fontSize: '14px',
+        color: '#111827',
+        background: '#fff',
+        outline: 'none',
+        boxShadow: focused === name ? '0 0 0 3px rgba(249,115,22,0.12)' : 'none',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
+    });
+
     return (
-        <div
-            className="min-h-screen relative flex items-center justify-center p-4 sm:p-6 dark"
-            style={{ background: 'radial-gradient(ellipse at 25% 20%, rgba(249,115,22,0.11) 0%, transparent 55%), radial-gradient(ellipse at 75% 80%, rgba(239,68,68,0.09) 0%, transparent 55%), #030712' }}
-        >
-            {/* Ambient blobs */}
-            <div className="fixed top-[-15%] left-[-5%] w-[450px] h-[450px] rounded-full bg-orange-600/10 blur-[120px] pointer-events-none" />
-            <div className="fixed bottom-[-10%] right-[-5%] w-[350px] h-[350px] rounded-full bg-red-600/8 blur-[110px] pointer-events-none" />
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', 'Segoe UI', sans-serif", background: '#F8FAFC', padding: '16px' }}>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                input:-webkit-autofill{-webkit-box-shadow:0 0 0 50px #fff inset !important;-webkit-text-fill-color:#111827 !important;}
+            `}</style>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-[95vw] sm:max-w-md relative z-10"
+                style={{ width: '100%', maxWidth: 420, background: '#fff', borderRadius: 24, padding: 32, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', border: '1px solid #F3F4F6' }}
             >
-                <div className="bg-white/4 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/60">
-
-                    {/* Header */}
-                    <div className="flex items-center gap-3 mb-6">
-                        <Link to="/login"
-                            className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all">
-                            <IoArrowBack size={18} />
-                        </Link>
-                        <div>
-                            <h2 className="text-xl font-bold text-white">
-                                {step === 1 && 'Forgot Password'}
-                                {step === 2 && 'Verify OTP'}
-                                {step === 3 && 'Set New Password'}
-                            </h2>
-                            <p className="text-xs text-gray-500 mt-0.5">Step {step} of 3</p>
-                        </div>
-                        {/* Step progress dots */}
-                        <div className="ml-auto flex gap-1.5">
-                            {[1, 2, 3].map(s => (
-                                <div key={s} className={`h-1.5 rounded-full transition-all duration-300 ${s === step ? 'w-6 bg-gradient-to-r from-orange-500 to-red-500'
-                                    : s < step ? 'w-3 bg-orange-500/60'
-                                        : 'w-3 bg-white/15'
-                                    }`} />
-                            ))}
-                        </div>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+                    <Link to="/login" style={{ padding: 8, background: '#F3F4F6', borderRadius: 10, color: '#6B7280', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseOver={e => e.currentTarget.style.background = '#E5E7EB'} onMouseOut={e => e.currentTarget.style.background = '#F3F4F6'}>
+                        <IoArrowBack size={18} />
+                    </Link>
+                    <div style={{ flex: 1 }}>
+                        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111827', margin: 0 }}>
+                            {step === 1 && 'Forgot Password'}
+                            {step === 2 && 'Verify OTP'}
+                            {step === 3 && 'Set New Password'}
+                        </h2>
+                        <p style={{ fontSize: 12, color: '#6B7280', marginTop: 2, margin: 0 }}>Step {step} of 3</p>
                     </div>
+                    {/* Step dots */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                        {[1, 2, 3].map(s => (
+                            <div key={s} style={{ height: 6, borderRadius: 99, transition: 'all 0.3s', width: s === step ? 24 : 8, background: s === step ? 'linear-gradient(to right, #F97316, #EF4444)' : s < step ? 'rgba(249,115,22,0.6)' : '#E5E7EB' }} />
+                        ))}
+                    </div>
+                </div>
 
-                    {/* Alerts */}
+                {/* Alerts */}
+                <AnimatePresence>
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm mb-5 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                            style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', padding: '12px 16px', borderRadius: 12, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
                             {error}
-                        </div>
+                        </motion.div>
                     )}
                     {success && (
-                        <div className="bg-green-500/10 border border-green-500/25 text-green-400 px-4 py-3 rounded-xl text-sm mb-5 flex items-center gap-2">
-                            <IoCheckmarkCircle size={16} className="shrink-0" />
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                            style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#059669', padding: '12px 16px', borderRadius: 12, fontSize: 13, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <IoCheckmarkCircle size={16} />
                             {success}
-                        </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence mode="wait">
+                    {/* Step 1 */}
+                    {step === 1 && (
+                        <motion.form key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleSendOTP} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>Enter your registered email to receive a verification code.</p>
+                            <div>
+                                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4B5563', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
+                                <div style={{ position: 'relative' }}>
+                                    <IoMail style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 14, color: focused === 'email' ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} size={17} />
+                                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle('email')} onFocus={() => setFocused('email')} onBlur={() => setFocused('')} placeholder="hello@example.com" required />
+                                </div>
+                            </div>
+                            <motion.button type="submit" disabled={loading} whileHover={!loading ? { opacity: 0.9 } : {}} whileTap={!loading ? { scale: 0.98 } : {}}
+                                style={{ width: '100%', padding: '14px', background: loading ? '#E5E7EB' : 'linear-gradient(to right, #F97316, #EF4444)', color: loading ? '#9CA3AF' : '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                                {loading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Sending…</> : 'Send Verification Code'}
+                            </motion.button>
+                        </motion.form>
                     )}
 
-                    <AnimatePresence mode="wait">
-                        {/* Step 1 — Email */}
-                        {step === 1 && (
-                            <motion.form key="step1"
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                                onSubmit={handleSendOTP} className="space-y-5"
-                            >
-                                <p className="text-gray-400 text-sm">Enter your registered email to receive a verification code.</p>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Email Address</label>
-                                    <div className="relative">
-                                        <IoMail className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-600" size={17} />
-                                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
-                                            placeholder="hello@example.com" required />
-                                    </div>
+                    {/* Step 2 */}
+                    {step === 2 && (
+                        <motion.form key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleVerifyOTP} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>Enter the 4-digit code sent to <span style={{ color: '#111827', fontWeight: 600 }}>{email}</span></p>
+                            <div>
+                                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4B5563', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>OTP Code</label>
+                                <div style={{ position: 'relative' }}>
+                                    <IoKeypad style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 14, color: focused === 'otp' ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} size={17} />
+                                    <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} style={{ ...inputStyle('otp'), textAlign: 'center', letterSpacing: '0.4em', fontFamily: 'monospace', fontSize: 18 }} onFocus={() => setFocused('otp')} onBlur={() => setFocused('')} placeholder="····" maxLength={4} required />
                                 </div>
-                                <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                                    type="submit" disabled={loading}
-                                    className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed text-sm">
-                                    {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : 'Send Verification Code'}
-                                </motion.button>
-                            </motion.form>
-                        )}
+                            </div>
+                            <motion.button type="submit" disabled={loading} whileHover={!loading ? { opacity: 0.9 } : {}} whileTap={!loading ? { scale: 0.98 } : {}}
+                                style={{ width: '100%', padding: '14px', background: loading ? '#E5E7EB' : 'linear-gradient(to right, #F97316, #EF4444)', color: loading ? '#9CA3AF' : '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                                {loading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Verifying…</> : 'Verify Code'}
+                            </motion.button>
+                            <div style={{ textAlign: 'center' }}>
+                                <button type="button" onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#F97316', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>← Change email</button>
+                            </div>
+                        </motion.form>
+                    )}
 
-                        {/* Step 2 — OTP */}
-                        {step === 2 && (
-                            <motion.form key="step2"
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                                onSubmit={handleVerifyOTP} className="space-y-5"
-                            >
-                                <p className="text-gray-400 text-sm">
-                                    Enter the 4-digit code sent to <span className="text-white font-medium break-all">{email}</span>
-                                </p>
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">OTP Code</label>
-                                    <div className="relative">
-                                        <IoKeypad className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-600" size={17} />
-                                        <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 tracking-[0.4em] text-base font-mono text-center"
-                                            placeholder="····" maxLength={4} required />
+                    {/* Step 3 */}
+                    {step === 3 && (
+                        <motion.form key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                            <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>Create a strong new password for your account.</p>
+                            {[
+                                { label: 'New Password', val: password, set: setPassword, ph: 'New password', id: 'password' },
+                                { label: 'Confirm Password', val: confirmPassword, set: setConfirmPassword, ph: 'Confirm password', id: 'confirm' }
+                            ].map(({ label, val, set, ph, id }) => (
+                                <div key={label}>
+                                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#4B5563', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <IoLockClosed style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: 14, color: focused === id ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} size={17} />
+                                        <input type="password" value={val} onChange={(e) => set(e.target.value)} style={inputStyle(id)} onFocus={() => setFocused(id)} onBlur={() => setFocused('')} placeholder={ph} minLength={6} required />
                                     </div>
                                 </div>
-                                <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                                    type="submit" disabled={loading}
-                                    className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm">
-                                    {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Verifying…</> : 'Verify Code'}
-                                </motion.button>
-                                <div className="text-center">
-                                    <button type="button" onClick={() => setStep(1)}
-                                        className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
-                                        ← Change email
-                                    </button>
-                                </div>
-                            </motion.form>
-                        )}
-
-                        {/* Step 3 — New Password */}
-                        {step === 3 && (
-                            <motion.form key="step3"
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                                onSubmit={handleResetPassword} className="space-y-5"
-                            >
-                                <p className="text-gray-400 text-sm">Create a strong new password for your account.</p>
-                                {[
-                                    { label: 'New Password', val: password, set: setPassword, ph: 'New password' },
-                                    { label: 'Confirm Password', val: confirmPassword, set: setConfirmPassword, ph: 'Confirm password' }
-                                ].map(({ label, val, set, ph }) => (
-                                    <div key={label}>
-                                        <label className="block text-xs font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">{label}</label>
-                                        <div className="relative">
-                                            <IoLockClosed className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-600" size={17} />
-                                            <input type="password" value={val} onChange={(e) => set(e.target.value)}
-                                                className="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl focus:border-orange-500/60 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all text-white placeholder-gray-600 text-sm"
-                                                placeholder={ph} minLength={6} required />
-                                        </div>
-                                    </div>
-                                ))}
-                                <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                                    type="submit" disabled={loading}
-                                    className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white font-bold rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60 text-sm">
-                                    {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Resetting…</> : 'Set New Password'}
-                                </motion.button>
-                            </motion.form>
-                        )}
-                    </AnimatePresence>
-                </div>
+                            ))}
+                            <motion.button type="submit" disabled={loading} whileHover={!loading ? { opacity: 0.9 } : {}} whileTap={!loading ? { scale: 0.98 } : {}}
+                                style={{ width: '100%', padding: '14px', background: loading ? '#E5E7EB' : 'linear-gradient(to right, #F97316, #EF4444)', color: loading ? '#9CA3AF' : '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+                                {loading ? <><div style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Resetting…</> : 'Set New Password'}
+                            </motion.button>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
             </motion.div>
         </div>
     );
