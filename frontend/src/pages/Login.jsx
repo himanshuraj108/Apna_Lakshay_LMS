@@ -398,11 +398,12 @@ const Login = () => {
                         </p> */}
                     </div> 
 
-                    {/* Below card */}
+                    {/* Below card
                     <p className="text-center text-[11px] text-gray-700 mt-5 flex items-center justify-center gap-2">
                         <IoShieldCheckmarkOutline size={13} className="text-gray-600" />
                         Protected by secure encryption · Ver 1.0.0
                     </p>
+                    */}
                 </motion.div>
             </div>
 
