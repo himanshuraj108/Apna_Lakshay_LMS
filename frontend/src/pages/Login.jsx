@@ -6,53 +6,48 @@ import {
     IoMail, IoLockClosed, IoArrowForward,
     IoEye, IoEyeOff, IoCheckmarkCircle,
     IoGridOutline, IoLocationOutline,
-    IoBookOutline, IoCalendarOutline, IoSparklesOutline
 } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
 
-/* ── Stats shown on left panel ──────────────────────────── */
 const STATS = [
-    { value: '100+', label: 'Active Students' },
-    { value: '95%', label: 'Satisfaction Rate' },
+    { value: '100+', label: 'Students' },
+    { value: '95%',  label: 'Satisfaction' },
     { value: '24/7', label: 'Access' },
 ];
 
-/* ── Features ────────────────────────────────────────────── */
 const FEATURES = [
-    { icon: IoBookOutline,      text: 'Smart seat booking with real-time availability' },
-    { icon: IoCalendarOutline,  text: 'QR + GPS verified attendance tracking' },
-    { icon: IoSparklesOutline,  text: 'AI mock tests & doubt solving for exams' },
+    'Smart seat booking with real-time availability',
+    'QR + GPS verified daily attendance tracking',
+    'AI mock tests & doubt solving for competitive exams',
+    'Live discussion rooms & study collaboration',
 ];
 
-/* ── Input field component ───────────────────────────────── */
-const Field = ({ label, icon: Icon, children }) => (
-    <div>
-        <label className="block text-[11px] font-bold uppercase tracking-widest mb-2"
-            style={{ color: '#8892A4' }}>
+/* ─── tiny reusable label+input wrapper ─── */
+const Field = ({ label, id, children }) => (
+    <div className="space-y-1.5">
+        <label htmlFor={id}
+            style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151' }}>
             {label}
         </label>
-        <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Icon size={16} style={{ color: '#4A5568' }} />
-            </div>
-            {children}
-        </div>
+        {children}
     </div>
 );
 
-const Login = () => {
+export default function Login() {
     useMobileViewport();
+
     const [email, setEmail]               = useState('');
     const [password, setPassword]         = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError]               = useState('');
     const [shake, setShake]               = useState(false);
     const [loading, setLoading]           = useState(false);
-    const [focusedField, setFocusedField] = useState(null);
-    const { login }    = useAuth();
-    const navigate     = useNavigate();
-    const location     = useLocation();
+    const [focused, setFocused]           = useState('');
+
+    const { login }  = useAuth();
+    const navigate   = useNavigate();
+    const location   = useLocation();
 
     useEffect(() => {
         if (location.state?.email && location.state?.password) {
@@ -73,202 +68,175 @@ const Login = () => {
         } else {
             setError(result.message);
             setShake(true);
-            setTimeout(() => setShake(false), 500);
+            setTimeout(() => setShake(false), 450);
         }
         setLoading(false);
     };
 
-    const inputStyle = (field) => ({
+    const inputStyle = (name) => ({
         width: '100%',
-        paddingLeft: '44px',
-        paddingRight: field === 'password' ? '48px' : '16px',
-        paddingTop: '13px',
-        paddingBottom: '13px',
+        padding: name === 'password' ? '12px 46px 12px 42px' : '12px 16px 12px 42px',
+        border: focused === name ? '1.5px solid #F97316' : '1.5px solid #D1D5DB',
         borderRadius: '10px',
         fontSize: '14px',
-        color: '#E2E8F0',
-        background: '#0D1117',
-        border: focusedField === field
-            ? '1.5px solid #F97316'
-            : '1.5px solid #1E2A3A',
+        color: '#111827',
+        background: '#fff',
         outline: 'none',
-        transition: 'border-color 0.15s ease',
-        boxShadow: focusedField === field ? '0 0 0 3px rgba(249,115,22,0.12)' : 'none',
+        boxShadow: focused === name ? '0 0 0 3px rgba(249,115,22,0.12)' : 'none',
+        transition: 'border-color 0.15s, box-shadow 0.15s',
     });
 
     return (
-        <div className="min-h-screen flex" style={{ background: '#080D14', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ minHeight: '100vh', display: 'flex', fontFamily: "'Inter', 'Segoe UI', sans-serif", background: '#fff' }}>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-                @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
-                .shake { animation: shake 0.45s ease; }
-                input:-webkit-autofill { -webkit-box-shadow: 0 0 0 50px #0D1117 inset !important; -webkit-text-fill-color: #E2E8F0 !important; }
+                @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+                .do-shake{animation:shake 0.45s ease;}
+                input:-webkit-autofill{-webkit-box-shadow:0 0 0 50px #fff inset !important;-webkit-text-fill-color:#111827 !important;}
             `}</style>
 
-            {/* ══════════════════════════════════════
-                LEFT BRAND PANEL — hidden on mobile
-               ══════════════════════════════════════ */}
-            <div className="hidden lg:flex lg:w-[52%] xl:w-[50%] flex-col justify-between relative"
-                style={{ background: '#0B1220', borderRight: '1px solid #1A2332' }}>
+            {/* ══════════════════════════════════════════
+                LEFT PANEL — brand / features (desktop)
+               ══════════════════════════════════════════ */}
+            <div className="hidden lg:flex flex-col" style={{
+                width: '48%', background: '#FFF8F3',
+                borderRight: '1px solid #FED7AA',
+                position: 'relative', overflow: 'hidden',
+            }}>
+                {/* Subtle top stripe */}
+                <div style={{ height: '4px', background: 'linear-gradient(90deg, #F97316, #FB923C, #FDBA74)' }} />
 
-                {/* Top nav bar */}
-                <div className="flex items-center justify-between px-10 py-7"
-                    style={{ borderBottom: '1px solid #1A2332' }}>
+                {/* Top nav */}
+                <div style={{ padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     {/* Logo */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                            style={{ background: '#F97316' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                            width: 36, height: 36, borderRadius: 8,
+                            background: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
                                 stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                             </svg>
                         </div>
                         <div>
-                            <p className="font-black text-white text-base leading-none">Apna Lakshay</p>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest mt-0.5"
-                                style={{ color: '#F97316' }}>Library System</p>
+                            <p style={{ fontWeight: 900, fontSize: 15, color: '#111827', lineHeight: 1 }}>Apna Lakshay</p>
+                            <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: '#F97316', textTransform: 'uppercase', marginTop: 2 }}>Library System</p>
                         </div>
                     </div>
-
-                    {/* Quick links */}
-                    <div className="flex items-center gap-4">
-                        <Link to="/public-seats"
-                            className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-                            style={{ color: '#8892A4' }}
-                            onMouseEnter={e => e.currentTarget.style.color = '#E2E8F0'}
-                            onMouseLeave={e => e.currentTarget.style.color = '#8892A4'}>
-                            <IoGridOutline size={14} />
-                            Seats
+                    {/* Nav links */}
+                    <div style={{ display: 'flex', gap: 20 }}>
+                        <Link to="/public-seats" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 500, color: '#6B7280', textDecoration: 'none' }}>
+                            <IoGridOutline size={14} /> Seats
                         </Link>
-                        <Link to="/contact"
-                            className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-                            style={{ color: '#8892A4' }}
-                            onMouseEnter={e => e.currentTarget.style.color = '#E2E8F0'}
-                            onMouseLeave={e => e.currentTarget.style.color = '#8892A4'}>
-                            <IoLocationOutline size={14} />
-                            Location
+                        <Link to="/contact" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 500, color: '#6B7280', textDecoration: 'none' }}>
+                            <IoLocationOutline size={14} /> Location
                         </Link>
                     </div>
                 </div>
 
-                {/* Main content */}
-                <div className="flex-1 flex flex-col justify-center px-10 xl:px-14 py-12">
+                {/* Main brand content */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 48px 40px' }}>
 
-                    {/* Badge */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full w-fit mb-8"
-                        style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)' }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                        <span className="text-xs font-semibold" style={{ color: '#F97316' }}>Trusted by students</span>
+                    {/* Pill badge */}
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px',
+                            background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)',
+                            borderRadius: 100, marginBottom: 24, width: 'fit-content' }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F97316', flexShrink: 0 }} className="animate-pulse" />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#EA6B00', letterSpacing: '0.04em' }}>Trusted by 100+ students</span>
                     </motion.div>
 
                     {/* Headline */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.05 }}
-                        className="mb-10">
-                        <h1 className="font-black leading-[1.1] mb-4"
-                            style={{ fontSize: 'clamp(2rem, 3vw, 2.75rem)', color: '#F1F5F9' }}>
-                            Your Study Space,<br />
-                            <span style={{ color: '#F97316' }}>Simplified.</span>
-                        </h1>
-                        <p className="text-base leading-relaxed max-w-sm" style={{ color: '#64748B' }}>
-                            Everything a serious student needs — seat booking, attendance, fees, and AI-powered exam prep — in one platform.
-                        </p>
-                    </motion.div>
+                    <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}
+                        style={{ fontSize: 'clamp(1.9rem, 2.8vw, 2.6rem)', fontWeight: 900,
+                            color: '#111827', lineHeight: 1.15, marginBottom: 16 }}>
+                        Your Study Space,<br />
+                        <span style={{ color: '#F97316' }}>All in One Place.</span>
+                    </motion.h1>
 
-                    {/* Stats row */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.15 }}
-                        className="flex items-center gap-6 mb-10 pb-10"
-                        style={{ borderBottom: '1px solid #1A2332' }}>
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                        style={{ fontSize: 15, color: '#6B7280', lineHeight: 1.65, maxWidth: 380, marginBottom: 32 }}>
+                        A complete library management platform built for serious students — seat booking, attendance, fees, and AI-powered exam preparation.
+                    </motion.p>
+
+                    {/* Stats */}
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
+                        style={{ display: 'flex', gap: 32, paddingBottom: 28, marginBottom: 28, borderBottom: '1px solid #FED7AA' }}>
                         {STATS.map((s, i) => (
                             <div key={i}>
-                                <p className="text-2xl font-black" style={{ color: '#F1F5F9' }}>{s.value}</p>
-                                <p className="text-xs font-medium" style={{ color: '#475569' }}>{s.label}</p>
+                                <p style={{ fontSize: 22, fontWeight: 900, color: '#111827' }}>{s.value}</p>
+                                <p style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 500 }}>{s.label}</p>
                             </div>
                         ))}
                     </motion.div>
 
                     {/* Features */}
-                    <div className="space-y-5">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         {FEATURES.map((f, i) => (
                             <motion.div key={i}
-                                initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 + i * 0.07, duration: 0.35 }}
-                                className="flex items-center gap-3">
-                                <IoCheckmarkCircle size={18} style={{ color: '#F97316', flexShrink: 0 }} />
-                                <p className="text-sm" style={{ color: '#64748B' }}>{f.text}</p>
+                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 + i * 0.06 }}
+                                style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                <IoCheckmarkCircle size={17} style={{ color: '#F97316', flexShrink: 0, marginTop: 2 }} />
+                                <p style={{ fontSize: 13.5, color: '#4B5563', lineHeight: 1.5 }}>{f}</p>
                             </motion.div>
                         ))}
                     </div>
                 </div>
 
-                {/* Bottom footer */}
-                <div className="px-10 py-5 flex items-center gap-2"
-                    style={{ borderTop: '1px solid #1A2332' }}>
-                    <span className="text-xs" style={{ color: '#334155' }}>
-                        © 2026 Apna Lakshay. Built for serious students.
-                    </span>
+                {/* Bottom */}
+                <div style={{ padding: '16px 48px', borderTop: '1px solid #FED7AA' }}>
+                    <p style={{ fontSize: 12, color: '#D1D5DB' }}>© 2026 Apna Lakshay · Built for serious students</p>
                 </div>
             </div>
 
-            {/* ══════════════════════════════════════
-                RIGHT FORM PANEL
-               ══════════════════════════════════════ */}
-            <div className="flex-1 flex flex-col items-center justify-center px-5 sm:px-8 py-10 relative"
-                style={{ background: '#080D14' }}>
+            {/* ══════════════════════════════════════════
+                RIGHT PANEL — login form
+               ══════════════════════════════════════════ */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', background: '#fff' }}>
 
-                {/* Mobile brand header */}
-                <div className="lg:hidden w-full max-w-sm mb-8">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ background: '#F97316' }}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                                stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                            </svg>
+                {/* Mobile brand */}
+                <div className="lg:hidden" style={{ width: '100%', maxWidth: 380, marginBottom: 28 }}>
+                    <div style={{ height: 3, background: 'linear-gradient(90deg,#F97316,#FB923C)', borderRadius: 99, marginBottom: 20 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p style={{ fontWeight: 900, fontSize: 14, color: '#111827', lineHeight: 1 }}>Apna Lakshay</p>
+                                <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', color: '#F97316', textTransform: 'uppercase', marginTop: 2 }}>Library System</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-black text-white text-sm leading-none">Apna Lakshay</p>
-                            <p className="text-[9px] font-bold uppercase tracking-widest mt-0.5"
-                                style={{ color: '#F97316' }}>Library System</p>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <Link to="/public-seats" style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #E5E7EB', borderRadius: 8 }}>
+                                <IoGridOutline size={12} /> Seats
+                            </Link>
+                            <Link to="/contact" style={{ fontSize: 12, fontWeight: 600, color: '#6B7280', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', border: '1px solid #E5E7EB', borderRadius: 8 }}>
+                                <IoLocationOutline size={12} /> Map
+                            </Link>
                         </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <Link to="/public-seats" className="flex-1">
-                            <button className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all"
-                                style={{ background: '#111827', border: '1px solid #1E2A3A', color: '#8892A4' }}>
-                                <IoGridOutline size={12} /> View Seats
-                            </button>
-                        </Link>
-                        <Link to="/contact" className="flex-1">
-                            <button className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all"
-                                style={{ background: '#111827', border: '1px solid #1E2A3A', color: '#8892A4' }}>
-                                <IoLocationOutline size={12} /> Location
-                            </button>
-                        </Link>
                     </div>
                 </div>
 
-                {/* Form */}
+                {/* Form container */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45, ease: 'easeOut' }}
-                    className={`w-full max-w-sm ${shake ? 'shake' : ''}`}>
+                    initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    className={shake ? 'do-shake' : ''}
+                    style={{ width: '100%', maxWidth: 380 }}>
 
-                    {/* Header */}
-                    <div className="mb-8">
-                        <h2 className="text-2xl font-black mb-1.5" style={{ color: '#F1F5F9' }}>
-                            Sign in to your account
+                    {/* Form header */}
+                    <div style={{ marginBottom: 28 }}>
+                        <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', marginBottom: 6 }}>
+                            Welcome back 👋
                         </h2>
-                        <p className="text-sm" style={{ color: '#475569' }}>
-                            Enter your credentials to continue
+                        <p style={{ fontSize: 14, color: '#6B7280' }}>
+                            Sign in to access your library dashboard
                         </p>
                     </div>
 
@@ -276,109 +244,95 @@ const Login = () => {
                     <AnimatePresence>
                         {error && (
                             <motion.div
-                                initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -8 }}
-                                className="flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm mb-5"
-                                style={{
-                                    background: 'rgba(239,68,68,0.08)',
-                                    border: '1px solid rgba(239,68,68,0.2)',
-                                    color: '#F87171'
-                                }}>
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0 animate-pulse" />
+                                initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0 }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px',
+                                    background: '#FEF2F2', border: '1px solid #FECACA',
+                                    borderRadius: 10, fontSize: 13, color: '#B91C1C', marginBottom: 20 }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', flexShrink: 0 }} />
                                 {error}
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
                         {/* Email */}
-                        <Field label="Email or Mobile Number" icon={IoMail}>
-                            <input
-                                type="text"
-                                value={email}
-                                onChange={e => setEmail(e.target.value)}
-                                placeholder="you@example.com or mobile number"
-                                required
-                                style={inputStyle('email')}
-                                onFocus={() => setFocusedField('email')}
-                                onBlur={() => setFocusedField(null)}
-                            />
+                        <Field label="Email or Mobile Number" id="email">
+                            <div style={{ position: 'relative' }}>
+                                <IoMail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'email' ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} />
+                                <input
+                                    id="email" type="text" value={email} required
+                                    onChange={e => setEmail(e.target.value)}
+                                    placeholder="you@example.com or 10-digit mobile"
+                                    style={inputStyle('email')}
+                                    onFocus={() => setFocused('email')}
+                                    onBlur={() => setFocused('')}
+                                />
+                            </div>
                         </Field>
 
                         {/* Password */}
-                        <Field label="Password" icon={IoLockClosed}>
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="Enter your password"
-                                required
-                                style={{ ...inputStyle('password'), paddingRight: '48px' }}
-                                onFocus={() => setFocusedField('password')}
-                                onBlur={() => setFocusedField(null)}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-4 flex items-center focus:outline-none"
-                                tabIndex={-1}
-                                style={{ color: '#4A5568' }}
-                                onMouseEnter={e => e.currentTarget.style.color = '#8892A4'}
-                                onMouseLeave={e => e.currentTarget.style.color = '#4A5568'}>
-                                {showPassword ? <IoEyeOff size={17} /> : <IoEye size={17} />}
-                            </button>
+                        <Field label="Password" id="password">
+                            <div style={{ position: 'relative' }}>
+                                <IoLockClosed size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'password' ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} />
+                                <input
+                                    id="password" type={showPassword ? 'text' : 'password'}
+                                    value={password} required
+                                    onChange={e => setPassword(e.target.value)}
+                                    placeholder="Enter your password"
+                                    style={inputStyle('password')}
+                                    onFocus={() => setFocused('password')}
+                                    onBlur={() => setFocused('')}
+                                />
+                                <button type="button" tabIndex={-1}
+                                    onClick={() => setShowPassword(p => !p)}
+                                    style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', display: 'flex', alignItems: 'center' }}>
+                                    {showPassword ? <IoEyeOff size={17} /> : <IoEye size={17} />}
+                                </button>
+                            </div>
                         </Field>
 
                         {/* Forgot */}
-                        <div className="flex justify-end -mt-1">
-                            <Link to="/forgot-password"
-                                className="text-xs font-semibold transition-colors"
-                                style={{ color: '#F97316' }}
-                                onMouseEnter={e => e.currentTarget.style.color = '#FB923C'}
-                                onMouseLeave={e => e.currentTarget.style.color = '#F97316'}>
+                        <div style={{ textAlign: 'right', marginTop: -8 }}>
+                            <Link to="/forgot-password" style={{ fontSize: 13, fontWeight: 600, color: '#F97316', textDecoration: 'none' }}>
                                 Forgot password?
                             </Link>
                         </div>
 
                         {/* Submit */}
                         <motion.button
-                            whileHover={!loading ? { opacity: 0.92 } : {}}
+                            type="submit" disabled={loading}
+                            whileHover={!loading ? { opacity: 0.9 } : {}}
                             whileTap={!loading ? { scale: 0.98 } : {}}
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3.5 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all"
                             style={{
-                                background: loading ? '#1E2A3A' : '#F97316',
-                                color: loading ? '#475569' : '#fff',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                letterSpacing: '0.02em'
+                                width: '100%', padding: '13px', borderRadius: 10,
+                                background: loading ? '#E5E7EB' : '#F97316',
+                                color: loading ? '#9CA3AF' : '#fff',
+                                border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+                                fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                transition: 'background 0.15s',
                             }}>
                             {loading ? (
                                 <>
-                                    <div className="w-4 h-4 border-2 rounded-full animate-spin"
-                                        style={{ borderColor: '#334155', borderTopColor: '#64748B' }} />
+                                    <div style={{ width: 16, height: 16, border: '2px solid #D1D5DB', borderTopColor: '#9CA3AF', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                                     Signing in…
                                 </>
                             ) : (
-                                <>
-                                    Sign In
-                                    <IoArrowForward size={15} />
-                                </>
+                                <>Sign In <IoArrowForward size={15} /></>
                             )}
                         </motion.button>
                     </form>
 
                     {/* Footer */}
-                    <p className="text-center text-xs mt-8" style={{ color: '#334155' }}>
-                        Secure access · Contact admin to get your credentials
+                    <p style={{ textAlign: 'center', fontSize: 12, color: '#D1D5DB', marginTop: 24 }}>
+                        🔒 Secure access · Contact your admin for credentials
                     </p>
                 </motion.div>
             </div>
 
-            {/* Attendance floating btn */}
             <AttendanceFloatingBtn />
         </div>
     );
-};
-
-export default Login;
+}
