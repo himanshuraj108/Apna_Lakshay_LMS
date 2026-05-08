@@ -365,11 +365,11 @@ const Login = () => {
                                 {loading ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Signing in…
+                                        Logging in…
                                     </>
                                 ) : (
                                     <>
-                                        Sign In
+                                        Login
                                         <IoArrowForward
                                             size={16}
                                             className="group-hover:translate-x-1 transition-transform duration-200"
@@ -379,14 +379,14 @@ const Login = () => {
                             </motion.button>
                         </form>
 
-                        {/* Divider */}
+                        {/* Divider
                         <div className="flex items-center gap-3 my-6">
                             <div className="flex-1 h-px bg-white/6" />
                             <span className="text-[11px] text-gray-700 uppercase tracking-widest font-medium">or</span>
                             <div className="flex-1 h-px bg-white/6" />
                         </div>
 
-                        {/* Register link 
+                         Register link 
                         <p className="text-center text-sm text-gray-500">
                             Don&apos;t have an account?{' '}
                             <Link
