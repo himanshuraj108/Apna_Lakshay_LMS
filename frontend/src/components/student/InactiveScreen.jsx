@@ -45,7 +45,7 @@ const Feature = ({ icon: Icon, text, color, delay }) => (
             style={{ background: `${color}18` }}>
             <Icon size={12} style={{ color }} />
         </div>
-        <span className="text-xs font-medium text-gray-300 leading-tight">{text}</span>
+        <span className="text-xs font-bold text-gray-700 leading-tight">{text}</span>
         <IoCheckmarkCircle size={12} className="ml-auto shrink-0" style={{ color }} />
     </motion.div>
 );
@@ -55,17 +55,17 @@ const InactiveScreen = ({ user, onLogout }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            style={{ background: '#070a10', overflow: 'hidden' }}>
+            style={{ background: '#f8fafc', overflow: 'hidden' }}>
             <style>{STYLE}</style>
 
             {/* Ambient orbs */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div className="absolute top-[-10%] left-[-8%] w-[500px] h-[500px] rounded-full blur-[120px]"
-                    style={{ background: 'rgba(245,158,11,0.07)', animation: 'orb-drift1 20s ease-in-out infinite' }} />
+                    style={{ background: 'rgba(245,158,11,0.15)', animation: 'orb-drift1 20s ease-in-out infinite' }} />
                 <div className="absolute bottom-[-10%] right-[-8%] w-[450px] h-[450px] rounded-full blur-[110px]"
-                    style={{ background: 'rgba(168,85,247,0.07)', animation: 'orb-drift2 26s ease-in-out infinite' }} />
+                    style={{ background: 'rgba(168,85,247,0.15)', animation: 'orb-drift2 26s ease-in-out infinite' }} />
                 <div className="absolute inset-0"
-                    style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(255,255,255,0.02) 1px,transparent 0)', backgroundSize: '48px 48px' }} />
+                    style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(0,0,0,0.05) 1px,transparent 0)', backgroundSize: '48px 48px' }} />
             </div>
 
             {/* Card */}
@@ -77,14 +77,14 @@ const InactiveScreen = ({ user, onLogout }) => {
                 style={{ maxWidth: 420 }}
             >
                 {/* Glow border */}
-                <div className="absolute -inset-[1px] rounded-3xl opacity-50"
+                <div className="absolute -inset-[1px] rounded-3xl opacity-30"
                     style={{
-                        background: 'linear-gradient(135deg,rgba(245,158,11,0.8),rgba(236,72,153,0.4),rgba(168,85,247,0.5))',
-                        filter: 'blur(1px)'
+                        background: 'linear-gradient(135deg,rgba(245,158,11,0.5),rgba(236,72,153,0.3),rgba(168,85,247,0.4))',
+                        filter: 'blur(2px)'
                     }} />
 
-                <div className="relative rounded-3xl overflow-hidden"
-                    style={{ background: 'linear-gradient(160deg,#0f1219,#141a26,#0f1219)' }}>
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: '#ffffff' }}>
 
                     {/* Top bar */}
                     <div className="h-[3px]"
@@ -92,19 +92,18 @@ const InactiveScreen = ({ user, onLogout }) => {
 
                     {/* ── Hero ── */}
                     <div className="px-7 pt-7 pb-5 text-center"
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
 
                         {/* Icon — smaller, contained */}
                         <div className="relative w-16 h-16 mx-auto mb-4">
                             <div className="absolute inset-0 rounded-full"
-                                style={{ border: '1.5px dashed rgba(245,158,11,0.22)', animation: 'spin-slow 10s linear infinite' }} />
-                            <div className="absolute inset-[5px] rounded-full flex items-center justify-center"
+                                style={{ border: '1.5px dashed rgba(245,158,11,0.4)', animation: 'spin-slow 10s linear infinite' }} />
+                            <div className="absolute inset-[5px] rounded-full flex items-center justify-center bg-white"
                                 style={{
-                                    background: 'linear-gradient(135deg,rgba(245,158,11,0.14),rgba(239,68,68,0.09))',
-                                    border: '1px solid rgba(245,158,11,0.28)',
-                                    boxShadow: '0 0 20px rgba(245,158,11,0.15)'
+                                    border: '1px solid rgba(245,158,11,0.3)',
+                                    boxShadow: '0 0 20px rgba(245,158,11,0.2)'
                                 }}>
-                                <IoLockClosedOutline size={22} className="text-amber-400" />
+                                <IoLockClosedOutline size={22} className="text-amber-500" />
                             </div>
                         </div>
 
@@ -126,7 +125,7 @@ const InactiveScreen = ({ user, onLogout }) => {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.18 }}
-                            className="text-2xl font-black text-white mb-1.5"
+                            className="text-2xl font-black text-gray-900 mb-1.5"
                         >
                             Hi {firstName}! 👋
                         </motion.h1>
@@ -144,7 +143,7 @@ const InactiveScreen = ({ user, onLogout }) => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.33 }}
-                            className="text-gray-400 text-xs leading-relaxed"
+                            className="text-gray-500 text-xs leading-relaxed"
                         >
                             Your account has been deactivated. Contact the admin
                             to restore access to your seat, attendance and study tools.
@@ -152,8 +151,8 @@ const InactiveScreen = ({ user, onLogout }) => {
                     </div>
 
                     {/* ── Features ── */}
-                    <div className="px-7 py-4"
-                        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="px-7 py-4 bg-gray-50/50"
+                        style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">
                             What you get on re-activation
                         </p>
@@ -196,8 +195,8 @@ const InactiveScreen = ({ user, onLogout }) => {
                             transition={{ delay: 0.74 }}
                             whileHover={{ scale: 1.01 }}
                             whileTap={{ scale: 0.97 }}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold text-gray-500 hover:text-gray-300 transition-colors"
-                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                            style={{ border: '1px solid rgba(0,0,0,0.08)' }}
                         >
                             <IoLogOutOutline size={13} />
                             Sign Out
