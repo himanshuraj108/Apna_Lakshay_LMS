@@ -329,12 +329,10 @@ const generateTest = async (req, res) => {
         }
 
         if (user.mockTestCredits <= 0) {
-            return res.status(403).json({ success: false, message: 'Daily Mock Test limit reached (0/3). Please try again tomorrow.' });
+            return res.status(403).json({ success: false, message: `Daily Mock Test limit reached (0/2). Resets tomorrow at midnight.` });
         }
 
-        // Deduct Credit BEFORE generating to prevent race conditions
-        user.mockTestCredits -= 1;
-        await user.save({ validateBeforeSave: false });
+        // NOTE: Credit is deducted ONLY after successful generation (see bottom of function).
 
         const { examCode, sectionId, mode = 'mcq', lang = 'en' } = req.body;
 
@@ -356,81 +354,145 @@ const generateTest = async (req, res) => {
             ? 'Write ALL questions, options, explanations in Hindi language (Devanagari script).'
             : 'Write everything strictly in English.';
 
+        // ─── Chunked Parallel Generation ──────────────────────────────
+        // Each AI call is limited to CHUNK_SIZE questions to stay within token limits.
+        // All chunks for a section are fired concurrently via Promise.allSettled.
+        // This avoids JSON truncation that causes "AI failed to generate" errors.
+        const CHUNK_SIZE = 5;
+
+        /**
+         * Build a focused prompt for a single chunk of `count` questions.
+         */
+        const buildPrompt = (s, count, chunkIndex, totalChunks) => {
+            const uniqueHint = totalChunks > 1
+                ? ` (Set ${chunkIndex + 1}/${totalChunks} — all ${count} questions MUST be completely different topics/concepts from other sets)`
+                : '';
+
+            if (mode === 'mcq') {
+                return `Generate exactly ${count} unique ${difficulty}-difficulty MCQ questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array — no markdown fences, no extra text.\nEach element must have:\n  "question": string (no newlines)\n  "options": array of exactly 4 strings (no newlines)\n  "correct": integer 0-3 (0=A 1=B 2=C 3=D)\n  "explanation": string (one sentence, no newlines)\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
+            }
+            return `Generate exactly ${count} unique ${difficulty}-difficulty short-answer questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array — no markdown fences, no extra text.\nEach element must have:\n  "question": string\n  "hint": string\n  "modelAnswer": string\n  "keywords": array of 3-5 key terms\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
+        };
+
+        /**
+         * Fetch and validate one chunk — returns a clean array or [] on failure.
+         */
+        const fetchChunk = async (s, count, chunkIndex, totalChunks) => {
+            const messages = [
+                {
+                    role: 'system',
+                    content: 'You are an expert exam coach for Indian competitive exams. Always respond with ONLY a valid JSON array and nothing else.'
+                },
+                {
+                    role: 'user',
+                    content: buildPrompt(s, count, chunkIndex, totalChunks)
+                }
+            ];
+
+            const raw = await callGroq(messages);
+            const parsed = extractJSON(raw);
+
+            // Accept top-level array or first array value inside an object
+            let qs = Array.isArray(parsed)
+                ? parsed
+                : (Array.isArray(parsed[s.id])
+                    ? parsed[s.id]
+                    : Object.values(parsed).find(v => Array.isArray(v)) || []);
+
+            // Validate required fields per mode — drop malformed entries
+            if (mode === 'mcq') {
+                qs = qs.filter(q =>
+                    q &&
+                    typeof q.question === 'string' && q.question.trim().length > 0 &&
+                    Array.isArray(q.options) && q.options.length === 4 &&
+                    typeof q.correct === 'number' && q.correct >= 0 && q.correct <= 3
+                );
+            } else {
+                qs = qs.filter(q =>
+                    q &&
+                    typeof q.question === 'string' && q.question.trim().length > 0 &&
+                    typeof q.modelAnswer === 'string' && q.modelAnswer.trim().length > 0
+                );
+            }
+
+            if (qs.length === 0) {
+                console.warn('[MockTest] fetchChunk resulted in 0 questions after parsing. Raw output was:');
+                console.warn(raw);
+                console.warn('Parsed object was:', parsed);
+            }
+
+            return qs;
+        };
+
         let flatQuestions = [];
         let globalQIndex = 1;
 
-        // Generate section by section to avoid token truncation & ensure strict counts
+        // Sections run sequentially to avoid hammering the API;
+        // within each section, all chunk calls fire concurrently.
         for (const s of targetSections) {
             const secCount = sectionId === 'all'
                 ? Math.floor((s.weight / 100) * totalCount)
                 : totalCount;
 
-            const targetCount = Math.max(1, secCount);
+            const targetCount = Math.max(CHUNK_SIZE, secCount);
+            const totalChunks = Math.ceil(targetCount / CHUNK_SIZE);
 
-            const modePrompt = mode === 'mcq'
-                ? `Generate exactly ${targetCount} high-quality ${difficulty}-difficulty MCQ questions for Section: ${s.name} regarding topics: ${s.topics}.
-These must match real ${pattern.name} exam standards.
+            // Build one promise per chunk — fire all at once for this section
+            const chunkPromises = Array.from({ length: totalChunks }, (_, i) => {
+                const remaining = targetCount - i * CHUNK_SIZE;
+                const chunkSize = Math.min(CHUNK_SIZE, remaining);
+                return fetchChunk(s, chunkSize, i, totalChunks);
+            });
 
-${langNote}
+            // allSettled: partial failures won't discard the rest
+            const chunkResults = await Promise.allSettled(chunkPromises);
 
-Return ONLY a JSON array of question objects.
-Each question object MUST have:
-- "question": string (NO newlines inside string)
-- "options": array of exactly 4 strings (NO newlines inside string)
-- "correct": number (0-indexed, 0=A, 1=B, 2=C, 3=D)
-- "explanation": string (brief explanation, NO newlines inside string)
-- "sectionId": "${s.id}"
-- "sectionName": "${s.name}"`
-                : `Generate exactly ${targetCount} ${difficulty}-difficulty short-answer questions for Section: ${s.name} regarding topics: ${s.topics}.
-Match ${pattern.name} exam standards.
-
-${langNote}
-
-Return ONLY a JSON array of question objects.
-Each question object MUST have:
-- "question": string
-- "hint": string
-- "modelAnswer": string
-- "keywords": array of 3-5 key terms
-- "sectionId": "${s.id}"
-- "sectionName": "${s.name}"`;
-
-            const messages = [
-                { role: 'system', content: `You are an expert exam coach for Indian competitive exams. You MUST respond with ONLY a valid JSON array. NO text before or after the JSON.` },
-                { role: 'user', content: modePrompt },
-            ];
-
-            try {
-                const raw = await callGroq(messages);
-                const sectionData = extractJSON(raw);
-
-                // sectionData should be an array directly based on the new prompt
-                let qs = Array.isArray(sectionData) ? sectionData : (sectionData[s.id] || Object.values(sectionData)[0] || []);
-
-                if (Array.isArray(qs)) {
-                    qs.forEach(q => {
-                        flatQuestions.push({
-                            ...q,
-                            id: globalQIndex++,
-                            sectionId: s.id,
-                            sectionName: q.sectionName || s.name
-                        });
-                    });
+            let sectionQuestions = [];
+            chunkResults.forEach((result, i) => {
+                if (result.status === 'fulfilled') {
+                    sectionQuestions.push(...result.value);
+                } else {
+                    console.warn(`[MockTest] Section "${s.id}" chunk ${i + 1}/${totalChunks} failed: ${result.reason?.message}`);
                 }
-            } catch (secErr) {
-                console.error(`Failed to generate section ${s.id}:`, secErr.message);
-                // Continue to try to generate other sections even if one fails
-            }
+            });
+
+            // De-duplicate by first 80 chars of question text
+            const seen = new Set();
+            sectionQuestions = sectionQuestions.filter(q => {
+                const key = q.question.trim().toLowerCase().slice(0, 80);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            // Trim to exact target if over-generated
+            sectionQuestions = sectionQuestions.slice(0, targetCount);
+
+            sectionQuestions.forEach(q => {
+                flatQuestions.push({
+                    ...q,
+                    id: globalQIndex++,
+                    sectionId: s.id,
+                    sectionName: q.sectionName || s.name
+                });
+            });
+
+            console.log(`[MockTest] Section "${s.id}": ${sectionQuestions.length}/${targetCount} Qs (${totalChunks} chunks, ${chunkResults.filter(r => r.status === 'fulfilled').length} succeeded)`);
         }
 
         if (flatQuestions.length === 0) {
-            return res.status(500).json({ success: false, message: 'AI failed to generate any questions.' });
+            return res.status(500).json({ success: false, message: 'AI failed to generate any questions. Please try again.' });
         }
 
-        // Store the attempt in the database
+        // Deduct credit ONLY after questions are successfully generated
+        // (so a failed generation doesn't waste the student's daily credit)
+        user.mockTestCredits -= 1;
+        await user.save({ validateBeforeSave: false });
+
+        // Persist the attempt
         const attempt = await MockTestAttempt.create({
             user: user._id,
-            examCode: examCode,
+            examCode,
             patternName: pattern.name,
             status: 'generated',
             testData: flatQuestions
@@ -481,7 +543,7 @@ const evaluateTest = async (req, res) => {
             evaluation,
             summary: {
                 totalScore, maxScore, percentage, grade,
-                message: percentage >= 80 ? 'Excellent! 🏆' : percentage >= 60 ? 'Good Job! 👍' : percentage >= 40 ? 'Keep Practicing! 📚' : 'Needs More Effort 💪',
+                message: percentage >= 80 ? 'Excellent!' : percentage >= 60 ? 'Good Job!' : percentage >= 40 ? 'Keep Practicing!' : 'Needs More Effort',
             },
         });
     } catch (err) {
@@ -561,4 +623,30 @@ const getMyMockTests = async (req, res) => {
     }
 };
 
-module.exports = { getExamPattern, generateTest, evaluateTest, submitTest, getMyMockTests };
+// ─── GET /api/student/mock-test/credits ──────────────────────────────
+// Lightweight endpoint: runs the daily reset logic and returns live credits.
+// Called on page load so the header always shows the correct DB value.
+const getCredits = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        // Run the same daily reset logic as generateTest
+        const currentDateIST = new Date().toLocaleString('en-US', {
+            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+        if (user.mockTestCreditsResetDate !== currentDateIST) {
+            user.mockTestCredits = 2;
+            user.mockTestCreditsResetDate = currentDateIST;
+            await user.save({ validateBeforeSave: false });
+        }
+
+        res.json({ success: true, credits: user.mockTestCredits, maxCredits: 2 });
+    } catch (err) {
+        console.error('getCredits error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch credits' });
+    }
+};
+
+module.exports = { getExamPattern, generateTest, evaluateTest, submitTest, getMyMockTests, getCredits };
+

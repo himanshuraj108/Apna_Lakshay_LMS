@@ -9,7 +9,7 @@ import {
 import api from '../../utils/api';
 
 // ── Card section tabs ─────────────────────────────────────────────────────────
-const TABS = ['Quick Actions', 'Learning', 'AI Credits'];
+const TABS = ['Quick Actions', 'Learning', 'Doubt Credits', 'Mock Test Credits'];
 
 // ── Toggle switch ─────────────────────────────────────────────────────────────
 const Toggle = ({ checked, onChange }) => (
@@ -60,11 +60,15 @@ const ManageCards = () => {
     const [learning, setLearning]       = useState([]);
     const [aiConfig, setAiConfig]       = useState({ divisor: 10, defaultCredits: 10 });
     const [students, setStudents]       = useState([]);
+    const [mockStudents, setMockStudents] = useState([]); // Students for Mock Test Credits
     const [loading, setLoading]         = useState(true);
     const [saving, setSaving]           = useState(false);
     const [toast, setToast]             = useState(null);
     const [search, setSearch]           = useState('');
+    const [searchMock, setSearchMock]   = useState('');
     const [editingCredit, setEditing]   = useState(null); // { id, value }
+    const [editingMockCredit, setEditingMock] = useState(null); // { id, value }
+    const [bulkMockValue, setBulkMockValue] = useState(2);
 
     useEffect(() => { loadAll(); }, []);
 
@@ -76,15 +80,17 @@ const ManageCards = () => {
     const loadAll = async () => {
         setLoading(true);
         try {
-            const [cfg, cred, sts] = await Promise.all([
+            const [cfg, cred, sts, mockSts] = await Promise.all([
                 api.get('/admin/card-config'),
                 api.get('/admin/ai-credit-config'),
                 api.get('/admin/ai-credits/students'),
+                api.get('/admin/mock-test-credits/students'),
             ]);
             setQA(cfg.data.quickActions);
             setLearning(cfg.data.learning);
             setAiConfig(cred.data.config);
             setStudents(sts.data.students);
+            setMockStudents(mockSts.data.students);
         } catch { showToast('Failed to load config', 'error'); }
         finally { setLoading(false); }
     };
@@ -139,13 +145,40 @@ const ManageCards = () => {
                 ? { ...s, doubtCredits: res.data.student?.doubtCredits ?? val, creditMode: res.data.student?.creditMode ?? creditMode ?? s.creditMode }
                 : s));
             setEditing(null);
-            showToast('Updated');
+            showToast('Updated Doubt Credits');
         } catch { showToast('Update failed', 'error'); }
+    };
+
+    const saveMockTestCredit = async (id, credits) => {
+        try {
+            const res = await api.patch(`/admin/mock-test-credits/students/${id}`, { credits });
+            setMockStudents(prev => prev.map(s => s._id === id
+                ? { ...s, mockTestCredits: res.data.student?.mockTestCredits ?? credits }
+                : s));
+            setEditingMock(null);
+            showToast('Updated Mock Test Credits');
+        } catch { showToast('Update failed', 'error'); }
+    };
+
+    const resetAllMockCredits = async () => {
+        if (!window.confirm(`Are you sure you want to reset ALL students to ${bulkMockValue} mock test credits?`)) return;
+        setSaving(true);
+        try {
+            const res = await api.post('/admin/mock-test-credits/reset-all', { value: bulkMockValue });
+            showToast(res.data.message);
+            loadAll();
+        } catch { showToast('Reset failed', 'error'); }
+        finally { setSaving(false); }
     };
 
     const filteredStudents = students.filter(s =>
         s.name.toLowerCase().includes(search.toLowerCase()) ||
         (s.studentId || '').toLowerCase().includes(search.toLowerCase())
+    );
+
+    const filteredMockStudents = mockStudents.filter(s =>
+        s.name.toLowerCase().includes(searchMock.toLowerCase()) ||
+        (s.studentId || '').toLowerCase().includes(searchMock.toLowerCase())
     );
 
     if (loading) {
@@ -241,8 +274,8 @@ const ManageCards = () => {
                     </div>
                 )}
 
-                {/* ── AI Credits ────────────────────────────────────────────── */}
-                {activeTab === 'AI Credits' && (
+                {/* ── Doubt Credits ────────────────────────────────────────────── */}
+                {activeTab === 'Doubt Credits' && (
                     <div className="space-y-6">
                         {/* Global config */}
                         <div className="rounded-2xl border border-white/8 p-5" style={{ background: 'rgba(250,204,21,0.04)' }}>
@@ -353,6 +386,89 @@ const ManageCards = () => {
                                     );
                                 })}
                                 {filteredStudents.length === 0 && (
+                                    <p className="text-center text-gray-700 text-xs py-8">No students found</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Mock Test Credits ────────────────────────────────────────────── */}
+                {activeTab === 'Mock Test Credits' && (
+                    <div className="space-y-6">
+                        <div className="rounded-2xl border border-white/8 p-5 flex flex-col gap-4" style={{ background: 'rgba(34,197,94,0.04)' }}>
+                            <div className="flex items-center gap-2">
+                                <IoSparkles size={14} className="text-green-400" />
+                                <h3 className="text-white font-bold text-sm">Daily Mock Test Allowance</h3>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                This sets the total allowed tests a student can generate per day. It will automatically reset to 2 at midnight IST unless modified.
+                            </p>
+                            <div className="flex items-end gap-3 max-w-sm">
+                                <div className="flex-1">
+                                    <label className="text-xs text-gray-400 mb-1 block">Bulk Reset To</label>
+                                    <input type="number" min="0" value={bulkMockValue}
+                                        onChange={e => setBulkMockValue(Number(e.target.value))}
+                                        className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-green-400/30"
+                                    />
+                                </div>
+                                <button onClick={resetAllMockCredits} disabled={saving}
+                                    className="flex items-center justify-center gap-2 px-4 py-2 h-[38px] rounded-xl text-xs font-bold transition-all border border-green-400/20 text-green-400 hover:bg-green-400/5 disabled:opacity-50">
+                                    <IoFlashOutline size={13} /> Reset All Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-white font-bold text-sm flex items-center gap-2">
+                                    <IoPersonOutline size={14} className="text-gray-400" /> Per-Student Credits
+                                </h3>
+                                <span className="text-xs text-gray-600">{mockStudents.length} students</span>
+                            </div>
+                            <div className="relative mb-3">
+                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <input value={searchMock} onChange={e => setSearchMock(e.target.value)}
+                                    placeholder="Search by name or ID…"
+                                    className="w-full bg-white/5 border border-white/8 text-white text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-green-400/30 placeholder-gray-600" />
+                            </div>
+                            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+                                {filteredMockStudents.map(s => {
+                                    return (
+                                        <div key={s._id}
+                                            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-white/6"
+                                            style={{ background: 'rgba(255,255,255,0.025)' }}>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-white text-xs font-semibold truncate">{s.name}</p>
+                                                <p className="text-gray-600 text-[10px]">{s.studentId} · Seat {s.seatNumber} · Last reset: {s.lastReset || 'Never'}</p>
+                                            </div>
+
+                                            {editingMockCredit?.id === s._id ? (
+                                                <div className="flex items-center gap-2">
+                                                    <input type="number" min="0"
+                                                        value={editingMockCredit.value}
+                                                        onChange={e => setEditingMock(prev => ({ ...prev, value: e.target.value }))}
+                                                        onKeyDown={e => { if (e.key === 'Enter') saveMockTestCredit(s._id, Number(editingMockCredit.value)); if (e.key === 'Escape') setEditingMock(null); }}
+                                                        className="w-16 bg-white/10 border border-green-400/30 text-white text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
+                                                        autoFocus />
+                                                    <button onClick={() => saveMockTestCredit(s._id, Number(editingMockCredit.value))}
+                                                        className="text-green-400 hover:text-green-300 transition-colors"><IoCheckmarkCircle size={16} /></button>
+                                                    <button onClick={() => setEditingMock(null)}
+                                                        className="text-gray-500 hover:text-white transition-colors text-xs">✕</button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-sm w-8 text-center text-green-400">{s.mockTestCredits}</span>
+                                                    <button onClick={() => setEditingMock({ id: s._id, value: s.mockTestCredits })}
+                                                        className="p-1 rounded-lg text-gray-600 hover:text-white hover:bg-white/8 transition-all">
+                                                        <IoPencilOutline size={13} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                                {filteredMockStudents.length === 0 && (
                                     <p className="text-center text-gray-700 text-xs py-8">No students found</p>
                                 )}
                             </div>

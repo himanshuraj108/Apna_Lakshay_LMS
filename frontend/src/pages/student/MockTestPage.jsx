@@ -288,13 +288,21 @@ const AttemptHistory = ({ onViewHistory }) => {
 
 // ─── 1. Exam Select Screen ────────────────────────────────────────────
 const ExamSelect = ({ onSelect, onViewHistory }) => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const credits = Math.min(user?.mockTestCredits ?? 2, 2);
     const isLocked = credits <= 0;
 
     const [timeLeftToReset, setTimeLeftToReset] = useState('');
     const [showInstructionsModal, setShowInstructionsModal] = useState(false);
     const [activeTab, setActiveTab] = useState('new'); // new or history
+
+    // On mount: call /credits which runs the server-side daily reset and
+    // returns the real DB value — fixes stale AuthContext cache.
+    useEffect(() => {
+        api.get('/student/mock-test/credits')
+            .then(res => { if (res.data.credits !== undefined) updateUser({ mockTestCredits: res.data.credits }); })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (!isLocked) return;
@@ -403,7 +411,7 @@ const ExamSelect = ({ onSelect, onViewHistory }) => {
 
 // ─── 2. Exam Info & Setup Screen ──────────────────────────────────────
 const ExamInfoPage = ({ examCode, onStart, onBack }) => {
-    const { checkAuth, updateUser } = useAuth();
+    const { updateUser } = useAuth();
     const [pattern, setPattern] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sectionId, setSectionId] = useState('all'); // 'all' or specific ID
@@ -494,8 +502,8 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Test Type</label>
                             <select value={sectionId} onChange={(e) => setSectionId(e.target.value)}
                                 style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '14px', fontWeight: '600', color: '#1e293b', outline: 'none' }}>
-                                <option value="all">🏆 Full Mock Test (All Sections)</option>
-                                {pattern.sections.map(s => <option key={s.id} value={s.id}>📖 Section: {s.name}</option>)}
+                                <option value="all">Full Mock Test (All Sections)</option>
+                                {pattern.sections.map(s => <option key={s.id} value={s.id}>Section: {s.name}</option>)}
                             </select>
                         </div>
 
@@ -521,24 +529,25 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                                     // Generate ONLY the selected language
                                     const res = await api.post('/student/mock-test/generate', { examCode, mode: 'mcq', ...cfg, lang });
 
-                                    // Force Refresh User Credits from DB
-                                    try { 
-                                        await checkAuth(); 
-                                        if (res.data.newCredits !== undefined) {
-                                            updateUser({ mockTestCredits: res.data.newCredits });
-                                        }
-                                    } catch (e) { console.error('Failed to update credits', e); }
+                                    // Directly use newCredits returned by the server
+                                    if (res.data.newCredits !== undefined) {
+                                        updateUser({ mockTestCredits: res.data.newCredits });
+                                    }
 
                                     // Pause for Mandatory Instructions Check
                                     setPendingExamStart(() => () => onStart(pattern, cfg, res.data.questions, res.data.attemptId));
                                 } catch (e) {
+                                    // Re-sync credits from DB on ANY error (403 limit, AI failure, etc.)
+                                    api.get('/student/mock-test/credits')
+                                        .then(r => { if (r.data.credits !== undefined) updateUser({ mockTestCredits: r.data.credits }); })
+                                        .catch(() => {});
                                     setError(e.response?.data?.message || 'Failed to generate test. Try again.');
                                 } finally { setGenLoading(false); }
                             }}
                             disabled={genLoading}
                             className={`w-full rounded-xl p-4 font-extrabold text-[15px] flex items-center justify-center gap-2 transition-all ${genLoading ? 'bg-orange-400 cursor-not-allowed text-white/90' : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-[0_4px_12px_rgba(234,88,12,0.3)] hover:shadow-[0_6px_16px_rgba(234,88,12,0.4)]'}`}
                         >
-                            {genLoading ? 'Building Test Engine...' : 'START EXAM SESSION →'}
+                            {genLoading ? 'Building Test Engine...' : 'START EXAM SESSION'}
                         </button>
                     </div>
 
@@ -771,7 +780,7 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                         ))}
                     </div>
                     <div className={`font-mono text-lg font-black bg-black/20 px-4 py-1.5 rounded-lg border ${urgent ? 'text-red-300 border-red-500 animate-pulse' : 'text-green-300 border-transparent'}`}>
-                        ⏱ {fmtTime(timeLeft)}
+                        {fmtTime(timeLeft)}
                     </div>
                     <button className="submit-btn bg-red-500 hover:bg-red-600 text-white rounded-lg px-6 py-2 text-[13px] font-black tracking-wide uppercase shadow-[0_2px_8px_rgba(239,68,68,0.4)] transition-all" onClick={() => setShowSubmitModal(true)}>
                         SUBMIT EXAM

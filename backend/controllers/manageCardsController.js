@@ -144,8 +144,77 @@ const applyFormulaToAll = async (req, res) => {
     }
 };
 
+
+// ─── GET students with Mock Test Credits ─────────────────────────────────────
+const getMockTestCreditStudents = async (req, res) => {
+    try {
+        const students = await User.find({ role: 'student' })
+            .select('name studentId email mockTestCredits mockTestCreditsResetDate seat')
+            .populate('seat', 'seatNumber')
+            .lean();
+
+        const data = students.map(s => ({
+            _id: s._id,
+            name: s.name,
+            studentId: s.studentId,
+            email: s.email,
+            mockTestCredits: s.mockTestCredits ?? 2,
+            seatNumber: s.seat?.seatNumber || '—',
+            lastReset: s.mockTestCreditsResetDate || null,
+        }));
+        res.json({ success: true, students: data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// ─── PATCH single student Mock Test Credits ──────────────────────────────────
+// Body: { credits: N }           → set to N exactly
+// Body: { delta: +N | -N }       → increase / decrease by N
+const updateStudentMockTestCredits = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { credits, delta } = req.body;
+
+        const student = await User.findById(id);
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
+
+        if (credits != null && !isNaN(credits)) {
+            student.mockTestCredits = Math.max(0, Number(credits));
+        } else if (delta != null && !isNaN(delta)) {
+            student.mockTestCredits = Math.max(0, (student.mockTestCredits ?? 2) + Number(delta));
+        } else {
+            return res.status(400).json({ success: false, message: 'Provide credits (set) or delta (adjust)' });
+        }
+
+        await student.save({ validateBeforeSave: false });
+        res.json({ success: true, student: { _id: student._id, name: student.name, mockTestCredits: student.mockTestCredits } });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// ─── POST bulk reset all students' Mock Test Credits to a value ───────────────
+// Body: { value: N }  (defaults to 2 if omitted)
+const resetAllMockTestCredits = async (req, res) => {
+    try {
+        const value = req.body.value != null ? Math.max(0, Number(req.body.value)) : 2;
+        const today = new Date().toLocaleString('en-US', {
+            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+        const result = await User.updateMany(
+            { role: 'student' },
+            { $set: { mockTestCredits: value, mockTestCreditsResetDate: today } }
+        );
+        res.json({ success: true, message: `Reset ${result.modifiedCount} students to ${value} mock test credits` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     getCardConfig, updateCardConfig,
     getAiCreditConfig, updateAiCreditConfig,
     getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll,
+    getMockTestCreditStudents, updateStudentMockTestCredits, resetAllMockTestCredits,
 };

@@ -23,14 +23,16 @@ const {
     getReceipt,
     getMonthlyReport,
     createFeePaymentOrder,
-    verifyFeePayment
+    verifyFeePayment,
+    getPendingFeedback,
+    submitFeedback
 } = require('../controllers/studentController');
 const { askDoubt, syncDoubtSession } = require('../controllers/doubtController');
 const { getCurrentAffairs } = require('../controllers/currentAffairsController');
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
 const { getNotes } = require('../controllers/notesController');
-const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests } = require('../controllers/mockTestController');
+const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests, getCredits } = require('../controllers/mockTestController');
 const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
 
 
@@ -65,6 +67,7 @@ router.get('/books', getBooks);
 router.get('/notes', getNotes);
 
 // AI Mock Test (Gemini/Groq API)
+router.get('/mock-test/credits', getCredits);
 router.get('/mock-test/pattern/:examCode', getExamPattern);
 router.post('/mock-test/generate', generateTest);
 router.post('/mock-test/evaluate', evaluateTest);
@@ -95,6 +98,8 @@ router.put('/notifications/:id/read', markNotificationRead);
 router.post('/request', authorizeActive, submitRequest);
 router.get('/request', getMyRequests);
 router.put('/request/:id/withdraw', withdrawRequest);
+router.get('/request/pending-feedback', getPendingFeedback);
+router.post('/request/:id/rate', submitFeedback);
 router.get('/available-shifts', authorizeActive, getAvailableShifts);
 router.post('/request-seat-change', authorizeActive, requestSeatChange);
 

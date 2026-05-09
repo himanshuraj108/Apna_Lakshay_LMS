@@ -187,7 +187,8 @@ router.route('/settings')
 const {
     getCardConfig, updateCardConfig,
     getAiCreditConfig, updateAiCreditConfig,
-    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll
+    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll,
+    getMockTestCreditStudents, updateStudentMockTestCredits, resetAllMockTestCredits
 } = require('../controllers/manageCardsController');
 
 router.get('/card-config', getCardConfig);
@@ -197,6 +198,11 @@ router.put('/ai-credit-config', updateAiCreditConfig);
 router.get('/ai-credits/students', getStudentsWithAiCredits);
 router.patch('/ai-credits/students/:id', updateStudentAiCredits);
 router.post('/ai-credits/apply-formula', applyFormulaToAll);
+
+// Mock Test Credits
+router.get('/mock-test-credits/students', getMockTestCreditStudents);
+router.patch('/mock-test-credits/students/:id', updateStudentMockTestCredits);
+router.post('/mock-test-credits/reset-all', resetAllMockTestCredits);
 
 // Holiday Management
 router.route('/holidays')
