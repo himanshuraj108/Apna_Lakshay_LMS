@@ -180,7 +180,7 @@ exports.getMe = async (req, res) => {
             const seat = await Seat.findOne({
                 'assignments.student': user._id,
                 'assignments.status': 'active'
-            }).populate('assignments.shift');
+            }).populate('assignments.shift').populate('room');
 
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === user._id.toString() && a.status === 'active');
@@ -203,6 +203,7 @@ exports.getMe = async (req, res) => {
                         endTime: assignment.shift.endTime
                     } : null;
                     userData.seatNumber = seat.number; // Explicitly add seat number
+                    userData.roomId = seat.room ? seat.room.roomId : null; // Explicitly add room ID
 
                     // Self-healing: If user.seat is missing/null but we found an active seat, update it
                     if (!user.seat) {
