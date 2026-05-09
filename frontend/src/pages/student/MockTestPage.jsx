@@ -576,10 +576,13 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 // ─── 3. Test Session (NTA-Style with Section Tabs & Browser Translate) ──
 const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish }) => {
     const { user } = useAuth();
+    const [questions, setQuestions] = useState(initialQuestions); // mutable — grows as more are loaded
     const [current, setCurrent] = useState(0);
     const [answers, setAnswers] = useState({});
     const [statuses, setStatuses] = useState(() => Object.fromEntries(initialQuestions.map((_, i) => [i, 'not_visited'])));
     const [showPalette, setShowPalette] = useState(false); // mobile palette toggle
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [moreError, setMoreError] = useState(null);
 
     // Timer is real exam duration if all sections, or scaled by weight if single section
     const isFull = config.sectionId === 'all';
@@ -606,11 +609,11 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
     const timerRef = useRef();
 
     // The active question object (either original or translated)
-    const q = displayLang === config.lang ? initialQuestions[current] : (translatedQuestions[current] || initialQuestions[current]);
+    const q = displayLang === config.lang ? questions[current] : (translatedQuestions[current] || questions[current]);
     const urgent = timeLeft < 300;
 
     // Derived sections for tabs based on questions generated
-    const sectionIdsPresent = [...new Set(initialQuestions.map(qt => qt.sectionId))];
+    const sectionIdsPresent = [...new Set(questions.map(qt => qt.sectionId))];
     const [activeTab, setActiveTab] = useState(sectionIdsPresent[0] || 'all');
 
     // Free Browser Google Translate Helper
@@ -631,7 +634,7 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
             if (translatedQuestions[current]) return; // Already cached
 
             setTranslating(true);
-            const qObj = initialQuestions[current];
+            const qObj = questions[current];
             const from = config.lang;
             const to = displayLang;
 
@@ -696,6 +699,43 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
         if (q && q.sectionId !== activeTab) setActiveTab(q.sectionId);
     }, [current, q]);
 
+    // Mark Q0 as visited on mount (goTo is never called for the first question)
+    useEffect(() => {
+        setStatuses(p => ({ ...p, 0: p[0] === 'not_visited' ? 'not_answered' : p[0] }));
+    }, []);
+
+    // Auto-trigger generation when every current question has been visited at least once
+    useEffect(() => {
+        if (loadingMore) return; // already generating
+        const total = questions.length;
+        if (total === 0) return;
+        const allVisited = Object.values(statuses).slice(0, total).every(s => s !== 'not_visited');
+        if (allVisited) {
+            handleLoadMore();
+        }
+    }, [statuses]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Generate next set of questions (called automatically when all current questions are visited)
+    const handleLoadMore = async () => {
+        setLoadingMore(true);
+        setMoreError(null);
+        const prevLength = questions.length;
+        try {
+            const res = await api.post(`/student/mock-test/generate-more/${attemptId}`);
+            const newQs = res.data.questions;
+            const newStatuses = {};
+            newQs.forEach((_, i) => { newStatuses[prevLength + i] = 'not_visited'; });
+            setQuestions(prev => [...prev, ...newQs]);
+            setStatuses(prev => ({ ...prev, ...newStatuses }));
+            // Move student to the very first newly generated question
+            setCurrent(prevLength);
+        } catch (e) {
+            setMoreError(e.response?.data?.message || 'Failed to generate more questions. Please try again.');
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+
     const goTo = (idx) => {
         setStatuses(p => ({ ...p, [idx]: p[idx] === 'not_visited' ? 'not_answered' : p[idx] }));
         setCurrent(idx);
@@ -703,12 +743,12 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
 
     const saveAndNext = () => {
         if (answers[current] !== undefined) setStatuses(p => ({ ...p, [current]: 'answered' }));
-        if (current < initialQuestions.length - 1) goTo(current + 1);
+        if (current < questions.length - 1) goTo(current + 1);
     };
 
     const markAndNext = () => {
         setStatuses(p => ({ ...p, [current]: answers[current] !== undefined ? 'answered_marked' : 'marked' }));
-        if (current < initialQuestions.length - 1) goTo(current + 1);
+        if (current < questions.length - 1) goTo(current + 1);
     };
 
     const clearResponse = () => {
@@ -728,7 +768,7 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
             }
         } catch (e) { console.log('Exit fullscreen error:', e); }
 
-        const results = initialQuestions.map((qt, i) => {
+        const results = questions.map((qt, i) => {
             const trans = translatedQuestions[i];
             return {
                 ...qt,
@@ -840,14 +880,15 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                         <button onClick={markAndNext} className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-600 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">MARK FOR REVIEW & NEXT</button>
                     </div>
 
-                    <div className="p-3 border-t border-gray-200 flex justify-between items-center bg-white">
+                    <div className="p-3 border-t border-gray-200 flex justify-between items-center bg-white flex-wrap gap-2">
                         <button onClick={() => goTo(Math.max(0, current - 1))} disabled={current === 0} className={`bg-white text-gray-700 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all ${current === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}>&lt;&lt; BACK</button>
                         {/* Mobile palette toggle */}
                         <button
                             className="palette-toggle-btn bg-orange-600 text-white border-none rounded-lg px-4 py-2 font-bold text-xs cursor-pointer shadow-sm hidden"
                             onClick={() => setShowPalette(p => !p)}
                         >{showPalette ? 'Hide Panel' : 'Question Palette'}</button>
-                        <button onClick={() => goTo(Math.max(initialQuestions.length - 1, current + 1))} disabled={current === initialQuestions.length - 1} className={`bg-white text-gray-700 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all ${current === initialQuestions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}>NEXT &gt;&gt;</button>
+
+                        <button onClick={() => goTo(Math.min(questions.length - 1, current + 1))} disabled={current === questions.length - 1} className={`bg-white text-gray-700 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all ${current === questions.length - 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}>NEXT &gt;&gt;</button>
                     </div>
                 </div>
 
@@ -898,7 +939,7 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                         </div>
 
                         <div style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexWrap: 'wrap', gap: '10px', alignContent: 'flex-start' }}>
-                            {initialQuestions.map((qItem, i) => {
+                            {questions.map((qItem, i) => {
                                 // Subtly hide questions not in active tab if showing multiple sections
                                 if (sectionIdsPresent.length > 1 && qItem.sectionId !== activeTab) return null;
                                 return (
@@ -1078,6 +1119,32 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                                     </button>
                                 )}
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Loading More Overlay */}
+            <AnimatePresence>
+                {loadingMore && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)' }} />
+
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ position: 'relative', width: '100%', maxWidth: '480px', background: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', padding: '32px', textAlign: 'center' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '80px', height: '80px', borderRadius: '50%', background: '#fff7ed', marginBottom: '24px' }}>
+                                <span style={{ width: '40px', height: '40px', border: '4px solid #f97316', borderTop: '4px solid transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }} />
+                            </div>
+                            <h2 style={{ color: '#0f172a', fontSize: '22px', fontWeight: '900', marginBottom: '12px' }}>
+                                {displayLang === 'hi' ? 'अगला सेट तैयार हो रहा है...' : 'Generating Next Set...'}
+                            </h2>
+                            <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.6', marginBottom: '8px' }}>
+                                {displayLang === 'hi'
+                                    ? `आपने सभी उपलब्ध प्रश्न देख लिए हैं। कृपया प्रतीक्षा करें, हमारा AI आपके परीक्षा पैटर्न के आधार पर अगले ${sectionIdsPresent.length * 5} प्रश्न तैयार कर रहा है।`
+                                    : `You have visited all available questions. Please wait while our AI prepares the next ${sectionIdsPresent.length * 5} questions based on your exam pattern.`}
+                            </p>
+                            <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: 'bold' }}>
+                                {displayLang === 'hi' ? 'कृपया इस पेज को बंद या रीफ्रेश न करें।' : 'Do not close or refresh this page.'}
+                            </p>
                         </motion.div>
                     </div>
                 )}
