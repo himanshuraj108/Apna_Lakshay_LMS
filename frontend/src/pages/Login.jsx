@@ -359,7 +359,7 @@ export default function Login() {
                             {loading ? (
                                 <>
                                     <div style={{ width: 16, height: 16, border: '2px solid #D1D5DB', borderTopColor: '#9CA3AF', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                                    Signing in…
+                                    Logging in…
                                 </>
                             ) : (
                                 <>Login <IoArrowForward size={15} /></>
