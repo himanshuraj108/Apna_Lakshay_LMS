@@ -2317,6 +2317,20 @@ exports.getVacantSeats = async (req, res) => {
 exports.getFees = async (req, res) => {
 
     try {
+        // Self-heal: sync all pending/overdue fee amounts to current seat assignment price
+        const activeSeatsForSync = await Seat.find({ 'assignments.status': 'active' });
+        for (const seat of activeSeatsForSync) {
+            const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+            for (const assignment of activeAssignments) {
+                if (assignment.price) {
+                    await Fee.updateMany(
+                        { student: assignment.student, status: { $in: ['pending', 'overdue'] } },
+                        { $set: { amount: assignment.price } }
+                    );
+                }
+            }
+        }
+
         let fees = await Fee.find()
             .populate('student', 'name email createdAt isActive')
             .sort({ year: -1, month: -1 });
@@ -3022,9 +3036,32 @@ exports.getRequests = async (req, res) => {
         // Filter out orphaned requests
         const filteredRequests = requests.filter(req => req.student);
 
+        const studentIds = filteredRequests.map(r => r.student._id);
+        const activeSeats = await Seat.find({ 
+            'assignments.student': { $in: studentIds }, 
+            'assignments.status': 'active' 
+        });
+
+        // Map requests to include current active price
+        const requestsWithPrice = filteredRequests.map(req => {
+            const reqObj = req.toObject();
+            const studentSeat = activeSeats.find(s => 
+                s.assignments.some(a => a.student.toString() === req.student._id.toString() && a.status === 'active')
+            );
+            if (studentSeat) {
+                const activeAssignment = studentSeat.assignments.find(a => 
+                    a.student.toString() === req.student._id.toString() && a.status === 'active'
+                );
+                reqObj.studentPrice = activeAssignment ? activeAssignment.price : 0;
+            } else {
+                reqObj.studentPrice = 0;
+            }
+            return reqObj;
+        });
+
         res.status(200).json({
             success: true,
-            requests: filteredRequests
+            requests: requestsWithPrice
         });
     } catch (error) {
         res.status(500).json({
@@ -3120,6 +3157,7 @@ exports.handleRequest = async (req, res) => {
                 let shiftToMove = null;
                 let legacyShiftToMove = null;
                 let typeToMove = 'specific';
+                let priceToMove = 0;
 
                 // Find ALL active assignments for this student on the seat (handle duplicates)
                 const studentAssignments = currentSeat.assignments.filter(
@@ -3137,6 +3175,25 @@ exports.handleRequest = async (req, res) => {
                     shiftToMove = oldAssignment.shift;
                     legacyShiftToMove = oldAssignment.legacyShift;
                     typeToMove = oldAssignment.type;
+                    
+                    if (req.body.useBaseFee) {
+                        const sId = shiftToMove?._id || shiftToMove;
+                        if (sId) {
+                            priceToMove = requestedSeat.shiftPrices?.get(sId.toString()) || requestedSeat.basePrices?.day || 800;
+                        } else if (legacyShiftToMove && requestedSeat.basePrices) {
+                            priceToMove = requestedSeat.basePrices[legacyShiftToMove] || 800;
+                        } else if (typeToMove === 'full_day' && requestedSeat.basePrices) {
+                            priceToMove = requestedSeat.basePrices.full || 1200;
+                        } else {
+                            priceToMove = requestedSeat.price || 800;
+                        }
+                    } else if (req.body.updatedFee !== undefined && req.body.updatedFee !== null && req.body.updatedFee !== '') {
+                        priceToMove = Number(req.body.updatedFee);
+                    } else {
+                        priceToMove = oldAssignment.price;
+                    }
+
+                    console.log('SEAT CHANGE DEBUG:', { useBaseFee: req.body.useBaseFee, updatedFee: req.body.updatedFee, priceToMove, oldAssignmentPrice: oldAssignment.price });
 
                     // Recalculate occupancy
                     // Note: assignments are modified in memory
@@ -3148,6 +3205,24 @@ exports.handleRequest = async (req, res) => {
                 } else if (oldAssignment) {
                     // Fallback if find() found one but filter didn't? Should be impossible, but keep safe
                     oldAssignment.status = 'expired';
+                    
+                    if (req.body.useBaseFee) {
+                        const sId = oldAssignment.shift?._id || oldAssignment.shift;
+                        if (sId) {
+                            priceToMove = requestedSeat.shiftPrices?.get(sId.toString()) || requestedSeat.basePrices?.day || 800;
+                        } else if (oldAssignment.legacyShift && requestedSeat.basePrices) {
+                            priceToMove = requestedSeat.basePrices[oldAssignment.legacyShift] || 800;
+                        } else if (oldAssignment.type === 'full_day' && requestedSeat.basePrices) {
+                            priceToMove = requestedSeat.basePrices.full || 1200;
+                        } else {
+                            priceToMove = requestedSeat.price || 800;
+                        }
+                    } else if (req.body.updatedFee !== undefined && req.body.updatedFee !== null && req.body.updatedFee !== '') {
+                        priceToMove = Number(req.body.updatedFee);
+                    } else {
+                        priceToMove = oldAssignment.price;
+                    }
+                    
                     await currentSeat.save();
                 }
 
@@ -3157,10 +3232,19 @@ exports.handleRequest = async (req, res) => {
                     shift: shiftToMove,
                     legacyShift: legacyShiftToMove,
                     type: typeToMove,
+                    price: priceToMove,
                     status: 'active',
                     assignedAt: new Date()
                 });
                 await requestedSeat.save();
+
+                // Update existing pending/overdue fee records if price changed
+                if (priceToMove) {
+                    await Fee.updateMany(
+                        { student: request.student._id, status: { $in: ['pending', 'overdue'] } },
+                        { $set: { amount: priceToMove } }
+                    );
+                }
 
                 // 3. Update User reference
                 await User.findByIdAndUpdate(request.student._id, {
@@ -3279,6 +3363,19 @@ exports.handleRequest = async (req, res) => {
                         }
 
                         // Calculate monthly fee (use assignment.price or seat pricing)
+                        if (req.body.useBaseFee) {
+                            if (assignment.shift) {
+                                const shiftId = assignment.shift._id || assignment.shift;
+                                assignment.price = seat.shiftPrices?.get(shiftId.toString()) || seat.basePrices?.day || 800;
+                            } else if (assignment.legacyShift && seat.basePrices) {
+                                assignment.price = seat.basePrices[assignment.legacyShift] || 800;
+                            } else if (assignment.type === 'full_day' && seat.basePrices) {
+                                assignment.price = seat.basePrices.full || 1200;
+                            }
+                        } else if (req.body.updatedFee !== undefined && req.body.updatedFee !== null && req.body.updatedFee !== '') {
+                            assignment.price = Number(req.body.updatedFee);
+                        }
+                        
                         let monthlyFee = assignment.price || 0;
                         if (!monthlyFee) {
                             // Fallback to seat pricing
@@ -3293,6 +3390,14 @@ exports.handleRequest = async (req, res) => {
                         }
 
                         await seat.save();
+
+                        // Update existing pending/overdue fee records if price changed
+                        if (assignment.price) {
+                            await Fee.updateMany(
+                                { student: request.student._id, status: { $in: ['pending', 'overdue'] } },
+                                { $set: { amount: assignment.price } }
+                            );
+                        }
 
                         // Send shift change approved email
                         try {

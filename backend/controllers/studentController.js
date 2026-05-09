@@ -254,6 +254,19 @@ exports.getDashboard = async (req, res) => {
         const today = new Date();
 
         if (student) {
+            // Sync fee amount from seat assignment price before reading fee
+            if (seat) {
+                const myActiveAssignment = seat.assignments.find(a =>
+                    a.student.toString() === studentId.toString() && a.status === 'active'
+                );
+                if (myActiveAssignment && myActiveAssignment.price) {
+                    await Fee.updateMany(
+                        { student: studentId, status: { $in: ['pending', 'overdue'] } },
+                        { $set: { amount: myActiveAssignment.price } }
+                    );
+                }
+            }
+
             // 1. Fetch earliest unpaid fee (pending, partial, or overdue)
             currentFee = await Fee.findOne({
                 student: studentId,
@@ -283,8 +296,8 @@ exports.getDashboard = async (req, res) => {
                         dueDate: dueDate,
                         status: currentFee.status,
                         message: currentFee.status === 'partial'
-                            ? `Partial payment recorded. Outstanding fee of ₹${currentFee.outstanding ?? currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}.`
-                            : `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
+                            ? `Partial payment recorded. Outstanding fee of Rs.${currentFee.outstanding ?? currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}.`
+                            : `Your fee of Rs.${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
                     };
                 }
             }
@@ -700,11 +713,28 @@ exports.getMonthlyReport = async (req, res) => {
 // @route   GET /api/student/fees
 exports.getFees = async (req, res) => {
     try {
-        // Self-heal: fix any fees that have a paidDate but are still showing as pending/overdue
+        // Self-heal 1: fix any fees that have a paidDate but are still showing as pending/overdue
         await Fee.updateMany(
             { student: req.user.id, paidDate: { $ne: null }, status: { $in: ['pending', 'overdue'] } },
             { $set: { status: 'paid' } }
         );
+
+        // Self-heal 2: sync pending/overdue fee amounts to current seat assignment price
+        const activeSeat = await Seat.findOne({
+            'assignments.student': req.user.id,
+            'assignments.status': 'active'
+        });
+        if (activeSeat) {
+            const activeAssignment = activeSeat.assignments.find(a =>
+                a.student.toString() === req.user.id.toString() && a.status === 'active'
+            );
+            if (activeAssignment && activeAssignment.price) {
+                await Fee.updateMany(
+                    { student: req.user.id, status: { $in: ['pending', 'overdue'] } },
+                    { $set: { amount: activeAssignment.price } }
+                );
+            }
+        }
 
         let fees = await Fee.find({ student: req.user.id })
             .sort({ year: -1, month: -1 });
