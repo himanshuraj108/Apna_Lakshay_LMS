@@ -383,7 +383,7 @@ const Profile = () => {
                         <InfoRow icon={IoMail}      label="Email Address" value={profile?.email}                  color="text-blue-500" />
                         <InfoRow icon={IoCall}      label="Phone Number"  value={profile?.mobile || 'Not provided'} color="text-green-500" />
                         <InfoRow icon={IoLocation}  label="Address"       value={profile?.address || 'Not provided'} color="text-orange-500" />
-                        <InfoRow icon={IoBedOutline} label="Seat Number"  value={profile?.seatNumber || 'Not Assigned'} color="text-cyan-500" />
+                        <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.seat?.roomId ? `${profile.seat.roomId} - ${profile.seatNumber || profile.seat.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
                         <InfoRow icon={IoCalendar}  label="Member Since"
                             value={profile?.createdAt
                                 ? new Date(profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
