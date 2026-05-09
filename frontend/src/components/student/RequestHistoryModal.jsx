@@ -62,55 +62,53 @@ const RequestHistoryModal = ({ isOpen, onClose }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.93, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                    className="relative w-full max-w-2xl h-[78vh] flex flex-col rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-                    style={{ background: 'linear-gradient(160deg, rgba(13,13,22,0.99) 0%, rgba(18,18,30,0.99) 100%)' }}
+                    className="relative w-full max-w-2xl h-[78vh] flex flex-col rounded-2xl border border-gray-100 shadow-2xl overflow-hidden bg-white"
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Top accent */}
-                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 via-cyan-400 to-teal-400" />
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-14 bg-blue-500/8 blur-2xl pointer-events-none" />
+                    <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-orange-400 to-orange-600" />
 
                     {/* Header */}
                     <div className="flex items-center justify-between px-6 pt-7 pb-4 shrink-0">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25">
-                                <IoDocumentTextOutline size={18} className="text-white" />
+                            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                                <IoDocumentTextOutline size={20} className="text-orange-500" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-white">Request History</h2>
+                                <h2 className="text-lg font-bold text-gray-900">Request History</h2>
                                 <p className="text-xs text-gray-500">Track your submitted requests</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white transition-all"
+                            className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-700 transition-all"
                         >
                             <IoClose size={18} />
                         </button>
                     </div>
 
-                    <div className="mx-6 h-px bg-white/6 mb-1 shrink-0" />
+                    <div className="mx-6 h-px bg-gray-200 mb-1 shrink-0" />
 
                     {/* Scrollable content */}
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
                         {loading && (
                             <div className="flex flex-col items-center justify-center py-16 gap-3">
-                                <div className="w-8 h-8 rounded-full border-2 border-blue-500/30 border-t-blue-400 animate-spin" />
+                                <div className="w-8 h-8 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />
                                 <p className="text-sm text-gray-500">Loading requests…</p>
                             </div>
                         )}
 
                         {!loading && requests.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-16 gap-3">
-                                <IoAlertCircleOutline size={32} className="text-gray-600" />
+                                <IoAlertCircleOutline size={32} className="text-gray-400" />
                                 <p className="text-gray-500 text-sm">No requests found</p>
                             </div>
                         )}
@@ -121,14 +119,14 @@ const RequestHistoryModal = ({ isOpen, onClose }) => {
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.04 }}
-                                className="bg-white/3 border border-white/8 rounded-xl p-4 hover:bg-white/5 transition-all"
+                                className="bg-white border border-gray-200 rounded-xl p-4 hover:border-orange-300 hover:shadow-sm transition-all"
                             >
                                 {/* Top row */}
                                 <div className="flex items-start justify-between gap-3 mb-3">
                                     <div className="flex items-center gap-2.5">
                                         <StatusIcon status={req.status} />
                                         <div>
-                                            <p className="text-sm font-semibold text-white capitalize">
+                                            <p className="text-sm font-semibold text-gray-900 capitalize">
                                                 {req.type === 'seat_change' ? 'Seat Change' : req.type} Request
                                             </p>
                                             <p className="text-[11px] text-gray-500">
@@ -142,32 +140,32 @@ const RequestHistoryModal = ({ isOpen, onClose }) => {
                                 {/* Details */}
                                 <div className="ml-7 space-y-2">
                                     {req.requestedData?.category && (
-                                        <p className="text-xs text-gray-400">
-                                            <span className="text-gray-600 mr-1">Category:</span>
-                                            <span className="text-gray-300 capitalize">{req.requestedData.category}</span>
+                                        <p className="text-xs text-gray-500">
+                                            <span className="text-gray-400 mr-1">Category:</span>
+                                            <span className="text-gray-700 capitalize">{req.requestedData.category}</span>
                                         </p>
                                     )}
                                     {req.requestedData?.message && (
-                                        <div className="bg-black/25 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-400">
+                                        <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs text-gray-600">
                                             {req.requestedData.message}
                                         </div>
                                     )}
                                     {req.type === 'seat_change' && (
-                                        <div className="bg-black/25 border border-white/5 rounded-lg px-3 py-2 text-xs text-gray-400">
-                                            <p>Reason: {req.requestedData?.reason}</p>
-                                            <p className="text-gray-600 mt-0.5">Seat {req.requestedData?.seatNumber} · {req.requestedData?.room}</p>
+                                        <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs text-gray-600">
+                                            <p><span className="text-gray-400">Reason:</span> <span className="text-gray-700">{req.requestedData?.reason || 'No reason provided'}</span></p>
+                                            <p className="text-gray-500 mt-0.5">Seat {req.requestedData?.seatNumber} · {req.requestedData?.room}</p>
                                         </div>
                                     )}
                                     {req.adminResponse && (
-                                        <div className="border-l-2 border-blue-500/50 pl-3 py-1.5 bg-blue-500/5 rounded-r-lg">
-                                            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1">Admin Response</p>
-                                            <p className="text-xs text-gray-300">{req.adminResponse}</p>
+                                        <div className="border-l-2 border-orange-400 pl-3 py-1.5 bg-orange-50 rounded-r-lg">
+                                            <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-1">Admin Response</p>
+                                            <p className="text-xs text-gray-700">{req.adminResponse}</p>
                                         </div>
                                     )}
                                     {req.status === 'pending' && (
                                         <button
                                             onClick={() => withdraw(req._id)}
-                                            className="flex items-center gap-1.5 text-xs text-red-400/70 hover:text-red-400 transition-colors mt-1"
+                                            className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg px-2 py-1 -ml-2 transition-colors mt-1"
                                         >
                                             <IoTrashOutline size={13} /> Withdraw Ticket
                                         </button>

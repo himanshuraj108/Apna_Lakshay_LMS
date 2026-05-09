@@ -945,9 +945,29 @@ const StudentDashboard = () => {
                                             <item.icon size={18} style={{ color: item.accentColor }} />
                                         </div>
 
-                                        {/* Label + optional desc */}
-                                        <p className="relative text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
-                                        {item.desc && <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>{item.desc}</p>}
+                                        {/* Label + optional desc + custom buttons */}
+                                        <div className="mt-auto pt-2">
+                                            <p className="text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
+                                            
+                                            {item.desc && (
+                                                <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>
+                                                    {item.desc}
+                                                </p>
+                                            )}
+
+                                            {item.id === 'support' && item.badge > 0 && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowHistoryModal(true);
+                                                    }}
+                                                    className="relative z-20 w-full block text-[10px] mt-0.5 font-bold underline tracking-wide text-right"
+                                                    style={{ color: item.accentColor }}
+                                                >
+                                                    View Status &rarr;
+                                                </button>
+                                            )}
+                                        </div>
                                     </motion.div>
                                 );
                                 return item.link

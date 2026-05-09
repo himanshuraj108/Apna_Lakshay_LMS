@@ -50,66 +50,64 @@ const HelpSupportModal = ({ isOpen, onClose }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm"
                 onClick={onClose}
             >
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.93, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                    className="relative w-full max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
-                    style={{ background: 'linear-gradient(160deg, rgba(13,13,22,0.99) 0%, rgba(18,18,28,0.99) 100%)' }}
+                    className="relative w-full max-w-md rounded-2xl border border-gray-100 shadow-2xl overflow-hidden bg-white"
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Top accent */}
-                    <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500" />
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-14 bg-amber-500/10 blur-2xl pointer-events-none" />
+                    <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-orange-400 to-orange-600" />
 
                     {/* Header */}
                     <div className="flex items-center justify-between px-6 pt-7 pb-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/25">
-                                <IoHelpCircle size={20} className="text-white" />
+                            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                                <IoHelpCircle size={22} className="text-orange-500" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-white">Help & Support</h2>
+                                <h2 className="text-lg font-bold text-gray-900">Help & Support</h2>
                                 <p className="text-xs text-gray-500">Report an issue or request help</p>
                             </div>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-gray-400 hover:text-white transition-all"
+                            className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-700 transition-all"
                         >
                             <IoClose size={18} />
                         </button>
                     </div>
 
-                    <div className="mx-6 h-px bg-white/6 mb-5" />
+                    <div className="mx-6 h-px bg-gray-200 mb-5" />
 
                     <div className="px-6 pb-6">
                         {/* Access restricted */}
                         {!user?.isActive ? (
                             <div className="space-y-4">
-                                <div className="bg-red-500/8 border border-red-500/20 rounded-xl p-4 flex gap-3">
-                                    <IoWarningOutline size={20} className="text-red-400 shrink-0 mt-0.5" />
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
+                                    <IoWarningOutline size={20} className="text-red-500 shrink-0 mt-0.5" />
                                     <div>
-                                        <h3 className="font-semibold text-red-300 mb-1">Access Restricted</h3>
-                                        <p className="text-sm text-gray-400">Support requests are only available for active members. Please visit the library admin to renew your membership.</p>
+                                        <h3 className="font-semibold text-red-700 mb-1">Access Restricted</h3>
+                                        <p className="text-sm text-red-600">Support requests are only available for active members. Please visit the library admin to renew your membership.</p>
                                     </div>
                                 </div>
-                                <button onClick={onClose} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-300 font-medium transition-all">Close</button>
+                                <button onClick={onClose} className="w-full py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-gray-700 font-medium transition-all">Close</button>
                             </div>
                         ) : (user?.isActive && !user?.seat) ? (
                             <div className="space-y-4">
-                                <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4 flex gap-3">
-                                    <IoWarningOutline size={20} className="text-amber-400 shrink-0 mt-0.5" />
+                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex gap-3">
+                                    <IoWarningOutline size={20} className="text-orange-500 shrink-0 mt-0.5" />
                                     <div>
-                                        <h3 className="font-semibold text-amber-300 mb-1">Allocation Pending</h3>
-                                        <p className="text-sm text-gray-400">Support requests are available once a seat is assigned. Please wait for admin approval.</p>
+                                        <h3 className="font-semibold text-orange-800 mb-1">Allocation Pending</h3>
+                                        <p className="text-sm text-orange-700">Support requests are available once a seat is assigned. Please wait for admin approval.</p>
                                     </div>
                                 </div>
-                                <button onClick={onClose} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-300 font-medium transition-all">Close</button>
+                                <button onClick={onClose} className="w-full py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl text-gray-700 font-medium transition-all">Close</button>
                             </div>
                         ) : success ? (
                             <motion.div
@@ -117,17 +115,17 @@ const HelpSupportModal = ({ isOpen, onClose }) => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="py-10 text-center"
                             >
-                                <div className="w-16 h-16 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <IoCheckmarkCircle size={34} className="text-green-400" />
+                                <div className="w-16 h-16 bg-green-100 border border-green-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <IoCheckmarkCircle size={34} className="text-green-500" />
                                 </div>
-                                <h3 className="text-lg font-bold text-white mb-1">Request Sent!</h3>
-                                <p className="text-sm text-gray-500">Admin will review your request shortly.</p>
+                                <h3 className="text-lg font-bold text-gray-900 mb-1">Request Sent!</h3>
+                                <p className="text-sm text-gray-600">Admin will review your request shortly.</p>
                             </motion.div>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Category — custom pill selector instead of native select */}
+                                {/* Category */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Issue Category</label>
+                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Issue Category</label>
                                     <div className="grid grid-cols-1 gap-1.5">
                                         {CATEGORIES.map(({ value, label, Icon }) => (
                                             <button
@@ -135,12 +133,12 @@ const HelpSupportModal = ({ isOpen, onClose }) => {
                                                 type="button"
                                                 onClick={() => setCategory(value)}
                                                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-sm text-left transition-all ${category === value
-                                                    ? 'bg-amber-500/12 border-amber-500/40 text-amber-200'
-                                                    : 'bg-white/3 border-white/8 text-gray-400 hover:bg-white/6 hover:text-gray-200'
+                                                    ? 'bg-orange-50 border-orange-500 text-orange-700 ring-1 ring-orange-500/50'
+                                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                                     }`}
                                             >
-                                                <Icon size={15} className={category === value ? 'text-amber-400' : 'text-gray-600'} />
-                                                <span>{label}</span>
+                                                <Icon size={18} className={category === value ? 'text-orange-500' : 'text-gray-400'} />
+                                                <span className="font-medium">{label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -148,11 +146,11 @@ const HelpSupportModal = ({ isOpen, onClose }) => {
 
                                 {/* Message */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Description</label>
+                                    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Description</label>
                                     <textarea
                                         value={message}
                                         onChange={e => setMessage(e.target.value)}
-                                        className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all h-24 resize-none placeholder-gray-600"
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 text-sm focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all h-24 resize-none placeholder-gray-400"
                                         placeholder="Describe your issue in detail…"
                                         required
                                     />
@@ -161,12 +159,12 @@ const HelpSupportModal = ({ isOpen, onClose }) => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 rounded-xl font-semibold text-black shadow-lg shadow-amber-500/20 transition-all duration-200 disabled:opacity-60"
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-orange-500 hover:bg-orange-600 rounded-xl font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-200 disabled:opacity-60"
                                 >
                                     {loading ? (
-                                        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     ) : (
-                                        <IoSend size={16} />
+                                        <IoSend size={18} />
                                     )}
                                     {loading ? 'Sending…' : 'Submit Request'}
                                 </button>

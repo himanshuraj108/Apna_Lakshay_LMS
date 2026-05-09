@@ -6,7 +6,7 @@ import api from '../../utils/api';
 import {
     IoArrowBack, IoCashOutline, IoTimeOutline, IoAlertCircleOutline,
     IoReceiptOutline, IoInformationCircleOutline, IoCheckmarkCircle,
-    IoCalendarOutline, IoDownloadOutline, IoClose
+    IoCalendarOutline, IoDownloadOutline, IoClose, IoCloseCircle
 } from 'react-icons/io5';
 import PaymentReceipt from '../../components/admin/PaymentReceipt';
 
