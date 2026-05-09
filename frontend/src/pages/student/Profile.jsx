@@ -233,7 +233,7 @@ const Profile = () => {
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleLogout}
                             className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 text-red-500 rounded-xl text-sm font-medium transition-all"
                         >
-                            <IoLogOut size={15} /> Logout
+                            <IoLogOut size={15} />
                         </motion.button>
                     </div>
                 </motion.div>
@@ -383,7 +383,7 @@ const Profile = () => {
                         <InfoRow icon={IoMail}      label="Email Address" value={profile?.email}                  color="text-blue-500" />
                         <InfoRow icon={IoCall}      label="Phone Number"  value={profile?.mobile || 'Not provided'} color="text-green-500" />
                         <InfoRow icon={IoLocation}  label="Address"       value={profile?.address || 'Not provided'} color="text-orange-500" />
-                        <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.seat?.roomId ? `${profile.seat.roomId} - ${profile.seatNumber || profile.seat.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
+                        <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
                         <InfoRow icon={IoCalendar}  label="Member Since"
                             value={profile?.createdAt
                                 ? new Date(profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
