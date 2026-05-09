@@ -113,7 +113,7 @@ const StudentIdCard = ({ student }) => {
                         {/* AC / NON-AC Badge — only show if seat is assigned */}
                         {(student.seat?.number || student.seatNumber) && (
                             <div className="flex justify-center mt-2">
-                                {(student.seat?.roomHasAc || student.seat?.room?.hasAc) ? (
+                                {(student.seat?.roomHasAc || student.seat?.room?.hasAc || student.room?.hasAc) ? (
                                     <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
                                         <FaWind size={10} className="text-blue-500" />
                                         AC Room
@@ -136,9 +136,16 @@ const StudentIdCard = ({ student }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
-                            <p className={`font-bold text-lg ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
-                                {student.seat?.number || student.seatNumber || 'N/A'}
-                            </p>
+                            {(student.seat?.number || student.seatNumber) ? (
+                                <p className="font-bold text-lg text-purple-600">
+                                    {(student.roomId || student.seat?.room?.roomId || student.seat?.roomId)
+                                        ? `${student.roomId || student.seat?.room?.roomId || student.seat?.roomId} - ${student.seat?.number || student.seatNumber}`
+                                        : (student.seat?.number || student.seatNumber)
+                                    }
+                                </p>
+                            ) : (
+                                <p className="font-bold text-lg text-gray-400">N/A</p>
+                            )}
                         </div>
                         <div className="text-left">
                             <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Joined Date</p>

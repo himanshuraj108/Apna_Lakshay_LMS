@@ -115,7 +115,9 @@ const MySeat = () => {
                             <div className="relative flex items-center gap-4">
                                 <div className="min-w-0">
                                     <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-orange-500">Seat No.</p>
-                                    <p className="text-3xl font-black text-gray-900 leading-none truncate">{seat.number}</p>
+                                    <p className="text-3xl font-black text-gray-900 leading-none truncate">
+                                        {seat.room?.roomId ? `${seat.room.roomId} - ${seat.number}` : seat.number}
+                                    </p>
                                 </div>
                             </div>
 
@@ -251,7 +253,7 @@ const MySeat = () => {
                                 <div className="mx-5 mb-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm bg-orange-50 border border-orange-200">
                                     <IoBedOutline size={15} className="text-orange-500 shrink-0" />
                                     <p className="text-orange-700 text-sm">
-                                        Your seat <strong className="text-orange-900 font-black">#{seat.number}</strong> is highlighted on the map.
+                                        Your seat <strong className="text-orange-900 font-black">#{seat.room?.roomId ? `${seat.room.roomId} - ${seat.number}` : seat.number}</strong> is highlighted on the map.
                                     </p>
                                 </div>
                             </motion.div>

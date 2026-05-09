@@ -269,6 +269,7 @@ const FloorManagement = () => {
                 const student = {
                     ...seat.assignedTo,
                     seatNumber: seat.number,
+                    roomId: seat.room?.roomId || null,
                     shift: seat.shift || 'N/A'
                 };
                 setSelectedStudents([student]);
@@ -289,6 +290,7 @@ const FloorManagement = () => {
             return {
                 ...studentData,
                 seatNumber: seat.number,
+                roomId: seat.room?.roomId || null,
                 shift: shiftName,
                 shiftDetails: assignment.shift
             };

@@ -21,6 +21,7 @@ import {
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
 import RequestHistoryModal from '../../components/student/RequestHistoryModal';
+import RequestFeedbackModal from '../../components/student/RequestFeedbackModal';
 import LmsGuideSection from '../../components/student/LmsGuideSection';
 import NewspaperModal from '../../components/student/NewspaperModal';
 import InactiveScreen from '../../components/student/InactiveScreen';
@@ -353,6 +354,9 @@ const StudentDashboard = () => {
     const [attendanceResult, setAttendanceResult]     = useState(null);
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [loadingScanner, setLoadingScanner]         = useState(false);
+    const [pinEntryOpen, setPinEntryOpen]             = useState(false);
+    const [hasPin, setHasPin]                         = useState(false);
+    const [pendingFeedback, setPendingFeedback]       = useState(null);
     const [enablingLocation, setEnablingLocation]     = useState(false);
     const [cardConfig, setCardConfig]                 = useState(null);
     const [pinEnabled, setPinEnabled]                 = useState(false);
@@ -377,7 +381,7 @@ const StudentDashboard = () => {
         } catch { /* use defaults if fails */ }
     };
 
-    useEffect(() => { fetchDashboardData(); loadSettingsCache(); fetchCardConfig(); fetchPinStatus(); }, []);
+    useEffect(() => { fetchDashboardData(); loadSettingsCache(); fetchCardConfig(); fetchPinStatus(); fetchPendingFeedback(); }, []);
     useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
 
     const fetchPinStatus = async () => {
@@ -385,14 +389,21 @@ const StudentDashboard = () => {
             const res = await api.get('/public/settings');
             const s = res.data?.settings;
             if (s) {
-                // pinEnabled = PIN required; manualMarkEnabled = button visible (PIN on OR off but system allows manual)
                 setPinEnabled(!!s.pinAttendanceEnabled);
-                // Show the button if PIN is ON (requires pin) OR if system is active and admin wants direct mark
-                // We use pinAttendanceEnabled as the ON/OFF for the whole manual feature
-                // When PIN=true → modal; When PIN=false but system active → direct mark
-                setManualMarkEnabled(true); // always show when system is reachable; backend enforces
+                setManualMarkEnabled(true);
             }
         } catch (_) {}
+    };
+
+    const fetchPendingFeedback = async () => {
+        try {
+            const { data } = await api.get('/student/request/pending-feedback');
+            if (data?.success && data.request) {
+                setPendingFeedback(data.request);
+            }
+        } catch (error) {
+            console.error('Error fetching pending feedback:', error);
+        }
     };
 
     const fetchDashboardData = async () => {
@@ -727,7 +738,14 @@ const StudentDashboard = () => {
                                 </div>
                                 <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>My Seat</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>{dashboardData?.seat?.number || '—'}</p>
+                            <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>
+                                    {dashboardData?.seat
+                                        ? (dashboardData.seat.roomId
+                                            ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}`
+                                            : dashboardData.seat.number)
+                                        : '—'
+                                    }
+                                </p>
                             {dashboardData?.seat?.shifts && dashboardData.seat.shifts.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 mt-1 z-10 relative">
                                     {dashboardData.seat.shifts.map((s, i) => (

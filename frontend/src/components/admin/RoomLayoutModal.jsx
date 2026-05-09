@@ -9,7 +9,7 @@ const POS_LABEL = { north: 'Top', south: 'Bottom', east: 'Right', west: 'Left' }
 
 const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
     const [layoutData, setLayoutData] = useState({ width: 4, height: 4, doorPosition: 'south' });
-    const [roomData, setRoomData] = useState({ name: '', hasAc: false, acPosition: 'north', hasFan: false });
+    const [roomData, setRoomData] = useState({ name: '', roomId: '', hasAc: false, acPosition: 'north', hasFan: false });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -22,6 +22,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
             });
             setRoomData({
                 name: room.name || '',
+                roomId: room.roomId || '',
                 hasAc: room.hasAc || false,
                 acPosition: room.acPosition || 'north',
                 hasFan: room.hasFan || false,
@@ -98,6 +99,20 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                     placeholder="e.g. Study Hall A"
                                     required
                                 />
+                            </div>
+
+                            {/* Room ID */}
+                            <div>
+                                <label className={LABEL}>Room ID (shown on ID card)</label>
+                                <input
+                                    type="text"
+                                    value={roomData.roomId}
+                                    onChange={e => setRoomData({ ...roomData, roomId: e.target.value.toUpperCase() })}
+                                    className={INPUT}
+                                    placeholder="e.g. A, B, C1"
+                                    maxLength={10}
+                                />
+                                <p className="text-[11px] text-gray-600 mt-1 px-1">Shown on student ID card as: <span className="font-bold text-blue-400">{roomData.roomId || 'X'} - Seat No.</span></p>
                             </div>
 
                             {/* Dimensions */}
