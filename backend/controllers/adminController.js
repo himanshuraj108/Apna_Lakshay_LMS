@@ -1204,10 +1204,11 @@ exports.createFloor = async (req, res) => {
 // Create new room
 exports.createRoom = async (req, res) => {
     try {
-        const { name, floorId, width, height } = req.body;
+        const { name, floorId, width, height, roomId } = req.body;
 
         const room = await Room.create({
             name,
+            roomId,
             floor: floorId,
             grid: { width, height },
             seats: []
@@ -1236,11 +1237,11 @@ exports.createRoom = async (req, res) => {
 // Update room
 exports.updateRoom = async (req, res) => {
     try {
-        const { name, hasAc, acPosition } = req.body;
+        const { name, hasAc, acPosition, roomId } = req.body;
 
         const room = await Room.findByIdAndUpdate(
             req.params.id,
-            { name, hasAc, acPosition },
+            { name, hasAc, acPosition, roomId },
             { new: true, runValidators: true }
         );
 
@@ -1392,6 +1393,7 @@ exports.getFloors = async (req, res) => {
 
                     return {
                         ...seatObj,
+                        room: { roomId: room.roomId || null, name: room.name, hasAc: room.hasAc },
                         isOccupied, // Computed dynamic status
                         assignedTo: displayAssignment ? {
                             ...displayAssignment,

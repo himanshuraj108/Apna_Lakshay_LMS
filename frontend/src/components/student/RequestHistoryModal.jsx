@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     IoClose, IoTimeOutline, IoCheckmarkCircle, IoCloseCircle,
-    IoAlertCircleOutline, IoDocumentTextOutline, IoTrashOutline
+    IoAlertCircleOutline, IoDocumentTextOutline, IoTrashOutline, IoStar
 } from 'react-icons/io5';
 import api from '../../utils/api';
+import RequestFeedbackModal from './RequestFeedbackModal';
 
 const STATUS_MAP = {
     approved: { label: 'Approved', color: 'bg-green-500/10 text-green-400 border-green-500/20' },
@@ -32,6 +33,7 @@ const StatusIcon = ({ status }) => {
 const RequestHistoryModal = ({ isOpen, onClose }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [feedbackRequest, setFeedbackRequest] = useState(null);
 
     useEffect(() => {
         if (isOpen) fetchRequests();
@@ -170,12 +172,37 @@ const RequestHistoryModal = ({ isOpen, onClose }) => {
                                             <IoTrashOutline size={13} /> Withdraw Ticket
                                         </button>
                                     )}
+                                    {req.rating && (
+                                        <div className="flex items-center gap-2 mt-2 bg-amber-50 rounded-lg px-3 py-1.5 w-max">
+                                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Your Rating</p>
+                                            <div className="flex gap-0.5">
+                                                {[...Array(5)].map((_, idx) => <IoStar key={idx} size={10} className={idx < req.rating ? "text-amber-400" : "text-amber-200"} />)}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {['approved', 'rejected'].includes(req.status) && !req.rating && !req.isRatingDismissed && (
+                                        <button 
+                                            onClick={() => setFeedbackRequest(req)}
+                                            className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg px-2 py-1 -ml-2 transition-colors mt-1 font-semibold"
+                                        >
+                                            <IoStar size={13} /> Rate Resolution
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         ))}
                     </div>
                 </motion.div>
             </motion.div>
+
+            {/* Nested Feedback Modal */}
+            <RequestFeedbackModal 
+                request={feedbackRequest} 
+                onClose={() => {
+                    setFeedbackRequest(null);
+                    fetchRequests();
+                }} 
+            />
         </AnimatePresence>
     );
 };

@@ -133,6 +133,7 @@ exports.getDashboard = async (req, res) => {
                 number: seat.number,
                 floor: seat.floor?.name,
                 room: seat.room?.name,
+                roomId: seat.room?.roomId || null,
                 roomHasAc: seat.room?.hasAc || false,
                 roomHasFan: seat.room?.hasFan || false,
                 shift: shiftName,          // backward compat
@@ -2131,5 +2132,70 @@ exports.markAttendanceDirectly = async (req, res) => {
     } catch (error) {
         console.error('Direct Attendance Error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// ==========================================
+// 24. GET PENDING FEEDBACK
+// ==========================================
+exports.getPendingFeedback = async (req, res) => {
+    try {
+        const Request = require('../models/Request');
+        const pendingRequest = await Request.findOne({
+            student: req.user._id,
+            status: { $in: ['approved', 'rejected'] },
+            rating: { $eq: null },
+            isRatingDismissed: { $ne: true }
+        }).sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            request: pendingRequest || null
+        });
+    } catch (error) {
+        console.error('Get Pending Feedback Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching pending feedback'
+        });
+    }
+};
+
+// ==========================================
+// 25. SUBMIT REQUEST FEEDBACK
+// ==========================================
+exports.submitFeedback = async (req, res) => {
+    try {
+        console.log('Received feedback submission for:', req.params.id, 'with body:', req.body);
+        const Request = require('../models/Request');
+        const { rating, feedback, dismissed } = req.body;
+        const request = await Request.findOne({
+            _id: req.params.id,
+            student: req.user._id
+        });
+
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+
+        if (dismissed) {
+            request.isRatingDismissed = true;
+        } else {
+            request.rating = rating;
+            request.ratingFeedback = feedback;
+        }
+
+        await request.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Feedback submitted successfully'
+        });
+    } catch (error) {
+        console.error('Submit Feedback Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error submitting feedback'
+        });
     }
 };

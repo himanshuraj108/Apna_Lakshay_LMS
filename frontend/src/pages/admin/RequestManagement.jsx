@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import {
     IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoDocumentTextOutline,
     IoChatbubbleOutline, IoSwapHorizontalOutline, IoHelpCircleOutline,
-    IoTimeOutline
+    IoTimeOutline, IoStar
 } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 
@@ -178,6 +178,17 @@ const RequestManagement = () => {
                                                     <div className="mt-3 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl">
                                                         <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Admin Response</p>
                                                         <p className="text-sm text-gray-300">{req.adminResponse}</p>
+                                                    </div>
+                                                )}
+                                                {req.rating && (
+                                                    <div className="mt-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Student Feedback</p>
+                                                            <div className="flex gap-0.5">
+                                                                {[...Array(5)].map((_, idx) => <IoStar key={idx} size={10} className={idx < req.rating ? "text-amber-400" : "text-gray-700"} />)}
+                                                            </div>
+                                                        </div>
+                                                        {req.ratingFeedback && <p className="text-sm text-gray-300 italic">"{req.ratingFeedback}"</p>}
                                                     </div>
                                                 )}
                                             </div>

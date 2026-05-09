@@ -41,6 +41,20 @@ const requestSchema = new mongoose.Schema({
     reviewedAt: {
         type: Date,
         default: null
+    },
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+        default: null
+    },
+    ratingFeedback: {
+        type: String,
+        default: null
+    },
+    isRatingDismissed: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true
