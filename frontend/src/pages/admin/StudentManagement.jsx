@@ -518,34 +518,46 @@ const StudentManagement = () => {
     };
 
     const getStudentFee = (student) => {
-        if (student.currentFee != null) {
-            return `Rs. ${student.currentFee}`;
+        const studentId = student._id;
+
+        // 1. First check student.seat.assignments (directly populated, always current)
+        if (student.seat && student.seat.assignments && student.seat.assignments.length > 0) {
+            const activeAssignment = student.seat.assignments.find(a =>
+                a.status === 'active' &&
+                String(typeof a.student === 'object' ? a.student._id : a.student) === String(studentId)
+            );
+            if (activeAssignment) {
+                const displayPrice = activeAssignment.price || activeAssignment.negotiatedPrice;
+                if (displayPrice) return `Rs. ${displayPrice}`;
+                // Fall back to base price
+                const seat = student.seat;
+                if (activeAssignment.type === 'full_day' || activeAssignment.legacyShift === 'full') {
+                    return `Rs. ${seat.basePrices?.full || 1200} (Base)`;
+                } else {
+                    return `Rs. ${seat.basePrices?.day || 800} (Base)`;
+                }
+            }
         }
 
-        const studentId = student._id;
-        if (!floors || floors.length === 0) return 'N/A';
-        for (const floor of floors) {
-            if (!floor.rooms) continue;
-            for (const room of floor.rooms) {
-                if (!room.seats) continue;
-                for (const seat of room.seats) {
-                    if (seat.assignments && seat.assignments.length > 0) {
-                        const activeAssignment = seat.assignments.find(a =>
-                            a.status === 'active' &&
-                            String(typeof a.student === 'object' ? a.student._id : a.student) === String(studentId)
-                        );
-                        if (activeAssignment) {
-                            // Backend stores as 'price', 'negotiatedPrice' is legacy
-                            const displayPrice = activeAssignment.price || activeAssignment.negotiatedPrice;
-                            if (displayPrice) {
-                                return `Rs. ${displayPrice}`;
-                            } else {
-                                // Find base price based on shift type
-                                const shiftId = typeof activeAssignment.shift === 'object' ? activeAssignment.shift._id : activeAssignment.shift;
-                                if (shiftId === 'full_day' || activeAssignment.type === 'full_day' || activeAssignment.legacyShift === 'full') {
+        // 2. Fall back to floors data (in case seat is not populated on student object)
+        if (floors && floors.length > 0) {
+            for (const floor of floors) {
+                if (!floor.rooms) continue;
+                for (const room of floor.rooms) {
+                    if (!room.seats) continue;
+                    for (const seat of room.seats) {
+                        if (seat.assignments && seat.assignments.length > 0) {
+                            const activeAssignment = seat.assignments.find(a =>
+                                a.status === 'active' &&
+                                String(typeof a.student === 'object' ? a.student._id : a.student) === String(studentId)
+                            );
+                            if (activeAssignment) {
+                                const displayPrice = activeAssignment.price || activeAssignment.negotiatedPrice;
+                                if (displayPrice) return `Rs. ${displayPrice}`;
+                                if (activeAssignment.type === 'full_day' || activeAssignment.legacyShift === 'full') {
                                     return `Rs. ${seat.basePrices?.full || 1200} (Base)`;
                                 } else {
-                                    return `Rs. ${seat.basePrices?.half || 700} (Base)`;
+                                    return `Rs. ${seat.basePrices?.day || 800} (Base)`;
                                 }
                             }
                         }
@@ -553,6 +565,12 @@ const StudentManagement = () => {
                 }
             }
         }
+
+        // 3. Last resort: use currentFee from fee records (may be stale)
+        if (student.currentFee != null) {
+            return `Rs. ${student.currentFee}`;
+        }
+
         return 'N/A';
     };
 
@@ -1375,7 +1393,7 @@ const StudentManagement = () => {
                 )}
 
                 {/* ─── Swap Seats Modal ───────────────────────────────────────── */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showSwapModal}
                     onClose={() => { setShowSwapModal(false); setError(''); }}
                     title="Swap Seats"
@@ -1523,7 +1541,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Session Details Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showSessionModal}
                     onClose={() => setShowSessionModal(false)}
                     title="Session Details"
@@ -1575,7 +1593,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Credit Details Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showCreditModal}
                     onClose={() => setShowCreditModal(false)}
                     title="Mock Test / Credit Details"
@@ -1641,7 +1659,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* View ID Card Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showIdCardModal}
                     onClose={() => setShowIdCardModal(false)}
                     title="Student ID Card"
@@ -1672,7 +1690,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Add/Edit Student Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showModal}
                     onClose={() => setShowModal(false)}
                     title={editMode ? 'Edit Student' : 'Add New Student'}
@@ -1833,7 +1851,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Assign Seat Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showSeatModal}
                     onClose={() => setShowSeatModal(false)}
                     title={`Assign Seat to ${selectedStudent?.name}`}
@@ -1931,7 +1949,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Delete Confirmation Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showDeleteModal}
                     onClose={() => setShowDeleteModal(false)}
                     title={selectedStudent?.isActive && !hardDelete ? "⚠️ Remove Student" : "🗑️ Delete Permanently"}
@@ -2036,7 +2054,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Reset Password Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showResetPasswordModal}
                     onClose={() => {
                         setShowResetPasswordModal(false);
@@ -2074,7 +2092,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Archive View Modal */}
-                <Modal
+                <Modal theme="dark"
                     isOpen={showArchiveModal}
                     onClose={() => setShowArchiveModal(false)}
                     title={selectedArchive ? `Archive Report: ${selectedArchive.name}` : 'Archive Report'}
@@ -2162,7 +2180,7 @@ const StudentManagement = () => {
                     )}
                 </Modal>
 
-                <Modal isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
+                <Modal theme="dark" isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
                     <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
                         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
                             <p className="text-sm text-blue-300">

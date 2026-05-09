@@ -32,6 +32,8 @@ const RequestManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [adminResponse, setAdminResponse] = useState('');
     const [actionType, setActionType] = useState('');
+    const [updatedFee, setUpdatedFee] = useState('');
+    const [useBaseFee, setUseBaseFee] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
@@ -48,14 +50,24 @@ const RequestManagement = () => {
     };
 
     const openReviewModal = (request, type) => {
-        setSelectedRequest(request); setActionType(type); setAdminResponse(''); setShowModal(true);
+        setSelectedRequest(request); 
+        setActionType(type); 
+        setAdminResponse(''); 
+        setUpdatedFee(''); 
+        setUseBaseFee(false);
+        setShowModal(true);
     };
 
     const handleAction = async () => {
         if (!selectedRequest) return;
         setProcessing(true); setError('');
         try {
-            await api.put(`/admin/requests/${selectedRequest._id}`, { status: actionType, adminResponse });
+            await api.put(`/admin/requests/${selectedRequest._id}`, { 
+                status: actionType, 
+                adminResponse,
+                updatedFee: actionType === 'approved' && !useBaseFee ? updatedFee : undefined,
+                useBaseFee: actionType === 'approved' ? useBaseFee : false
+            });
             setSuccess(`Request ${actionType} successfully!`);
             fetchRequests(); setShowModal(false);
             setTimeout(() => setSuccess(''), 3000);
@@ -203,6 +215,48 @@ const RequestManagement = () => {
                                 <div className="bg-white/5 border border-white/8 rounded-xl p-4 mb-4">
                                     <p className="text-sm text-gray-400">Student: <span className="text-white font-medium">{selectedRequest?.student?.name}</span></p>
                                     <p className="text-sm text-gray-400 mt-1">Type: <span className="text-white font-medium capitalize">{selectedRequest?.type}</span></p>
+                                    
+                                    {(selectedRequest?.type === 'seat_change' || selectedRequest?.type === 'shift') && actionType === 'approved' && (
+                                        <div className="mt-4 pt-4 border-t border-white/10">
+                                            <p className="text-sm font-semibold text-white mb-3">Fee Management</p>
+                                            <p className="text-xs text-gray-400 mb-3 bg-white/5 p-2 rounded">
+                                                By default, the student's original fee is maintained during a change.
+                                            </p>
+                                            
+                                            <p className="text-sm text-gray-400 mb-3">Original Fee: <span className="text-white font-medium">₹{selectedRequest?.studentPrice ?? 'Unknown'}</span></p>
+
+                                            <label className="flex items-center gap-2 text-sm text-gray-300 mb-4 cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={useBaseFee} 
+                                                    onChange={e => { 
+                                                        setUseBaseFee(e.target.checked); 
+                                                        if(e.target.checked) setUpdatedFee(''); 
+                                                    }} 
+                                                    className="w-4 h-4 rounded bg-gray-900 border-white/20 text-indigo-500 focus:ring-indigo-500/50" 
+                                                />
+                                                Update to new Base Fee
+                                            </label>
+
+                                            {!useBaseFee && (
+                                                <div className="mb-2">
+                                                    <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">
+                                                        Custom Fee Override (Leave blank for original fee)
+                                                    </label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
+                                                        <input 
+                                                            type="number" 
+                                                            value={updatedFee} 
+                                                            onChange={e => setUpdatedFee(e.target.value)} 
+                                                            placeholder="e.g. 1500" 
+                                                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white text-sm focus:border-indigo-500/50 outline-none transition-all" 
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">
                                     Admin Response {actionType === 'rejected' && <span className="text-red-400">(Required)</span>}
