@@ -23,6 +23,11 @@ const mockTestAttemptSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    // Stored so /generate-more can produce additional questions with same settings
+    examConfig: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     completedAt: {
         type: Date
     },

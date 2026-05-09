@@ -32,7 +32,7 @@ const { getCurrentAffairs } = require('../controllers/currentAffairsController')
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
 const { getNotes } = require('../controllers/notesController');
-const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests, getCredits } = require('../controllers/mockTestController');
+const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests, getCredits, generateMoreQuestions } = require('../controllers/mockTestController');
 const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
 
 
@@ -70,6 +70,7 @@ router.get('/notes', getNotes);
 router.get('/mock-test/credits', getCredits);
 router.get('/mock-test/pattern/:examCode', getExamPattern);
 router.post('/mock-test/generate', generateTest);
+router.post('/mock-test/generate-more/:attemptId', generateMoreQuestions);
 router.post('/mock-test/evaluate', evaluateTest);
 router.post('/mock-test/submit/:attemptId', submitTest);
 router.get('/mock-test/history', getMyMockTests);
