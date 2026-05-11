@@ -141,33 +141,19 @@ const sendEmail = async (to, subject, templateOptions) => {
     t.sendMail({ from, to, subject, html }).then(i => { clearTimeout(timer); resolve(i); }).catch(e => { clearTimeout(timer); reject(e); });
   });
 
-  // Try Brevo first (more reliable from cloud/production servers like Render)
-  if (brevoTransporter) {
-    try {
-      await tryTransport(brevoTransporter, 'Brevo-587', 10000);
-      console.log(`✅ Email sent via Brevo to ${to}`);
-      return true;
-    } catch (e1) {
-      console.warn(`Brevo-587 failed: ${e1.message}`);
-      if (brevoTransporter2525) {
-        try {
-          await tryTransport(brevoTransporter2525, 'Brevo-2525', 10000);
-          console.log(`✅ Email sent via Brevo-2525 to ${to}`);
-          return true;
-        } catch (e2) {
-          console.warn(`Brevo-2525 failed: ${e2.message}`);
-        }
-      }
-    }
-  }
-
-  // Fallback: Gmail (works locally, may be blocked on cloud servers)
   try {
-    await tryTransport(transporter, 'Gmail', 8000);
-    console.log(`✅ Email sent via Gmail to ${to}`);
+    await tryTransport(transporter, 'Gmail', 4000);
     return true;
   } catch (e) {
-    console.error(`All email transports failed for ${to}: ${e.message}`);
+    console.warn(`Gmail failed: ${e.message}`);
+    try {
+      if (brevoTransporter) { await tryTransport(brevoTransporter, 'Brevo-587'); return true; }
+    } catch (e2) {
+      console.warn(`Brevo-587 failed: ${e2.message}`);
+      try {
+        if (brevoTransporter2525) { await tryTransport(brevoTransporter2525, 'Brevo-2525'); return true; }
+      } catch (e3) { console.error(`All transports failed: ${e3.message}`); }
+    }
     return false;
   }
 };
