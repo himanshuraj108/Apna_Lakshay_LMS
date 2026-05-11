@@ -133,7 +133,7 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
 const sendEmail = async (to, subject, templateOptions) => {
   if (!to || to.trim() === '') return false;
   const html = buildEmail(templateOptions);
-  const from = `Apna Lakshay Library <${process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER}>`;
+  const from = `Apna Lakshay Library <${process.env.EMAIL_USER}>`;
 
   const tryTransport = (t, label, ms = 15000) => new Promise((resolve, reject) => {
     if (!t) return reject(new Error(`${label} not initialized`));
