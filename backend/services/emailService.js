@@ -141,21 +141,34 @@ const sendEmail = async (to, subject, templateOptions) => {
     t.sendMail({ from, to, subject, html }).then(i => { clearTimeout(timer); resolve(i); }).catch(e => { clearTimeout(timer); reject(e); });
   });
 
-  try {
-    await tryTransport(transporter, 'Gmail', 4000);
-    return true;
-  } catch (e) {
-    console.warn(`Gmail failed: ${e.message}`);
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  // In production (Render/cloud), Gmail is blocked by IP — use Brevo first
+  // In development (local), Gmail works fine — use it first
+  const orderedTransports = isProduction
+    ? [
+        { t: brevoTransporter,     label: 'Brevo-587',  ms: 10000 },
+        { t: brevoTransporter2525, label: 'Brevo-2525', ms: 10000 },
+        { t: transporter,          label: 'Gmail',      ms: 8000  },
+      ]
+    : [
+        { t: transporter,          label: 'Gmail',      ms: 4000  },
+        { t: brevoTransporter,     label: 'Brevo-587',  ms: 10000 },
+        { t: brevoTransporter2525, label: 'Brevo-2525', ms: 10000 },
+      ];
+
+  for (const { t, label, ms } of orderedTransports) {
+    if (!t) continue;
     try {
-      if (brevoTransporter) { await tryTransport(brevoTransporter, 'Brevo-587'); return true; }
-    } catch (e2) {
-      console.warn(`Brevo-587 failed: ${e2.message}`);
-      try {
-        if (brevoTransporter2525) { await tryTransport(brevoTransporter2525, 'Brevo-2525'); return true; }
-      } catch (e3) { console.error(`All transports failed: ${e3.message}`); }
+      await tryTransport(t, label, ms);
+      console.log(`✅ Email sent via ${label} to ${to}`);
+      return true;
+    } catch (e) {
+      console.warn(`${label} failed: ${e.message}`);
     }
-    return false;
   }
+  console.error(`All email transports failed for ${to}`);
+  return false;
 };
 
 const APP_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
