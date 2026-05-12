@@ -169,7 +169,7 @@ const AttendanceManagement = () => {
             const rowData = [
                 index + 1,
                 student.name,
-                student.mobile ? String(student.mobile) : (student.email || 'N/A'),
+                
                 student.seat ? student.seat.number : 'Pending',
                 shiftStr,
                 status,
