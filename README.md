@@ -637,4 +637,4 @@ Developed by **Himanshu Raj**
 
 ## License
 
-Proprietary — All Rights Reserved 2026
+Proprietary — All Rights Reserved
