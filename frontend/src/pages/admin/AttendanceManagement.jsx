@@ -147,7 +147,7 @@ const AttendanceManagement = () => {
 
     const generatePDF = () => {
         const doc = new jsPDF();
-        const tableColumn = ["S.No", "Name", "Phone", "Seat", "Shift", "Status", "Entry", "Exit", "Dist (m)"];
+        const tableColumn = ["S.No", "Name", "Seat", "Shift", "Status", "Entry", "Exit", "Dist (m)"];
         const tableRows = [];
 
         filteredStudents.forEach((student, index) => {
