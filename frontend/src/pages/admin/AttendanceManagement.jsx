@@ -197,7 +197,7 @@ const AttendanceManagement = () => {
             styles: { fontSize: 8 },
             headStyles: { fillColor: [63, 81, 181] },
             didParseCell: (data) => {
-                if (data.section === 'body' && data.column.index === 5) {
+                if (data.section === 'body' && data.column.index === 4) {
                     if (data.cell.raw === 'P') {
                         data.cell.styles.textColor = [34, 197, 94]; // Green-500
                         data.cell.styles.fontStyle = 'bold';
