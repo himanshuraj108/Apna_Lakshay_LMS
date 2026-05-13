@@ -25,6 +25,7 @@ import RequestFeedbackModal from '../../components/student/RequestFeedbackModal'
 import LmsGuideSection from '../../components/student/LmsGuideSection';
 import NewspaperModal from '../../components/student/NewspaperModal';
 import InactiveScreen from '../../components/student/InactiveScreen';
+import AccessDeniedPending from '../../pages/public/AccessDeniedPending';
 import Footer from '../../components/layout/Footer';
 
 /* ─── Beep + Vibrate (same pattern as QR scanner) ───────────────── */
@@ -368,6 +369,7 @@ const StudentDashboard = () => {
     const [directMarkLoading, setDirectMarkLoading]   = useState(false);
     const { logout, user } = useAuth();
     const isActive = user?.isActive;
+    const hasSeat = dashboardData?.seat;
     const navigate = useNavigate();
 
     const SETTINGS_KEY = 'lms_location_required';
@@ -532,6 +534,11 @@ const StudentDashboard = () => {
     /* -- Inactive guard -- blocks all dashboard access -- */
     if (!isActive) {
         return <InactiveScreen user={user} onLogout={handleLogout} />;
+    }
+
+    /* -- Pending Allocation guard -- */
+    if (!hasSeat) {
+        return <AccessDeniedPending user={user} />;
     }
 
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
