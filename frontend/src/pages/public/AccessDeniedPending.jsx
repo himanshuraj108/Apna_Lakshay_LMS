@@ -312,7 +312,7 @@ const AccessDeniedPending = ({ user }) => {
                                 damping: 20
                             }}
                         >
-                            {/* <Link
+                            <Link
                                 to="/student/profile"
                                 className="cta-glow w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white mb-2.5"
                                 style={{
@@ -324,10 +324,10 @@ const AccessDeniedPending = ({ user }) => {
                             >
                                 <IoTimeOutline size={16} />
                                 Check Allocation Status
-                            </Link> */}
+                            </Link>
                         </motion.div>
 
-                        <motion.div
+                        {/* <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.74 }}
@@ -342,7 +342,7 @@ const AccessDeniedPending = ({ user }) => {
                             >
                                 Go to Dashboard
                             </Link>
-                        </motion.div>
+                        </motion.div> */}
 
                         <motion.p
                             initial={{ opacity: 0 }}
