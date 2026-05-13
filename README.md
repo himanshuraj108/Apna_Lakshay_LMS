@@ -99,7 +99,7 @@ This creates:
 - Ground Floor: 1 Room, 20 Seats
 - First Floor: 2 Rooms (7 + 12 seats)
 - Second Floor: 1 Room, 5 Seats
-- **Total: 44 Seats**
+- **Total: 40 Seats**
 
 ### Run Application
 
