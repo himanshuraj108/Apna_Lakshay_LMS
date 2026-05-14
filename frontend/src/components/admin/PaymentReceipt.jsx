@@ -147,7 +147,7 @@ const PaymentReceipt = ({ student, fee, slNo = 1 }) => {
                     <IoDownloadOutline size={15} /> Download Image
                 </motion.button>
                 <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handlePrint}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/15 text-gray-300 rounded-xl text-sm font-semibold">
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-white/15 border border-white/15 text-gray-700 rounded-xl text-sm font-semibold">
                     <IoPrintOutline size={15} /> Print
                 </motion.button>
             </div>

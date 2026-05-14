@@ -219,32 +219,32 @@ const QRScannerModal = ({ onClose }) => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
-            <div className="bg-[#050508] rounded-3xl p-6 max-w-[340px] w-full shadow-2xl relative border border-white/10 overflow-hidden mx-auto my-auto max-h-[90vh] flex flex-col">
+            <div className="bg-gray-50 rounded-3xl p-6 max-w-[340px] w-full shadow-2xl relative border border-gray-200 overflow-hidden mx-auto my-auto max-h-[90vh] flex flex-col">
                 {/* Background glow effects */}
                 <div className="absolute -top-32 -right-32 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
                 <button
                     onClick={onClose}
-                    className="absolute top-5 right-5 p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-gray-400 hover:text-white transition-all z-30"
+                    className="absolute top-5 right-5 p-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full text-gray-600 hover:text-gray-900 transition-all z-30"
                 >
                     <FaTimes size={16} />
                 </button>
 
                 <div className="flex flex-col items-center justify-center gap-2 mb-6 relative z-10">
                     <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl shadow-lg shadow-blue-500/20 mb-2">
-                        <FaCamera className="text-white text-xl" />
+                        <FaCamera className="text-gray-900 text-xl" />
                     </div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">QR Scanner</h2>
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">QR Scanner</h2>
                 </div>
 
                 {/* Mode Toggles */}
-                <div className="flex bg-white/5 border border-white/10 rounded-2xl p-1 mb-6 relative z-10 backdrop-blur-md">
+                <div className="flex bg-gray-50 border border-gray-200 rounded-2xl p-1 mb-6 relative z-10 backdrop-blur-md">
                     <button
                         onClick={() => setMode('check-in')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'check-in'
                             ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            : 'text-gray-600 hover:text-white hover:bg-gray-50'
                             }`}
                     >
                         <FaSignInAlt size={16} /> In
@@ -253,7 +253,7 @@ const QRScannerModal = ({ onClose }) => {
                         onClick={() => setMode('check-out')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'check-out'
                             ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            : 'text-gray-600 hover:text-white hover:bg-gray-50'
                             }`}
                     >
                         <FaSignOutAlt size={16} /> Out
@@ -262,7 +262,7 @@ const QRScannerModal = ({ onClose }) => {
                         onClick={() => setMode('verify')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${mode === 'verify'
                             ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            : 'text-gray-600 hover:text-white hover:bg-gray-50'
                             }`}
                     >
                         <FaUserCheck size={16} /> Verify
@@ -270,7 +270,7 @@ const QRScannerModal = ({ onClose }) => {
                 </div>
 
                 {/* Scanner Area */}
-                <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0f] w-full aspect-square max-h-[260px] max-w-[260px] mx-auto mb-6 border-2 border-white/5 group shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] z-10 transition-colors flex items-center justify-center">
+                <div className="relative overflow-hidden rounded-2xl bg-[#0a0a0f] w-full aspect-square max-h-[260px] max-w-[260px] mx-auto mb-6 border-2 border-gray-100 group shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] z-10 transition-colors flex items-center justify-center">
                     {!cameraError ? (
                         <div id="reader" className="w-[105%] h-[105%] flex items-center justify-center object-cover [&_video]:object-cover [&_video]:rounded-2xl [&_video]:!w-full [&_video]:!h-full"></div>
                     ) : (
@@ -299,15 +299,15 @@ const QRScannerModal = ({ onClose }) => {
                             >
                                 <div className={`rounded-3xl p-5 mb-5 shadow-2xl backdrop-blur-xl border border-white/20 ${scanResult.type === 'success' ? 'bg-gradient-to-br from-green-400 to-emerald-600' : 'bg-gradient-to-br from-red-400 to-rose-600'}`}>
                                     {scanResult.type === 'success' ? (
-                                        <FaSignInAlt size={40} className="text-white drop-shadow-md" />
+                                        <FaSignInAlt size={40} className="text-gray-900 drop-shadow-md" />
                                     ) : (
-                                        <FaTimes size={40} className="text-white drop-shadow-md" />
+                                        <FaTimes size={40} className="text-gray-900 drop-shadow-md" />
                                     )}
                                 </div>
-                                <h3 className="text-3xl font-black mb-3 text-white drop-shadow-lg">
+                                <h3 className="text-3xl font-black mb-3 text-gray-900 drop-shadow-lg">
                                     {scanResult.type === 'success' ? 'Success!' : 'Error'}
                                 </h3>
-                                <p className="font-bold text-lg mb-4 text-white/90 drop-shadow-md px-4">{scanResult.message}</p>
+                                <p className="font-bold text-lg mb-4 text-gray-900/90 drop-shadow-md px-4">{scanResult.message}</p>
                                 {scanResult.studentName && (
                                     <div className="px-5 py-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-xl text-white font-bold tracking-wide shadow-xl">
                                         {scanResult.studentName}
@@ -334,7 +334,7 @@ const QRScannerModal = ({ onClose }) => {
                         value={manualId}
                         onChange={(e) => setManualId(e.target.value.toUpperCase())}
                         onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
-                        className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:bg-white/10 outline-none transition-all font-medium"
+                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 focus:bg-gray-100 outline-none transition-all font-medium"
                     />
                     <button
                         onClick={handleManualSubmit}

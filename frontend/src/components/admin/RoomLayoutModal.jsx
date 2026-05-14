@@ -76,9 +76,9 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                         <div className="flex justify-between items-center mb-5">
                             <div>
                                 <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-0.5">Configure Room</p>
-                                <h2 className="text-xl font-black text-white">{room.name}</h2>
+                                <h2 className="text-xl font-black text-gray-900">{room.name}</h2>
                             </div>
-                            <button onClick={onClose} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all">
+                            <button onClick={onClose} className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-all">
                                 <FaTimes size={16} />
                             </button>
                         </div>
@@ -157,18 +157,18 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                             <div>
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <div className={`p-1.5 rounded-lg ${roomData.hasAc ? 'bg-cyan-500/20' : 'bg-white/5'} transition-colors`}>
+                                        <div className={`p-1.5 rounded-lg ${roomData.hasAc ? 'bg-cyan-500/20' : 'bg-gray-50'} transition-colors`}>
                                             <IoSnowOutline size={14} className={roomData.hasAc ? 'text-cyan-400' : 'text-gray-500'} />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-white">Air Conditioning</p>
+                                            <p className="text-sm font-bold text-gray-900">Air Conditioning</p>
                                             <p className="text-[10px] text-gray-500">Toggle AC for this room</p>
                                         </div>
                                     </div>
                                     {/* Toggle switch */}
                                     <button type="button"
                                         onClick={() => setRoomData({ ...roomData, hasAc: !roomData.hasAc })}
-                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasAc ? 'bg-cyan-500' : 'bg-white/10 border border-white/15'}`}>
+                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasAc ? 'bg-cyan-500' : 'bg-gray-100 border border-white/15'}`}>
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${roomData.hasAc ? 'left-7' : 'left-1'}`} />
                                     </button>
                                 </div>
@@ -186,7 +186,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                                         onClick={() => setRoomData({ ...roomData, acPosition: p })}
                                                         className={`py-2 rounded-xl text-xs font-bold transition-all ${roomData.acPosition === p
                                                             ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-400'
-                                                            : 'bg-white/5 border border-white/10 text-gray-500 hover:bg-white/8'}`}>
+                                                            : 'bg-gray-50 border border-gray-200 text-gray-500 hover:bg-white/8'}`}>
                                                         {POS_LABEL[p]}
                                                     </button>
                                                 ))}
@@ -203,7 +203,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2">
-                                        <div className={`p-1.5 rounded-lg ${roomData.hasFan ? 'bg-amber-500/20' : 'bg-white/5'} transition-colors`}>
+                                        <div className={`p-1.5 rounded-lg ${roomData.hasFan ? 'bg-amber-500/20' : 'bg-gray-50'} transition-colors`}>
                                             <motion.div
                                                 animate={roomData.hasFan ? { rotate: 360 } : { rotate: 0 }}
                                                 transition={{ repeat: roomData.hasFan ? Infinity : 0, duration: 1.2, ease: 'linear' }}
@@ -212,13 +212,13 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                             </motion.div>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-white">Ceiling Fan</p>
+                                            <p className="text-sm font-bold text-gray-900">Ceiling Fan</p>
                                             <p className="text-[10px] text-gray-500">Toggle fan overlay for this room</p>
                                         </div>
                                     </div>
                                     <button type="button"
                                         onClick={() => setRoomData({ ...roomData, hasFan: !roomData.hasFan })}
-                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasFan ? 'bg-amber-500' : 'bg-white/10 border border-white/15'}`}>
+                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasFan ? 'bg-amber-500' : 'bg-gray-100 border border-white/15'}`}>
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${roomData.hasFan ? 'left-7' : 'left-1'}`} />
                                     </button>
                                 </div>
@@ -232,7 +232,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                             {/* Actions */}
                             <div className="flex gap-3 pt-2">
                                 <button type="button" onClick={onClose}
-                                    className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-xl text-sm font-medium transition-all">
+                                    className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium transition-all">
                                     Cancel
                                 </button>
                                 <button type="submit" disabled={loading}

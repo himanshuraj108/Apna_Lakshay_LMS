@@ -257,7 +257,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                     className="relative w-32 h-32 flex items-center justify-center"
                 >
                     {/* Center motor */}
-                    <div className="absolute w-5 h-5 rounded-full bg-white/40 border border-white/50 z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)] inset-0 m-auto" />
+                    <div className="absolute w-5 h-5 rounded-full bg-white/40 border border-gray-1000 z-10 shadow-[0_0_15px_rgba(255,255,255,0.4)] inset-0 m-auto" />
                     
                     {/* 3 Blades (perfect center pivot) */}
                     {[0, 120, 240].map((deg) => (
@@ -270,7 +270,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                 </motion.div>
                 
                 {/* Fast motion blur ring */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border-[12px] border-white/10 blur-[3px]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border-[12px] border-gray-200 blur-[3px]" />
             </div>
         );
     };
@@ -330,24 +330,24 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
     return (
         <div className="space-y-6">
             {/* Box Room Layout */}
-            <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border-2 border-white/10">
+            <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border-2 border-gray-200">
                 {/* Room Title */}
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 px-4 py-2 rounded-lg border border-white/20 z-20">
-                    <p className="text-sm font-medium text-gray-400">{room.name} ({totalSeats} Seats)</p>
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-lg border border-white/20 z-20">
+                    <p className="text-sm font-medium text-gray-600">{room.name} ({totalSeats} Seats)</p>
                 </div>
 
                 {/* Add Seat Buttons */}
                 <div className="absolute top-4 right-4 flex gap-2 z-20">
-                    <button onClick={() => onAddSeat('north')} className="px-3 py-1.5 bg-blue-600/80 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to North">
+                    <button onClick={() => onAddSeat('north')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to North">
                         + North
                     </button>
-                    <button onClick={() => onAddSeat('east')} className="px-3 py-1.5 bg-blue-600/80 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to East">
+                    <button onClick={() => onAddSeat('east')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to East">
                         + East
                     </button>
-                    <button onClick={() => onAddSeat('south')} className="px-3 py-1.5 bg-blue-600/80 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to South">
+                    <button onClick={() => onAddSeat('south')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to South">
                         + South
                     </button>
-                    <button onClick={() => onAddSeat('west')} className="px-3 py-1.5 bg-blue-600/80 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to West">
+                    <button onClick={() => onAddSeat('west')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to West">
                         + West
                     </button>
                 </div>
@@ -499,14 +499,14 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                             <div className="relative z-30 w-full h-full flex items-center justify-center overflow-auto">
                                 {unpositionedSeats.length > 0 ? (
                                     <div className="w-full h-full">
-                                        <p className="text-gray-400 text-xs font-semibold mb-2 text-center sticky top-0 bg-gray-800/80 backdrop-blur-sm p-1 rounded z-10">Unconfigured Seats ({unpositionedSeats.length})</p>
+                                        <p className="text-gray-600 text-xs font-semibold mb-2 text-center sticky top-0 bg-gray-50/80 backdrop-blur-sm p-1 rounded z-10">Unconfigured Seats ({unpositionedSeats.length})</p>
                                         <div className="flex flex-wrap gap-2 justify-center content-start">
                                             {unpositionedSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
                                         </div>
                                     </div>
                                 ) : !room.hasFan ? (
                                     <div className="text-center">
-                                        <p className="text-gray-400 text-sm font-semibold">Room Interior</p>
+                                        <p className="text-gray-600 text-sm font-semibold">Room Interior</p>
                                         <p className="text-gray-500 text-xs mt-1">{roomW}m × {roomH}m</p>
                                     </div>
                                 ) : null}
@@ -519,15 +519,15 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                 <div className="mt-6 flex gap-4 justify-center text-xs flex-wrap">
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-green-500/30 border-2 border-green-500 rounded"></div>
-                        <span className="text-gray-400">Available</span>
+                        <span className="text-gray-600">Available</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-red-500/30 border-2 border-red-500 rounded"></div>
-                        <span className="text-gray-400">Occupied</span>
+                        <span className="text-gray-600">Occupied</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="text-yellow-500 font-semibold">DOOR</span>
-                        <span className="text-gray-400">Entry/Exit</span>
+                        <span className="text-gray-600">Entry/Exit</span>
                     </div>
                     {hasAc && (
                         <div className="flex items-center gap-2">

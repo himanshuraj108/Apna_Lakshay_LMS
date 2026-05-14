@@ -107,10 +107,10 @@ const ShiftManager = ({ allowDelete = true }) => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-gray-900/50 p-4 rounded-xl border border-white/5">
+            <div className="flex justify-between items-center bg-gray-500 p-4 rounded-xl border border-gray-100">
                 <div>
-                    <h3 className="font-bold text-lg text-white">Manage Custom Shifts</h3>
-                    <p className="text-sm text-gray-400">Add, remove, or modify your custom shift definitions.</p>
+                    <h3 className="font-bold text-lg text-gray-900">Manage Custom Shifts</h3>
+                    <p className="text-sm text-gray-600">Add, remove, or modify your custom shift definitions.</p>
                 </div>
                 <Button variant="primary" onClick={() => setShowAddModal(true)}>
                     <IoAdd className="inline mr-2" /> Add Shift
@@ -122,7 +122,7 @@ const ShiftManager = ({ allowDelete = true }) => {
             ) : (
                 <div className="grid gap-4">
                     {dbShifts.map((shift) => (
-                        <Card key={shift._id} className="border border-white/10 hover:border-white/20 transition-colors">
+                        <Card key={shift._id} className="border border-gray-200 hover:border-white/20 transition-colors">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 rounded-lg bg-green-500/20 text-green-400">
@@ -130,7 +130,7 @@ const ShiftManager = ({ allowDelete = true }) => {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold">{shift.name}</h3>
-                                        <p className="text-gray-400 font-mono text-sm">
+                                        <p className="text-gray-600 font-mono text-sm">
                                             {shift.startTime && shift.endTime
                                                 ? `${shift.startTime} - ${shift.endTime}`
                                                 : 'Standard Timing'}
@@ -171,9 +171,9 @@ const ShiftManager = ({ allowDelete = true }) => {
                     ))}
 
                     {dbShifts.length === 0 && (
-                        <div className="text-center py-10 border-2 border-dashed border-white/10 rounded-xl bg-white/5">
+                        <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
                             <IoAlertCircle className="mx-auto text-gray-500 mb-2" size={32} />
-                            <p className="text-gray-300 font-medium">No custom shifts found</p>
+                            <p className="text-gray-700 font-medium">No custom shifts found</p>
                             <p className="text-sm text-gray-500 mt-1">Create your first shift to enable Custom Mode capabilities.</p>
                         </div>
                     )}
@@ -196,7 +196,7 @@ const ShiftManager = ({ allowDelete = true }) => {
                         </div>
                     )}
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Shift Name</label>
+                        <label className="block text-sm font-medium text-gray-600 mb-2">Shift Name</label>
                         <input
                             type="text"
                             value={formData.name}
@@ -208,7 +208,7 @@ const ShiftManager = ({ allowDelete = true }) => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">Start Time</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">Start Time</label>
                             <input
                                 type="time"
                                 value={formData.startTime}
@@ -218,7 +218,7 @@ const ShiftManager = ({ allowDelete = true }) => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">End Time</label>
+                            <label className="block text-sm font-medium text-gray-600 mb-2">End Time</label>
                             <input
                                 type="time"
                                 value={formData.endTime}

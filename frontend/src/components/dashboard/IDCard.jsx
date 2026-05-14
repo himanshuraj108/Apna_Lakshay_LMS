@@ -60,7 +60,6 @@ const IDCard = ({ student, onClose }) => {
 
                 {/* ID Card Container */}
                 <div className="flex justify-center mb-6 mt-4">
-                    {/* Wrap in div for ref capture */}
                     <div ref={cardRef}>
                         <StudentIdCard student={student} />
                     </div>

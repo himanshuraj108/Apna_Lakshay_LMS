@@ -72,21 +72,21 @@ const PasswordActivityLog = () => {
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl">
-                        <IoKeyOutline size={24} className="text-white" />
+                        <IoKeyOutline size={24} className="text-gray-900" />
                     </div>
                     <div>
                         <h3 className="text-xl font-bold">Password Activity</h3>
-                        <p className="text-sm text-gray-400">Recent password changes</p>
+                        <p className="text-sm text-gray-600">Recent password changes</p>
                     </div>
                 </div>
             </div>
             <div className="space-y-3">
                 {[1, 2, 3].map(i => (
                     <div key={i} className="animate-pulse flex gap-3 glass p-3 rounded-lg">
-                        <div className="w-10 h-10 bg-white/10 rounded-full"></div>
+                        <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
                         <div className="flex-1 space-y-2">
-                            <div className="h-3 bg-white/10 rounded w-3/4"></div>
-                            <div className="h-2 bg-white/5 rounded w-1/2"></div>
+                            <div className="h-3 bg-gray-100 rounded w-3/4"></div>
+                            <div className="h-2 bg-gray-50 rounded w-1/2"></div>
                         </div>
                     </div>
                 ))}
@@ -100,11 +100,11 @@ const PasswordActivityLog = () => {
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl">
-                            <IoKeyOutline size={24} className="text-white" />
+                            <IoKeyOutline size={24} className="text-gray-900" />
                         </div>
                         <div>
                             <h3 className="text-xl font-bold">Password Activity</h3>
-                            <p className="text-sm text-gray-400">Recent password changes</p>
+                            <p className="text-sm text-gray-600">Recent password changes</p>
                         </div>
                     </div>
                     <Badge variant="red" className="animate-pulse">Live</Badge>
@@ -122,7 +122,7 @@ const PasswordActivityLog = () => {
                                 key={log._id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="glass rounded-lg p-4 hover:bg-white/10 transition-all group"
+                                className="glass rounded-lg p-4 hover:bg-gray-100 transition-all group"
                             >
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ const PasswordActivityLog = () => {
                                         </div>
                                         <div>
                                             <p className="font-semibold">{log.user?.name || 'Unknown'}</p>
-                                            <p className="text-xs text-gray-400">{log.email}</p>
+                                            <p className="text-xs text-gray-600">{log.email}</p>
                                         </div>
                                     </div>
                                     <Badge variant={log.source === 'forgot_reset' ? 'yellow' : 'blue'} className="text-xs">
@@ -153,7 +153,7 @@ const PasswordActivityLog = () => {
                                     </div>
                                     <button
                                         onClick={() => visiblePasswords[log._id] ? hidePassword(log._id) : requestPasswordReveal(log._id)}
-                                        className={`transition-colors p-2 hover:bg-white/10 rounded-lg ${visiblePasswords[log._id] ? 'text-gray-700 hover:text-black' : 'text-gray-400 hover:text-white'}`}
+                                        className={`transition-colors p-2 hover:bg-gray-100 rounded-lg ${visiblePasswords[log._id] ? 'text-gray-700 hover:text-black' : 'text-gray-600 hover:text-gray-900'}`}
                                         title={visiblePasswords[log._id] ? "Hide" : "Show (Requires Auth)"}
                                     >
                                         {visiblePasswords[log._id] ? <IoEyeOff size={18} /> : <IoEye size={18} />}
@@ -185,21 +185,21 @@ const PasswordActivityLog = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-[#1e293b] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                            className="bg-[#1e293b] border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl">
-                                        <IoLockClosed size={24} className="text-white" />
+                                        <IoLockClosed size={24} className="text-gray-900" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-white">Admin Authentication</h3>
-                                        <p className="text-sm text-gray-400">Enter your password to view</p>
+                                        <h3 className="text-xl font-bold text-gray-900">Admin Authentication</h3>
+                                        <p className="text-sm text-gray-600">Enter your password to view</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowAuthModal(false)}
-                                    className="text-gray-400 hover:text-white transition-colors"
+                                    className="text-gray-600 hover:text-gray-900 transition-colors"
                                 >
                                     <IoClose size={24} />
                                 </button>
@@ -212,13 +212,13 @@ const PasswordActivityLog = () => {
                             )}
 
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-400 mb-2">Admin Password</label>
+                                <label className="block text-sm font-medium text-gray-600 mb-2">Admin Password</label>
                                 <input
                                     type="password"
                                     value={adminPassword}
                                     onChange={(e) => setAdminPassword(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && verifyAndReveal()}
-                                    className="w-full px-4 py-3 bg-[#0f172a]/50 border border-white/10 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-white outline-none"
+                                    className="w-full px-4 py-3 bg-[#0f172a]/50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 outline-none"
                                     placeholder="Enter your password"
                                     autoFocus
                                 />
@@ -227,7 +227,7 @@ const PasswordActivityLog = () => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setShowAuthModal(false)}
-                                    className="flex-1 px-4 py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-semibold transition-all text-white"
+                                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-white/20 border border-gray-200 rounded-xl font-semibold transition-all text-gray-900"
                                 >
                                     Cancel
                                 </button>

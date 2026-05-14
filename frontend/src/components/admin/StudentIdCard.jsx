@@ -99,7 +99,7 @@ const StudentIdCard = ({ student }) => {
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <IoPersonCircleOutline className="w-full h-full text-gray-300" />
+                            <IoPersonCircleOutline className="w-full h-full text-gray-700" />
                         )}
                     </div>
 
@@ -120,7 +120,7 @@ const StudentIdCard = ({ student }) => {
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center gap-1.5 bg-gray-100 border border-gray-200 text-gray-500 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
-                                        <FaBan size={10} className="text-gray-400" />
+                                        <FaBan size={10} className="text-gray-600" />
                                         Non-AC Room
                                     </span>
                                 )}
@@ -131,11 +131,11 @@ const StudentIdCard = ({ student }) => {
                     {/* Details Grid */}
                     <div className="w-full grid grid-cols-2 gap-y-4 gap-x-2 text-sm border-t border-gray-100 pt-4">
                         <div className="text-left">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">ID Number</p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">ID Number</p>
                             <p className="font-mono font-bold text-gray-700 text-sm">HL-{studentId}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
                             {(student.seat?.number || student.seatNumber) ? (
                                 <p className="font-bold text-lg text-purple-600">
                                     {(student.roomId || student.seat?.room?.roomId || student.seat?.roomId)
@@ -144,11 +144,11 @@ const StudentIdCard = ({ student }) => {
                                     }
                                 </p>
                             ) : (
-                                <p className="font-bold text-lg text-gray-400">N/A</p>
+                                <p className="font-bold text-lg text-gray-600">N/A</p>
                             )}
                         </div>
                         <div className="text-left">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Joined Date</p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Joined Date</p>
                             <p className="font-medium text-gray-700 text-xs">
                                 {student.createdAt
                                     ? new Date(student.createdAt).toLocaleDateString('en-GB', {
@@ -159,23 +159,23 @@ const StudentIdCard = ({ student }) => {
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
                             {/* Multi-shift support: show all assigned shifts */}
                             {student.shifts && student.shifts.length > 0 ? (
                                 <div className="flex flex-col items-end gap-0.5">
                                     {student.shifts.map((s, i) => (
                                         <div key={i}>
-                                            <p className={`font-bold text-[10px] ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
+                                            <p className={`font-bold text-[10px] ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-600'}`}>
                                                 {s.name}
                                             </p>
                                             {s.startTime && s.endTime && (
-                                                <p className="text-gray-400 text-[9px]">{s.startTime}–{s.endTime}</p>
+                                                <p className="text-gray-600 text-[9px]">{s.startTime}–{s.endTime}</p>
                                             )}
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-400'}`}>
+                                <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-600'}`}>
                                     {getFormattedShift()}
                                 </p>
                             )}
@@ -184,7 +184,7 @@ const StudentIdCard = ({ student }) => {
                         {/* Address Row */}
                         {student.address && (
                             <div className="col-span-2 text-left mt-2 pt-2 border-t border-gray-100">
-                                <p className="text-gray-400 text-[10px] uppercase tracking-wider mb-0.5">Address</p>
+                                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Address</p>
                                 <p className="font-medium text-gray-700 text-xs leading-tight line-clamp-2" title={student.address}>
                                     {student.address}
                                 </p>
@@ -195,7 +195,7 @@ const StudentIdCard = ({ student }) => {
                     {/* Footer / Barcode Area */}
                     <div className="w-full mt-6 pt-4 border-t-2 border-dashed border-gray-100 flex justify-between items-center group-hover:border-blue-100 transition-colors">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-gray-400 uppercase">
+                            <span className="text-[10px] text-gray-600 uppercase">
                                 {!student.isActive ? 'Status' : (isPending ? 'Status' : 'Valid Until')}
                             </span>
                             <span className={`text-xs font-bold ${!student.isActive ? 'text-red-600' : (isPending ? 'text-yellow-600' : 'text-green-600')}`}>

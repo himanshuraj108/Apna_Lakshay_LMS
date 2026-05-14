@@ -75,13 +75,13 @@ const StudentChatList = () => {
         <div>
             {/* ... Search Input ... */}
             <div className="mb-6 relative">
-                <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                 <input
                     type="text"
                     placeholder="Search students..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-gray-800 text-white pl-10 pr-4 py-2 rounded-lg border border-gray-700 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-gray-50 text-gray-900 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
                 />
             </div>
 
@@ -109,8 +109,8 @@ const StudentChatList = () => {
                                 )}
                             </div>
                             <div>
-                                <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors">{student.name}</h3>
-                                <p className="text-xs text-gray-400">{student.studentId || 'No ID'}</p>
+                                <h3 className="font-bold text-gray-900 group-hover:text-blue-400 transition-colors">{student.name}</h3>
+                                <p className="text-xs text-gray-600">{student.studentId || 'No ID'}</p>
                             </div>
                         </div>
                         <button

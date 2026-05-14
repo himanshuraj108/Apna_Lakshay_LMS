@@ -53,19 +53,19 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full"
+                    className="bg-white border border-white/20 rounded-2xl p-6 max-w-md w-full"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h2 className="text-2xl font-bold">Update Room Prices</h2>
-                            <p className="text-sm text-gray-400 mt-1">
+                            <p className="text-sm text-gray-600 mt-1">
                                 {room.name} - {room.seats?.length || 0} seats
                             </p>
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors"
+                            className="text-gray-600 hover:text-gray-900 transition-colors"
                         >
                             <FaTimes size={24} />
                         </button>
@@ -75,7 +75,7 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                         {/* Dynamic Shift Prices */}
                         {shifts.map(shift => (
                             <div key={shift.id}>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">
+                                <label className="block text-sm font-medium text-gray-600 mb-2">
                                     {shift.name} Price (₹)
                                 </label>
                                 <input
@@ -88,14 +88,14 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                                             [shift.id]: parseInt(e.target.value)
                                         }
                                     })}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     required
                                 />
                             </div>
                         ))}
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
+                            <label className="block text-sm font-medium text-gray-600 mb-2">
                                 Full Day Price (₹)
                             </label>
                             <input
@@ -108,7 +108,7 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                                         full: parseInt(e.target.value)
                                     }
                                 })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 required
                             />
                         </div>
@@ -117,7 +117,7 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-white/20 rounded-lg transition-colors"
                             >
                                 Cancel
                             </button>

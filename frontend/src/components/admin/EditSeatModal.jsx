@@ -60,14 +60,14 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                    className="bg-white border border-white/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold">Edit Seat {seat.number}</h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors"
+                            className="text-gray-600 hover:text-gray-900 transition-colors"
                         >
                             <FaTimes size={24} />
                         </button>
@@ -75,14 +75,14 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-400 mb-2">
+                            <label className="block text-sm font-medium text-gray-600 mb-2">
                                 Seat Number
                             </label>
                             <input
                                 type="text"
                                 value={formData.seatNumber}
                                 onChange={(e) => setFormData({ ...formData, seatNumber: e.target.value })}
-                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 required
                             />
                         </div>
@@ -90,7 +90,7 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                         {/* Dynamic Shift Prices */}
                         {shifts.map(shift => (
                             <div key={shift.id}>
-                                <label className="block text-sm font-medium text-gray-400 mb-2">
+                                <label className="block text-sm font-medium text-gray-600 mb-2">
                                     {shift.name} Price (₹)
                                 </label>
                                 <input
@@ -103,7 +103,7 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                                             [shift.id]: parseInt(e.target.value) || 0
                                         }
                                     })}
-                                    className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                     placeholder="Leave blank to skip"
                                 />
                             </div>
@@ -113,7 +113,7 @@ const EditSeatModal = ({ isOpen, onClose, seat, onSuccess }) => {
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-white/20 rounded-lg transition-colors"
                             >
                                 Cancel
                             </button>
