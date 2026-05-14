@@ -89,12 +89,12 @@ const RequestHistoryModal = ({ isOpen, onClose }) => {
                                 <p className="text-xs text-gray-500">Track your submitted requests</p>
                             </div>
                         </div>
-                        <button
+                        {/* <button
                             onClick={onClose}
                             className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-700 transition-all"
                         >
                             <IoClose size={18} />
-                        </button>
+                        </button> */}
                     </div>
 
                     <div className="mx-6 h-px bg-gray-200 mb-1 shrink-0" />
