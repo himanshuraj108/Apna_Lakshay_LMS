@@ -178,8 +178,7 @@ exports.getMe = async (req, res) => {
         try {
             // Find active seat assignment to get updated details
             const seat = await Seat.findOne({
-                'assignments.student': user._id,
-                'assignments.status': 'active'
+                assignments: { $elemMatch: { student: user._id, status: 'active' } }
             }).populate('assignments.shift').populate('room');
 
             if (seat) {

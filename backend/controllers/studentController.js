@@ -80,10 +80,7 @@ exports.getDashboard = async (req, res) => {
         // ==========================================
         const [seat, student, unreadCount, activeRequestsCount, settings] = await Promise.all([
             // Query 1: Get seat info
-            Seat.findOne({
-                'assignments.student': studentId,
-                'assignments.status': 'active'
-            })
+            Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
                 .populate('floor room')
                 .populate('assignments.shift')
                 .lean(), // Use lean() for faster read-only query
@@ -355,10 +352,7 @@ exports.getMySeat = async (req, res) => {
     try {
         const studentId = req.user.id;
         // Updated query for new assignments structure
-        const seat = await Seat.findOne({
-            'assignments.student': studentId,
-            'assignments.status': 'active'
-        })
+        const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
             .populate('floor')
             .populate('assignments.shift')
             .populate({
@@ -721,10 +715,7 @@ exports.getFees = async (req, res) => {
         );
 
         // Self-heal 2: sync pending/overdue fee amounts to current seat assignment price
-        const activeSeat = await Seat.findOne({
-            'assignments.student': req.user.id,
-            'assignments.status': 'active'
-        });
+        const activeSeat = await Seat.findOne({ assignments: { $elemMatch: { student: req.user.id, status: 'active' } } });
         if (activeSeat) {
             const activeAssignment = activeSeat.assignments.find(a =>
                 a.student.toString() === req.user.id.toString() && a.status === 'active'
@@ -899,10 +890,7 @@ exports.getReceipt = async (req, res) => {
         }
 
         // Get seat info for the receipt
-        const seat = await Seat.findOne({
-            'assignments.student': req.user.id,
-            'assignments.status': 'active'
-        }).populate('floor room').populate('assignments.shift').lean();
+        const seat = await Seat.findOne({ assignments: { $elemMatch: { student: req.user.id, status: 'active' } } }).populate('floor room').populate('assignments.shift').lean();
 
         let seatInfo = null;
         if (seat) {
@@ -1017,10 +1005,7 @@ exports.submitRequest = async (req, res) => {
         let currentData = {};
 
         if (type === 'seat' || type === 'shift') {
-            const seat = await Seat.findOne({
-                'assignments.student': req.user.id,
-                'assignments.status': 'active'
-            }).populate('assignments.shift');
+            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: req.user.id, status: 'active' } } }).populate('assignments.shift');
 
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === req.user.id && a.status === 'active');
@@ -1290,10 +1275,7 @@ exports.getAvailableShifts = async (req, res) => {
         const student = await User.findById(req.user.id);
 
         // Get seat with all assignments and shift details
-        const seat = await Seat.findOne({
-            'assignments.student': req.user.id,
-            'assignments.status': 'active'
-        }).populate({
+        const seat = await Seat.findOne({ assignments: { $elemMatch: { student: req.user.id, status: 'active' } } }).populate({
             path: 'assignments.shift',
             select: 'name startTime endTime'
         });
@@ -1445,10 +1427,7 @@ exports.requestSeatChange = async (req, res) => {
         }
 
         // Get student's current seat
-        const currentSeat = await Seat.findOne({
-            'assignments.student': studentId,
-            'assignments.status': 'active'
-        }).populate('floor room');
+        const currentSeat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('floor room');
 
         if (!currentSeat) {
             return res.status(400).json({
@@ -1665,10 +1644,7 @@ exports.markAttendanceByQr = async (req, res) => {
             let shiftLabel = 'N/A';
 
             // Check Shift Logic
-            const seat = await Seat.findOne({
-                'assignments.student': studentId,
-                'assignments.status': 'active'
-            }).populate('assignments.shift');
+            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
 
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
@@ -1822,10 +1798,7 @@ exports.markSelfAttendance = async (req, res) => {
             let shiftLabel = 'Self Marked';
 
             // Check Shift Timing
-            const seat = await Seat.findOne({
-                'assignments.student': studentId,
-                'assignments.status': 'active'
-            }).populate('assignments.shift');
+            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
 
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
@@ -1920,10 +1893,7 @@ exports.markAttendanceByPin = async (req, res) => {
 
         // ── Time Restriction (only if enabled by admin) ───────────────────
         if (settings.timeRestrictionEnabled !== false) {
-            const seat = await Seat.findOne({
-                'assignments.student': studentId,
-                'assignments.status': 'active'
-            }).populate('assignments.shift');
+            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
 
             if (seat) {
                 const assignment = seat.assignments.find(
@@ -2057,7 +2027,7 @@ exports.markAttendanceDirectly = async (req, res) => {
 
         // ── Time Restriction ──────────────────────────────────────────────
         if (settings.timeRestrictionEnabled !== false) {
-            const seat = await Seat.findOne({ 'assignments.student': studentId, 'assignments.status': 'active' }).populate('assignments.shift');
+            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
                 if (assignment?.shift?.startTime && assignment?.shift?.endTime) {
