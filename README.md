@@ -591,6 +591,8 @@ pm2 start server.js --name apna-lakshay
 - Implemented PIN-based manual attendance check-in/out, bypassing QR code when enabled by admin
 - Fixed IST timezone issue for midnight attendance reporting, ensuring late-night check-ins correctly register
 - Consolidated Admin Dashboard settings into a unified "Settings" dropdown for global toggles (Maintenance Mode, PIN Attendance, Login Attendance, Time Restriction, Location)
+- Migrated Admin Dashboard components and pages to a clean light-mode theme
+- Fixed MongoDB array `$elemMatch` queries to accurately track active seat assignments in profiles and dashboards
 
 ### v2.3.0 — Multi-Shift Support (May 2026)
 - Admin can assign students to multiple non-overlapping shifts simultaneously
