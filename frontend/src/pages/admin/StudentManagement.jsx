@@ -10,11 +10,11 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import useShifts from '../../hooks/useShifts';
 
-const PAGE_BG = { background: '#050508' };
-const INPUT = 'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-700';
-const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all';
-const BTN_SECONDARY = 'px-4 py-2.5 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all disabled:opacity-50';
-const BTN_DANGER = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all';
+const PAGE_BG = { background: '#F8FAFC' };
+const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
+const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
+const BTN_SECONDARY = 'px-4 py-2.5 rounded-xl text-sm text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 font-medium transition-all disabled:opacity-50 shadow-sm';
+const BTN_DANGER = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
 
 const StudentManagement = () => {
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
@@ -1007,16 +1007,16 @@ const StudentManagement = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/admin">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                                 <IoArrowBack size={16} /> Back
                             </motion.button>
                         </Link>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg"><IoPeopleOutline size={14} className="text-white" /></div>
+                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg"><IoPeopleOutline size={14} className="text-gray-900" /></div>
                                 <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Student Management</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Student Management</h1>
                         </div>
                     </div>
                     <div className="flex gap-2 flex-wrap items-center">
@@ -1025,7 +1025,7 @@ const StudentManagement = () => {
                             <motion.button
                                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                 onClick={() => setShowSettingsMenu(prev => !prev)}
-                                className="flex items-center gap-2 px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-semibold transition-all"
+                                className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-gray-900 rounded-xl text-sm font-semibold transition-all"
                                 title="Settings"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-300 ${showSettingsMenu ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1048,7 +1048,7 @@ const StudentManagement = () => {
                                             className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
                                             style={{ background: 'rgba(13,13,20,0.97)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)' }}
                                         >
-                                            <div className="px-3 py-2 border-b border-white/5">
+                                            <div className="px-3 py-2 border-b border-gray-100">
                                                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
                                             </div>
                                             {[
@@ -1120,7 +1120,7 @@ const StudentManagement = () => {
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
                                 ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
-                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                                : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
                             {tab.icon}{tab.label}
                         </button>
                     ))}
@@ -1128,11 +1128,11 @@ const StudentManagement = () => {
                     <select
                         value={acFilter}
                         onChange={(e) => setAcFilter(e.target.value)}
-                        className="ml-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm font-medium text-gray-300 outline-none hover:bg-white/10 transition-colors"
+                        className="ml-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 outline-none hover:bg-gray-100 transition-colors"
                     >
-                        <option value="all" className="bg-[#050508]">All Rooms</option>
-                        <option value="ac" className="bg-[#050508]">AC Rooms Only</option>
-                        <option value="non-ac" className="bg-[#050508]">Non-AC Rooms Only</option>
+                        <option value="all" className="bg-gray-50">All Rooms</option>
+                        <option value="ac" className="bg-gray-50">AC Rooms Only</option>
+                        <option value="non-ac" className="bg-gray-50">Non-AC Rooms Only</option>
                     </select>
 
                     {/* Show Inactive toggle */}
@@ -1173,7 +1173,7 @@ const StudentManagement = () => {
                         className="flex items-center justify-between bg-blue-500/10 border border-blue-500/25 px-4 py-3 rounded-xl mb-5">
                         <span className="text-blue-300 text-sm font-medium">{selectedStudentIds.length} student(s) selected</span>
                         <div className="flex gap-3">
-                            <button onClick={() => setSelectedStudentIds([])} className="text-sm text-gray-400 hover:text-white transition-colors">Cancel</button>
+                            <button onClick={() => setSelectedStudentIds([])} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
                             <button onClick={() => setShowBulkFeeModal(true)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors">
                                 Edit Fees
                             </button>
@@ -1203,7 +1203,7 @@ const StudentManagement = () => {
                                 {shiftFilter && (
                                     <div className="col-span-full bg-purple-500/10 border border-purple-500/25 rounded-xl p-4 mb-2 flex justify-between items-center">
                                         <p className="text-purple-300 text-sm font-medium">
-                                            Showing students for: <span className="text-white font-bold">
+                                            Showing students for: <span className="text-gray-900 font-bold">
                                                 {shifts.find(s => s._id === shiftFilter)?.name || 'Selected Shift'}
                                             </span>
                                         </p>
@@ -1251,9 +1251,9 @@ const StudentManagement = () => {
                                             {archivedStudents.length === 0 ? (
                                                 <tr><td colSpan="5" className="text-center p-8 text-gray-600 text-sm">No deleted students found.</td></tr>
                                             ) : archivedStudents.map(student => (
-                                                <tr key={student._id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
-                                                    <td className="px-5 py-3.5 font-medium text-sm text-white">{student.name}</td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-400">{student.email}</td>
+                                                <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
+                                                    <td className="px-5 py-3.5 font-medium text-sm text-gray-900">{student.name}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
                                                     <td className="px-5 py-3.5 text-xs text-gray-500">{new Date(student.joinedAt).toLocaleDateString()}</td>
                                                     <td className="px-5 py-3.5 text-xs text-red-400">{new Date(student.deletedAt).toLocaleDateString()}</td>
                                                     <td className="px-5 py-3.5 text-right">
@@ -1297,7 +1297,7 @@ const StudentManagement = () => {
                                                     {activeTab === 'pending' && 'No students pending allocation.'}
                                                 </td></tr>
                                             ) : filteredStudents.map((student, idx) => (
-                                                <tr key={student._id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
                                                     <td className="px-5 py-3.5 w-10 text-center">
                                                         <input
                                                             type="checkbox"
@@ -1310,13 +1310,13 @@ const StudentManagement = () => {
                                                         />
                                                     </td>
                                                     <td className="px-5 py-3.5 text-xs font-bold text-gray-600 w-10 tabular-nums">{idx + 1}</td>
-                                                    <td className="px-5 py-3.5 font-semibold text-sm text-white">{student.name}</td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-400">{student.email}</td>
+                                                    <td className="px-5 py-3.5 font-semibold text-sm text-gray-900">{student.name}</td>
+                                                    <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
                                                     <td className="px-5 py-3.5 text-sm">
                                                         {(() => {
                                                             const s = getStudentShifts(student._id);
                                                             if (!s && student.isActive) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
-                                                            return <span className="text-gray-400 text-xs">{s || 'N/A'}</span>;
+                                                            return <span className="text-gray-600 text-xs">{s || 'N/A'}</span>;
                                                         })()}
                                                     </td>
                                                     <td className="px-5 py-3.5">
@@ -1331,7 +1331,7 @@ const StudentManagement = () => {
                                                         <div className="flex flex-col gap-1.5">
                                                             <div className="flex items-center gap-1.5" title={student.lastActive ? `Last Active: ${new Date(student.lastActive).toLocaleString()}` : 'Online status'}>
                                                                 <span className={`w-2 h-2 rounded-full ${student.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-500'}`} />
-                                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isOnline ? 'text-green-400' : 'text-gray-400'}`}>
+                                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isOnline ? 'text-green-400' : 'text-gray-600'}`}>
                                                                     {student.isOnline ? 'Online' : 'Offline'}
                                                                 </span>
                                                             </div>
@@ -1346,20 +1346,20 @@ const StudentManagement = () => {
                                                                     setSelectedSessionStudent(student);
                                                                     setShowSessionModal(true);
                                                                 }}
-                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-white bg-white/10 hover:bg-white/20 rounded border border-white/10 transition-colors self-start"
+                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-gray-900 bg-gray-100 hover:bg-white/20 rounded border border-gray-200 transition-colors self-start"
                                                             >
                                                                 Details
                                                             </button>
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-3.5 text-xs text-gray-300 font-medium">
+                                                    <td className="px-5 py-3.5 text-xs text-gray-700 font-medium">
                                                         <div className="flex flex-col gap-1.5 items-start">
                                                             <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-1 rounded-md w-fit">
                                                                 <span className="font-bold">{Math.min(student.mockTestCredits ?? 2, 2)}</span> / 2
                                                             </div>
                                                             <button
                                                                 onClick={() => fetchCreditHistory(student)}
-                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-white bg-white/10 hover:bg-white/20 rounded border border-white/10 transition-colors"
+                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-gray-900 bg-gray-100 hover:bg-white/20 rounded border border-gray-200 transition-colors"
                                                             >
                                                                 Details
                                                             </button>
@@ -1417,7 +1417,7 @@ const StudentManagement = () => {
 
                         {/* Student 1 */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Student A</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-gray-600">Student A</label>
                             <select
                                 id="swap-student-a"
                                 value={swapStudentId1}
@@ -1437,7 +1437,7 @@ const StudentManagement = () => {
 
                         {/* Visual Swap Preview */}
                         <div className="flex items-center justify-center gap-4 py-2">
-                            <div className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
                                 {swapStudentId1 ? (() => {
                                     const s = students.find(x => x._id === swapStudentId1);
                                     return s ? (
@@ -1445,7 +1445,7 @@ const StudentManagement = () => {
                                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
                                                 {s.name.charAt(0).toUpperCase()}
                                             </div>
-                                            <p className="text-white text-xs font-semibold truncate">{s.name}</p>
+                                            <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
                                             <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
                                         </>
                                     ) : null;
@@ -1463,7 +1463,7 @@ const StudentManagement = () => {
                                 </motion.div>
                                 <span className="text-gray-600 text-[10px]">swap</span>
                             </div>
-                            <div className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
                                 {swapStudentId2 ? (() => {
                                     const s = students.find(x => x._id === swapStudentId2);
                                     return s ? (
@@ -1471,7 +1471,7 @@ const StudentManagement = () => {
                                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
                                                 {s.name.charAt(0).toUpperCase()}
                                             </div>
-                                            <p className="text-white text-xs font-semibold truncate">{s.name}</p>
+                                            <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
                                             <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
                                         </>
                                     ) : null;
@@ -1483,7 +1483,7 @@ const StudentManagement = () => {
 
                         {/* Student 2 */}
                         <div className="space-y-1.5">
-                            <label className="text-xs font-bold uppercase tracking-widest text-gray-400">Student B</label>
+                            <label className="text-xs font-bold uppercase tracking-widest text-gray-600">Student B</label>
                             <select
                                 id="swap-student-b"
                                 value={swapStudentId2}
@@ -1507,15 +1507,15 @@ const StudentManagement = () => {
                             const s2 = students.find(x => x._id === swapStudentId2);
                             if (!s1 || !s2) return null;
                             return (
-                                <div className="bg-white/4 border border-white/10 rounded-xl p-4 space-y-2">
+                                <div className="bg-white/4 border border-gray-200 rounded-xl p-4 space-y-2">
                                     <p className="text-[11px] uppercase tracking-widest text-gray-500 font-bold mb-2">After swap</p>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="font-semibold text-white">{s1.name}</span>
+                                        <span className="font-semibold text-gray-900">{s1.name}</span>
                                         <span className="text-gray-500">→</span>
                                         <span className="font-bold text-green-400">Seat {getStudentSeat(s2._id)}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
-                                        <span className="font-semibold text-white">{s2.name}</span>
+                                        <span className="font-semibold text-gray-900">{s2.name}</span>
                                         <span className="text-gray-500">→</span>
                                         <span className="font-bold text-green-400">Seat {getStudentSeat(s1._id)}</span>
                                     </div>
@@ -1549,37 +1549,37 @@ const StudentManagement = () => {
                     <div className="space-y-4">
                         {selectedSessionStudent && (
                             <>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4">
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
                                         {selectedSessionStudent.name?.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
-                                        <h4 className="text-white font-bold truncate">{selectedSessionStudent.name}</h4>
-                                        <p className="text-gray-400 text-sm truncate">{selectedSessionStudent.email}</p>
+                                        <h4 className="text-gray-900 font-bold truncate">{selectedSessionStudent.name}</h4>
+                                        <p className="text-gray-600 text-sm truncate">{selectedSessionStudent.email}</p>
                                     </div>
                                 </div>
                                 <div className="grid gap-3">
-                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-400 text-sm">Status</span>
-                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-600 text-sm">Status</span>
+                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-600'}`}>
                                             {selectedSessionStudent.isOnline ? 'Online' : 'Offline'}
                                         </span>
                                     </div>
-                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-400 text-sm">Session</span>
-                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isLoggedIn ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-600 text-sm">Session</span>
+                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isLoggedIn ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-600'}`}>
                                             {selectedSessionStudent.isLoggedIn ? 'Logged In' : 'Logged Out'}
                                         </span>
                                     </div>
-                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-400 text-sm">Last Active</span>
-                                        <span className="text-white text-sm font-medium">
+                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-600 text-sm">Last Active</span>
+                                        <span className="text-gray-900 text-sm font-medium">
                                             {selectedSessionStudent.lastActive ? new Date(selectedSessionStudent.lastActive).toLocaleString() : 'N/A'}
                                         </span>
                                     </div>
-                                    <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-400 text-sm">Last Login</span>
-                                        <span className="text-white text-sm font-medium">
+                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                        <span className="text-gray-600 text-sm">Last Login</span>
+                                        <span className="text-gray-900 text-sm font-medium">
                                             {selectedSessionStudent.lastLogin ? new Date(selectedSessionStudent.lastLogin).toLocaleString() : 'N/A'}
                                         </span>
                                     </div>
@@ -1601,44 +1601,44 @@ const StudentManagement = () => {
                     <div className="space-y-4 max-h-[70vh] overflow-y-auto w-full p-2">
                         {selectedCreditStudent && (
                             <>
-                                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-4 mb-4">
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4 mb-4">
                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
                                         {selectedCreditStudent.name?.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <h4 className="text-white font-bold truncate">{selectedCreditStudent.name}</h4>
-                                        <p className="text-gray-400 text-sm truncate">{selectedCreditStudent.email}</p>
+                                        <h4 className="text-gray-900 font-bold truncate">{selectedCreditStudent.name}</h4>
+                                        <p className="text-gray-600 text-sm truncate">{selectedCreditStudent.email}</p>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Current Credits</div>
+                                        <div className="text-[10px] text-gray-600 uppercase font-bold tracking-wider mb-1">Current Credits</div>
                                         <div className="text-xl font-black text-purple-400">{Math.min(selectedCreditStudent.mockTestCredits ?? 2, 2)}<span className="text-sm text-gray-500 font-medium">/2</span></div>
                                     </div>
                                 </div>
 
                                 {creditLoading ? (
-                                    <div className="text-center p-8 text-gray-400">Loading history logs...</div>
+                                    <div className="text-center p-8 text-gray-600">Loading history logs...</div>
                                 ) : creditHistory.length === 0 ? (
-                                    <div className="text-center p-8 text-white/40 border border-white/5 bg-white/5 rounded-xl border-dashed">No mock test history found.</div>
+                                    <div className="text-center p-8 text-gray-900/40 border border-gray-100 bg-gray-50 rounded-xl border-dashed">No mock test history found.</div>
                                 ) : (
                                     <div className="space-y-3">
-                                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest pl-1">Attempt Logs</h4>
+                                        <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest pl-1">Attempt Logs</h4>
                                         {creditHistory.map(att => (
-                                            <div key={att._id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                                            <div key={att._id} className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-white font-bold text-sm tracking-wide">{att.patternName}</span>
+                                                        <span className="text-gray-900 font-bold text-sm tracking-wide">{att.patternName}</span>
                                                         <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded ${att.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-500'}`}>{att.status}</span>
                                                     </div>
-                                                    <div className="text-[11px] text-gray-400 font-medium">Generated: {new Date(att.startedAt).toLocaleString()}</div>
+                                                    <div className="text-[11px] text-gray-600 font-medium">Generated: {new Date(att.startedAt).toLocaleString()}</div>
                                                 </div>
 
                                                 {att.status === 'completed' && (
-                                                    <div className="flex gap-4 items-center bg-black/20 rounded-lg p-2 px-3 border border-white/5">
+                                                    <div className="flex gap-4 items-center bg-black/20 rounded-lg p-2 px-3 border border-gray-100">
                                                         <div className="text-center">
                                                             <div className="text-[10px] text-gray-500 font-bold uppercase">Score</div>
                                                             <div className="text-sm font-bold text-blue-400">{att.score} <span className="text-xs text-gray-500 font-medium">/{att.maxScore}</span></div>
                                                         </div>
-                                                        <div className="w-px h-8 bg-white/10" />
+                                                        <div className="w-px h-8 bg-gray-100" />
                                                         <div className="text-center">
                                                             <div className="text-[10px] text-gray-500 font-bold uppercase">Acc</div>
                                                             <div className={`text-sm font-bold ${att.percentage >= 60 ? 'text-green-400' : 'text-orange-400'}`}>{att.percentage}%</div>
@@ -1742,7 +1742,7 @@ const StudentManagement = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">{editMode ? 'New Password (Optional)' : 'Generated Password'}</label>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">{editMode ? 'New Password (Optional)' : 'Generated Password'}</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
@@ -1779,7 +1779,7 @@ const StudentManagement = () => {
                             </p>
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-1.5">Registration Date</label>
+                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Registration Date</label>
                             <input type="date" value={formData.joinedAt}
                                 max={new Date().toISOString().split('T')[0]}
                                 onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
@@ -1797,14 +1797,14 @@ const StudentManagement = () => {
                                         onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
                                         className={INPUT}
                                     >
-                                        <option value="" className="bg-[#050508]">No shift assigned</option>
+                                        <option value="" className="bg-gray-50">No shift assigned</option>
                                         {shifts.map(shift => (
-                                            <option key={shift.id} value={shift.id} className="bg-[#050508]">
+                                            <option key={shift.id} value={shift.id} className="bg-gray-50">
                                                 {shift.name} ({getShiftTimeRange(shift)})
                                             </option>
                                         ))}
                                         {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                            <option value="full" className="bg-[#050508]">Full Day (9 AM - 9 PM)</option>
+                                            <option value="full" className="bg-gray-50">Full Day (9 AM - 9 PM)</option>
                                         )}
                                     </select>
                                     <p className="text-xs text-gray-600 mt-1">Change the shift for the student's currently assigned seat. If they don't have a seat yet, use the Assign Seat button instead.</p>
@@ -1831,7 +1831,7 @@ const StudentManagement = () => {
                                     onChange={(e) => setFormData({ ...formData, sendMail: e.target.checked })}
                                     className="w-4 h-4 rounded border-gray-600 text-emerald-500 focus:ring-emerald-500 bg-transparent cursor-pointer"
                                 />
-                                <label htmlFor="sendMail" className="text-sm text-gray-300 cursor-pointer">
+                                <label htmlFor="sendMail" className="text-sm text-gray-700 cursor-pointer">
                                     Send Email Notification to Student
                                 </label>
                             </div>
@@ -1843,7 +1843,7 @@ const StudentManagement = () => {
                             <button type="button" onClick={() => setShowModal(false)} disabled={loading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
                         </div>
                         {!editMode && !formData.password && (
-                            <p className="text-sm text-gray-400">
+                            <p className="text-sm text-gray-600">
                                 Note: Password defaults to **Student's Mobile Number** if left empty.
                             </p>
                         )}
@@ -1858,13 +1858,13 @@ const StudentManagement = () => {
                 >
                     <form onSubmit={handleSeatAssignment} className="space-y-4">
                         {/* Selected Student Details */}
-                        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-4 flex items-center gap-4">
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4 flex items-center gap-4">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
                                 {selectedStudent?.name?.charAt(0)?.toUpperCase() || 'S'}
                             </div>
                             <div className="min-w-0">
-                                <h4 className="text-white font-bold truncate">{selectedStudent?.name}</h4>
-                                <p className="text-gray-400 text-sm truncate">{selectedStudent?.email}</p>
+                                <h4 className="text-gray-900 font-bold truncate">{selectedStudent?.name}</h4>
+                                <p className="text-gray-600 text-sm truncate">{selectedStudent?.email}</p>
                             </div>
                         </div>
 
@@ -1875,12 +1875,12 @@ const StudentManagement = () => {
                                 onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
                                 className={INPUT}
                             >
-                                <option value="" className="bg-[#050508]">Choose a seat...</option>
+                                <option value="" className="bg-gray-50">Choose a seat...</option>
                                 {availableSeats.length === 0 ? (
-                                    <option disabled className="bg-[#050508]">No available seats</option>
+                                    <option disabled className="bg-gray-50">No available seats</option>
                                 ) : (
                                     availableSeats.map(seat => (
-                                        <option key={seat._id} value={seat._id} className="bg-[#050508]">
+                                        <option key={seat._id} value={seat._id} className="bg-gray-50">
                                             {seat.displayName}
                                             {seat.isFullyBooked ? ' (Fully Booked)' : seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
                                         </option>
@@ -1901,18 +1901,18 @@ const StudentManagement = () => {
                                 onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
                                 className={INPUT}
                             >
-                                <option value="" className="bg-[#050508]">Select shift...</option>
+                                <option value="" className="bg-gray-50">Select shift...</option>
                                 {(() => {
                                     const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
                                     return availableShifts.map(shift => (
-                                        <option key={shift.id} value={shift.id} className="bg-[#050508]">
+                                        <option key={shift.id} value={shift.id} className="bg-gray-50">
                                             {shift.name} ({getShiftTimeRange(shift)})
                                         </option>
                                     ));
                                 })()}
                                 {!isCustom && !shifts.some(s => s.id === 'full') &&
                                     (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
-                                        <option value="full" className="bg-[#050508]">Full Day (9 AM - 9 PM)</option>
+                                        <option value="full" className="bg-gray-50">Full Day (9 AM - 9 PM)</option>
                                     )}
                             </select>
                             {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
@@ -1933,7 +1933,7 @@ const StudentManagement = () => {
                                 className={INPUT}
                                 placeholder="Leave empty for base price"
                             />
-                            <p className="text-sm text-gray-400 mt-1">
+                            <p className="text-sm text-gray-600 mt-1">
                                 If left empty, base price for selected shift will be used
                             </p>
                         </div>
@@ -1960,15 +1960,15 @@ const StudentManagement = () => {
                             <h3 className="text-lg font-semibold text-red-400 mb-3">Student Details</h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">Name:</span>
+                                    <span className="text-gray-600">Name:</span>
                                     <span className="font-medium">{selectedStudent?.name}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">Email:</span>
+                                    <span className="text-gray-600">Email:</span>
                                     <span className="font-medium">{selectedStudent?.email}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                    <span className="text-gray-400">Status</span>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                                    <span className="text-gray-600">Status</span>
                                     {selectedStudent?.registrationSource === 'self' && !selectedStudent?.seat ? (
                                         <span className="text-yellow-400 font-medium">Pending Allocation</span>
                                     ) : (
@@ -1978,7 +1978,7 @@ const StudentManagement = () => {
                                     )}
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-gray-400">Joined:</span>
+                                    <span className="text-gray-600">Joined:</span>
                                     <span className="font-medium">
                                         {selectedStudent && new Date(selectedStudent.createdAt).toLocaleDateString()}
                                     </span>
@@ -2011,7 +2011,7 @@ const StudentManagement = () => {
                                     onChange={(e) => setHardDelete(e.target.checked)}
                                     className="w-4 h-4 text-red-600 rounded focus:ring-red-500 bg-gray-700 border-gray-600"
                                 />
-                                <label htmlFor="hardDelete" className="text-sm text-gray-300 select-none cursor-pointer">
+                                <label htmlFor="hardDelete" className="text-sm text-gray-700 select-none cursor-pointer">
                                     Permanently delete from database (Skip inactive state)
                                 </label>
                             </div>
@@ -2066,12 +2066,12 @@ const StudentManagement = () => {
                     <div className="space-y-4">
                         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
                             <p className="text-yellow-400 font-semibold mb-2">⚠️ Reset Password Confirmation</p>
-                            <p className="text-sm text-gray-300">
+                            <p className="text-sm text-gray-700">
                                 This will generate a new random password for <strong>{selectedStudent?.name}</strong> and send it to their email:
                                 <br />
                                 <span className="text-blue-400">{selectedStudent?.email}</span>
                             </p>
-                            <p className="text-xs text-gray-400 mt-2">
+                            <p className="text-xs text-gray-600 mt-2">
                                 The student will also receive an in-app notification.
                             </p>
                         </div>
@@ -2100,7 +2100,7 @@ const StudentManagement = () => {
                     {selectedArchive && (
                         <div className="space-y-6">
                             {/* Header Info */}
-                            <div className="flex items-center gap-4 p-4 bg-white/5 rounded-lg">
+                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                                 {selectedArchive.profileImage ? (
                                     <img
                                         src={selectedArchive.profileImage.startsWith('http') ? selectedArchive.profileImage : `${BASE_URL}${selectedArchive.profileImage}`}
@@ -2114,7 +2114,7 @@ const StudentManagement = () => {
                                 )}
                                 <div>
                                     <h3 className="text-xl font-bold">{selectedArchive.name}</h3>
-                                    <p className="text-gray-400">{selectedArchive.email}</p>
+                                    <p className="text-gray-600">{selectedArchive.email}</p>
                                     <div className="flex gap-4 text-xs text-gray-500 mt-1">
                                         <span>Joined: {new Date(selectedArchive.joinedAt).toLocaleDateString()}</span>
                                         <span className="text-red-400">Deleted: {new Date(selectedArchive.deletedAt).toLocaleDateString()}</span>
@@ -2127,24 +2127,24 @@ const StudentManagement = () => {
                                 <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
                                     <h4 className="text-blue-400 text-sm font-semibold mb-2">Total Fees Recorded</h4>
                                     <p className="text-2xl font-bold">₹{selectedArchive.fees.reduce((acc, f) => acc + f.amount, 0)}</p>
-                                    <p className="text-xs text-gray-400">{selectedArchive.fees.length} transactions</p>
+                                    <p className="text-xs text-gray-600">{selectedArchive.fees.length} transactions</p>
                                 </div>
                                 <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
                                     <h4 className="text-purple-400 text-sm font-semibold mb-2">Attendance Days</h4>
                                     <p className="text-2xl font-bold">{selectedArchive.attendance.filter(a => a.status === 'present').length}</p>
-                                    <p className="text-xs text-gray-400">Out of {selectedArchive.attendance.length} recorded days</p>
+                                    <p className="text-xs text-gray-600">Out of {selectedArchive.attendance.length} recorded days</p>
                                 </div>
                             </div>
 
                             {/* Fee History */}
                             <div>
-                                <h4 className="font-semibold mb-3 border-b border-white/10 pb-2">Fee History</h4>
+                                <h4 className="font-semibold mb-3 border-b border-gray-200 pb-2">Fee History</h4>
                                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                                     {selectedArchive.fees.length === 0 ? (
                                         <p className="text-sm text-gray-500">No fee records found.</p>
                                     ) : (
                                         selectedArchive.fees.map((fee, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
+                                            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
                                                 <span>{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-mono">₹{fee.amount}</span>
@@ -2158,13 +2158,13 @@ const StudentManagement = () => {
 
                             {/* Attendance History */}
                             <div>
-                                <h4 className="font-semibold mb-3 border-b border-white/10 pb-2">Recent Attendance</h4>
+                                <h4 className="font-semibold mb-3 border-b border-gray-200 pb-2">Recent Attendance</h4>
                                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                                     {selectedArchive.attendance.length === 0 ? (
                                         <p className="text-sm text-gray-500">No attendance records found.</p>
                                     ) : (
                                         selectedArchive.attendance.slice(0, 20).map((att, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2 bg-white/5 rounded text-sm">
+                                            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
                                                 <span>{new Date(att.date).toLocaleDateString()}</span>
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${att.status === 'present' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{att.status}</span>
                                             </div>
@@ -2184,7 +2184,7 @@ const StudentManagement = () => {
                     <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
                         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
                             <p className="text-sm text-blue-300">
-                                You have selected <span className="font-bold text-white">{selectedStudentIds.length}</span> student(s).
+                                You have selected <span className="font-bold text-gray-900">{selectedStudentIds.length}</span> student(s).
                                 This will instantly adjust the current active seat price for all of them.
                             </p>
                         </div>
@@ -2196,8 +2196,8 @@ const StudentManagement = () => {
                                 onChange={(e) => setBulkFeeOperation(e.target.value)}
                                 className={INPUT}
                             >
-                                <option value="increase" className="bg-[#050508]">Increase Fee (+)</option>
-                                <option value="decrease" className="bg-[#050508]">Decrease Fee (-)</option>
+                                <option value="increase" className="bg-gray-50">Increase Fee (+)</option>
+                                <option value="decrease" className="bg-gray-50">Decrease Fee (-)</option>
                             </select>
                         </div>
 
@@ -2246,15 +2246,15 @@ const StudentManagement = () => {
                                     </div>
                                 </div>
 
-                                <h2 className="text-xl font-bold text-white text-center mb-2">Reset All Passwords</h2>
-                                <p className="text-gray-400 text-sm text-center mb-1">
+                                <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Reset All Passwords</h2>
+                                <p className="text-gray-600 text-sm text-center mb-1">
                                     This will set every student's login password to their registered mobile number.
                                 </p>
                                 <p className="text-orange-400 text-xs text-center mb-6 font-semibold">
                                     ⚠ This action affects ALL students with a mobile number and cannot be undone.
                                 </p>
 
-                                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-6 text-sm text-gray-300 space-y-1">
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-sm text-gray-700 space-y-1">
                                     <p>• Students without a mobile number will be skipped.</p>
                                     <p>• Each password will become the student's 10-digit mobile number.</p>
                                     <p>• Students must use their mobile number to log in after this.</p>
@@ -2264,7 +2264,7 @@ const StudentManagement = () => {
                                     <button
                                         onClick={() => setShowBulkResetModal(false)}
                                         disabled={bulkResetLoading}
-                                        className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                                        className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
                                     >
                                         Cancel
                                     </button>
