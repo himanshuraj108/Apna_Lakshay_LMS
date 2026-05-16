@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { useEffect, lazy, Suspense, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import SubAdminPinGuard from './components/admin/SubAdminPinGuard';
 import { useSocket } from './hooks/useSocket';
 import PwaInstallBanner from './components/ui/PwaInstallBanner';
 
@@ -107,6 +108,8 @@ const ChatManagement = lazy(() => import('./pages/admin/ChatManagement'));
 const ManageCards = lazy(() => import('./pages/admin/ManageCards'));
 const StudentChatHistory = lazy(() => import('./pages/admin/StudentChatHistory'));
 const VacantSeats = lazy(() => import('./pages/admin/VacantSeats'));
+const SubAdminManagement = lazy(() => import('./pages/admin/SubAdminManagement'));
+const SubAdminDashboard = lazy(() => import('./pages/admin/SubAdminDashboard'));
 
 // Student Pages - Lazy Loaded
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
@@ -131,7 +134,7 @@ function App() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Force Desktop Mode for Admin Routes
+    // Ensure viewport is always responsive across all routes
     useEffect(() => {
         let viewport = document.querySelector('meta[name="viewport"]');
         if (!viewport) {
@@ -139,17 +142,10 @@ function App() {
             viewport.name = 'viewport';
             document.head.appendChild(viewport);
         }
-
-        if (location.pathname.startsWith('/admin')) {
-            // Force desktop layout with a wide viewport
-            viewport.setAttribute('content', 'width=1280');
-            // Add a class to body for any targeted CSS overrides if needed
-            document.body.classList.add('admin-desktop-mode');
-        } else {
-            // Restore normal responsive layout
-            viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
-            document.body.classList.remove('admin-desktop-mode');
-        }
+        
+        // Always use standard responsive layout
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
+        document.body.classList.remove('admin-desktop-mode');
     }, [location.pathname]);
 
     // Initialize global socket connection for online status tracking
@@ -187,7 +183,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/public-seats" element={<PublicSeatView />} />
-                <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/student'} /> : <Login />} />
+                <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : user.role === 'subadmin' ? '/sub-admin' : '/student'} /> : <Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/maintenance" element={<MaintenancePage />} />
@@ -198,24 +194,31 @@ function App() {
                 <Route path="/office/attendance" element={<SecurityAttendance />} />
                 <Route path="/office/vacant-seats" element={<PublicVacantSeats />} />
 
-                {/* Admin Routes */}
-                <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentManagement /></ProtectedRoute>} />
-                <Route path="/admin/floors" element={<ProtectedRoute adminOnly><FloorManagement /></ProtectedRoute>} />
-                <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><AttendanceManagement /></ProtectedRoute>} />
-                <Route path="/admin/analytics" element={<ProtectedRoute adminOnly><AnalyticsDashboard /></ProtectedRoute>} />
-                <Route path="/admin/fees" element={<ProtectedRoute adminOnly><FeeManagement /></ProtectedRoute>} />
-                <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><NotificationManagement /></ProtectedRoute>} />
-                <Route path="/admin/requests" element={<ProtectedRoute adminOnly><RequestManagement /></ProtectedRoute>} />
-                <Route path="/admin/kiosk" element={<ProtectedRoute adminOnly><QrKiosk /></ProtectedRoute>} />
-                <Route path="/admin/shifts" element={<ProtectedRoute adminOnly><ShiftManagement /></ProtectedRoute>} />
-                <Route path="/admin/history" element={<ProtectedRoute adminOnly><ActionHistory /></ProtectedRoute>} />
-                <Route path="/admin/password-activity" element={<ProtectedRoute adminOnly><PasswordActivity /></ProtectedRoute>} />
-                <Route path="/admin/verify/:id" element={<ProtectedRoute adminOnly><VerifyStudent /></ProtectedRoute>} />
-                <Route path="/admin/chat" element={<ProtectedRoute adminOnly><ChatManagement /></ProtectedRoute>} />
-                <Route path="/admin/chat-history" element={<ProtectedRoute adminOnly><StudentChatHistory /></ProtectedRoute>} />
-                <Route path="/admin/manage-cards" element={<ProtectedRoute adminOnly><ManageCards /></ProtectedRoute>} />
-                <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><VacantSeats /></ProtectedRoute>} />
+                {/* Admin Routes — Super Admin ONLY (sub-admins are redirected to /sub-admin) */}
+                <Route path="/admin" element={<ProtectedRoute superAdminOnly><AdminDashboard /></ProtectedRoute>} />
+                <Route path="/admin/floors" element={<ProtectedRoute superAdminOnly><FloorManagement /></ProtectedRoute>} />
+                <Route path="/admin/analytics" element={<ProtectedRoute superAdminOnly><AnalyticsDashboard /></ProtectedRoute>} />
+                <Route path="/admin/kiosk" element={<ProtectedRoute superAdminOnly><QrKiosk /></ProtectedRoute>} />
+                <Route path="/admin/shifts" element={<ProtectedRoute superAdminOnly><ShiftManagement /></ProtectedRoute>} />
+                <Route path="/admin/history" element={<ProtectedRoute superAdminOnly><ActionHistory /></ProtectedRoute>} />
+                <Route path="/admin/password-activity" element={<ProtectedRoute superAdminOnly><PasswordActivity /></ProtectedRoute>} />
+                <Route path="/admin/verify/:id" element={<ProtectedRoute superAdminOnly><VerifyStudent /></ProtectedRoute>} />
+                <Route path="/admin/chat" element={<ProtectedRoute superAdminOnly><ChatManagement /></ProtectedRoute>} />
+                <Route path="/admin/chat-history" element={<ProtectedRoute superAdminOnly><StudentChatHistory /></ProtectedRoute>} />
+                <Route path="/admin/manage-cards" element={<ProtectedRoute superAdminOnly><ManageCards /></ProtectedRoute>} />
+                <Route path="/admin/sub-admins" element={<ProtectedRoute superAdminOnly><SubAdminManagement /></ProtectedRoute>} />
+
+                {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
+                <Route path="/admin/students" element={<ProtectedRoute adminOnly><SubAdminPinGuard><StudentManagement /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><SubAdminPinGuard><AttendanceManagement /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/admin/fees" element={<ProtectedRoute adminOnly><SubAdminPinGuard><FeeManagement /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><SubAdminPinGuard><NotificationManagement /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/admin/requests" element={<ProtectedRoute adminOnly><SubAdminPinGuard><RequestManagement /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><SubAdminPinGuard><VacantSeats /></SubAdminPinGuard></ProtectedRoute>} />
+
+                {/* Sub-Admin Dashboard */}
+                <Route path="/sub-admin" element={<ProtectedRoute><SubAdminPinGuard><SubAdminDashboard /></SubAdminPinGuard></ProtectedRoute>} />
+
 
                 {/* Student Routes */}
                 <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />

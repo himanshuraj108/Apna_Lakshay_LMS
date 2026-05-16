@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import PWAInstallPrompt from './ui/PWAInstallPrompt';
+import SubAdminPinGuard from './admin/SubAdminPinGuard';
 
-const ProtectedRoute = ({ children, adminOnly = false, requireSeat = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false, requireSeat = false }) => {
     const { user, loading, isAdmin } = useAuth();
 
     if (loading) {
@@ -17,28 +18,33 @@ const ProtectedRoute = ({ children, adminOnly = false, requireSeat = false }) =>
         return <Navigate to="/login" replace />;
     }
 
-    if (adminOnly && !isAdmin) {
+    const isSubAdmin = user.role === 'subadmin';
+
+    // Super-admin-only routes: sub-admins get bounced to their own dashboard
+    if (superAdminOnly && !isAdmin) {
+        return <Navigate to={isSubAdmin ? '/sub-admin' : '/'} replace />;
+    }
+
+    // adminOnly routes: allow super-admin OR sub-admin
+    if (adminOnly && !isAdmin && !isSubAdmin) {
         return <Navigate to="/" replace />;
     }
 
-    if (requireSeat && user.role !== 'admin') {
+    // requireSeat check — skip for admin and sub-admin roles
+    if (requireSeat && user.role !== 'admin' && !isSubAdmin) {
         const hasSeat = user.seat || user.seatNumber;
         if (!hasSeat) {
             return <Navigate to="/pending-allocation" replace />;
         }
-        // Also block inactive users if seat is required (redundant if backend blocks, but good for UI)
-        if (!user.isActive) {
-            // Maybe redirect to profile or show toast?
-            // For now, let's focus on Pending Allocation as requested.
-        }
     }
 
     return (
-        <>
+        <SubAdminPinGuard>
             {children}
             <PWAInstallPrompt />
-        </>
+        </SubAdminPinGuard>
     );
 };
 
 export default ProtectedRoute;
+
