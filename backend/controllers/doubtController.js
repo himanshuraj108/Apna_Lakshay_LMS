@@ -205,3 +205,26 @@ exports.getStudentsWithChatHistory = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// DELETE /api/admin/chat-history/:studentId/:sessionId — delete one session
+exports.deleteStudentSession = async (req, res) => {
+    try {
+        const { studentId, sessionId } = req.params;
+        await DoubtSession.findOneAndDelete({ student: studentId, sessionId });
+        res.json({ success: true, message: 'Session deleted' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// DELETE /api/admin/chat-history/:studentId/all — delete all sessions for a student
+exports.deleteAllStudentSessions = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        const result = await DoubtSession.deleteMany({ student: studentId });
+        res.json({ success: true, message: `Deleted ${result.deletedCount} sessions` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
