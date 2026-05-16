@@ -8,6 +8,7 @@ import {
     IoGridOutline, IoListOutline, IoCheckmarkCircle,
     IoCloseCircle, IoChevronDown, IoOpenOutline, IoInformationCircleOutline
 } from 'react-icons/io5';
+import useBackPath from '../../hooks/useBackPath';
 
 // ─── Color Legend ─────────────────────────────────────────────────────────────
 const Legend = () => (
@@ -51,6 +52,7 @@ const StepGuide = () => (
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const VacantSeats = () => {
+    const backPath = useBackPath();
     const [data, setData]         = useState(null);
     const [loading, setLoading]   = useState(true);
     const [error, setError]       = useState('');
@@ -108,7 +110,7 @@ const VacantSeats = () => {
                 <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
                     className="flex items-center justify-between gap-4 mb-6 flex-wrap">
                     <div className="flex items-center gap-4">
-                        <Link to="/admin">
+                        <Link to={backPath}>
                             <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium shadow-sm hover:bg-gray-50 transition-all">
                                 <IoArrowBack size={16} /> Back to Dashboard
                             </button>

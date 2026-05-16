@@ -57,6 +57,41 @@ exports.login = async (req, res) => {
             ] 
         }).select('+password');
 
+        // ── SUB-ADMIN FALLBACK ─────────────────────────────────────────────────
+        // If no regular user found, check if identifier matches a sub-admin username
+        if (!user) {
+            const SubAdmin = require('../models/SubAdmin');
+            const sub = await SubAdmin.findOne({ username: identifier.toLowerCase() });
+            if (sub) {
+                if (!sub.isActive) {
+                    return res.status(403).json({ success: false, message: 'Sub-admin account is deactivated.' });
+                }
+                const match = await sub.comparePassword(password);
+                if (!match) {
+                    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+                }
+                const jwt = require('jsonwebtoken');
+                const token = jwt.sign(
+                    { id: sub._id, role: 'subadmin', permissions: sub.permissions },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '8h' }
+                );
+                return res.status(200).json({
+                    success: true,
+                    token,
+                    user: {
+                        id: sub._id,
+                        name: sub.name,
+                        email: sub.username, // frontend reads email field for display
+                        role: 'subadmin',
+                        permissions: sub.permissions,
+                        isActive: sub.isActive,
+                    }
+                });
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // SPECIAL CASE: If credential matches ENV, but user doesn't exist in DB, likely DB was cleared.
         // We could auto-create the admin here?
         if (!user &&
@@ -143,10 +178,30 @@ exports.login = async (req, res) => {
     }
 };
 
+
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 exports.getMe = async (req, res) => {
     try {
+        // ── Sub-admin shortcut ────────────────────────────────────────────────
+        if (req.user.role === 'subadmin') {
+            const SubAdmin = require('../models/SubAdmin');
+            const sub = await SubAdmin.findById(req.user.id);
+            return res.status(200).json({
+                success: true,
+                user: {
+                    id: req.user.id,
+                    name: req.user.name,
+                    email: req.user.name, // sub-admins have no email field
+                    role: 'subadmin',
+                    permissions: req.user.permissions,
+                    isActive: true,
+                    hasPin: sub ? !!sub.pin : false
+                }
+            });
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         const user = await User.findById(req.user.id).select('+qrToken');
 
         // Check and Reset Daily Mock Test Credits (00:00 IST) (non-blocking update)
@@ -234,6 +289,7 @@ exports.getMe = async (req, res) => {
     }
 
 };
+
 
 // @desc    Logout user
 // @route   POST /api/auth/logout

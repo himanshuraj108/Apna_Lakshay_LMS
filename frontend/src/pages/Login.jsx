@@ -90,7 +90,7 @@ export default function Login() {
         const result = await login(email, password);
         if (result.success) {
             const user = JSON.parse(localStorage.getItem('user'));
-            navigate(user.role === 'admin' ? '/admin' : '/student');
+            navigate(user.role === 'admin' ? '/admin' : user.role === 'subadmin' ? '/sub-admin' : '/student');
         } else {
             setError(result.message);
             setShake(true);

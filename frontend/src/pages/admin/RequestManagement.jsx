@@ -8,6 +8,7 @@ import {
     IoTimeOutline, IoStar
 } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
+import useBackPath from '../../hooks/useBackPath';
 
 const PAGE_BG = { background: '#F8FAFC' };
 
@@ -38,6 +39,7 @@ const RequestManagement = () => {
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
     const { getShiftName } = useShifts();
+    const backPath = useBackPath();
 
     useEffect(() => { fetchRequests(); }, []);
 
@@ -92,11 +94,11 @@ const RequestManagement = () => {
 
             <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
-                    <Link to="/admin">
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8 flex-wrap">
+                    <Link to={backPath}>
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                            <IoArrowBack size={16} /> Back
+                            className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
+                            <IoArrowBack size={16} /> <span className="hidden sm:inline">Back</span>
                         </motion.button>
                     </Link>
                     <div>

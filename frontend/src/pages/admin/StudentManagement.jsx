@@ -9,6 +9,8 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import useShifts from '../../hooks/useShifts';
+import useBackPath from '../../hooks/useBackPath';
+import { useAuth } from '../../context/AuthContext';
 
 const PAGE_BG = { background: '#F8FAFC' };
 const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
@@ -18,7 +20,10 @@ const BTN_SECONDARY = 'px-4 py-2.5 rounded-xl text-sm text-gray-700 bg-white hov
 const BTN_DANGER = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
 
 const StudentManagement = () => {
+    const { user } = useAuth();
+    const isSubAdmin = user?.role === 'subadmin';
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
+    const backPath = useBackPath();
     const [searchParams] = useSearchParams();
     const mode = searchParams.get('mode') || 'custom';
     const shiftFilter = searchParams.get('shift'); // Shift ID from URL
@@ -1004,12 +1009,12 @@ const StudentManagement = () => {
             </div>
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin">
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                        <Link to={backPath}>
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                                <IoArrowBack size={16} /> Back
+                                className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
+                                <IoArrowBack size={16} /> <span className="hidden sm:inline">Back</span>
                             </motion.button>
                         </Link>
                         <div>
@@ -1116,8 +1121,8 @@ const StudentManagement = () => {
                         { id: 'pending', label: `Pending (${students.filter(s => !getStudentSeat(s._id) && s.isActive).length})` },
                         { id: 'inactive', label: `Inactive (${students.filter(s => !s.isActive).length})` },
                         { id: 'id-cards', label: 'ID Cards', icon: <IoIdCard size={13} /> },
-                        { id: 'history', label: 'Deleted', icon: <IoTrash size={13} /> },
-                    ].map(tab => (
+                        !isSubAdmin && { id: 'history', label: 'Deleted', icon: <IoTrash size={13} /> },
+                    ].filter(Boolean).map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
                                 ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'

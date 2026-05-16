@@ -33,4 +33,8 @@ router.post('/send-otp-phone', sendOtpByPhone);
 router.post('/verify-otp-login', verifyOtpAndAutoLogin);
 router.post('/verify-seat-login', verifySeatLogin);
 
+// Sub-Admin login (public)
+const { loginSubAdmin } = require('../controllers/subAdminController');
+router.post('/sub-admin-login', loginSubAdmin);
+
 module.exports = router;

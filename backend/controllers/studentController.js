@@ -1699,6 +1699,7 @@ exports.markAttendanceByQr = async (req, res) => {
                     entryTime: entryTime,
                     notes: `Marked via Kiosk QR (${shiftLabel})`,
                     markedBy: studentId,
+                    selfMarked: true,
                     duration: 0,
                     distanceMeters: geoDistance !== null ? geoDistance : undefined
                 });
@@ -1845,6 +1846,7 @@ exports.markSelfAttendance = async (req, res) => {
                     entryTime: entryTime,
                     notes: `Self Checked In (${shiftLabel})`,
                     markedBy: studentId,
+                    selfMarked: true,
                     duration: 0,
                     distanceMeters: geoDistance !== null ? geoDistance : undefined
                 });
@@ -1982,12 +1984,13 @@ exports.markAttendanceByPin = async (req, res) => {
                 existing.status = 'present';
                 existing.notes = 'Manual Check-In (PIN)';
                 existing.markedBy = studentId;
+                existing.selfMarked = true;
                 await existing.save();
                 attendance = existing;
             } else {
                 attendance = await Attendance.create({
                     student: studentId, date: today, status: 'present',
-                    entryTime, notes: 'Manual Check-In (PIN)', markedBy: studentId, duration: 0
+                    entryTime, notes: 'Manual Check-In (PIN)', markedBy: studentId, selfMarked: true, duration: 0
                 });
             }
             message = `Welcome, ${user.name}! Entry marked at ${entryTime} via PIN.`;
@@ -2087,11 +2090,12 @@ exports.markAttendanceDirectly = async (req, res) => {
             if (existing) {
                 existing.entryTime = entryTime; existing.status = 'present';
                 existing.notes = 'Manual Check-In (Direct)'; existing.markedBy = studentId;
+                existing.selfMarked = true;
                 await existing.save(); attendance = existing;
             } else {
                 attendance = await Attendance.create({
                     student: studentId, date: today, status: 'present',
-                    entryTime, notes: 'Manual Check-In (Direct)', markedBy: studentId, duration: 0
+                    entryTime, notes: 'Manual Check-In (Direct)', markedBy: studentId, selfMarked: true, duration: 0
                 });
             }
             message = `Welcome, ${user.name}! Entry marked at ${entryTime}.`;

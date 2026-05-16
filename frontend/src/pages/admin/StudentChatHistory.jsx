@@ -70,7 +70,7 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
 );
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-const StudentChatHistory = () => {
+const StudentChatHistory = ({ embedded = false }) => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading]   = useState(true);
     const [search, setSearch]     = useState('');
@@ -151,7 +151,7 @@ const StudentChatHistory = () => {
     );
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className={`flex overflow-hidden bg-gray-50 ${embedded ? 'h-[640px] rounded-2xl border border-gray-200 shadow-sm' : 'h-screen'}`} style={{ fontFamily: "'Inter', sans-serif" }}>
 
             {/* Toast */}
             <AnimatePresence>
@@ -185,9 +185,11 @@ const StudentChatHistory = () => {
             <div className="w-60 flex-shrink-0 flex flex-col bg-white border-r border-gray-200 h-full">
                 {/* Header */}
                 <div className="flex items-center gap-2 px-3 h-14 border-b border-gray-200 flex-shrink-0">
-                    <Link to="/admin" className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
-                        <IoArrowBack size={16} />
-                    </Link>
+                    {!embedded && (
+                        <Link to="/admin" className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                            <IoArrowBack size={16} />
+                        </Link>
+                    )}
                     <div className="p-1 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg">
                         <IoChatbubblesOutline size={12} className="text-white" />
                     </div>
