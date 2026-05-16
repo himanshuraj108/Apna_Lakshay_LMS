@@ -8,7 +8,7 @@ import {
     IoCalendarOutline
 } from 'react-icons/io5';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const AnalyticsDashboard = () => {
     const [loading, setLoading] = useState(true);
@@ -46,7 +46,7 @@ const AnalyticsDashboard = () => {
         <div className="min-h-screen flex items-center justify-center" style={PAGE_BG}>
             <div className="text-center">
                 <p className="text-red-400 mb-4">{error || 'No analytics data'}</p>
-                <button onClick={fetchAnalytics} className="px-4 py-2 bg-white/5 border border-white/10 text-gray-300 rounded-xl">Retry</button>
+                <button onClick={fetchAnalytics} className="px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl">Retry</button>
             </div>
         </div>
     );
@@ -78,16 +78,16 @@ const AnalyticsDashboard = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/admin/attendance">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                                 <IoArrowBack size={16} /> Back
                             </motion.button>
                         </Link>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg"><IoAnalyticsOutline size={14} className="text-white" /></div>
+                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg"><IoAnalyticsOutline size={14} className="text-gray-900" /></div>
                                 <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Analytics Dashboard</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Analytics Dashboard</h1>
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -95,7 +95,7 @@ const AnalyticsDashboard = () => {
                             <button key={p} onClick={() => setPeriod(p)}
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${period === p
                                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
-                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400'}`}>
+                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'}`}>
                                 {p === 'week' ? 'Last 7 Days' : 'Last 30 Days'}
                             </button>
                         ))}
@@ -109,7 +109,7 @@ const AnalyticsDashboard = () => {
                             className="relative bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 overflow-hidden group">
                             <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60 group-hover:opacity-100 transition-opacity`} />
                             <div className={`p-2 rounded-xl bg-gradient-to-br ${color} w-fit mb-3`} style={{ boxShadow: `0 6px 20px -4px ${glow}` }}>
-                                <Icon size={16} className="text-white" />
+                                <Icon size={16} className="text-gray-900" />
                             </div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{label}</p>
                             <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent`}>{value}</p>
@@ -125,12 +125,12 @@ const AnalyticsDashboard = () => {
                         className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-5">
                             <IoAnalyticsOutline size={16} className="text-blue-400" />
-                            <h3 className="font-bold text-white text-sm">Attendance Trends</h3>
+                            <h3 className="font-bold text-gray-900 text-sm">Attendance Trends</h3>
                         </div>
                         <div className="h-48 flex items-end gap-1">
                             {dailyTrends.map((day, i) => (
                                 <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                                    <div className="absolute -top-10 bg-gray-900 border border-white/10 text-xs p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl">
+                                    <div className="absolute -top-10 bg-white border border-gray-200 text-xs p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl">
                                         {day._id}: {day.presentCount} students
                                     </div>
                                     <motion.div initial={{ height: 0 }} animate={{ height: `${(day.presentCount / maxDayValue) * 100}%` }}
@@ -147,13 +147,13 @@ const AnalyticsDashboard = () => {
                         className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
                         <div className="flex items-center gap-2 mb-5">
                             <IoTimeOutline size={16} className="text-green-400" />
-                            <h3 className="font-bold text-white text-sm">Peak Hours (Last 30 Days)</h3>
+                            <h3 className="font-bold text-gray-900 text-sm">Peak Hours (Last 30 Days)</h3>
                         </div>
                         <div className="space-y-2 h-48 overflow-y-auto pr-1">
                             {peakHours.map((hour, i) => (
                                 <div key={i} className="flex items-center gap-3">
                                     <span className="text-xs font-mono text-gray-500 w-14 shrink-0">{formatHour(hour._id)}</span>
-                                    <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="flex-1 h-5 bg-gray-50 rounded-full overflow-hidden">
                                         <motion.div initial={{ width: 0 }} animate={{ width: `${(hour.count / maxPeakValue) * 100}%` }}
                                             transition={{ duration: 0.8, delay: i * 0.03 }}
                                             className="h-full bg-gradient-to-r from-green-600 to-emerald-400 rounded-full flex items-center justify-end pr-2">
@@ -171,12 +171,12 @@ const AnalyticsDashboard = () => {
                     className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
                     <div className="px-5 py-4 border-b border-white/8 flex items-center gap-2">
                         <IoTrendingUpOutline size={16} className="text-yellow-400" />
-                        <h3 className="font-bold text-white text-sm">Top Students — Study Hours</h3>
+                        <h3 className="font-bold text-gray-900 text-sm">Top Students — Study Hours</h3>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-white/5">
+                                <tr className="border-b border-gray-100">
                                     {['Rank', 'Student', 'Days', 'Total Hours'].map(h => (
                                         <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${h === 'Total Hours' ? 'text-right' : 'text-left'}`}>{h}</th>
                                     ))}
@@ -184,15 +184,15 @@ const AnalyticsDashboard = () => {
                             </thead>
                             <tbody>
                                 {topStudents.map((s, i) => (
-                                    <tr key={i} className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                    <tr key={i} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
                                         <td className="px-5 py-3">
-                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-black ${i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-gray-400 text-black' : i === 2 ? 'bg-orange-500 text-black' : 'bg-white/5 text-gray-500'}`}>{i + 1}</span>
+                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-black ${i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-gray-400 text-black' : i === 2 ? 'bg-orange-500 text-black' : 'bg-gray-50 text-gray-500'}`}>{i + 1}</span>
                                         </td>
                                         <td className="px-5 py-3">
-                                            <p className="font-semibold text-white text-sm">{s.name}</p>
+                                            <p className="font-semibold text-gray-900 text-sm">{s.name}</p>
                                             <p className="text-xs text-gray-600">{s.email}</p>
                                         </td>
-                                        <td className="px-5 py-3 text-sm text-gray-300">{s.daysPresent}</td>
+                                        <td className="px-5 py-3 text-sm text-gray-700">{s.daysPresent}</td>
                                         <td className="px-5 py-3 text-right font-mono font-bold text-purple-400">{Math.floor(s.totalDuration / 60)}h {s.totalDuration % 60}m</td>
                                     </tr>
                                 ))}

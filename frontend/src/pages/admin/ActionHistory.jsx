@@ -8,7 +8,7 @@ import {
     IoTimeOutline, IoChevronDownOutline
 } from 'react-icons/io5';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 const INPUT = "w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-purple-500/50 outline-none transition-all placeholder-gray-700";
 
 const ACTION_STYLES = {
@@ -78,13 +78,13 @@ const ActionHistory = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/admin">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                                 <IoArrowBack size={16} /> Back
                             </motion.button>
                         </Link>
                         <div>
                             <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Admin</span>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Action History</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Action History</h1>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -144,7 +144,7 @@ const ActionHistory = () => {
                                         const a = ACTION_STYLES[log.action] || { label: log.action, color: 'text-gray-400 bg-white/5 border-white/10' };
                                         return (
                                             <motion.tr key={log._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                                className="border-b border-white/5 hover:bg-white/3 transition-colors">
+                                                className="border-b border-gray-100 hover:bg-white/3 transition-colors">
                                                 <td className="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap"><IoTimeOutline className="inline mr-1" size={12} />{fmt(log.createdAt)}</td>
                                                 <td className="px-5 py-3.5">
                                                     <span className="flex items-center gap-1.5 text-purple-300 text-sm"><IoPersonOutline size={14} />{log.adminName}</span>
@@ -152,7 +152,7 @@ const ActionHistory = () => {
                                                 <td className="px-5 py-3.5">
                                                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${a.color}`}>{a.label}</span>
                                                 </td>
-                                                <td className="px-5 py-3.5 text-sm text-gray-300">
+                                                <td className="px-5 py-3.5 text-sm text-gray-700">
                                                     {log.targetName || '–'}
                                                     {log.targetModel && <span className="text-[10px] text-gray-600 block">{log.targetModel}</span>}
                                                 </td>

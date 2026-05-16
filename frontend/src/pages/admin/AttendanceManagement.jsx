@@ -13,7 +13,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const AttendanceManagement = () => {
     const navigate = useNavigate();
@@ -354,18 +354,18 @@ const AttendanceManagement = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/admin">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                                 <IoArrowBack size={16} /> Back
                             </motion.button>
                         </Link>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
                                 <div className="p-1.5 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
-                                    <IoCalendarOutline size={14} className="text-white" />
+                                    <IoCalendarOutline size={14} className="text-gray-900" />
                                 </div>
                                 <span className="text-xs font-bold uppercase tracking-widest text-orange-400">Admin</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Attendance Management</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Attendance Management</h1>
                         </div>
                     </div>
                     <Link to="/admin/analytics">
@@ -390,9 +390,9 @@ const AttendanceManagement = () => {
                             <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Select Date</label>
                             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
                                 max={new Date().toISOString().split('T')[0]}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all" />
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-900 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all" />
                         </div>
-                        <button onClick={loadAttendance} className="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all mt-5"><IoRefresh size={15} /> Refresh</button>
+                        <button onClick={loadAttendance} className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all mt-5"><IoRefresh size={15} /> Refresh</button>
                         <button onClick={markAllPresent} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCheckmarkCircle size={15} /> All Present</button>
                         <button onClick={markAllAbsent} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCloseCircle size={15} /> All Absent</button>
                     </div>
@@ -483,7 +483,7 @@ const AttendanceManagement = () => {
                 ) : filteredStudents.length === 0 ? (
                     <div className="bg-white/3 border border-white/8 rounded-2xl p-10 text-center">
                         <IoPeopleOutline size={40} className="text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-400">No active students found for this date</p>
+                        <p className="text-gray-600">No active students found for this date</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -497,11 +497,11 @@ const AttendanceManagement = () => {
                                     className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${!hasSeat ? 'border-yellow-500/25 bg-yellow-500/5' : isPresent ? 'border-green-500/30 bg-green-500/5' : data.status === 'holiday' ? 'border-amber-500/30 bg-amber-500/5' : 'border-white/8 bg-white/3'}`}
                                 >
                                     <div
-                                        className={`p-4 flex items-start justify-between cursor-pointer ${!hasSeat ? 'hover:bg-yellow-500/8' : isPresent ? 'hover:bg-green-500/8' : data.status === 'holiday' ? 'hover:bg-amber-500/8' : 'hover:bg-white/5'}`}
+                                        className={`p-4 flex items-start justify-between cursor-pointer ${!hasSeat ? 'hover:bg-yellow-500/8' : isPresent ? 'hover:bg-green-500/8' : data.status === 'holiday' ? 'hover:bg-amber-500/8' : 'hover:bg-gray-50'}`}
                                         onClick={() => !hasSeat ? navigate('/admin/students?tab=pending') : toggleStatus(student._id)}
                                     >
                                         <div className="flex-1">
-                                            <h3 className="font-bold text-white">{student.name}</h3>
+                                            <h3 className="font-bold text-gray-900">{student.name}</h3>
                                             <p className="text-xs text-gray-500 mt-0.5">{student.email}</p>
                                             <div className="flex gap-2 mt-2 flex-wrap">
                                                 {student.seat ? (
@@ -528,7 +528,7 @@ const AttendanceManagement = () => {
                                                             <div className="relative">
                                                                 <IoTimeOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                                                                 <input type="time" value={data[field]} onChange={e => updateField(student._id, field, e.target.value)}
-                                                                    className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-8 pr-3 text-sm text-white focus:border-blue-500/50 outline-none transition-all" />
+                                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-8 pr-3 text-sm text-gray-900 focus:border-blue-500/50 outline-none transition-all" />
                                                             </div>
                                                         </div>
                                                     ))}
@@ -537,7 +537,7 @@ const AttendanceManagement = () => {
                                                         <div className="relative">
                                                             <IoDocumentTextOutline className="absolute left-3 top-2.5 text-gray-500" size={14} />
                                                             <textarea value={data.notes} onChange={e => updateField(student._id, 'notes', e.target.value)} placeholder="Optional…" rows={2}
-                                                                className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-8 pr-3 text-sm text-white focus:border-blue-500/50 outline-none resize-none transition-all" />
+                                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-8 pr-3 text-sm text-gray-900 focus:border-blue-500/50 outline-none resize-none transition-all" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -589,16 +589,16 @@ const AttendanceManagement = () => {
                                             <IoSparkles size={16} className="text-amber-400" />
                                         </div>
                                         <div>
-                                            <p className="text-white font-bold text-sm">Declare Holiday</p>
+                                            <p className="text-gray-900 font-bold text-sm">Declare Holiday</p>
                                             <p className="text-gray-500 text-xs">{selectedDate}</p>
                                         </div>
                                     </div>
                                     <button onClick={() => { setShowHolidayModal(false); setHolidayName(''); }}
-                                        className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-all">
+                                        className="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all">
                                         <IoCloseCircle size={20} />
                                     </button>
                                 </div>
-                                <p className="text-gray-400 text-sm mb-4">
+                                <p className="text-gray-600 text-sm mb-4">
                                     All active students will be automatically marked <span className="text-green-400 font-semibold">Present</span> with this holiday name.
                                 </p>
                                 <div className="mb-4">
@@ -608,7 +608,7 @@ const AttendanceManagement = () => {
                                         onChange={e => setHolidayName(e.target.value)}
                                         onKeyDown={e => e.key === 'Enter' && declareHoliday()}
                                         placeholder="e.g. Holi, Diwali, Republic Day…"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-amber-500/50 transition-all"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm outline-none focus:border-amber-500/50 transition-all"
                                         autoFocus
                                     />
                                 </div>
@@ -620,7 +620,7 @@ const AttendanceManagement = () => {
                                             : <><IoSparkles size={15} /> Declare Holiday</>}
                                     </button>
                                     <button onClick={() => { setShowHolidayModal(false); setHolidayName(''); }}
-                                        className="px-4 py-3 bg-white/5 border border-white/10 text-gray-400 rounded-xl text-sm hover:bg-white/10 transition-all">
+                                        className="px-4 py-3 bg-gray-50 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-100 transition-all">
                                         Cancel
                                     </button>
                                 </div>
