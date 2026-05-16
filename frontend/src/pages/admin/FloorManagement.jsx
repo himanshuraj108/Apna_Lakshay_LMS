@@ -15,8 +15,8 @@ import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const PAGE_BG = { background: '#050508' };
-const INPUT = 'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-700';
+const PAGE_BG = { background: '#F8FAFC' };
+const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
 
 // Add Room Modal Component
 const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
@@ -49,16 +49,16 @@ const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white/4 border border-white/10 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                className="bg-white/4 border border-gray-200 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
                 <div className="h-px w-full bg-gradient-to-r from-blue-500 to-cyan-500 mb-5 -mt-1 -mx-0 rounded-t-2xl" />
-                <h3 className="text-lg font-black text-white mb-5">Add New Room</h3>
+                <h3 className="text-lg font-black text-gray-900 mb-5">Add New Room</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Room Name</label>
                         <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={INPUT} placeholder="e.g. Study Hall A" required />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all">Cancel</button>
                         <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/25 disabled:opacity-50 transition-all">{loading ? 'Creating…' : 'Create Room'}</button>
                     </div>
                 </form>
@@ -95,9 +95,9 @@ const AddFloorModal = ({ isOpen, onClose, onAdd }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white/4 border border-white/10 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                className="bg-white/4 border border-gray-200 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
                 <div className="h-px w-full bg-gradient-to-r from-indigo-500 to-purple-500 mb-5 -mt-1 rounded-t-2xl" />
-                <h3 className="text-lg font-black text-white mb-5">Add New Floor</h3>
+                <h3 className="text-lg font-black text-gray-900 mb-5">Add New Floor</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Floor Name</label>
@@ -108,7 +108,7 @@ const AddFloorModal = ({ isOpen, onClose, onAdd }) => {
                         <input type="number" value={level} onChange={(e) => setLevel(e.target.value)} className={INPUT} placeholder="e.g. 0 for Ground, 1 for First" required />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all">Cancel</button>
                         <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all">{loading ? 'Creating…' : 'Create Floor'}</button>
                     </div>
                 </form>
@@ -361,7 +361,7 @@ const FloorManagement = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/admin">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                                 <IoArrowBack size={16} /> Back
                             </motion.button>
                         </Link>
@@ -370,11 +370,11 @@ const FloorManagement = () => {
                                 <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg"><IoLayersOutline size={14} className="text-white" /></div>
                                 <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Admin</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Floor & Seat Management</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Floor & Seat Management</h1>
                         </div>
                     </div>
                     <motion.button whileHover={{ scale: 1.05 }} onClick={fetchFloors}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                         <IoRefresh size={16} /> Refresh Data
                     </motion.button>
                 </motion.div>
@@ -385,8 +385,8 @@ const FloorManagement = () => {
                     <>
                         {/* Bulk Price Update */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                            className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-5">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Bulk Price Update</h3>
+                        className="bg-white border border-gray-200 rounded-2xl p-5 mb-5 shadow-sm">
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Bulk Price Update</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
                                 {shifts.map(shift => (
                                     <div key={shift.id}>
@@ -406,10 +406,10 @@ const FloorManagement = () => {
 
                         {/* Shift Filter & Floor Selector */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-5">
-                            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-2 rounded-xl">
+                            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl">
                                 <span className="text-xs text-gray-500 whitespace-nowrap">Shift:</span>
                                 <select value={selectedShiftFilter} onChange={(e) => setSelectedShiftFilter(e.target.value)}
-                                    className="bg-transparent border-none text-sm text-white outline-none">
+                                    className="bg-transparent border-none text-sm text-gray-900 outline-none">
                                     <option value="">All / Overview</option>
                                     {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({getShiftTimeRange(s)})</option>)}
                                     <option value="full">Full Day Only</option>
@@ -418,7 +418,7 @@ const FloorManagement = () => {
                             <div className="flex gap-2 overflow-x-auto pb-1 flex-1 justify-end">
                                 {floors.map((floor, index) => (
                                     <button key={floor._id} onClick={() => setSelectedFloor(index)}
-                                        className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${selectedFloor === index ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg shadow-indigo-500/25' : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                                        className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${selectedFloor === index ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg shadow-indigo-500/25' : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
                                         {floor.name}
                                     </button>
                                 ))}
@@ -437,7 +437,7 @@ const FloorManagement = () => {
                         {floors[selectedFloor] && (
                             <div className="space-y-5">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">Rooms</h3>
+                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Rooms</h3>
                                     <motion.button whileHover={{ scale: 1.05 }}
                                         onClick={() => setAddRoomModal({ isOpen: true, floorId: floors[selectedFloor]._id })}
                                         className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/25 text-blue-400 rounded-xl text-sm font-semibold transition-all">
@@ -446,17 +446,17 @@ const FloorManagement = () => {
                                 </div>
 
                                 {floors[selectedFloor].rooms.map((room) => (
-                                    <div key={room._id} className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                                    <div key={room._id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                                         <div className="h-px bg-gradient-to-r from-blue-500/60 to-indigo-500/60" />
                                         <div className="p-5">
                                             <div className="flex justify-between items-center mb-5 flex-wrap gap-3">
-                                                <h2 className="text-lg font-black text-white">{room.name}</h2>
+                                                <h2 className="text-lg font-black text-gray-900">{room.name}</h2>
                                                 <div className="flex flex-wrap gap-2 items-center">
-                                                    <span className="text-[10px] bg-white/5 border border-white/10 text-gray-400 px-2.5 py-1 rounded-full font-bold">{room.seats.length} Seats</span>
+                                                    <span className="text-[10px] bg-gray-50 border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full font-bold">{room.seats.length} Seats</span>
                                                     <button onClick={() => setUpdateRoomPricesModal({ isOpen: true, room })}
                                                         className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-xs font-semibold transition-all">Update Prices</button>
                                                     <button onClick={() => setRoomLayoutModal({ isOpen: true, room })}
-                                                        className="flex items-center gap-1 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 rounded-xl text-xs transition-all">
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 rounded-xl text-xs transition-all">
                                                         <IoSettingsOutline size={13} /> Configure
                                                     </button>
                                                     <button onClick={() => handleDeleteRoom(room._id)}
@@ -477,15 +477,15 @@ const FloorManagement = () => {
                                 ))}
 
                                 {/* Summary */}
-                                <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">Floor Summary</h3>
+                                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Floor Summary</h3>
                                     <div className="grid grid-cols-3 gap-3">
                                         {[
-                                            { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.length, 0), color: 'text-white' },
+                                            { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.length, 0), color: 'text-gray-900' },
                                             { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-400' },
                                             { label: 'Available', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-400' },
                                         ].map(({ label, value, color }) => (
-                                            <div key={label} className="bg-white/5 rounded-xl p-4">
+                                            <div key={label} className="bg-gray-50 rounded-xl p-4">
                                                 <p className="text-xs text-gray-500 mb-1">{label}</p>
                                                 <p className={`text-3xl font-black ${color}`}>{value}</p>
                                             </div>
@@ -504,12 +504,12 @@ const FloorManagement = () => {
                     title="Confirm Price Update"
                 >
                     <div className="p-4">
-                        <p className="mb-4 text-gray-300">
+                        <p className="mb-4 text-gray-700">
                             Are you sure you want to update prices for all <strong>{confirmModal.seatCount}</strong> seats in <strong>{confirmModal.floorName}</strong>?
                         </p>
-                        <div className="bg-white/5 p-4 rounded-lg mb-6 text-sm">
+                        <div className="bg-gray-50 p-4 rounded-lg mb-6 text-sm">
                             <p className="font-semibold mb-2">New Prices:</p>
-                            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-300">
+                            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-700">
                                 {shifts.map(shift => (
                                     bulkPrices[shift.id] ? (
                                         <li key={shift.id}>{shift.name}: ₹{bulkPrices[shift.id]}</li>
@@ -520,7 +520,7 @@ const FloorManagement = () => {
                         </div>
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} disabled={updating}
-                                className="px-4 py-2 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all disabled:opacity-50">
+                                className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all disabled:opacity-50">
                                 Cancel
                             </button>
                             <button onClick={executeBulkUpdate} disabled={updating}
@@ -599,8 +599,8 @@ const FloorManagement = () => {
                                         <div key={index} className="flex flex-col items-center">
                                             {/* Student Info Header */}
                                             <div className="mb-3 text-center">
-                                                <p className="font-bold text-xl text-white">{student.name || 'Unknown'}</p>
-                                                <p className="text-sm text-gray-400">Seat: {student.seatNumber} | Shift: {student.shift || 'N/A'}</p>
+                                                <p className="font-bold text-xl text-gray-900">{student.name || 'Unknown'}</p>
+                                                <p className="text-sm text-gray-600">Seat: {student.seatNumber} | Shift: {student.shift || 'N/A'}</p>
                                             </div>
                                             {/* ID Card */}
                                             <div id={index === 0 ? 'seat-id-card-preview' : undefined} className="bg-white rounded-xl p-4">
@@ -613,7 +613,7 @@ const FloorManagement = () => {
                                 {/* Download buttons (only for first card) */}
                                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                                     <button onClick={() => setShowIdCardModal(false)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm text-gray-400 bg-white/5 hover:bg-white/10 border border-white/10 font-medium transition-all">
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all">
                                         Close
                                     </button>
                                     <button onClick={handleDownloadPNG}
