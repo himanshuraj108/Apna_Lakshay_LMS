@@ -211,8 +211,10 @@ router.route('/holidays')
 router.delete('/holidays/:id', deleteHoliday);
 
 // Student Chat History (Doubt Board)
-const { getStudentsWithChatHistory, getStudentChatHistory } = require('../controllers/doubtController');
+const { getStudentsWithChatHistory, getStudentChatHistory, deleteStudentSession, deleteAllStudentSessions } = require('../controllers/doubtController');
 router.get('/chat-history', getStudentsWithChatHistory);
 router.get('/chat-history/:studentId', getStudentChatHistory);
+router.delete('/chat-history/:studentId/all', deleteAllStudentSessions);
+router.delete('/chat-history/:studentId/:sessionId', deleteStudentSession);
 
 module.exports = router;
