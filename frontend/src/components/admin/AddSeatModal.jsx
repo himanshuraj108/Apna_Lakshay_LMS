@@ -49,14 +49,14 @@ const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => 
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white border border-white/20 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
+                    className="bg-white border border-gray-200 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold">Add Seat to {wall} Wall</h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-600 hover:text-gray-900 transition-colors"
+                            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors"
                         >
                             <FaTimes size={24} />
                         </button>
@@ -94,14 +94,14 @@ const AddSeatModal = ({ isOpen, onClose, wall, roomId, floorId, onSuccess }) => 
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-white/20 rounded-lg transition-colors"
+                                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading || shifts.length === 0}
-                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50"
+                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-md"
                             >
                                 {loading ? 'Adding...' : 'Add Seat'}
                             </button>
