@@ -282,9 +282,11 @@ const SubAdminPinGuard = ({ children }) => {
                                 disabled={loading}
                                 style={{
                                     flex: 1,
-                                    height: 64,
+                                    width: 0,
+                                    minWidth: 0,
+                                    height: 'clamp(50px, 15vw, 64px)',
                                     textAlign: 'center',
-                                    fontSize: 28,
+                                    fontSize: 'clamp(20px, 6vw, 28px)',
                                     fontWeight: 900,
                                     fontFamily: 'inherit',
                                     border: error
