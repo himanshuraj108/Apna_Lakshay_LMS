@@ -18,8 +18,8 @@ import QRScannerModal from '../../components/admin/QRScannerModal';
 const BG_STYLE = `
 @keyframes orb1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(40px,-60px) scale(1.1);}66%{transform:translate(-30px,20px) scale(0.9);}}
 @keyframes orb2{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(-50px,40px) scale(1.15);}66%{transform:translate(25px,-35px) scale(0.85);}}
-.admin-glass{background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.07);}
-.admin-glass:hover{background:linear-gradient(135deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02));border-color:rgba(255,255,255,0.12);}
+.admin-glass{background:rgba(255,255,255,0.7);backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,0.1);box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);}
+.admin-glass:hover{background:rgba(255,255,255,0.9);border-color:rgba(0,0,0,0.2);}
 `;
 
 const AdminDashboard = () => {
@@ -144,14 +144,14 @@ const AdminDashboard = () => {
     ];
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#050508' }}>
+        <div className="relative min-h-screen overflow-x-hidden bg-gray-50">
             <style>{BG_STYLE}</style>
 
             {/* Bg orbs */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-                <div style={{ animation: 'orb1 14s ease-in-out infinite' }} className="absolute top-[-15%] left-[-8%] w-[600px] h-[600px] rounded-full bg-purple-600/8 blur-3xl" />
-                <div style={{ animation: 'orb2 18s ease-in-out infinite' }} className="absolute top-[40%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-600/8 blur-3xl" />
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.025) 1px, transparent 0)', backgroundSize: '48px 48px' }} />
+                <div style={{ animation: 'orb1 14s ease-in-out infinite' }} className="absolute top-[-15%] left-[-8%] w-[600px] h-[600px] rounded-full bg-purple-300/30 blur-3xl" />
+                <div style={{ animation: 'orb2 18s ease-in-out infinite' }} className="absolute top-[40%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-300/30 blur-3xl" />
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)', backgroundSize: '48px 48px' }} />
             </div>
 
             {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} />}
@@ -165,9 +165,9 @@ const AdminDashboard = () => {
                             <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl shadow-lg shadow-purple-500/30">
                                 <IoShieldCheckmarkOutline size={20} className="text-white" />
                             </div>
-                            <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Admin Panel</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-purple-600">Admin Panel</span>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-black text-white">Admin Dashboard</h1>
+                        <h1 className="text-3xl sm:text-4xl font-black text-gray-900">Admin Dashboard</h1>
                         <p className="text-gray-500 text-sm mt-0.5">Apna Lakshay Management System</p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
                             <motion.button
                                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                 onClick={() => { setShowSettingsDropdown(p => !p); setPinMsg(''); }}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:text-gray-900"
                             >
                                 <IoSettingsOutline size={18} className={showSettingsDropdown ? 'rotate-45 transition-transform duration-300' : 'transition-transform duration-300'} />
                                 Settings
@@ -197,23 +197,23 @@ const AdminDashboard = () => {
                                             exit={{ opacity: 0, scale: 0.92, y: -8 }}
                                             transition={{ duration: 0.15 }}
                                             className="absolute right-0 top-full mt-2 z-40 w-80 rounded-2xl shadow-2xl overflow-hidden"
-                                            style={{ background: 'rgba(10,10,16,0.98)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)' }}
+                                            style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' }}
                                         >
                                             {/* Header */}
-                                            <div className="px-4 py-3 border-b border-white/5">
+                                            <div className="px-4 py-3 border-b border-gray-100">
                                                 <p className="text-xs font-bold uppercase tracking-widest text-gray-500">System Controls</p>
                                             </div>
 
                                             <div className="p-3 space-y-1">
 
                                                 {/* Row 1 — System Status */}
-                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`p-1.5 rounded-lg ${settings?.activeModes?.custom ? 'bg-red-500/15' : 'bg-green-500/15'}`}>
                                                             <IoPower size={15} className={settings?.activeModes?.custom ? 'text-red-400' : 'text-green-400'} />
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-white">System Status</p>
+                                                            <p className="text-sm font-semibold text-gray-900">System Status</p>
                                                             <p className="text-xs text-gray-600">{settings?.activeModes?.custom ? 'Maintenance mode ON' : 'System is active'}</p>
                                                         </div>
                                                     </div>
@@ -224,36 +224,36 @@ const AdminDashboard = () => {
                                                 </div>
 
                                                 {/* Row 2 — Location */}
-                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`p-1.5 rounded-lg ${settings?.locationAttendance !== false ? 'bg-blue-500/15' : 'bg-gray-500/15'}`}>
                                                             <IoLocationOutline size={15} className={settings?.locationAttendance !== false ? 'text-blue-400' : 'text-gray-500'} />
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-white">Location Check</p>
+                                                            <p className="text-sm font-semibold text-gray-900">Location Check</p>
                                                             <p className="text-xs text-gray-600">{settings?.locationAttendance !== false ? 'Required for attendance' : 'Disabled (anyone can mark)'}</p>
                                                         </div>
                                                     </div>
                                                     <button onClick={handleToggleLocation}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.locationAttendance !== false ? 'bg-blue-500' : 'bg-white/10'}`}>
+                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.locationAttendance !== false ? 'bg-blue-500' : 'bg-gray-100'}`}>
                                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.locationAttendance !== false ? 'translate-x-5' : ''}`} />
                                                     </button>
                                                 </div>
 
                                                 {/* Row 3 — PIN Attendance */}
-                                                <div className="px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                                                <div className="px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <div className={`p-1.5 rounded-lg ${settings?.pinAttendanceEnabled ? 'bg-amber-500/15' : 'bg-gray-500/15'}`}>
                                                                 <IoKeypadOutline size={15} className={settings?.pinAttendanceEnabled ? 'text-amber-400' : 'text-gray-500'} />
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-semibold text-white">PIN Attendance</p>
+                                                                <p className="text-sm font-semibold text-gray-900">PIN Attendance</p>
                                                                 <p className="text-xs text-gray-600">{settings?.pinAttendanceEnabled ? `Active · PIN: ${settings?.attendancePin || 'not set'}` : 'Off (camera required)'}</p>
                                                             </div>
                                                         </div>
                                                         <button onClick={handleTogglePinAttendance}
-                                                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.pinAttendanceEnabled ? 'bg-amber-500' : 'bg-white/10'}`}>
+                                                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.pinAttendanceEnabled ? 'bg-amber-500' : 'bg-gray-100'}`}>
                                                             <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.pinAttendanceEnabled ? 'translate-x-5' : ''}`} />
                                                         </button>
                                                     </div>
@@ -268,7 +268,7 @@ const AdminDashboard = () => {
                                                                 onChange={e => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
                                                                 onKeyDown={e => e.key === 'Enter' && handleSavePin()}
                                                                 placeholder="New PIN (4–8 digits)"
-                                                                className="flex-1 bg-white/5 border border-white/10 text-white text-sm rounded-lg px-3 py-1.5 outline-none focus:border-amber-500/50 placeholder-gray-600"
+                                                                className="flex-1 bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-1.5 outline-none focus:border-amber-500/50 placeholder-gray-600"
                                                             />
                                                             <button onClick={handleSavePin} disabled={pinSaving}
                                                                 className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold rounded-lg transition-colors disabled:opacity-50">
@@ -280,35 +280,35 @@ const AdminDashboard = () => {
                                                 </div>
 
                                                 {/* Row 4 — Time Restriction */}
-                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`p-1.5 rounded-lg ${settings?.timeRestrictionEnabled !== false ? 'bg-purple-500/15' : 'bg-gray-500/15'}`}>
                                                             <IoTimeOutline size={15} className={settings?.timeRestrictionEnabled !== false ? 'text-purple-400' : 'text-gray-500'} />
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-white">Time Restriction</p>
+                                                            <p className="text-sm font-semibold text-gray-900">Time Restriction</p>
                                                             <p className="text-xs text-gray-600">{settings?.timeRestrictionEnabled !== false ? 'Shift hours only' : 'Anytime (no limit)'}</p>
                                                         </div>
                                                     </div>
                                                     <button onClick={handleToggleTimeRestriction}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.timeRestrictionEnabled !== false ? 'bg-purple-500' : 'bg-white/10'}`}>
+                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.timeRestrictionEnabled !== false ? 'bg-purple-500' : 'bg-gray-100'}`}>
                                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.timeRestrictionEnabled !== false ? 'translate-x-5' : ''}`} />
                                                     </button>
                                                 </div>
 
                                                 {/* Row 5 — Login Attendance Button */}
-                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`p-1.5 rounded-lg ${settings?.loginAttendanceEnabled ? 'bg-green-500/15' : 'bg-gray-500/15'}`}>
                                                             <IoQrCodeOutline size={15} className={settings?.loginAttendanceEnabled ? 'text-green-400' : 'text-gray-500'} />
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-semibold text-white">Login Attendance</p>
+                                                            <p className="text-sm font-semibold text-gray-900">Login Attendance</p>
                                                             <p className="text-xs text-gray-600">{settings?.loginAttendanceEnabled ? 'Button visible on login' : 'Hidden on login screen'}</p>
                                                         </div>
                                                     </div>
                                                     <button onClick={handleToggleLoginAttendance}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.loginAttendanceEnabled ? 'bg-green-500' : 'bg-white/10'}`}>
+                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.loginAttendanceEnabled ? 'bg-green-500' : 'bg-gray-100'}`}>
                                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.loginAttendanceEnabled ? 'translate-x-5' : ''}`} />
                                                     </button>
                                                 </div>
@@ -326,8 +326,8 @@ const AdminDashboard = () => {
                         </motion.button>
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                             onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-semibold text-sm transition-all">
-                            <IoLogOut size={18} /> Logout
+                            className="flex items-center gap-2 px-3 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-semibold text-sm transition-all">
+                            <IoLogOut size={18} />
                         </motion.button>
                     </div>
                 </motion.div>
@@ -340,15 +340,14 @@ const AdminDashboard = () => {
                                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.08, type: 'spring', stiffness: 100 }}
                                 whileHover={{ y: -4, scale: 1.02 }}
-                                className="admin-glass relative rounded-2xl p-5 overflow-hidden group"
-                                style={{ boxShadow: `0 0 0 0 ${glow}` }}
+                                className="relative bg-white border border-gray-200 rounded-2xl p-5 overflow-hidden group shadow-sm hover:shadow-lg transition-all duration-300"
                             >
-                                <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60 group-hover:opacity-100 transition-opacity`} />
-                                <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 blur-2xl transition-all duration-500`} />
-                                <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} w-fit shadow-lg mb-3`} style={{ boxShadow: `0 6px 20px -4px ${glow}` }}>
+                                <div className={`absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r ${color} rounded-t-2xl`} />
+                                <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${color} opacity-0 group-hover:opacity-8 blur-2xl transition-all duration-500`} />
+                                <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} w-fit shadow-md mb-3`} style={{ boxShadow: `0 6px 20px -4px ${glow}` }}>
                                     <Icon size={18} className="text-white" />
                                 </div>
-                                <p className="text-gray-500 text-xs uppercase tracking-widest mb-1">{label}</p>
+                                <p className="text-gray-500 text-xs font-medium uppercase tracking-widest mb-1">{label}</p>
                                 <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent`}>{value}</p>
                             </motion.div>
                         ))}
@@ -363,8 +362,8 @@ const AdminDashboard = () => {
                 {/* Navigation Grid */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
                     <div className="flex items-center gap-3 mb-5">
-                        <h2 className="text-lg font-bold text-white">Management</h2>
-                        <div className="flex-1 h-px bg-white/5" />
+                        <h2 className="text-lg font-bold text-gray-900 shrink-0">Management</h2>
+                        <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {menuItems.map((item, i) => (
@@ -382,15 +381,15 @@ const AdminDashboard = () => {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-white text-sm leading-snug">{item.title}</p>
+                                            <p className="font-semibold text-gray-900 text-sm leading-snug">{item.title}</p>
                                             {item.isNew && (
                                                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse"
                                                     style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.3)', color: '#FACC15' }}>NEW</span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-gray-600 group-hover:text-gray-400 transition-colors mt-0.5">{item.desc}</p>
+                                        <p className="text-xs text-gray-600 group-hover:text-gray-600 transition-colors mt-0.5">{item.desc}</p>
                                     </div>
-                                    <IoArrowForward className="shrink-0 text-gray-700 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" size={18} />
+                                    <IoArrowForward className="shrink-0 text-gray-700 group-hover:text-gray-900 group-hover:translate-x-1 transition-all duration-300" size={18} />
                                 </motion.div>
                             </Link>
                         ))}
