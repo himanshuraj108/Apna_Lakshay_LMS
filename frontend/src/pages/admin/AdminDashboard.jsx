@@ -119,21 +119,21 @@ const AdminDashboard = () => {
     const handleLogout = () => { logout(); navigate('/login'); };
 
     const menuItems = [
-        { title: 'Student Management', path: '/admin/students', icon: IoPersonOutline, color: 'from-blue-500 to-purple-500', desc: 'Manage student records & seats' },
-        { title: 'Floor & Seat Management', path: '/admin/floors', icon: IoBedOutline, color: 'from-green-500 to-teal-500', desc: 'Configure floors, rooms & seats' },
-        { title: 'Attendance Management', path: '/admin/attendance', icon: IoCalendarOutline, color: 'from-orange-500 to-red-500', desc: 'Track daily attendance records' },
-        { title: 'Fee Management', path: '/admin/fees', icon: IoCashOutline, color: 'from-yellow-500 to-orange-500', desc: 'Monitor and collect fees' },
-        { title: 'Notifications', path: '/admin/notifications', icon: IoNotificationsOutline, color: 'from-pink-500 to-rose-500', desc: 'Send announcements to students' },
-        { title: 'Student Requests', path: '/admin/requests', icon: IoDocumentTextOutline, color: 'from-indigo-500 to-blue-500', desc: 'Handle seat & shift requests' },
-        { title: 'Shift Management', path: '/admin/shifts', icon: IoTimeOutline, color: 'from-cyan-500 to-blue-500', desc: 'Configure study shift timings' },
-        { title: 'Action History', path: '/admin/history', icon: IoSchool, color: 'from-gray-500 to-slate-500', desc: 'Review admin action logs' },
-        { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey, color: 'from-red-500 to-orange-500', desc: 'Monitor auth & security events' },
-        { title: 'Analytics & Reports', path: '/admin/analytics', icon: IoBarChartOutline, color: 'from-blue-500 to-cyan-500', desc: 'Revenue, trends & statistics' },
-        { title: 'Discussion Management', path: '/admin/chat', icon: IoChatbubblesOutline, color: 'from-violet-500 to-fuchsia-500', desc: 'Monitor chat rooms & students' },
-        { title: 'AI Chat History', path: '/admin/chat-history', icon: IoSparklesOutline, color: 'from-indigo-600 to-purple-600', desc: 'View student AI doubt sessions' },
-        { title: 'Kiosk Mode', path: '/admin/kiosk', icon: IoScanOutline, color: 'from-purple-500 to-pink-500', desc: 'QR kiosk for entry scanning' },
-        { title: 'Manage Cards', path: '/admin/manage-cards', icon: IoGridOutline, color: 'from-yellow-400 to-orange-500', desc: 'Dashboard cards · AI credits · Reorder' },
-        { title: 'Vacant Seats', path: '/admin/vacant-seats', icon: IoSearchOutline, color: 'from-emerald-500 to-teal-500', desc: 'View all vacant seat-shift slots' },
+        { title: 'Student Management',    path: '/admin/students',          icon: IoPersonOutline,           color: 'from-blue-500 to-purple-500',    desc: 'Manage student records & seats' },
+        { title: 'Sub Admin Management',  path: '/admin/sub-admins',         icon: IoShieldCheckmarkOutline,  color: 'from-violet-500 to-purple-600',  desc: 'Manage sub-admin accounts & permissions' },
+        { title: 'Attendance Management', path: '/admin/attendance',         icon: IoCalendarOutline,         color: 'from-orange-500 to-red-500',     desc: 'Track daily attendance records' },
+        { title: 'Floor & Seat Management', path: '/admin/floors',          icon: IoBedOutline,              color: 'from-green-500 to-teal-500',     desc: 'Configure floors, rooms & seats' },
+        { title: 'Fee Management',        path: '/admin/fees',               icon: IoCashOutline,             color: 'from-yellow-500 to-orange-500',  desc: 'Monitor and collect fees' },
+        { title: 'Notifications',         path: '/admin/notifications',      icon: IoNotificationsOutline,    color: 'from-pink-500 to-rose-500',      desc: 'Send announcements to students' },
+        { title: 'Student Requests',      path: '/admin/requests',           icon: IoDocumentTextOutline,     color: 'from-indigo-500 to-blue-500',    desc: 'Handle seat & shift requests' },
+        { title: 'Shift Management',      path: '/admin/shifts',             icon: IoTimeOutline,             color: 'from-cyan-500 to-blue-500',      desc: 'Configure study shift timings' },
+        { title: 'Action History',        path: '/admin/history',            icon: IoSchool,                  color: 'from-gray-500 to-slate-500',     desc: 'Review admin action logs' },
+        { title: 'Password Activity',     path: '/admin/password-activity',  icon: IoKey,                     color: 'from-red-500 to-orange-500',     desc: 'Monitor auth & security events' },
+        { title: 'Analytics & Reports',   path: '/admin/analytics',          icon: IoBarChartOutline,         color: 'from-blue-500 to-cyan-500',      desc: 'Revenue, trends & statistics' },
+        { title: 'Discussion Management', path: '/admin/chat',               icon: IoChatbubblesOutline,      color: 'from-violet-500 to-fuchsia-500', desc: 'Monitor chat rooms & students' },
+        { title: 'Kiosk Mode',            path: '/admin/kiosk',              icon: IoScanOutline,             color: 'from-purple-500 to-pink-500',    desc: 'QR kiosk for entry scanning' },
+        { title: 'Vacant Seats',          path: '/admin/vacant-seats',       icon: IoSearchOutline,           color: 'from-emerald-500 to-teal-500',   desc: 'View all vacant seat-shift slots' },
+        { title: 'Manage Cards',          path: '/admin/manage-cards',       icon: IoGridOutline,             color: 'from-yellow-400 to-orange-500',  desc: 'Dashboard cards · AI credits · Reorder' },
     ];
 
     const STAT_CARDS = [

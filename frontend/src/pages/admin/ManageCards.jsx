@@ -4,11 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     IoArrowBack, IoSparkles, IoSave, IoCog, IoChevronUp, IoChevronDown,
     IoEyeOutline, IoEyeOffOutline, IoRefresh, IoFlashOutline, IoPersonOutline,
-    IoCheckmarkCircle, IoAlertCircle, IoSearchOutline, IoPencilOutline
+    IoCheckmarkCircle, IoAlertCircle, IoSearchOutline, IoPencilOutline, IoChatbubblesOutline
 } from 'react-icons/io5';
 import api from '../../utils/api';
+import StudentChatHistory from './StudentChatHistory';
 
-const TABS = ['Quick Actions', 'Learning', 'Doubt Credits', 'Mock Test Credits'];
+
+const TABS = ['Quick Actions', 'Learning', 'Doubt Credits', 'Mock Test Credits', 'AI Chat History'];
 
 const Toggle = ({ checked, onChange }) => (
     <button onClick={() => onChange(!checked)}
@@ -442,8 +444,20 @@ const ManageCards = () => {
                         </div>
                     </div>
                 )}
+
+                {/* ── AI Chat History ─────────────────────────────── */}
+                {activeTab === 'AI Chat History' && (
+                    <div>
+                        <div className="flex items-center gap-2 mb-4">
+                            <IoChatbubblesOutline size={15} className="text-indigo-500" />
+                            <p className="text-sm font-bold text-gray-800">Student AI Doubt Session History</p>
+                        </div>
+                        <StudentChatHistory embedded />
+                    </div>
+                )}
             </div>
         </div>
+
     );
 };
 
