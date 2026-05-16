@@ -179,17 +179,17 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
             size: 8 + (i % 4) * 3,     // very thin: 8/11/14/17px
         }));
 
-        // Pure white, near-invisible gradient — real air has no color
+        // Light-blue wisps — visible on both dark and light backgrounds
         const wispGrad = isH
-            ? `linear-gradient(${fromStart ? '180deg' : '0deg'}, transparent 0%, rgba(255,255,255,0.09) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.09) 60%, transparent 100%)`
-            : `linear-gradient(${fromStart ? '90deg' : '270deg'}, transparent 0%, rgba(255,255,255,0.09) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.09) 60%, transparent 100%)`;
+            ? `linear-gradient(${fromStart ? '180deg' : '0deg'}, transparent 0%, rgba(147,210,240,0.25) 40%, rgba(180,225,250,0.35) 50%, rgba(147,210,240,0.25) 60%, transparent 100%)`
+            : `linear-gradient(${fromStart ? '90deg' : '270deg'}, transparent 0%, rgba(147,210,240,0.25) 40%, rgba(180,225,250,0.35) 50%, rgba(147,210,240,0.25) 60%, transparent 100%)`;
 
-        // Extremely subtle directional ambient — just enough to hint at air source
+        // Subtle directional ambient tint
         const ambientGrad = {
-            north: 'linear-gradient(180deg, rgba(200,240,255,0.04) 0%, transparent 60%)',
-            south: 'linear-gradient(0deg,   rgba(200,240,255,0.04) 0%, transparent 60%)',
-            east:  'linear-gradient(270deg, rgba(200,240,255,0.04) 0%, transparent 60%)',
-            west:  'linear-gradient(90deg,  rgba(200,240,255,0.04) 0%, transparent 60%)',
+            north: 'linear-gradient(180deg, rgba(147,210,240,0.12) 0%, transparent 60%)',
+            south: 'linear-gradient(0deg,   rgba(147,210,240,0.12) 0%, transparent 60%)',
+            east:  'linear-gradient(270deg, rgba(147,210,240,0.12) 0%, transparent 60%)',
+            west:  'linear-gradient(90deg,  rgba(147,210,240,0.12) 0%, transparent 60%)',
         }[acPosition];
 
         return (
@@ -249,7 +249,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
         if (!room.hasFan) return null;
 
         return (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.35] mix-blend-screen z-20">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.5] mix-blend-multiply z-20">
                 {/* Fast spinning blades */}
                 <motion.div
                     animate={{ rotate: 360 }}
@@ -287,69 +287,79 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
     const roomH = room.dimensions?.height || 0;
     const showInterior = (roomW > 0 || roomH > 0) || unpositionedSeats.length > 0;
 
-    const SeatCard = ({ seat }) => (
-        <motion.div
-            whileHover={{ scale: 1.08 }}
-            onClick={() => seat.isOccupied && onSeatClick && onSeatClick(seat)}
-            className={`relative p-2 rounded-lg border-2 transition-all group min-w-[50px] ${seat.isOccupied
-                ? 'bg-red-500/30 border-red-500 cursor-pointer hover:bg-red-500/40' // Add cursor pointer if occupied
-                : 'bg-green-500/30 border-green-500'
-                }`}
-        >
-            <div className="flex items-center gap-1 justify-center">
-                <IoBedOutline size={14} />
-                <span className="font-bold text-xs">{seat.number}</span>
-            </div>
+    const SeatCard = ({ seat }) => {
+        const activeAssignments = seat.assignments?.filter(a => a.status === 'active') || [];
+        const isFullyOccupied = seat.isOccupied === true;
+        const isPartial = !isFullyOccupied && activeAssignments.length > 0;
 
-            {/* Action buttons on hover */}
-            <div className="absolute -top-2 -right-2 hidden group-hover:flex gap-1 z-10">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering card click
-                        onEditSeat(seat);
-                    }}
-                    className="p-1 bg-blue-600 rounded-full hover:bg-blue-500 transition-colors shadow-lg"
-                >
-                    <IoCreateOutline size={12} />
-                </button>
-                {!seat.isOccupied && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteSeat(seat);
-                        }}
-                        className="p-1 bg-red-600 rounded-full hover:bg-red-500 transition-colors shadow-lg"
-                    >
-                        <IoTrashOutline size={12} />
-                    </button>
+        // Status dot color
+        const dotColor = isFullyOccupied ? 'bg-red-500'
+            : isPartial ? 'bg-amber-500'
+            : null;
+
+        // Card tint
+        const cardClass = isFullyOccupied
+            ? 'bg-red-50 border-red-300 cursor-pointer hover:bg-red-100'
+            : isPartial
+            ? 'bg-amber-50 border-amber-300 cursor-pointer hover:bg-amber-100'
+            : 'bg-green-50 border-green-400 hover:bg-green-100';
+
+        const iconColor = isFullyOccupied ? '#dc2626' : isPartial ? '#d97706' : '#16a34a';
+        const textClass = isFullyOccupied ? 'text-red-700' : isPartial ? 'text-amber-700' : 'text-green-700';
+
+        return (
+            <motion.div
+                whileHover={{ scale: 1.08 }}
+                onClick={() => (isFullyOccupied || isPartial) && onSeatClick && onSeatClick(seat)}
+                className={`relative px-3 py-2 rounded-xl border-2 transition-all group min-w-[56px] shadow-sm ${cardClass}`}
+            >
+                {/* Status dot badge — top-right corner */}
+                {dotColor && (
+                    <span className={`absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full ${dotColor} border-2 border-white shadow`} />
                 )}
-            </div>
-        </motion.div>
-    );
+
+                <div className="flex items-center gap-1 justify-center">
+                    <IoBedOutline size={14} style={{ color: iconColor }} />
+                    <span className={`font-bold text-xs ${textClass}`}>{seat.number}</span>
+                </div>
+
+                {/* Edit/Delete — appear on hover, top-left to avoid dot overlap */}
+                <div className="absolute -top-2 -left-2 hidden group-hover:flex gap-1 z-20">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onEditSeat(seat); }}
+                        className="p-1 bg-blue-500 rounded-full hover:bg-blue-600 transition-colors shadow-lg"
+                    >
+                        <IoCreateOutline size={10} className="text-white" />
+                    </button>
+                    {!seat.isOccupied && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteSeat(seat); }}
+                            className="p-1 bg-red-500 rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                        >
+                            <IoTrashOutline size={10} className="text-white" />
+                        </button>
+                    )}
+                </div>
+            </motion.div>
+        );
+    };
+
 
     return (
         <div className="space-y-6">
             {/* Box Room Layout */}
-            <div className="relative bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 border-2 border-gray-200">
+            <div className="relative bg-gradient-to-br from-slate-100 to-gray-200 rounded-2xl p-6 border-2 border-gray-300">
                 {/* Room Title */}
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-lg border border-white/20 z-20">
-                    <p className="text-sm font-medium text-gray-600">{room.name} ({totalSeats} Seats)</p>
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm z-20">
+                    <p className="text-sm font-semibold text-gray-700">{room.name} ({totalSeats} Seats)</p>
                 </div>
 
                 {/* Add Seat Buttons */}
                 <div className="absolute top-4 right-4 flex gap-2 z-20">
-                    <button onClick={() => onAddSeat('north')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to North">
-                        + North
-                    </button>
-                    <button onClick={() => onAddSeat('east')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to East">
-                        + East
-                    </button>
-                    <button onClick={() => onAddSeat('south')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to South">
-                        + South
-                    </button>
-                    <button onClick={() => onAddSeat('west')} className="px-3 py-1.5 bg-blue-300/300 rounded-lg text-xs hover:bg-blue-500 transition-colors font-semibold" title="Add to West">
-                        + West
-                    </button>
+                    <button onClick={() => onAddSeat('north')} className="px-3 py-1.5 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg text-xs hover:bg-blue-200 transition-colors font-semibold" title="Add to North">+ North</button>
+                    <button onClick={() => onAddSeat('east')}  className="px-3 py-1.5 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg text-xs hover:bg-blue-200 transition-colors font-semibold" title="Add to East">+ East</button>
+                    <button onClick={() => onAddSeat('south')} className="px-3 py-1.5 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg text-xs hover:bg-blue-200 transition-colors font-semibold" title="Add to South">+ South</button>
+                    <button onClick={() => onAddSeat('west')}  className="px-3 py-1.5 bg-blue-100 border border-blue-300 text-blue-700 rounded-lg text-xs hover:bg-blue-200 transition-colors font-semibold" title="Add to West">+ West</button>
                 </div>
 
                 {/* Fitted Box Room Container */}
@@ -386,7 +396,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 </div>
                             </>
                         ) : (
-                            <div className="w-full h-full border-t-4 border-l-4 border-r-4 border-white/40 rounded-t-2xl bg-gradient-to-b from-white/10 to-white/5 p-2">
+                        <div className="w-full h-full border-t-4 border-l-4 border-r-4 border-gray-400/50 rounded-t-2xl bg-gradient-to-b from-gray-200/60 to-gray-100/40 p-2">
                                 <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
                                     {northSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
                                     {northSeats.length === 0 && <span className="text-xs text-gray-600 italic">Empty</span>}
@@ -419,7 +429,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 </div>
                             </>
                         ) : (
-                            <div className="w-full h-full border-l-4 border-white/40 bg-gradient-to-r from-white/10 to-white/5 p-2">
+                        <div className="w-full h-full border-l-4 border-gray-400/50 bg-gradient-to-r from-gray-200/60 to-gray-100/40 p-2">
                                 <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
                                     {westSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
                                 </div>
@@ -451,7 +461,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 </div>
                             </>
                         ) : (
-                            <div className="w-full h-full border-r-4 border-white/40 bg-gradient-to-l from-white/10 to-white/5 p-2">
+                        <div className="w-full h-full border-r-4 border-gray-400/50 bg-gradient-to-l from-gray-200/60 to-gray-100/40 p-2">
                                 <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
                                     {eastSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
                                 </div>
@@ -483,7 +493,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                                 </div>
                             </>
                         ) : (
-                            <div className="w-full h-full border-b-4 border-l-4 border-r-4 border-white/40 rounded-b-2xl bg-gradient-to-t from-white/10 to-white/5 p-2">
+                        <div className="w-full h-full border-b-4 border-l-4 border-r-4 border-gray-400/50 rounded-b-2xl bg-gradient-to-t from-gray-200/60 to-gray-100/40 p-2">
                                 <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
                                     {southSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
                                     {southSeats.length === 0 && <span className="text-xs text-gray-600 italic">Empty</span>}
@@ -494,7 +504,7 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
 
                     {/* Room Interior — hidden when dimensions are 0×0 */}
                     {showInterior && (
-                        <div className="absolute top-[80px] left-[80px] right-[80px] bottom-[80px] bg-gradient-to-br from-gray-700/40 to-gray-800/40 rounded-xl border-2 border-dashed border-white/20 flex items-center justify-center p-4 overflow-hidden">
+                        <div className="absolute top-[80px] left-[80px] right-[80px] bottom-[80px] bg-white/70 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center p-4 overflow-hidden">
                             <CeilingFan />
                             <div className="relative z-30 w-full h-full flex items-center justify-center overflow-auto">
                                 {unpositionedSeats.length > 0 ? (
@@ -518,21 +528,25 @@ const RoomGrid = ({ room, onAddSeat, onEditSeat, onDeleteSeat, onSeatClick }) =>
                 {/* Legend */}
                 <div className="mt-6 flex gap-4 justify-center text-xs flex-wrap">
                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-green-500/30 border-2 border-green-500 rounded"></div>
+                        <div className="w-4 h-4 bg-green-100 border-2 border-green-400 rounded" />
                         <span className="text-gray-600">Available</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-red-500/30 border-2 border-red-500 rounded"></div>
+                        <div className="w-4 h-4 bg-amber-100 border-2 border-amber-400 rounded" />
+                        <span className="text-gray-600">Partial</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-red-100 border-2 border-red-400 rounded" />
                         <span className="text-gray-600">Occupied</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-yellow-500 font-semibold">DOOR</span>
+                        <span className="text-yellow-600 font-semibold">DOOR</span>
                         <span className="text-gray-600">Entry/Exit</span>
                     </div>
                     {hasAc && (
                         <div className="flex items-center gap-2">
-                            <IoSnowOutline size={14} className="text-cyan-400" />
-                            <span className="text-cyan-400">AC • {acPosition.charAt(0).toUpperCase() + acPosition.slice(1)} wall</span>
+                            <IoSnowOutline size={14} className="text-cyan-500" />
+                            <span className="text-cyan-600">AC • {acPosition.charAt(0).toUpperCase() + acPosition.slice(1)} wall</span>
                         </div>
                     )}
                 </div>
