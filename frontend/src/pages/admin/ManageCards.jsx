@@ -8,44 +8,41 @@ import {
 } from 'react-icons/io5';
 import api from '../../utils/api';
 
-// ── Card section tabs ─────────────────────────────────────────────────────────
 const TABS = ['Quick Actions', 'Learning', 'Doubt Credits', 'Mock Test Credits'];
 
-// ── Toggle switch ─────────────────────────────────────────────────────────────
 const Toggle = ({ checked, onChange }) => (
     <button onClick={() => onChange(!checked)}
         className="relative inline-flex items-center h-5 w-9 rounded-full transition-all flex-shrink-0"
-        style={{ background: checked ? '#FACC15' : 'rgba(255,255,255,0.12)' }}>
+        style={{ background: checked ? '#6366f1' : '#e5e7eb' }}>
         <span className="absolute left-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
             style={{ transform: checked ? 'translateX(16px)' : 'translateX(0)' }} />
     </button>
 );
 
-// ── Card row with up/down reorder ─────────────────────────────────────────────
 const CardRow = ({ card, index, total, onMove, onToggle, onToggleNew }) => (
     <motion.div
         layout
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 p-3 rounded-xl border border-white/6 transition-all"
-        style={{ background: card.visible ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)', opacity: card.visible ? 1 : 0.45 }}>
+        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+            card.visible ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-50'
+        }`}>
         {/* Order buttons */}
         <div className="flex flex-col">
             <button onClick={() => onMove(index, -1)} disabled={index === 0}
-                className="p-0.5 rounded text-gray-600 hover:text-white disabled:opacity-20 transition-colors"><IoChevronUp size={14} /></button>
+                className="p-0.5 rounded text-gray-400 hover:text-gray-700 disabled:opacity-20 transition-colors"><IoChevronUp size={14} /></button>
             <button onClick={() => onMove(index, 1)} disabled={index === total - 1}
-                className="p-0.5 rounded text-gray-600 hover:text-white disabled:opacity-20 transition-colors"><IoChevronDown size={14} /></button>
+                className="p-0.5 rounded text-gray-400 hover:text-gray-700 disabled:opacity-20 transition-colors"><IoChevronDown size={14} /></button>
         </div>
         {/* Label */}
-        <span className="flex-1 text-sm font-medium text-white">{card.label}</span>
+        <span className="flex-1 text-sm font-semibold text-gray-800">{card.label}</span>
         {/* NEW badge toggle */}
         <button onClick={() => onToggleNew(index)}
-            className="text-[10px] font-black px-2 py-0.5 rounded-full transition-all"
-            style={{
-                background: card.isNew ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.05)',
-                border: card.isNew ? '1px solid rgba(250,204,21,0.3)' : '1px solid rgba(255,255,255,0.08)',
-                color: card.isNew ? '#FACC15' : 'rgba(255,255,255,0.3)',
-            }}>
+            className={`text-[10px] font-black px-2 py-0.5 rounded-full border transition-all ${
+                card.isNew
+                    ? 'bg-amber-100 border-amber-300 text-amber-700'
+                    : 'bg-gray-100 border-gray-200 text-gray-400 hover:text-gray-600'
+            }`}>
             NEW
         </button>
         {/* Visible toggle */}
@@ -53,21 +50,20 @@ const CardRow = ({ card, index, total, onMove, onToggle, onToggleNew }) => (
     </motion.div>
 );
 
-// ── Main ──────────────────────────────────────────────────────────────────────
 const ManageCards = () => {
     const [activeTab, setTab]           = useState('Quick Actions');
     const [quickActions, setQA]         = useState([]);
     const [learning, setLearning]       = useState([]);
     const [aiConfig, setAiConfig]       = useState({ divisor: 10, defaultCredits: 10 });
     const [students, setStudents]       = useState([]);
-    const [mockStudents, setMockStudents] = useState([]); // Students for Mock Test Credits
+    const [mockStudents, setMockStudents] = useState([]);
     const [loading, setLoading]         = useState(true);
     const [saving, setSaving]           = useState(false);
     const [toast, setToast]             = useState(null);
     const [search, setSearch]           = useState('');
     const [searchMock, setSearchMock]   = useState('');
-    const [editingCredit, setEditing]   = useState(null); // { id, value }
-    const [editingMockCredit, setEditingMock] = useState(null); // { id, value }
+    const [editingCredit, setEditing]   = useState(null);
+    const [editingMockCredit, setEditingMock] = useState(null);
     const [bulkMockValue, setBulkMockValue] = useState(2);
 
     useEffect(() => { loadAll(); }, []);
@@ -95,43 +91,28 @@ const ManageCards = () => {
         finally { setLoading(false); }
     };
 
-    // ── card manipulation helpers ─────────────────────────────────────────────
-    const moveCard = (list, setList, idx, dir) => {
-        const arr = [...list];
-        const to = idx + dir;
-        if (to < 0 || to >= arr.length) return;
-        [arr[idx], arr[to]] = [arr[to], arr[idx]];
-        arr.forEach((c, i) => (c.order = i));
-        setList(arr);
-    };
+    const moveCard  = (list, setList, idx, dir) => { const arr = [...list]; const to = idx + dir; if (to < 0 || to >= arr.length) return; [arr[idx], arr[to]] = [arr[to], arr[idx]]; arr.forEach((c, i) => (c.order = i)); setList(arr); };
     const toggleCard   = (list, setList, idx, v) => { const a = [...list]; a[idx] = { ...a[idx], visible: v }; setList(a); };
     const toggleNew    = (list, setList, idx) => { const a = [...list]; a[idx] = { ...a[idx], isNew: !a[idx].isNew }; setList(a); };
 
     const saveSection = async (section, data) => {
         setSaving(true);
-        try {
-            await api.put('/admin/card-config', { section, cards: data });
-            showToast('Saved successfully');
-        } catch { showToast('Save failed', 'error'); }
+        try { await api.put('/admin/card-config', { section, cards: data }); showToast('Saved successfully'); }
+        catch { showToast('Save failed', 'error'); }
         finally { setSaving(false); }
     };
 
     const saveAiConfig = async () => {
         setSaving(true);
-        try {
-            await api.put('/admin/ai-credit-config', aiConfig);
-            showToast('AI credit config saved');
-        } catch { showToast('Save failed', 'error'); }
+        try { await api.put('/admin/ai-credit-config', aiConfig); showToast('AI credit config saved'); }
+        catch { showToast('Save failed', 'error'); }
         finally { setSaving(false); }
     };
 
     const applyFormula = async () => {
         setSaving(true);
-        try {
-            const res = await api.post('/admin/ai-credits/apply-formula');
-            showToast(res.data.message);
-            loadAll();
-        } catch { showToast('Apply failed', 'error'); }
+        try { const res = await api.post('/admin/ai-credits/apply-formula'); showToast(res.data.message); loadAll(); }
+        catch { showToast('Apply failed', 'error'); }
         finally { setSaving(false); }
     };
 
@@ -161,13 +142,10 @@ const ManageCards = () => {
     };
 
     const resetAllMockCredits = async () => {
-        if (!window.confirm(`Are you sure you want to reset ALL students to ${bulkMockValue} mock test credits?`)) return;
+        if (!window.confirm(`Reset ALL students to ${bulkMockValue} mock test credits?`)) return;
         setSaving(true);
-        try {
-            const res = await api.post('/admin/mock-test-credits/reset-all', { value: bulkMockValue });
-            showToast(res.data.message);
-            loadAll();
-        } catch { showToast('Reset failed', 'error'); }
+        try { const res = await api.post('/admin/mock-test-credits/reset-all', { value: bulkMockValue }); showToast(res.data.message); loadAll(); }
+        catch { showToast('Reset failed', 'error'); }
         finally { setSaving(false); }
     };
 
@@ -181,24 +159,25 @@ const ManageCards = () => {
         (s.studentId || '').toLowerCase().includes(searchMock.toLowerCase())
     );
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center" style={{ background: '#070a10' }}>
-                <div className="w-8 h-8 rounded-full border-2 border-yellow-400/30 border-t-yellow-400 animate-spin" />
-            </div>
-        );
-    }
+    const INPUT = 'w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/10';
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="w-8 h-8 rounded-full border-2 border-indigo-400/30 border-t-indigo-500 animate-spin" />
+        </div>
+    );
 
     return (
-        <div className="min-h-screen" style={{ background: '#070a10' }}>
+        <div className="min-h-screen bg-gray-50">
             {/* Toast */}
             <AnimatePresence>
                 {toast && (
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                        className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl"
-                        style={{ background: toast.type === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                            border: `1px solid ${toast.type === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                            color: toast.type === 'success' ? '#4ade80' : '#f87171' }}>
+                        className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl border ${
+                            toast.type === 'success'
+                                ? 'bg-green-50 border-green-200 text-green-700'
+                                : 'bg-red-50 border-red-200 text-red-700'
+                        }`}>
                         {toast.type === 'success' ? <IoCheckmarkCircle size={16} /> : <IoAlertCircle size={16} />}
                         {toast.msg}
                     </motion.div>
@@ -206,26 +185,26 @@ const ManageCards = () => {
             </AnimatePresence>
 
             {/* Header */}
-            <div className="sticky top-0 z-30 border-b border-white/5"
-                style={{ background: 'rgba(7,10,16,0.96)', backdropFilter: 'blur(16px)' }}>
+            <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/admin" className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/8 transition-all">
+                    <Link to="/admin" className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all">
                         <IoArrowBack size={18} />
                     </Link>
-                    <IoCog size={15} className="text-yellow-400" />
-                    <h1 className="text-white font-bold text-base flex-1">Manage Cards</h1>
-                    <span className="text-xs text-gray-500">Student Dashboard Config</span>
+                    <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg">
+                        <IoCog size={14} className="text-white" />
+                    </div>
+                    <h1 className="text-gray-900 font-bold text-base flex-1">Manage Cards</h1>
+                    <span className="text-xs text-gray-500 font-medium">Student Dashboard Config</span>
                 </div>
                 {/* Section tabs */}
-                <div className="max-w-3xl mx-auto px-4 pb-3 flex gap-2">
+                <div className="max-w-3xl mx-auto px-4 pb-3 flex gap-2 flex-wrap">
                     {TABS.map(t => (
                         <button key={t} onClick={() => setTab(t)}
-                            className="text-xs font-bold px-4 py-1.5 rounded-full transition-all"
-                            style={{
-                                background: activeTab === t ? '#FACC15' : 'rgba(255,255,255,0.05)',
-                                color: activeTab === t ? '#000' : 'rgba(255,255,255,0.45)',
-                                border: activeTab === t ? 'none' : '1px solid rgba(255,255,255,0.08)',
-                            }}>
+                            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all ${
+                                activeTab === t
+                                    ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/25'
+                                    : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                            }`}>
                             {t}
                         </button>
                     ))}
@@ -234,7 +213,7 @@ const ManageCards = () => {
 
             <div className="max-w-3xl mx-auto px-4 py-6">
 
-                {/* ── Quick Actions ─────────────────────────────────────────── */}
+                {/* ── Quick Actions ─────────────────────────────────── */}
                 {activeTab === 'Quick Actions' && (
                     <div>
                         <p className="text-xs text-gray-500 mb-4">Toggle visibility, mark as NEW (will blink on student dashboard), and reorder with ▲▼ arrows.</p>
@@ -247,14 +226,13 @@ const ManageCards = () => {
                             ))}
                         </div>
                         <button onClick={() => saveSection('quickActions', quickActions)} disabled={saving}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                            style={{ background: '#FACC15', color: '#000' }}>
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
                             <IoSave size={15} /> {saving ? 'Saving…' : 'Save Quick Actions'}
                         </button>
                     </div>
                 )}
 
-                {/* ── Learning ──────────────────────────────────────────────── */}
+                {/* ── Learning ────────────────────────────────────── */}
                 {activeTab === 'Learning' && (
                     <div>
                         <p className="text-xs text-gray-500 mb-4">Control which learning cards are visible and their order in the Learning section.</p>
@@ -267,51 +245,47 @@ const ManageCards = () => {
                             ))}
                         </div>
                         <button onClick={() => saveSection('learning', learning)} disabled={saving}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                            style={{ background: '#FACC15', color: '#000' }}>
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
                             <IoSave size={15} /> {saving ? 'Saving…' : 'Save Learning Section'}
                         </button>
                     </div>
                 )}
 
-                {/* ── Doubt Credits ────────────────────────────────────────────── */}
+                {/* ── Doubt Credits ─────────────────────────────────── */}
                 {activeTab === 'Doubt Credits' && (
                     <div className="space-y-6">
                         {/* Global config */}
-                        <div className="rounded-2xl border border-white/8 p-5" style={{ background: 'rgba(250,204,21,0.04)' }}>
-                            <div className="flex items-center gap-2 mb-4">
-                                <IoSparkles size={14} className="text-yellow-400" />
-                                <h3 className="text-white font-bold text-sm">Credit Formula</h3>
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                            <div className="flex items-center gap-2 mb-3">
+                                <IoSparkles size={14} className="text-amber-500" />
+                                <h3 className="text-gray-900 font-bold text-sm">Credit Formula</h3>
                             </div>
-                            <p className="text-xs text-gray-500 mb-4">
-                                Default credits per student = <span className="text-yellow-400 font-bold">Negotiated Fee ÷ Divisor</span>.
+                            <p className="text-xs text-gray-600 mb-4">
+                                Default credits per student = <span className="text-amber-600 font-bold">Negotiated Fee ÷ Divisor</span>.
                                 If no fee, fallback default is used instead.
                             </p>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="text-xs text-gray-400 mb-1 block">Divisor</label>
+                                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Divisor</label>
                                     <input type="number" min="1" value={aiConfig.divisor}
                                         onChange={e => setAiConfig(prev => ({ ...prev, divisor: Number(e.target.value) }))}
-                                        className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-yellow-400/30"
-                                    />
-                                    <p className="text-[10px] text-gray-600 mt-1">e.g. Fee ₹5000 ÷ 10 = 500 credits</p>
+                                        className={INPUT} />
+                                    <p className="text-[10px] text-gray-500 mt-1">e.g. Fee ₹5000 ÷ 10 = 500 credits</p>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-gray-400 mb-1 block">Fallback Credits (no fee)</label>
+                                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Fallback Credits (no fee)</label>
                                     <input type="number" min="0" value={aiConfig.defaultCredits}
                                         onChange={e => setAiConfig(prev => ({ ...prev, defaultCredits: Number(e.target.value) }))}
-                                        className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-yellow-400/30"
-                                    />
+                                        className={INPUT} />
                                 </div>
                             </div>
                             <div className="flex gap-3">
                                 <button onClick={saveAiConfig} disabled={saving}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
-                                    style={{ background: '#FACC15', color: '#000' }}>
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-white transition-all disabled:opacity-50 shadow-md shadow-amber-500/25">
                                     <IoSave size={13} /> Save Config
                                 </button>
                                 <button onClick={applyFormula} disabled={saving}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-yellow-400/20 text-yellow-400 hover:bg-yellow-400/5 disabled:opacity-50">
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-all">
                                     <IoFlashOutline size={13} /> Apply to All Students
                                 </button>
                             </div>
@@ -320,32 +294,30 @@ const ManageCards = () => {
                         {/* Per-student credits */}
                         <div>
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                                    <IoPersonOutline size={14} className="text-gray-400" /> Per-Student Credits
+                                <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2">
+                                    <IoPersonOutline size={14} className="text-gray-500" /> Per-Student Credits
                                 </h3>
-                                <span className="text-xs text-gray-600">{students.length} students</span>
+                                <span className="text-xs text-gray-500">{students.length} students</span>
                             </div>
                             <div className="relative mb-3">
-                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input value={search} onChange={e => setSearch(e.target.value)}
                                     placeholder="Search by name or ID…"
-                                    className="w-full bg-white/5 border border-white/8 text-white text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-yellow-400/30 placeholder-gray-600" />
+                                    className="w-full bg-white border border-gray-200 text-gray-900 text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-indigo-400 placeholder-gray-400 shadow-sm" />
                             </div>
                             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                                 {filteredStudents.map(s => {
                                     const isAuto = (s.creditMode || 'auto') === 'auto';
                                     return (
                                         <div key={s._id}
-                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-white/6"
-                                            style={{ background: 'rgba(255,255,255,0.025)' }}>
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-white text-xs font-semibold truncate">{s.name}</p>
-                                                <p className="text-gray-600 text-[10px]">{s.studentId} · Fee &#8377;{s.negotiatedFee || 'N/A'} · Suggested: {s.suggestedCredits}</p>
+                                                <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                                <p className="text-gray-500 text-[10px]">{s.studentId} · Fee &#8377;{s.negotiatedFee || 'N/A'} · Suggested: {s.suggestedCredits}</p>
                                             </div>
 
-                                            {/* Auto / Manual toggle */}
                                             <div className="flex items-center gap-1.5">
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${isAuto ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25' : 'bg-orange-500/15 text-orange-400 border border-orange-500/25'}`}>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${isAuto ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-orange-50 text-orange-700 border-orange-300'}`}>
                                                     {isAuto ? 'AUTO' : 'MANUAL'}
                                                 </span>
                                                 <Toggle
@@ -357,26 +329,25 @@ const ManageCards = () => {
                                                 />
                                             </div>
 
-                                            {/* Credit display / edit (only editable in manual mode) */}
                                             {editingCredit?.id === s._id && !isAuto ? (
                                                 <div className="flex items-center gap-2">
                                                     <input type="number" min="0"
                                                         value={editingCredit.value}
                                                         onChange={e => setEditing(prev => ({ ...prev, value: e.target.value }))}
                                                         onKeyDown={e => { if (e.key === 'Enter') saveStudentCredit(s._id, Number(editingCredit.value), 'manual'); if (e.key === 'Escape') setEditing(null); }}
-                                                        className="w-16 bg-white/10 border border-yellow-400/30 text-white text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
+                                                        className="w-16 bg-gray-50 border border-indigo-300 text-gray-900 text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
                                                         autoFocus />
                                                     <button onClick={() => saveStudentCredit(s._id, Number(editingCredit.value), 'manual')}
-                                                        className="text-green-400 hover:text-green-300 transition-colors"><IoCheckmarkCircle size={16} /></button>
+                                                        className="text-green-600 hover:text-green-700 transition-colors"><IoCheckmarkCircle size={16} /></button>
                                                     <button onClick={() => setEditing(null)}
-                                                        className="text-gray-500 hover:text-white transition-colors text-xs">✕</button>
+                                                        className="text-gray-400 hover:text-gray-700 transition-colors text-xs">✕</button>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`font-bold text-sm w-8 text-center ${isAuto ? 'text-gray-500' : 'text-yellow-400'}`}>{s.doubtCredits}</span>
+                                                    <span className={`font-bold text-sm w-8 text-center ${isAuto ? 'text-gray-400' : 'text-indigo-600'}`}>{s.doubtCredits}</span>
                                                     {!isAuto && (
                                                         <button onClick={() => setEditing({ id: s._id, value: s.doubtCredits })}
-                                                            className="p-1 rounded-lg text-gray-600 hover:text-white hover:bg-white/8 transition-all">
+                                                            className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
                                                             <IoPencilOutline size={13} />
                                                         </button>
                                                     )}
@@ -386,34 +357,33 @@ const ManageCards = () => {
                                     );
                                 })}
                                 {filteredStudents.length === 0 && (
-                                    <p className="text-center text-gray-700 text-xs py-8">No students found</p>
+                                    <p className="text-center text-gray-500 text-xs py-8">No students found</p>
                                 )}
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* ── Mock Test Credits ────────────────────────────────────────────── */}
+                {/* ── Mock Test Credits ─────────────────────────────── */}
                 {activeTab === 'Mock Test Credits' && (
                     <div className="space-y-6">
-                        <div className="rounded-2xl border border-white/8 p-5 flex flex-col gap-4" style={{ background: 'rgba(34,197,94,0.04)' }}>
+                        <div className="rounded-2xl border border-green-200 bg-green-50 p-5 flex flex-col gap-4">
                             <div className="flex items-center gap-2">
-                                <IoSparkles size={14} className="text-green-400" />
-                                <h3 className="text-white font-bold text-sm">Daily Mock Test Allowance</h3>
+                                <IoSparkles size={14} className="text-green-600" />
+                                <h3 className="text-gray-900 font-bold text-sm">Daily Mock Test Allowance</h3>
                             </div>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-600">
                                 This sets the total allowed tests a student can generate per day. It will automatically reset to 2 at midnight IST unless modified.
                             </p>
                             <div className="flex items-end gap-3 max-w-sm">
                                 <div className="flex-1">
-                                    <label className="text-xs text-gray-400 mb-1 block">Bulk Reset To</label>
+                                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Bulk Reset To</label>
                                     <input type="number" min="0" value={bulkMockValue}
                                         onChange={e => setBulkMockValue(Number(e.target.value))}
-                                        className="w-full bg-white/5 border border-white/10 text-white text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-green-400/30"
-                                    />
+                                        className={INPUT} />
                                 </div>
                                 <button onClick={resetAllMockCredits} disabled={saving}
-                                    className="flex items-center justify-center gap-2 px-4 py-2 h-[38px] rounded-xl text-xs font-bold transition-all border border-green-400/20 text-green-400 hover:bg-green-400/5 disabled:opacity-50">
+                                    className="flex items-center justify-center gap-2 px-4 py-2 h-[38px] rounded-xl text-xs font-bold border border-green-300 text-green-700 hover:bg-green-100 disabled:opacity-50 transition-all">
                                     <IoFlashOutline size={13} /> Reset All Now
                                 </button>
                             </div>
@@ -421,55 +391,52 @@ const ManageCards = () => {
 
                         <div>
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-white font-bold text-sm flex items-center gap-2">
-                                    <IoPersonOutline size={14} className="text-gray-400" /> Per-Student Credits
+                                <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2">
+                                    <IoPersonOutline size={14} className="text-gray-500" /> Per-Student Credits
                                 </h3>
-                                <span className="text-xs text-gray-600">{mockStudents.length} students</span>
+                                <span className="text-xs text-gray-500">{mockStudents.length} students</span>
                             </div>
                             <div className="relative mb-3">
-                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                 <input value={searchMock} onChange={e => setSearchMock(e.target.value)}
                                     placeholder="Search by name or ID…"
-                                    className="w-full bg-white/5 border border-white/8 text-white text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-green-400/30 placeholder-gray-600" />
+                                    className="w-full bg-white border border-gray-200 text-gray-900 text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-green-400 placeholder-gray-400 shadow-sm" />
                             </div>
                             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                                {filteredMockStudents.map(s => {
-                                    return (
-                                        <div key={s._id}
-                                            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-white/6"
-                                            style={{ background: 'rgba(255,255,255,0.025)' }}>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-white text-xs font-semibold truncate">{s.name}</p>
-                                                <p className="text-gray-600 text-[10px]">{s.studentId} · Seat {s.seatNumber} · Last reset: {s.lastReset || 'Never'}</p>
-                                            </div>
-
-                                            {editingMockCredit?.id === s._id ? (
-                                                <div className="flex items-center gap-2">
-                                                    <input type="number" min="0"
-                                                        value={editingMockCredit.value}
-                                                        onChange={e => setEditingMock(prev => ({ ...prev, value: e.target.value }))}
-                                                        onKeyDown={e => { if (e.key === 'Enter') saveMockTestCredit(s._id, Number(editingMockCredit.value)); if (e.key === 'Escape') setEditingMock(null); }}
-                                                        className="w-16 bg-white/10 border border-green-400/30 text-white text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
-                                                        autoFocus />
-                                                    <button onClick={() => saveMockTestCredit(s._id, Number(editingMockCredit.value))}
-                                                        className="text-green-400 hover:text-green-300 transition-colors"><IoCheckmarkCircle size={16} /></button>
-                                                    <button onClick={() => setEditingMock(null)}
-                                                        className="text-gray-500 hover:text-white transition-colors text-xs">✕</button>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-sm w-8 text-center text-green-400">{s.mockTestCredits}</span>
-                                                    <button onClick={() => setEditingMock({ id: s._id, value: s.mockTestCredits })}
-                                                        className="p-1 rounded-lg text-gray-600 hover:text-white hover:bg-white/8 transition-all">
-                                                        <IoPencilOutline size={13} />
-                                                    </button>
-                                                </div>
-                                            )}
+                                {filteredMockStudents.map(s => (
+                                    <div key={s._id}
+                                        className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                            <p className="text-gray-500 text-[10px]">{s.studentId} · Seat {s.seatNumber} · Last reset: {s.lastReset || 'Never'}</p>
                                         </div>
-                                    );
-                                })}
+
+                                        {editingMockCredit?.id === s._id ? (
+                                            <div className="flex items-center gap-2">
+                                                <input type="number" min="0"
+                                                    value={editingMockCredit.value}
+                                                    onChange={e => setEditingMock(prev => ({ ...prev, value: e.target.value }))}
+                                                    onKeyDown={e => { if (e.key === 'Enter') saveMockTestCredit(s._id, Number(editingMockCredit.value)); if (e.key === 'Escape') setEditingMock(null); }}
+                                                    className="w-16 bg-gray-50 border border-green-300 text-gray-900 text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
+                                                    autoFocus />
+                                                <button onClick={() => saveMockTestCredit(s._id, Number(editingMockCredit.value))}
+                                                    className="text-green-600 hover:text-green-700 transition-colors"><IoCheckmarkCircle size={16} /></button>
+                                                <button onClick={() => setEditingMock(null)}
+                                                    className="text-gray-400 hover:text-gray-700 transition-colors text-xs">✕</button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-sm w-8 text-center text-green-600">{s.mockTestCredits}</span>
+                                                <button onClick={() => setEditingMock({ id: s._id, value: s.mockTestCredits })}
+                                                    className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                                                    <IoPencilOutline size={13} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                                 {filteredMockStudents.length === 0 && (
-                                    <p className="text-center text-gray-700 text-xs py-8">No students found</p>
+                                    <p className="text-center text-gray-500 text-xs py-8">No students found</p>
                                 )}
                             </div>
                         </div>

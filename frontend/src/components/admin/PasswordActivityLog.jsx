@@ -185,7 +185,7 @@ const PasswordActivityLog = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-[#1e293b] border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                            className="bg-white border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-6">
                                 <div className="flex items-center gap-3">
@@ -199,7 +199,7 @@ const PasswordActivityLog = () => {
                                 </div>
                                 <button
                                     onClick={() => setShowAuthModal(false)}
-                                    className="text-gray-600 hover:text-gray-900 transition-colors"
+                                    className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors"
                                 >
                                     <IoClose size={24} />
                                 </button>
@@ -218,7 +218,7 @@ const PasswordActivityLog = () => {
                                     value={adminPassword}
                                     onChange={(e) => setAdminPassword(e.target.value)}
                                     onKeyPress={(e) => e.key === 'Enter' && verifyAndReveal()}
-                                    className="w-full px-4 py-3 bg-[#0f172a]/50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 outline-none"
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 outline-none"
                                     placeholder="Enter your password"
                                     autoFocus
                                 />
@@ -227,7 +227,7 @@ const PasswordActivityLog = () => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setShowAuthModal(false)}
-                                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-white/20 border border-gray-200 rounded-xl font-semibold transition-all text-gray-900"
+                                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl font-semibold transition-all text-gray-900"
                                 >
                                     Cancel
                                 </button>

@@ -157,7 +157,7 @@ const ChatMonitor = ({ room, messages: initialMessages, onClose, onDeleteMessage
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder="Send an official message..."
-                            className="flex-1 bg-white text-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                            className="flex-1 bg-white text-gray-900 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
                         />
                         <Button
                             variant="primary"

@@ -53,7 +53,7 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white border border-white/20 rounded-2xl p-6 max-w-md w-full"
+                    className="bg-white border border-gray-200 rounded-2xl p-6 max-w-md w-full"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center mb-6">
@@ -65,7 +65,7 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                         </div>
                         <button
                             onClick={onClose}
-                            className="text-gray-600 hover:text-gray-900 transition-colors"
+                            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors"
                         >
                             <FaTimes size={24} />
                         </button>
@@ -117,14 +117,14 @@ const UpdateRoomPricesModal = ({ isOpen, onClose, room, onSuccess }) => {
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-white/20 rounded-lg transition-colors"
+                                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50"
+                                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 shadow-md"
                             >
                                 {loading ? 'Updating...' : 'Update Prices'}
                             </button>

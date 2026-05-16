@@ -297,7 +297,7 @@ const QRScannerModal = ({ onClose }) => {
                                         : 'bg-red-500/30 border-4 border-red-500/50'
                                     }`}
                             >
-                                <div className={`rounded-3xl p-5 mb-5 shadow-2xl backdrop-blur-xl border border-white/20 ${scanResult.type === 'success' ? 'bg-gradient-to-br from-green-400 to-emerald-600' : 'bg-gradient-to-br from-red-400 to-rose-600'}`}>
+                                <div className={`rounded-3xl p-5 mb-5 shadow-2xl backdrop-blur-xl border border-gray-200 ${scanResult.type === 'success' ? 'bg-gradient-to-br from-green-400 to-emerald-600' : 'bg-gradient-to-br from-red-400 to-rose-600'}`}>
                                     {scanResult.type === 'success' ? (
                                         <FaSignInAlt size={40} className="text-gray-900 drop-shadow-md" />
                                     ) : (
@@ -309,7 +309,7 @@ const QRScannerModal = ({ onClose }) => {
                                 </h3>
                                 <p className="font-bold text-lg mb-4 text-gray-900/90 drop-shadow-md px-4">{scanResult.message}</p>
                                 {scanResult.studentName && (
-                                    <div className="px-5 py-2.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-xl text-white font-bold tracking-wide shadow-xl">
+                                    <div className="px-5 py-2.5 bg-black/40 backdrop-blur-md border border-gray-200 rounded-xl text-white font-bold tracking-wide shadow-xl">
                                         {scanResult.studentName}
                                     </div>
                                 )}

@@ -6,7 +6,7 @@ import { IoRefresh, IoDownload, IoArrowBack, IoWifiOutline, IoTimeOutline } from
 import { motion } from 'framer-motion';
 import html2canvas from 'html2canvas';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const QrKiosk = () => {
     const [qrData, setQrData] = useState(null);
@@ -242,7 +242,7 @@ const QrKiosk = () => {
             <div className="absolute top-6 left-6 z-20">
                 <Link to="/admin">
                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium backdrop-blur-md transition-all">
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium backdrop-blur-md transition-all">
                         <IoArrowBack size={16} /> Back
                     </motion.button>
                 </Link>
@@ -261,7 +261,7 @@ const QrKiosk = () => {
                 className="relative z-10 w-full max-w-sm">
 
                 {/* Glass card */}
-                <div className="bg-white/3 border border-white/10 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
+                <div className="bg-white/3 border border-gray-200 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
                     {/* Gradient header bar */}
                     <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
@@ -272,7 +272,7 @@ const QrKiosk = () => {
                                 <IoWifiOutline size={13} className="text-blue-400" />
                                 <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Live Kiosk</span>
                             </div>
-                            <h1 className="text-2xl font-black text-white mb-1.5">Attendance Kiosk</h1>
+                            <h1 className="text-2xl font-black text-gray-900 mb-1.5">Attendance Kiosk</h1>
                             <p className="text-gray-500 text-sm">Scan QR code with your student app to mark attendance</p>
                         </div>
 
@@ -283,7 +283,7 @@ const QrKiosk = () => {
                             <div className="relative bg-white p-4 rounded-2xl shadow-2xl">
                                 {loading ? (
                                     <div className="w-[200px] h-[200px] flex items-center justify-center">
-                                        <IoRefresh className="animate-spin text-4xl text-gray-300" />
+                                        <IoRefresh className="animate-spin text-4xl text-gray-700" />
                                     </div>
                                 ) : qrData ? (
                                     <QRCodeCanvas
@@ -326,13 +326,13 @@ const QrKiosk = () => {
                                 <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                     onClick={() => handleDownload('en')}
                                     disabled={loading || !qrData}
-                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all disabled:opacity-40">
+                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 transition-all disabled:opacity-40">
                                     <IoDownload size={16} /> PDF (EN)
                                 </motion.button>
                                 <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                     onClick={() => handleDownload('hi')}
                                     disabled={loading || !qrData}
-                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 transition-all disabled:opacity-40">
+                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 transition-all disabled:opacity-40">
                                     <IoDownload size={16} /> PDF (HI)
                                 </motion.button>
                             </div>
@@ -387,7 +387,7 @@ const QrKiosk = () => {
                     const stepYPx = step.y * 3.78;
                     return (
                         <div key={idx}>
-                            <div className="absolute rounded-full bg-[#3b82f6] flex items-center justify-center text-white"
+                            <div className="absolute rounded-full bg-[#3b82f6] flex items-center justify-center text-gray-900"
                                 style={{ width: 38, height: 38, left: 64, top: stepYPx - 25, opacity: 0.85, fontSize: 12, fontWeight: 'bold' }}>
                                 {step.num}
                             </div>
