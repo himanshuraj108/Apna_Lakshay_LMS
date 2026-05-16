@@ -10,7 +10,7 @@ import api from '../../utils/api';
 import ChatMonitor from '../../components/admin/ChatMonitor';
 import StudentChatList from '../../components/admin/StudentChatList';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const ROOM_TYPE_COLORS = {
     public: 'from-blue-500 to-cyan-500',
@@ -107,19 +107,19 @@ const ChatManagement = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/admin')}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                             <IoArrowBack size={16} /> Back
                         </motion.button>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg"><IoChatbubbles size={14} className="text-white" /></div>
+                                <div className="p-1.5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg"><IoChatbubbles size={14} className="text-gray-900" /></div>
                                 <span className="text-xs font-bold uppercase tracking-widest text-violet-400">Admin</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-white">Discussion Management</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Discussion Management</h1>
                         </div>
                     </div>
                     <motion.button whileHover={{ scale: 1.05 }} onClick={fetchData}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                         <IoRefresh size={16} /> Refresh
                     </motion.button>
                 </motion.div>
@@ -129,7 +129,7 @@ const ChatManagement = () => {
                     className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-6">
                     <div className="flex items-center gap-2 mb-4">
                         <IoSettings size={16} className="text-gray-500" />
-                        <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">System Configuration</span>
+                        <span className="text-sm font-bold text-gray-600 uppercase tracking-widest">System Configuration</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Global toggle */}
@@ -142,7 +142,7 @@ const ChatManagement = () => {
                                 {isGlobalChatEnabled ? 'Chat Enabled' : 'Chat Offline'}
                             </span>
                         </div>
-                        <div className="w-px h-6 bg-white/10 hidden sm:block" />
+                        <div className="w-px h-6 bg-gray-100 hidden sm:block" />
                         <motion.button whileHover={{ scale: 1.04 }} onClick={handlePurgeAll}
                             className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-xl text-sm font-semibold transition-all">
                             <IoTrash size={14} /> Clear Messages Only
@@ -163,7 +163,7 @@ const ChatManagement = () => {
                         <button key={key} onClick={() => setActiveTab(key)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === key
                                 ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25'
-                                : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                                : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
                             <Icon size={15} /> {label}
                         </button>
                     ))}
@@ -176,8 +176,8 @@ const ChatManagement = () => {
                             {['all', 'public', 'group', 'private'].map(t => (
                                 <button key={t} onClick={() => setFilter(t)}
                                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all ${filter === t
-                                        ? 'bg-white/15 border border-white/20 text-white'
-                                        : 'bg-white/5 border border-white/10 text-gray-500 hover:bg-white/10'}`}>
+                                        ? 'bg-white/15 border border-white/20 text-gray-900'
+                                        : 'bg-gray-50 border border-gray-200 text-gray-500 hover:bg-gray-100'}`}>
                                     {t}
                                 </button>
                             ))}
@@ -196,7 +196,7 @@ const ChatManagement = () => {
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1 min-w-0">
                                                     {room.isDisabled && <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-bold mb-1 inline-block">DISABLED</span>}
-                                                    <h3 className="font-bold text-white text-sm truncate">{room.type === 'private' ? 'Private Chat' : room.name}</h3>
+                                                    <h3 className="font-bold text-gray-900 text-sm truncate">{room.type === 'private' ? 'Private Chat' : room.name}</h3>
                                                     <p className="text-xs text-gray-500 mt-0.5">
                                                         {room.type === 'private' ? room.participants?.map(p => p.name).join(', ') : `${room.participants?.length || 0} members`}
                                                     </p>
@@ -209,7 +209,7 @@ const ChatManagement = () => {
                                                     <button onClick={() => handleDeleteRoom(room._id)} className="p-1.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-all" title="Delete"><IoTrash size={15} /></button>
                                                 </div>
                                             </div>
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-2 inline-block capitalize bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-gray-500 to-slate-500'} bg-clip-text text-transparent border border-white/10`}>{room.type}</span>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-2 inline-block capitalize bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-gray-500 to-slate-500'} bg-clip-text text-transparent border border-gray-200`}>{room.type}</span>
                                         </div>
                                     </motion.div>
                                 ))}

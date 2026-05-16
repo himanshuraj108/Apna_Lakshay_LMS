@@ -9,7 +9,7 @@ import {
 } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const TYPE_META = {
     seat: { label: 'Seat Change', icon: IoSwapHorizontalOutline, color: 'from-blue-500 to-indigo-500' },
@@ -95,18 +95,18 @@ const RequestManagement = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/admin">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                             <IoArrowBack size={16} /> Back
                         </motion.button>
                     </Link>
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
                             <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg">
-                                <IoDocumentTextOutline size={14} className="text-white" />
+                                <IoDocumentTextOutline size={14} className="text-gray-900" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Admin</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-white">Student Requests</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Student Requests</h1>
                     </div>
                 </motion.div>
 
@@ -122,7 +122,7 @@ const RequestManagement = () => {
                         <button key={t.key} onClick={() => setFilter(t.key)}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${filter === t.key
                                 ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
-                                : 'bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400'}`}>
+                                : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'}`}>
                             {t.label} <span className="opacity-70">({t.count})</span>
                         </button>
                     ))}
@@ -134,7 +134,7 @@ const RequestManagement = () => {
                 ) : filteredRequests.length === 0 ? (
                     <div className="bg-white/3 border border-white/8 rounded-2xl p-10 text-center">
                         <IoDocumentTextOutline size={40} className="text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-400">No requests found</p>
+                        <p className="text-gray-600">No requests found</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
@@ -149,8 +149,8 @@ const RequestManagement = () => {
                                         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3 flex-wrap mb-1">
-                                                    <div className={`p-1.5 rounded-lg bg-gradient-to-br ${meta.color}`}><MetaIcon size={14} className="text-white" /></div>
-                                                    <h3 className="font-bold text-white">{req.student?.name}</h3>
+                                                    <div className={`p-1.5 rounded-lg bg-gradient-to-br ${meta.color}`}><MetaIcon size={14} className="text-gray-900" /></div>
+                                                    <h3 className="font-bold text-gray-900">{req.student?.name}</h3>
                                                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${STATUS_COLORS[req.status] || ''}`}>
                                                         {req.status === 'approved' && req.type === 'support' ? 'Solved' : req.status}
                                                     </span>
@@ -158,18 +158,18 @@ const RequestManagement = () => {
                                                 </div>
                                                 <p className="text-xs text-gray-500 mb-3">{req.student?.email}</p>
                                                 {req.description && (
-                                                    <p className="text-sm text-gray-300 bg-white/5 border border-white/8 px-3 py-2 rounded-xl italic mb-3">"{req.description}"</p>
+                                                    <p className="text-sm text-gray-700 bg-gray-50 border border-white/8 px-3 py-2 rounded-xl italic mb-3">"{req.description}"</p>
                                                 )}
                                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                                     {[
                                                         { title: 'Current', data: req.currentData, color: 'text-gray-300' },
                                                         { title: 'Requested', data: req.requestedData, color: 'text-green-400' },
                                                     ].map(({ title, data, color }) => (
-                                                        <div key={title} className="bg-white/5 border border-white/8 rounded-xl p-3">
+                                                        <div key={title} className="bg-gray-50 border border-white/8 rounded-xl p-3">
                                                             <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{title}</p>
                                                             {req.type === 'seat_change' && <p className={`text-sm font-semibold ${color}`}>{data?.seatNumber || 'N/A'}<br /><span className="text-xs text-gray-500">{data?.floor} – {data?.room}</span></p>}
                                                             {(req.type === 'seat' || req.type === 'shift') && <p className={`text-sm font-semibold ${color}`}>Seat: {data?.seatNumber || 'N/A'}<br />Shift: {getShiftName(data?.shift || data?.requestedShift)}</p>}
-                                                            {req.type === 'support' && (title === 'Current' ? <p className="text-xs text-gray-500 italic">New Ticket</p> : <div><p className={`text-xs font-semibold ${color} capitalize mb-1`}>{data?.category}</p><p className="text-xs text-gray-300">{data?.message}</p></div>)}
+                                                            {req.type === 'support' && (title === 'Current' ? <p className="text-xs text-gray-500 italic">New Ticket</p> : <div><p className={`text-xs font-semibold ${color} capitalize mb-1`}>{data?.category}</p><p className="text-xs text-gray-700">{data?.message}</p></div>)}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -177,7 +177,7 @@ const RequestManagement = () => {
                                                 {req.adminResponse && (
                                                     <div className="mt-3 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl">
                                                         <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Admin Response</p>
-                                                        <p className="text-sm text-gray-300">{req.adminResponse}</p>
+                                                        <p className="text-sm text-gray-700">{req.adminResponse}</p>
                                                     </div>
                                                 )}
                                                 {req.rating && (
@@ -188,7 +188,7 @@ const RequestManagement = () => {
                                                                 {[...Array(5)].map((_, idx) => <IoStar key={idx} size={10} className={idx < req.rating ? "text-amber-400" : "text-gray-700"} />)}
                                                             </div>
                                                         </div>
-                                                        {req.ratingFeedback && <p className="text-sm text-gray-300 italic">"{req.ratingFeedback}"</p>}
+                                                        {req.ratingFeedback && <p className="text-sm text-gray-700 italic">"{req.ratingFeedback}"</p>}
                                                     </div>
                                                 )}
                                             </div>
@@ -220,23 +220,23 @@ const RequestManagement = () => {
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
                             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                                className="bg-gray-950 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                                className="bg-gray-950 border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-2xl">
                                 <div className={`h-px w-full bg-gradient-to-r ${actionType === 'approved' ? 'from-green-500 to-teal-500' : 'from-red-500 to-rose-500'} mb-5`} />
-                                <h2 className="text-xl font-bold text-white mb-4">{actionType === 'approved' ? 'Approve' : 'Reject'} Request</h2>
-                                <div className="bg-white/5 border border-white/8 rounded-xl p-4 mb-4">
-                                    <p className="text-sm text-gray-400">Student: <span className="text-white font-medium">{selectedRequest?.student?.name}</span></p>
-                                    <p className="text-sm text-gray-400 mt-1">Type: <span className="text-white font-medium capitalize">{selectedRequest?.type}</span></p>
+                                <h2 className="text-xl font-bold text-gray-900 mb-4">{actionType === 'approved' ? 'Approve' : 'Reject'} Request</h2>
+                                <div className="bg-gray-50 border border-white/8 rounded-xl p-4 mb-4">
+                                    <p className="text-sm text-gray-600">Student: <span className="text-gray-900 font-medium">{selectedRequest?.student?.name}</span></p>
+                                    <p className="text-sm text-gray-600 mt-1">Type: <span className="text-gray-900 font-medium capitalize">{selectedRequest?.type}</span></p>
                                     
                                     {(selectedRequest?.type === 'seat_change' || selectedRequest?.type === 'shift') && actionType === 'approved' && (
-                                        <div className="mt-4 pt-4 border-t border-white/10">
-                                            <p className="text-sm font-semibold text-white mb-3">Fee Management</p>
-                                            <p className="text-xs text-gray-400 mb-3 bg-white/5 p-2 rounded">
+                                        <div className="mt-4 pt-4 border-t border-gray-200">
+                                            <p className="text-sm font-semibold text-gray-900 mb-3">Fee Management</p>
+                                            <p className="text-xs text-gray-600 mb-3 bg-gray-50 p-2 rounded">
                                                 By default, the student's original fee is maintained during a change.
                                             </p>
                                             
-                                            <p className="text-sm text-gray-400 mb-3">Original Fee: <span className="text-white font-medium">₹{selectedRequest?.studentPrice ?? 'Unknown'}</span></p>
+                                            <p className="text-sm text-gray-600 mb-3">Original Fee: <span className="text-gray-900 font-medium">₹{selectedRequest?.studentPrice ?? 'Unknown'}</span></p>
 
-                                            <label className="flex items-center gap-2 text-sm text-gray-300 mb-4 cursor-pointer">
+                                            <label className="flex items-center gap-2 text-sm text-gray-700 mb-4 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={useBaseFee} 
@@ -244,7 +244,7 @@ const RequestManagement = () => {
                                                         setUseBaseFee(e.target.checked); 
                                                         if(e.target.checked) setUpdatedFee(''); 
                                                     }} 
-                                                    className="w-4 h-4 rounded bg-gray-900 border-white/20 text-indigo-500 focus:ring-indigo-500/50" 
+                                                    className="w-4 h-4 rounded bg-white border-white/20 text-indigo-500 focus:ring-indigo-500/50" 
                                                 />
                                                 Update to new Base Fee
                                             </label>
@@ -255,13 +255,13 @@ const RequestManagement = () => {
                                                         Custom Fee Override (Leave blank for original fee)
                                                     </label>
                                                     <div className="relative">
-                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">₹</span>
                                                         <input 
                                                             type="number" 
                                                             value={updatedFee} 
                                                             onChange={e => setUpdatedFee(e.target.value)} 
                                                             placeholder="e.g. 1500" 
-                                                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white text-sm focus:border-indigo-500/50 outline-none transition-all" 
+                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-gray-900 text-sm focus:border-indigo-500/50 outline-none transition-all" 
                                                         />
                                                     </div>
                                                 </div>
@@ -274,7 +274,7 @@ const RequestManagement = () => {
                                 </label>
                                 <textarea value={adminResponse} onChange={e => setAdminResponse(e.target.value)} rows={3}
                                     placeholder={actionType === 'approved' ? 'Optional message…' : 'Reason for rejection…'}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-indigo-500/50 outline-none resize-none mb-4 transition-all" />
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm focus:border-indigo-500/50 outline-none resize-none mb-4 transition-all" />
                                 <div className="flex gap-3">
                                     <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                         onClick={handleAction} disabled={processing || (actionType === 'rejected' && !adminResponse.trim())}
@@ -282,7 +282,7 @@ const RequestManagement = () => {
                                         {processing ? 'Processing…' : `Confirm ${actionType === 'approved' ? 'Approval' : 'Rejection'}`}
                                     </motion.button>
                                     <button onClick={() => setShowModal(false)}
-                                        className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                                        className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                                         Cancel
                                     </button>
                                 </div>

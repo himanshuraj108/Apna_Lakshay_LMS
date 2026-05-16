@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import { IoSettings, IoPower, IoTime, IoSave, IoCheckmarkCircle, IoLocationOutline } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 const INPUT = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 outline-none transition-all";
 
 const Settings = () => {
@@ -59,11 +59,11 @@ const Settings = () => {
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
                     <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl shadow-lg shadow-purple-500/30">
-                        <IoSettings size={20} className="text-white" />
+                        <IoSettings size={20} className="text-gray-900" />
                     </div>
                     <div>
                         <span className="text-xs font-bold uppercase tracking-widest text-purple-400">Admin</span>
-                        <h1 className="text-2xl sm:text-3xl font-black text-white leading-none">System Configuration</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 leading-none">System Configuration</h1>
                     </div>
                 </motion.div>
 
@@ -75,7 +75,7 @@ const Settings = () => {
                             <IoPower size={20} />
                         </div>
                         <div>
-                            <h2 className="font-bold text-white text-sm">System Status</h2>
+                            <h2 className="font-bold text-gray-900 text-sm">System Status</h2>
                             <p className="text-xs text-gray-500">{settings.systemStatus === 'active' ? 'System is Online' : 'Maintenance Mode Active'}</p>
                         </div>
                     </div>
@@ -84,7 +84,7 @@ const Settings = () => {
                             <button key={s} onClick={() => handleSave({ ...settings, systemStatus: s })}
                                 className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all capitalize ${settings.systemStatus === s
                                     ? s === 'active' ? 'bg-green-500 text-white shadow-lg shadow-green-500/25' : 'bg-red-500 text-white shadow-lg shadow-red-500/25'
-                                    : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                                    : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
                                 {s}
                             </button>
                         ))}
@@ -97,11 +97,11 @@ const Settings = () => {
                     {/* Location Attendance Toggle */}
                     <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2.5 rounded-xl ${settings.locationAttendance !== false ? 'bg-blue-500/15 text-blue-400' : 'bg-gray-500/15 text-gray-400'}`}>
+                            <div className={`p-2.5 rounded-xl ${settings.locationAttendance !== false ? 'bg-blue-500/15 text-blue-400' : 'bg-gray-500/15 text-gray-600'}`}>
                                 <IoLocationOutline size={20} />
                             </div>
                             <div>
-                                <h2 className="font-bold text-white text-sm">Location Attendance</h2>
+                                <h2 className="font-bold text-gray-900 text-sm">Location Attendance</h2>
                                 <p className="text-xs text-gray-500 leading-snug max-w-[200px]">Require students to be physically present at the library to mark attendance.</p>
                             </div>
                         </div>
@@ -136,7 +136,7 @@ const Settings = () => {
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="w-2.5 h-2.5 rounded-full bg-blue-500 block" />
-                                        <h2 className="font-bold text-white">Default Logic</h2>
+                                        <h2 className="font-bold text-gray-900">Default Logic</h2>
                                     </div>
                                     <p className="text-sm text-gray-500 max-w-md">Fixed hardcoded shifts — the fail-safe mode for standard operations.</p>
                                 </div>
@@ -144,7 +144,7 @@ const Settings = () => {
                                     onClick={() => handleSave({ ...settings, shiftMode: 'default' })}
                                     disabled={settings.shiftMode === 'default'}
                                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${settings.shiftMode === 'default'
-                                        ? 'bg-white/5 border border-white/10 text-gray-500 cursor-default'
+                                        ? 'bg-gray-50 border border-gray-200 text-gray-500 cursor-default'
                                         : 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'}`}>
                                     {settings.shiftMode === 'default' ? '✓ Currently Active' : 'Activate Default Mode'}
                                 </motion.button>
@@ -155,12 +155,12 @@ const Settings = () => {
                                     { name: 'Evening', time: '15:00 – 21:00', price: '₹800', color: 'from-purple-400 to-violet-400' },
                                     { name: 'Full Day', time: '09:00 – 21:00', price: '₹1200', color: 'from-green-400 to-emerald-400' },
                                 ].map(s => (
-                                    <div key={s.name} className="bg-white/5 border border-white/8 rounded-xl p-4">
+                                    <div key={s.name} className="bg-gray-50 border border-white/8 rounded-xl p-4">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className={`font-bold text-sm bg-gradient-to-r ${s.color} bg-clip-text text-transparent`}>{s.name}</span>
-                                            <span className="text-[10px] bg-white/10 text-gray-400 px-2 py-0.5 rounded-md">{s.time}</span>
+                                            <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">{s.time}</span>
                                         </div>
-                                        <p className="text-2xl font-black text-white">{s.price}</p>
+                                        <p className="text-2xl font-black text-gray-900">{s.price}</p>
                                     </div>
                                 ))}
                             </div>
@@ -171,7 +171,7 @@ const Settings = () => {
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
                                         <span className="w-2.5 h-2.5 rounded-full bg-green-500 block" />
-                                        <h2 className="font-bold text-white">Custom Logic</h2>
+                                        <h2 className="font-bold text-gray-900">Custom Logic</h2>
                                     </div>
                                     <p className="text-sm text-gray-500 max-w-md">Dynamic shifts — flexible timing for unlimited configurations.</p>
                                 </div>
@@ -179,7 +179,7 @@ const Settings = () => {
                                     onClick={() => handleSave({ ...settings, shiftMode: 'custom' })}
                                     disabled={settings.shiftMode === 'custom'}
                                     className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${settings.shiftMode === 'custom'
-                                        ? 'bg-white/5 border border-white/10 text-gray-500 cursor-default'
+                                        ? 'bg-gray-50 border border-gray-200 text-gray-500 cursor-default'
                                         : 'bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg shadow-green-500/25'}`}>
                                     {settings.shiftMode === 'custom' ? '✓ Currently Active' : 'Activate Custom Mode'}
                                 </motion.button>

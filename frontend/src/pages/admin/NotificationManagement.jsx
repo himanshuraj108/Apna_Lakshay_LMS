@@ -8,7 +8,7 @@ import {
     IoMegaphoneOutline
 } from 'react-icons/io5';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const INPUT = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-gray-600 focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 outline-none transition-all";
 
@@ -51,18 +51,18 @@ const NotificationManagement = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/admin">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                             <IoArrowBack size={16} /> Back
                         </motion.button>
                     </Link>
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
                             <div className="p-1.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg">
-                                <IoNotificationsOutline size={14} className="text-white" />
+                                <IoNotificationsOutline size={14} className="text-gray-900" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-widest text-pink-400">Admin</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-white">Notifications</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Notifications</h1>
                     </div>
                 </motion.div>
 
@@ -88,7 +88,7 @@ const NotificationManagement = () => {
                                     <button key={String(val)} type="button" onClick={() => setFormData({ ...formData, sendToAll: val, recipientId: '' })}
                                         className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${formData.sendToAll === val
                                             ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/25'
-                                            : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10'}`}>
+                                            : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
                                         <Icon size={16} /> {label}
                                     </button>
                                 ))}
@@ -127,13 +127,13 @@ const NotificationManagement = () => {
                         <AnimatePresence>
                             {(formData.title || formData.message) && (
                                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                    className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                    className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                                     <div className="flex items-center gap-2 mb-2">
                                         <IoMegaphoneOutline size={14} className="text-pink-400" />
                                         <p className="text-xs text-gray-500 uppercase tracking-wider">Preview</p>
                                     </div>
-                                    {formData.title && <h3 className="font-bold text-white mb-1">{formData.title}</h3>}
-                                    {formData.message && <p className="text-gray-300 text-sm whitespace-pre-wrap">{formData.message}</p>}
+                                    {formData.title && <h3 className="font-bold text-gray-900 mb-1">{formData.title}</h3>}
+                                    {formData.message && <p className="text-gray-700 text-sm whitespace-pre-wrap">{formData.message}</p>}
                                 </motion.div>
                             )}
                         </AnimatePresence>
