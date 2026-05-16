@@ -1833,11 +1833,46 @@ exports.markAttendance = async (req, res) => {
                 return null; // Skip marking attendance
             }
 
-            return await Attendance.findOneAndUpdate(
-                { student: studentId, date: attendanceDate },
-                updateData,
-                { upsert: true, new: true }
-            );
+            // Use date RANGE to find existing record (fixes IST/UTC timezone mismatch
+            // where student-stored dates may differ from admin midnight by server timezone)
+            const nextDay = new Date(attendanceDate);
+            nextDay.setDate(attendanceDate.getDate() + 1);
+
+            const existingAttendance = await Attendance.findOne({
+                student: studentId,
+                date: { $gte: attendanceDate, $lt: nextDay }
+            }).sort({ _id: -1 }); // latest record first — matches what getSeatViewAttendance displays
+
+            // Sub-Admins cannot override student self-marked attendance
+            // Also block if markedBy === studentId (fallback for records without selfMarked flag)
+            const isEffectivelySelfMarked = existingAttendance &&
+                (existingAttendance.selfMarked ||
+                 (existingAttendance.markedBy && existingAttendance.markedBy.toString() === studentId.toString()));
+
+            if (isEffectivelySelfMarked && req.user.role === 'subadmin') {
+                return null;
+            }
+
+            // Super-admin overriding self-marked: clear the flag
+            if (isEffectivelySelfMarked && req.user.role !== 'subadmin') {
+                updateData.selfMarked = false;
+            }
+
+            if (existingAttendance) {
+                // Update the EXACT document by _id (avoids any date mismatch on upsert)
+                return await Attendance.findOneAndUpdate(
+                    { _id: existingAttendance._id },
+                    { $set: updateData },
+                    { new: true }
+                );
+            } else {
+                // No existing record — create new with consistent UTC midnight date
+                return await Attendance.findOneAndUpdate(
+                    { student: studentId, date: attendanceDate },
+                    { $set: updateData },
+                    { upsert: true, new: true }
+                );
+            }
         });
 
         await Promise.all(promises);
@@ -1852,6 +1887,92 @@ exports.markAttendance = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// ─── GET /admin/attendance/seat-view/:date ────────────────────────────────────
+// Returns all active students sorted by seat number, merged with that day's
+// attendance status. Used by the new toggle-based Mark Attendance UI.
+exports.getSeatViewAttendance = async (req, res) => {
+    try {
+        const dateStr = req.params.date; // YYYY-MM-DD
+        const attendanceDate = new Date(dateStr);
+        attendanceDate.setHours(0, 0, 0, 0);
+        const nextDay = new Date(attendanceDate);
+        nextDay.setDate(attendanceDate.getDate() + 1);
+
+        // 1. All active students with seat + shift info
+        const students = await User.find({ role: 'student', isActive: true })
+            .populate({
+                path: 'seat',
+                select: 'number assignments',
+                populate: { path: 'assignments.shift', select: 'name startTime endTime' }
+            })
+            .select('name email mobile seat createdAt')
+            .lean();
+
+        // 2. Attendance records for this date — sort ascending so latest record wins in the map
+        const records = await Attendance.find({
+            date: { $gte: attendanceDate, $lt: nextDay }
+        }).sort({ _id: 1 }).select('student status markedBy selfMarked').lean();
+
+        const recordMap = {};
+        records.forEach(r => { recordMap[r.student.toString()] = r; });
+
+        // 3. Merge and extract shift name per student
+        const result = students
+            .filter(s => {
+                // Skip students admitted after selected date
+                const admitted = new Date(s.createdAt);
+                admitted.setHours(0, 0, 0, 0);
+                return attendanceDate >= admitted;
+            })
+            .map(s => {
+                // Get shift name from active assignment
+                let shiftName = 'N/A';
+                if (s.seat && s.seat.assignments) {
+                    const active = s.seat.assignments.find(
+                        a => a.status === 'active' && a.student?.toString() === s._id.toString()
+                    );
+                    if (active && active.shift && active.shift.name) {
+                        shiftName = active.shift.name;
+                    }
+                }
+
+                const rec = recordMap[s._id.toString()];
+                const status = rec ? rec.status : 'absent';
+                const markedBy = rec ? (rec.markedBy ? rec.markedBy.toString() : null) : null;
+
+                // selfMarked is true if explicit flag is set OR if the student marked themselves
+                // (markedBy === student._id). This fallback handles old records before the flag.
+                const selfMarked = rec
+                    ? (!!rec.selfMarked || markedBy === s._id.toString())
+                    : false;
+
+                return {
+                    _id: s._id,
+                    name: s.name,
+                    email: s.email,
+                    seatNumber: s.seat ? s.seat.number : null,
+                    seatId: s.seat ? s.seat._id : null,
+                    shiftName,
+                    status,          // 'present' | 'absent' | 'holiday'
+                    selfMarked,      // true = student marked themselves
+                    markedBy,        // who marked (string id or null)
+                    hasSeat: !!s.seat,
+                };
+            })
+            // Sort by seat number numerically (seats without number go to end)
+            .sort((a, b) => {
+                const na = parseInt(a.seatNumber) || 9999;
+                const nb = parseInt(b.seatNumber) || 9999;
+                return na - nb;
+            });
+
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.status(200).json({ success: true, students: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
 
@@ -2013,6 +2134,12 @@ exports.quickCheckIn = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Access Denied: Pending seat allocation' });
         }
 
+        // Sub-Admins cannot override student self-marked attendance
+        const existingAttendance = await Attendance.findOne({ student: studentId, date: attendanceDate });
+        if (existingAttendance && existingAttendance.selfMarked && req.user.role === 'subadmin') {
+            return res.status(403).json({ success: false, message: 'Cannot override student self-marked attendance' });
+        }
+
         const attendance = await Attendance.findOneAndUpdate(
             { student: studentId, date: attendanceDate },
             {
@@ -2058,6 +2185,11 @@ exports.quickCheckOut = async (req, res) => {
                 success: false,
                 message: 'No active session found for this student'
             });
+        }
+
+        // Sub-Admins cannot override student self-marked attendance
+        if (attendance.selfMarked && req.user.role === 'subadmin') {
+            return res.status(403).json({ success: false, message: 'Cannot override student self-marked attendance' });
         }
 
         // Update exit time
@@ -2122,8 +2254,12 @@ exports.bulkCheckIn = async (req, res) => {
         const attendanceDate = new Date();
         attendanceDate.setHours(0, 0, 0, 0);
 
-        const promises = studentIds.map(studentId =>
-            Attendance.findOneAndUpdate(
+        const promises = studentIds.map(async studentId => {
+            const existingAttendance = await Attendance.findOne({ student: studentId, date: attendanceDate });
+            if (existingAttendance && existingAttendance.selfMarked && req.user.role === 'subadmin') {
+                return null; // Sub-admin cannot override self-marked attendance
+            }
+            return Attendance.findOneAndUpdate(
                 { student: studentId, date: attendanceDate },
                 {
                     status: 'present',
@@ -2132,8 +2268,8 @@ exports.bulkCheckIn = async (req, res) => {
                     isActive: true
                 },
                 { upsert: true, new: true }
-            )
-        );
+            );
+        });
 
         await Promise.all(promises);
 
@@ -2160,16 +2296,21 @@ exports.bulkCheckOut = async (req, res) => {
         const attendanceDate = new Date();
         attendanceDate.setHours(0, 0, 0, 0);
 
-        const promises = studentIds.map(studentId =>
-            Attendance.findOneAndUpdate(
+        const promises = studentIds.map(async studentId => {
+            const existingAttendance = await Attendance.findOne({ student: studentId, date: attendanceDate });
+            // Sub-admin cannot override self-marked attendance
+            if (existingAttendance && existingAttendance.selfMarked && req.user.role === 'subadmin') {
+                return null;
+            }
+            return Attendance.findOneAndUpdate(
                 { student: studentId, date: attendanceDate },
                 {
                     exitTime: currentTime,
                     isActive: false
                 },
                 { new: true }
-            )
-        );
+            );
+        });
 
         await Promise.all(promises);
 

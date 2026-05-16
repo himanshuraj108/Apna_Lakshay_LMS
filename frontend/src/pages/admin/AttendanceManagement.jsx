@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
@@ -7,16 +7,21 @@ import {
     IoTimeOutline, IoDocumentTextOutline, IoFlashOutline,
     IoBarChartOutline, IoRefresh, IoArrowForward, IoBedOutline,
     IoCalendarOutline, IoPeopleOutline, IoDownloadOutline,
-    IoSparkles, IoTrashOutline
+    IoSparkles, IoTrashOutline, IoLockClosed
 } from 'react-icons/io5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
+import useBackPath from '../../hooks/useBackPath';
+import { useAuth } from '../../context/AuthContext';
 
 const PAGE_BG = { background: '#F8FAFC' };
 
 const AttendanceManagement = () => {
+    const backPath = useBackPath();
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const isSubAdmin = user?.role === 'subadmin';
     const [students, setStudents] = useState([]);
     const [attendance, setAttendance] = useState({});
     const getLocalDate = () => {
@@ -31,9 +36,124 @@ const AttendanceManagement = () => {
     const [holidays, setHolidays] = useState([]);
     const [showHolidayModal, setShowHolidayModal] = useState(false);
     const [holidayName, setHolidayName] = useState('');
+    const [viewTab, setViewTab] = useState('mark'); // 'mark' | 'reports'
+    const [seatStudents, setSeatStudents] = useState([]);
+    const [autoSaving, setAutoSaving] = useState(false);
+    const [lastSaved, setLastSaved] = useState(null);
+    const [lastLiveSync, setLastLiveSync] = useState(null);
+    const [newSelfMarkDetected, setNewSelfMarkDetected] = useState(false);
+    const pollRef = useRef(null);
+    const autoSavingRef = useRef(false);
 
     useEffect(() => { fetchStudents(); fetchHolidays(); }, []);
     useEffect(() => { if (students.length > 0) loadAttendance(); }, [selectedDate, students]);
+    useEffect(() => { fetchSeatView(); }, [selectedDate]);
+
+    // ── Live polling: auto-refresh seat view every 20s for today's date ──────
+    useEffect(() => {
+        const todayStr = getLocalDate();
+        if (selectedDate !== todayStr || viewTab !== 'mark') return; // only poll today
+
+        pollRef.current = setInterval(async () => {
+            if (autoSavingRef.current) return; // don't poll mid-save
+            try {
+                const res = await api.get(`/admin/attendance/seat-view/${selectedDate}`);
+                // Re-check: if a save started while this GET was in-flight, discard stale data
+                if (autoSavingRef.current) return;
+                const fresh = res.data.students;
+                setSeatStudents(prev => {
+                    // Only update cards that changed (avoids re-rendering non-changed rows)
+                    let hasChange = false;
+                    const merged = prev.map(old => {
+                        const updated = fresh.find(f => f._id.toString() === old._id.toString());
+                        if (!updated) return old;
+                        const changed =
+                            old.status !== updated.status ||
+                            old.selfMarked !== updated.selfMarked;
+                        if (changed) hasChange = true;
+                        return changed ? updated : old;
+                    });
+                    // Also add any new students not yet in list
+                    fresh.forEach(f => {
+                        if (!prev.find(p => p._id.toString() === f._id.toString())) {
+                            merged.push(f);
+                            hasChange = true;
+                        }
+                    });
+                    if (hasChange) setNewSelfMarkDetected(true);
+                    return hasChange ? [...merged] : prev;
+                });
+                setLastLiveSync(new Date());
+            } catch (e) { /* silent fail */ }
+        }, 10000); // every 10 seconds
+
+        return () => clearInterval(pollRef.current);
+    }, [selectedDate, viewTab]);
+
+    // Flash the badge briefly then reset
+    useEffect(() => {
+        if (!newSelfMarkDetected) return;
+        const t = setTimeout(() => setNewSelfMarkDetected(false), 3000);
+        return () => clearTimeout(t);
+    }, [newSelfMarkDetected]);
+
+
+    // ── Seat color palette (same seat = same color highlight) ──────────────
+    const PALETTES = [
+        { bg: 'bg-blue-50',   border: 'border-blue-300',   text: 'text-blue-700',   badge: 'bg-blue-100 text-blue-700' },
+        { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-700' },
+        { bg: 'bg-teal-50',   border: 'border-teal-300',   text: 'text-teal-700',   badge: 'bg-teal-100 text-teal-700' },
+        { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-700' },
+        { bg: 'bg-pink-50',   border: 'border-pink-300',   text: 'text-pink-700',   badge: 'bg-pink-100 text-pink-700' },
+        { bg: 'bg-cyan-50',   border: 'border-cyan-300',   text: 'text-cyan-700',   badge: 'bg-cyan-100 text-cyan-700' },
+        { bg: 'bg-rose-50',   border: 'border-rose-300',   text: 'text-rose-700',   badge: 'bg-rose-100 text-rose-700' },
+        { bg: 'bg-indigo-50', border: 'border-indigo-300', text: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700' },
+        { bg: 'bg-lime-50',   border: 'border-lime-300',   text: 'text-lime-700',   badge: 'bg-lime-100 text-lime-700' },
+        { bg: 'bg-amber-50',  border: 'border-amber-300',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-700' },
+    ];
+
+    const seatColorMap = (() => {
+        const map = {}; let idx = 0;
+        seatStudents.forEach(s => {
+            if (s.seatNumber && !map[s.seatNumber]) { map[s.seatNumber] = PALETTES[idx % PALETTES.length]; idx++; }
+        });
+        return map;
+    })();
+
+    const fetchSeatView = async () => {
+        try {
+            const res = await api.get(`/admin/attendance/seat-view/${selectedDate}`);
+            setSeatStudents(res.data.students);
+        } catch (e) { console.error('Failed to load seat view', e); }
+    };
+
+    // Toggle a student's status in the seat-view list and auto-save immediately
+    const toggleSeatStudent = async (studentId, currentStatus, isSelfMarked) => {
+        // Sub-admins cannot toggle self-marked records
+        if (isSubAdmin && isSelfMarked) return;
+
+        const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+        // Optimistic update — clear selfMarked so super admin override reflects immediately
+        setSeatStudents(prev => prev.map(s =>
+            s._id.toString() === studentId.toString()
+                ? { ...s, status: newStatus, selfMarked: false }
+                : s
+        ));
+        // Auto-save to backend
+        autoSavingRef.current = true;
+        setAutoSaving(true);
+        try {
+            await api.post('/admin/attendance', {
+                date: selectedDate,
+                attendanceData: [{ studentId, status: newStatus }]
+            });
+            setLastSaved(new Date());
+            // Immediately re-fetch confirmed state from DB (?t= busts browser cache)
+            const confirm = await api.get(`/admin/attendance/seat-view/${selectedDate}?t=${Date.now()}`);
+            if (confirm.data?.students) setSeatStudents(confirm.data.students);
+        } catch (e) { console.error('Auto-save failed', e); }
+        finally { setAutoSaving(false); autoSavingRef.current = false; }
+    };
 
     const fetchStudents = async () => {
         try {
@@ -350,12 +470,12 @@ const AttendanceManagement = () => {
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link to="/admin">
+                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                        <Link to={backPath}>
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                                <IoArrowBack size={16} /> Back
+                                className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
+                                <IoArrowBack size={16} /> <span className="hidden sm:inline">Back</span>
                             </motion.button>
                         </Link>
                         <div>
@@ -363,17 +483,20 @@ const AttendanceManagement = () => {
                                 <div className="p-1.5 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg">
                                     <IoCalendarOutline size={14} className="text-gray-900" />
                                 </div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-orange-400">Admin</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-orange-400">{isSubAdmin ? 'Sub Admin' : 'Admin'}</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Attendance Management</h1>
+                            <h1 className="text-xl sm:text-3xl font-black text-gray-900">Attendance</h1>
                         </div>
                     </div>
-                    <Link to="/admin/analytics">
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/25">
-                            <IoBarChartOutline size={16} /> View Analytics
-                        </motion.button>
-                    </Link>
+                    {/* Analytics button — only super admin can access analytics */}
+                    {!isSubAdmin && (
+                        <Link to="/admin/analytics">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/25">
+                                <IoBarChartOutline size={16} /> View Analytics
+                            </motion.button>
+                        </Link>
+                    )}
                 </motion.div>
 
                 {/* Toasts */}
@@ -382,107 +505,272 @@ const AttendanceManagement = () => {
                     {error && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-5 text-sm font-medium"><IoCloseCircle size={18} />{error}</motion.div>}
                 </AnimatePresence>
 
+                {/* ── Tab Switcher ── */}
+                <div className="flex items-center gap-2 mb-6 bg-white border border-gray-200 rounded-xl p-1 shadow-sm w-fit">
+                    <button onClick={() => setViewTab('mark')}
+                        className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                            viewTab === 'mark' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'
+                        }`}>
+                        Mark Attendance
+                    </button>
+                    {!isSubAdmin && (
+                        <button onClick={() => setViewTab('reports')}
+                            className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                                viewTab === 'reports' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'
+                            }`}>
+                            Reports & History
+                        </button>
+                    )}
+                </div>
+
+
+
+                {/* ══ MARK ATTENDANCE TAB ══ */}
+                {viewTab === 'mark' && (
+                    <div>
+                        {/* Controls bar */}
+                        <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-5 shadow-sm flex flex-wrap items-center gap-3">
+                            {!isSubAdmin && (
+                                <div className="flex flex-col">
+                                    <label className="text-xs text-gray-500 uppercase tracking-wider mb-1">Date</label>
+                                    <input type="date" value={selectedDate} onChange={e => { setSelectedDate(e.target.value); }}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-900 text-sm outline-none focus:border-indigo-400" />
+                                </div>
+                            )}
+                            <button onClick={fetchSeatView}
+                                className={`flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all ${!isSubAdmin ? 'mt-5' : ''}`}>
+                                <IoRefresh size={15} /> Refresh
+                            </button>
+                            {/* Status indicators */}
+                            <div className="ml-auto flex items-center gap-3 text-xs flex-wrap justify-end">
+                                {/* Auto-save status */}
+                                {autoSaving && <span className="text-indigo-500 font-semibold animate-pulse">Saving...</span>}
+                                {!autoSaving && lastSaved && (
+                                    <span className="text-green-600 font-semibold flex items-center gap-1">
+                                        <IoCheckmarkCircle size={14} /> <span className="hidden sm:inline">Saved {lastSaved.toLocaleTimeString()}</span><span className="sm:hidden">Saved</span>
+                                    </span>
+                                )}
+
+                                {/* Live sync indicator — only shown for today */}
+                                {selectedDate === getLocalDate() && (
+                                    <AnimatePresence mode="wait">
+                                        {newSelfMarkDetected ? (
+                                            <motion.span
+                                                key="updated"
+                                                initial={{ opacity: 0, scale: 0.85 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="flex items-center gap-1.5 text-indigo-600 font-bold bg-indigo-50 border border-indigo-200 px-2 py-1 rounded-full"
+                                            >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping inline-block" />
+                                                Student marked!
+                                            </motion.span>
+                                        ) : (
+                                            <motion.span
+                                                key="live"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="flex items-center gap-1.5 text-gray-400 font-medium"
+                                            >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+                                                <span className="hidden sm:inline">Live{lastLiveSync ? ` · ${lastLiveSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</span>
+                                            </motion.span>
+                                        )}
+                                    </AnimatePresence>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Summary Cards for Super Admin */}
+                        {!isSubAdmin && (
+                            <div className="grid grid-cols-3 gap-3 mb-6">
+                                <div className="bg-white border border-gray-200 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm">
+                                    <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">Total Students</span>
+                                    <span className="text-xl font-black text-gray-900">{filteredStudents.length}</span>
+                                </div>
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm">
+                                    <span className="text-green-600 text-[10px] font-bold uppercase tracking-widest mb-1">Present</span>
+                                    <span className="text-xl font-black text-green-600">{presentCount}</span>
+                                </div>
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex flex-col items-center justify-center shadow-sm">
+                                    <span className="text-red-500 text-[10px] font-bold uppercase tracking-widest mb-1">Absent</span>
+                                    <span className="text-xl font-black text-red-500">{absentCount}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Student Cards */}
+                        {seatStudents.length === 0 ? (
+                            <div className="bg-white border border-gray-200 rounded-2xl py-16 text-center shadow-sm">
+                                <IoPeopleOutline size={36} className="mx-auto mb-2 text-gray-300" />
+                                <p className="font-medium text-gray-400 text-sm">No students found for this date</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {seatStudents.map((student, i) => {
+                                    const palette = seatColorMap[student.seatNumber] || { badge: 'bg-gray-100 text-gray-600' };
+                                    const isPresent = student.status === 'present';
+                                    // selfMarked flag OR markedBy===student (fallback for old records)
+                                    const isLocked = student.selfMarked ||
+                                        (student.markedBy && student.markedBy.toString() === student._id.toString());
+
+                                    // Initials from name
+                                    const initials = student.name
+                                        ? student.name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+                                        : '?';
+
+                                    // Proper case name
+                                    const displayName = student.name
+                                        ? student.name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                                        : 'Unknown';
+
+                                    return (
+                                        <motion.div
+                                            key={student._id}
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.01, duration: 0.2 }}
+                                            className={`rounded-2xl overflow-hidden shadow-sm border flex items-stretch transition-all ${
+                                                isLocked ? 'bg-gray-50 border-gray-200 opacity-75 grayscale-[0.5]' : 'bg-white border-gray-100'
+                                            }`}
+                                            style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                                        >
+                                            {/* Left accent bar */}
+                                            <div className={`w-1.5 shrink-0 ${
+                                                isLocked ? 'bg-gray-400' :
+                                                isPresent ? 'bg-emerald-400' : 'bg-rose-300'
+                                            }`} />
+
+                                            {/* Content */}
+                                            <div className="flex items-center gap-4 flex-1 px-5 py-4">
+                                                {/* Avatar */}
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold shrink-0 ${
+                                                    isLocked ? 'bg-gray-200 text-gray-500' :
+                                                    palette.badge
+                                                }`}>
+                                                    {student.seatNumber || initials}
+                                                </div>
+
+                                                {/* Name + shift */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={`font-bold text-base leading-tight truncate ${isLocked ? 'text-gray-600' : 'text-gray-900'}`}>{displayName}</p>
+                                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                                        <span className="text-xs text-gray-400 font-medium">{student.shiftName}</span>
+                                                        {isLocked && (
+                                                            <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
+                                                                <IoLockClosed size={9} /> Self-marked
+                                                            </span>
+                                                        )}
+                                                        {!student.hasSeat && (
+                                                            <span className="text-[11px] font-semibold text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">No seat</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Status + Toggle */}
+                                                <div className="shrink-0 flex items-center gap-3">
+                                                    <span className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl ${
+                                                        isLocked
+                                                            ? 'bg-gray-200 text-gray-600'
+                                                            : isPresent
+                                                                ? 'bg-emerald-50 text-emerald-600'
+                                                                : 'bg-rose-50 text-rose-500'
+                                                    }`}>
+                                                        <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                                            isLocked ? 'bg-gray-400' :
+                                                            isPresent ? 'bg-emerald-400' : 'bg-rose-400'
+                                                        }`} />
+                                                        {isLocked ? 'Locked' : isPresent ? 'Present' : 'Absent'}
+                                                    </span>
+
+                                                    {/* Toggle */}
+                                                    <button
+                                                        onClick={() => toggleSeatStudent(student._id, student.status, student.selfMarked)}
+                                                        disabled={isSubAdmin && isLocked}
+                                                        title={(isSubAdmin && isLocked) ? 'Student self-marked — locked for admins' : `Mark as ${isPresent ? 'absent' : 'present'} (Override)`}
+                                                        className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none shrink-0 ${
+                                                            isSubAdmin && isLocked
+                                                                ? 'bg-gray-300 cursor-not-allowed'
+                                                                : isPresent
+                                                                    ? 'bg-emerald-500 hover:bg-emerald-600'
+                                                                    : 'bg-rose-400 hover:bg-rose-500'
+                                                        }`}
+                                                    >
+                                                        {isSubAdmin && isLocked ? (
+                                                            <span className="absolute inset-0 flex items-center justify-center">
+                                                                <IoLockClosed size={14} className="text-gray-500" />
+                                                            </span>
+                                                        ) : (
+                                                            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${
+                                                                isPresent ? 'translate-x-7' : 'translate-x-0'
+                                                            }`} />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                    </div>
+                )}
+
+                {/* ══ REPORTS TAB ══ */}
+                {viewTab === 'reports' && (
+                <div>
                 {/* Controls */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}
-                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-6 sticky top-4 z-30">
+                    className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 shadow-sm">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                         <div className="col-span-2 sm:col-span-1">
                             <label className="block text-xs text-gray-500 uppercase tracking-wider mb-1.5">Select Date</label>
                             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
                                 max={new Date().toISOString().split('T')[0]}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-900 text-sm focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 outline-none transition-all" />
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all" />
                         </div>
                         <button onClick={loadAttendance} className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all mt-5"><IoRefresh size={15} /> Refresh</button>
                         <button onClick={markAllPresent} className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCheckmarkCircle size={15} /> All Present</button>
                         <button onClick={markAllAbsent} className="flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-medium transition-all mt-5"><IoCloseCircle size={15} /> All Absent</button>
                     </div>
-
                     {selectedHoliday && (
-                        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 px-4 py-3 rounded-xl mb-5 text-sm font-medium">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 px-4 py-3 rounded-xl mb-4 text-sm font-medium">
                             <IoSparkles size={18} /> Today is a declared holiday: {selectedHoliday.name}
                         </motion.div>
                     )}
-
-                    <div className="flex items-center justify-between mb-4 mt-2">
-                        <div className="flex gap-2 flex-wrap">
-                            <button onClick={generatePDF} className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-medium transition-all">
-                                <IoDownloadOutline size={16} /> Daily Report
-                            </button>
-                            <button onClick={generateMonthlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
-                                <IoDownloadOutline size={16} /> Monthly Report
-                            </button>
-                            <button onClick={generateYearlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
-                                <IoDownloadOutline size={16} /> Yearly Report
-                            </button>
-                            <button onClick={() => setShowHolidayModal(true)} className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-xl text-sm font-medium transition-all">
-                                <IoSparkles size={16} /> Declare Holiday
-                            </button>
-
-                            {/* Office/Security Link Button */}
-                            <button
-                                onClick={() => {
-                                    const link = `${window.location.origin}/office/attendance`;
-                                    navigator.clipboard.writeText(link);
-                                    setSuccess("Office Link copied to clipboard!");
-                                    setTimeout(() => setSuccess(''), 3000);
-                                }}
-                                className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium transition-all ml-auto"
-                                title="Copy Public Attendance Link for Security/Office Staff"
-                            >
-                                <IoDocumentTextOutline size={16} /> Office Link - Link
-                            </button>
-                        </div>
+                    <div className="flex gap-2 flex-wrap mb-4">
+                        <button onClick={generatePDF} className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-sm font-medium transition-all"><IoDownloadOutline size={16} /> Daily Report</button>
+                        <button onClick={generateMonthlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50"><IoDownloadOutline size={16} /> Monthly Report</button>
+                        <button onClick={generateYearlyPDF} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 rounded-xl text-sm font-medium transition-all disabled:opacity-50"><IoDownloadOutline size={16} /> Yearly Report</button>
+                        <button onClick={() => setShowHolidayModal(true)} className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 rounded-xl text-sm font-medium transition-all"><IoSparkles size={16} /> Declare Holiday</button>
+                        <button onClick={() => { const link = `${window.location.origin}/office/attendance`; navigator.clipboard.writeText(link); setSuccess('Office Link copied!'); setTimeout(() => setSuccess(''), 3000); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm font-medium transition-all ml-auto">
+                            <IoDocumentTextOutline size={16} /> Office Link
+                        </button>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex-1 grid grid-cols-2 gap-3">
-                            <div className="bg-green-500/8 border border-green-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                                <span className="text-xs text-gray-500 uppercase tracking-widest">Present</span>
-                                <span className="text-2xl font-black text-green-400">{presentCount}</span>
-                            </div>
-                            <div className="bg-amber-500/8 border border-amber-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                                <span className="text-xs text-gray-500 uppercase tracking-widest">Holiday</span>
-                                <span className="text-2xl font-black text-amber-400">{holidayCount}</span>
-                            </div>
-                            <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                                <span className="text-xs text-gray-500 uppercase tracking-widest">Absent</span>
-                                <span className="text-2xl font-black text-red-400">{absentCount}</span>
-                            </div>
+                            <div className="bg-green-500/8 border border-green-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between"><span className="text-xs text-gray-500 uppercase tracking-widest">Present</span><span className="text-2xl font-black text-green-400">{presentCount}</span></div>
+                            <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-2.5 flex items-center justify-between"><span className="text-xs text-gray-500 uppercase tracking-widest">Absent</span><span className="text-2xl font-black text-red-400">{absentCount}</span></div>
                         </div>
                         <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={saveAttendance} disabled={saving}
-                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 disabled:opacity-50 transition-all">
+                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 disabled:opacity-50">
                             <IoSave size={16} /> {saving ? 'Saving…' : 'Save'}
                         </motion.button>
                     </div>
                 </motion.div>
 
-                {/* Declared Holidays List */}
-                {holidays.length > 0 && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-amber-500/5 border border-amber-500/15 rounded-2xl p-4 mb-6">
-                        <p className="text-amber-400 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
-                            <IoSparkles size={13} /> Declared Holidays
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                            {holidays.map(h => (
-                                <div key={h._id} className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm">
-                                    <span className="text-amber-300 font-semibold">{h.name}</span>
-                                    <span className="text-gray-600 text-xs">{new Date(h.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                    <button onClick={() => removeHoliday(h._id, h.name)} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
-                                        <IoTrashOutline size={13} />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-
                 {/* Student Grid */}
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {[...Array(6)].map((_, i) => <div key={i} className="bg-white/3 rounded-2xl h-32 animate-pulse" />)}
+                        {[...Array(6)].map((_, i) => <div key={i} className="bg-white border border-gray-100 rounded-2xl h-32 animate-pulse" />)}
                     </div>
                 ) : filteredStudents.length === 0 ? (
-                    <div className="bg-white/3 border border-white/8 rounded-2xl p-10 text-center">
-                        <IoPeopleOutline size={40} className="text-gray-600 mx-auto mb-3" />
+                    <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
+                        <IoPeopleOutline size={40} className="text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-600">No active students found for this date</p>
                     </div>
                 ) : (
@@ -492,79 +780,34 @@ const AttendanceManagement = () => {
                             const isPresent = data.status === 'present';
                             const hasSeat = !!student.seat;
                             return (
-                                <motion.div key={student._id}
-                                    initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-                                    className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${!hasSeat ? 'border-yellow-500/25 bg-yellow-500/5' : isPresent ? 'border-green-500/30 bg-green-500/5' : data.status === 'holiday' ? 'border-amber-500/30 bg-amber-500/5' : 'border-white/8 bg-white/3'}`}
-                                >
-                                    <div
-                                        className={`p-4 flex items-start justify-between cursor-pointer ${!hasSeat ? 'hover:bg-yellow-500/8' : isPresent ? 'hover:bg-green-500/8' : data.status === 'holiday' ? 'hover:bg-amber-500/8' : 'hover:bg-gray-50'}`}
-                                        onClick={() => !hasSeat ? navigate('/admin/students?tab=pending') : toggleStatus(student._id)}
-                                    >
+                                <motion.div key={student._id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                                    className={`relative overflow-hidden rounded-2xl border transition-all duration-200 ${!hasSeat ? 'border-yellow-500/25 bg-yellow-500/5' : isPresent ? 'border-green-500/30 bg-green-500/5' : data.status === 'holiday' ? 'border-amber-500/30 bg-amber-500/5' : 'border-gray-200 bg-white'}`}>
+                                    <div className={`p-4 flex items-start justify-between cursor-pointer`}
+                                        onClick={() => !hasSeat ? navigate('/admin/students?tab=pending') : toggleStatus(student._id)}>
                                         <div className="flex-1">
                                             <h3 className="font-bold text-gray-900">{student.name}</h3>
                                             <p className="text-xs text-gray-500 mt-0.5">{student.email}</p>
-                                            <div className="flex gap-2 mt-2 flex-wrap">
+                                            <div className="flex gap-2 mt-2">
                                                 {student.seat ? (
-                                                    <span className="text-[10px] bg-blue-500/15 border border-blue-500/25 text-blue-400 px-2 py-0.5 rounded-full font-semibold">Seat: {student.seat.number}</span>
+                                                    <span className="text-[10px] bg-blue-50 border border-blue-200 text-blue-600 px-2 py-0.5 rounded-full font-semibold">Seat: {student.seat.number}</span>
                                                 ) : (
-                                                    <span className="text-[10px] bg-yellow-500/15 border border-yellow-500/25 text-yellow-400 px-2 py-0.5 rounded-full font-semibold animate-pulse">Pending Allocation</span>
+                                                    <span className="text-[10px] bg-yellow-50 border border-yellow-200 text-yellow-600 px-2 py-0.5 rounded-full font-semibold animate-pulse">Pending Allocation</span>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className={`p-2 rounded-xl ${!hasSeat ? 'bg-yellow-500/15 text-yellow-400' : isPresent ? 'bg-green-500/15 text-green-400' : data.status === 'holiday' ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`}>
+                                        <div className={`p-2 rounded-xl ${!hasSeat ? 'bg-yellow-100 text-yellow-600' : isPresent ? 'bg-green-100 text-green-600' : data.status === 'holiday' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-500'}`}>
                                             {!hasSeat ? <IoBedOutline size={20} /> : isPresent ? <IoCheckmarkCircle size={20} /> : data.status === 'holiday' ? <IoSparkles size={20} /> : <IoCloseCircle size={20} />}
                                         </div>
                                     </div>
-                                    <AnimatePresence>
-                                        {(isPresent || data.status === 'holiday') && hasSeat && (
-                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-white/8 bg-black/20">
-                                                <div className="p-4 space-y-3">
-                                                    {['entryTime', 'exitTime'].map(field => (
-                                                        <div key={field}>
-                                                            <label className="text-[10px] text-gray-500 uppercase tracking-wider flex justify-between mb-1">
-                                                                <span>{field === 'entryTime' ? 'Entry Time' : 'Exit Time'}</span>
-                                                                <button onClick={() => setNow(student._id, field)} className="text-blue-400 hover:text-blue-300 flex items-center gap-1"><IoFlashOutline size={10} /> Now</button>
-                                                            </label>
-                                                            <div className="relative">
-                                                                <IoTimeOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
-                                                                <input type="time" value={data[field]} onChange={e => updateField(student._id, field, e.target.value)}
-                                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-8 pr-3 text-sm text-gray-900 focus:border-blue-500/50 outline-none transition-all" />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    <div>
-                                                        <label className="text-[10px] text-gray-500 uppercase tracking-wider mb-1 block">Notes</label>
-                                                        <div className="relative">
-                                                            <IoDocumentTextOutline className="absolute left-3 top-2.5 text-gray-500" size={14} />
-                                                            <textarea value={data.notes} onChange={e => updateField(student._id, 'notes', e.target.value)} placeholder="Optional…" rows={2}
-                                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-8 pr-3 text-sm text-gray-900 focus:border-blue-500/50 outline-none resize-none transition-all" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                    {!isPresent && data.status !== 'holiday' && hasSeat && (
-                                        <div className="px-4 py-2 bg-red-500/5 border-t border-red-500/10 text-center">
-                                            <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Marked Absent</span>
-                                        </div>
-                                    )}
-                                    {data.status === 'holiday' && hasSeat && (
-                                        <div className="px-4 py-2 bg-amber-500/5 border-t border-amber-500/10 text-center">
-                                            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Holiday</span>
-                                        </div>
-                                    )}
-                                    {!hasSeat && (
-                                        <div className="px-4 py-2 bg-yellow-500/8 border-t border-yellow-500/10 flex justify-center items-center gap-2">
-                                            <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Click to Assign Seat</span>
-                                            <IoArrowForward size={10} className="text-yellow-400" />
-                                        </div>
-                                    )}
                                 </motion.div>
                             );
                         })}
                     </div>
                 )}
+                </div>
+                )}
+
+
             </div>
 
             {/* Holiday Declaration Modal */}

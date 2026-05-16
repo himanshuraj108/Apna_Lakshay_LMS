@@ -47,6 +47,10 @@ const attendanceSchema = new mongoose.Schema({
     distanceMeters: {
         type: Number,
         default: null
+    },
+    selfMarked: {
+        type: Boolean,
+        default: false   // true = student marked it themselves (QR, PIN, Direct)
     }
 }, {
     timestamps: true
