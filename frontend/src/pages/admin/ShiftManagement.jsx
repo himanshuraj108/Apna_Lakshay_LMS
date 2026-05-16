@@ -4,7 +4,7 @@ import useShifts from '../../hooks/useShifts';
 import ShiftManager from '../../components/admin/ShiftManager';
 import { IoArrowBack, IoAlertCircleOutline, IoTimeOutline } from 'react-icons/io5';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const ShiftManagement = () => {
     const { isCustom } = useShifts();
@@ -21,18 +21,18 @@ const ShiftManagement = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/admin">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                             <IoArrowBack size={16} /> Back
                         </motion.button>
                     </Link>
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
                             <div className="p-1.5 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg">
-                                <IoTimeOutline size={14} className="text-white" />
+                                <IoTimeOutline size={14} className="text-gray-900" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-widest text-cyan-400">Admin</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-white">Shift Management</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Shift Management</h1>
                         <p className="text-gray-500 text-sm mt-0.5">Create custom shifts or use system defaults</p>
                     </div>
                 </motion.div>
