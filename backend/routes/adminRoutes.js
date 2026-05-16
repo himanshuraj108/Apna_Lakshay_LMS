@@ -19,6 +19,7 @@ const {
     assignSeat,
     markAttendance,
     getAttendance,
+    getSeatViewAttendance,
     getMonthlyAttendance,
     getYearlyAttendance,
     quickCheckIn,
@@ -76,7 +77,7 @@ const {
     updateFloorPrices
 } = require('../controllers/seatController');
 
-const { protect, adminOnly } = require('../middleware/auth');
+const { protect, adminOnly, superAdminOnly } = require('../middleware/auth');
 
 // All routes are protected and admin-only
 router.use(protect, adminOnly);
@@ -135,6 +136,7 @@ router.post('/fix-seats', fixSeatOccupancy);
 
 // Attendance
 router.post('/attendance', markAttendance);
+router.get('/attendance/seat-view/:date', getSeatViewAttendance);
 router.get('/attendance/monthly/:year/:month', getMonthlyAttendance);
 router.get('/attendance/yearly/:year', getYearlyAttendance);
 router.get('/attendance/:date', getAttendance);
@@ -216,5 +218,13 @@ router.get('/chat-history', getStudentsWithChatHistory);
 router.get('/chat-history/:studentId', getStudentChatHistory);
 router.delete('/chat-history/:studentId/all', deleteAllStudentSessions);
 router.delete('/chat-history/:studentId/:sessionId', deleteStudentSession);
+
+// ── Sub Admin Management (Super Admin only) ───────────────────────────────────
+const { getSubAdmins, createSubAdmin, updateSubAdmin, deleteSubAdmin, verifySubAdminPin } = require('../controllers/subAdminController');
+router.get('/sub-admins', superAdminOnly, getSubAdmins);
+router.post('/sub-admins', superAdminOnly, createSubAdmin);
+router.put('/sub-admins/:id', superAdminOnly, updateSubAdmin);
+router.delete('/sub-admins/:id', superAdminOnly, deleteSubAdmin);
+router.post('/verify-subadmin-pin', verifySubAdminPin); // accessible by subadmins
 
 module.exports = router;

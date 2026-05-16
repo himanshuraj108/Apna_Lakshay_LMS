@@ -22,7 +22,19 @@ exports.protect = async (req, res, next) => {
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Get user from token
+            // Sub-Admin token path
+            if (decoded.role === 'subadmin') {
+                const SubAdmin = require('../models/SubAdmin');
+                const sub = await SubAdmin.findById(decoded.id).select('-password');
+                if (!sub || !sub.isActive) {
+                    return res.status(401).json({ success: false, message: 'Sub-admin not found or inactive' });
+                }
+                // Attach as req.user with role and permissions so rest of app works
+                req.user = { _id: sub._id, id: sub._id.toString(), name: sub.name, role: 'subadmin', permissions: sub.permissions };
+                return next();
+            }
+
+            // Regular user token path
             req.user = await User.findById(decoded.id).select('-password');
 
             if (!req.user) {
@@ -47,6 +59,7 @@ exports.protect = async (req, res, next) => {
         });
     }
 };
+
 
 // Grant access to specific roles
 exports.authorize = (...roles) => {
@@ -92,9 +105,9 @@ exports.authorizeActive = (req, res, next) => {
     next();
 };
 
-// Admin only middleware (Legacy support if needed)
+// Admin only middleware (allows super-admin and sub-admin)
 exports.adminOnly = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'subadmin')) {
         next();
     } else {
         res.status(403).json({
@@ -103,11 +116,23 @@ exports.adminOnly = (req, res, next) => {
         });
     }
 };
+
+// Super-admin ONLY (blocks sub-admins — use for sensitive management routes)
+exports.superAdminOnly = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).json({
+            success: false,
+            message: 'Access denied. Super admin only.'
+        });
+    }
+};
 // Simulate Server Crash for Students if Custom Mode is ON
 // Maintenance Mode Middleware
 exports.checkMaintenanceMode = async (req, res, next) => {
-    // Admin bypass
-    if (req.user && req.user.role === 'admin') {
+    // Admin and sub-admin bypass
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'subadmin')) {
         return next();
     }
 
