@@ -54,7 +54,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
 
     if (!isOpen || !room) return null;
 
-    const INPUT = 'w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-blue-500/60 outline-none transition-all';
+    const INPUT = 'w-full px-4 py-2.5 bg-white shadow-sm border border-gray-200 text-gray-900 border border-gray-200 rounded-xl text-gray-900 text-sm focus:border-blue-500/60 outline-none transition-all';
     const LABEL = 'block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5';
 
     return (
@@ -66,7 +66,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
             >
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-[#080810] border border-white/15 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+                    className="bg-white border border-gray-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header accent */}
@@ -145,13 +145,13 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                 <label className={LABEL}>Door Position</label>
                                 <select value={layoutData.doorPosition}
                                     onChange={e => setLayoutData({ ...layoutData, doorPosition: e.target.value })}
-                                    className={INPUT} style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}>
+                                    className={INPUT}>
                                     {POSITIONS.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)} ({POS_LABEL[p]})</option>)}
                                 </select>
                             </div>
 
                             {/* Divider */}
-                            <div className="h-px bg-white/6" />
+                            <div className="h-px bg-gray-100" />
 
                             {/* AC Section */}
                             <div>
@@ -168,7 +168,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                     {/* Toggle switch */}
                                     <button type="button"
                                         onClick={() => setRoomData({ ...roomData, hasAc: !roomData.hasAc })}
-                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasAc ? 'bg-cyan-500' : 'bg-gray-100 border border-white/15'}`}>
+                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasAc ? 'bg-cyan-500' : 'bg-gray-200 border border-gray-300'}`}>
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${roomData.hasAc ? 'left-7' : 'left-1'}`} />
                                     </button>
                                 </div>
@@ -218,7 +218,7 @@ const RoomLayoutModal = ({ isOpen, onClose, room, onSuccess }) => {
                                     </div>
                                     <button type="button"
                                         onClick={() => setRoomData({ ...roomData, hasFan: !roomData.hasFan })}
-                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasFan ? 'bg-amber-500' : 'bg-gray-100 border border-white/15'}`}>
+                                        className={`relative w-12 h-6 rounded-full transition-all duration-300 ${roomData.hasFan ? 'bg-amber-500' : 'bg-gray-200 border border-gray-300'}`}>
                                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-300 ${roomData.hasFan ? 'left-7' : 'left-1'}`} />
                                     </button>
                                 </div>
