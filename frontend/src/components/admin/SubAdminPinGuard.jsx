@@ -15,13 +15,12 @@ const FEATURES = [
 ];
 
 const SubAdminPinGuard = ({ children }) => {
-    const { user, logout } = useAuth();
-    const [isVerified, setIsVerified] = useState(() => {
-        if (user?.role !== 'subadmin') return true;
-        if (user?.hasPin === false) return true;
-        if (sessionStorage.getItem(`subAdminPinVerified_${user?.id}`) === 'true') return true;
-        return false;
-    });
+    const { user, logout, isSubAdminVerified, setSubAdminVerified } = useAuth();
+    
+    // Auto-verify if not a sub-admin or if they don't have a PIN set up
+    const requiresPin = user?.role === 'subadmin' && user?.hasPin !== false;
+    const isVerified = !requiresPin || isSubAdminVerified;
+
     const [pin, setPin] = useState(['', '', '', '']);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -29,12 +28,7 @@ const SubAdminPinGuard = ({ children }) => {
     const [shake, setShake] = useState(false);
     const inputRefs = useRef([]);
 
-    useEffect(() => {
-        if (user?.role !== 'subadmin') { setIsVerified(true); return; }
-        if (user.hasPin === false) { setIsVerified(true); return; }
-        const sessionVerified = sessionStorage.getItem(`subAdminPinVerified_${user.id}`);
-        if (sessionVerified === 'true') setIsVerified(true);
-    }, [user]);
+    // Removed legacy sessionStorage and setIsVerified useEffect
 
     // Auto-focus first input on mount
     useEffect(() => {
@@ -76,8 +70,7 @@ const SubAdminPinGuard = ({ children }) => {
             const res = await api.post('/admin/verify-subadmin-pin', { pin: fullPin });
             if (res.data.success) {
                 setAttempts(0);
-                sessionStorage.setItem(`subAdminPinVerified_${user.id}`, 'true');
-                setIsVerified(true);
+                setSubAdminVerified(true);
             }
         } catch (e) {
             const newAttempts = attempts + 1;

@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [systemStatus, setSystemStatus] = useState('active');
+    const [isSubAdminVerified, setSubAdminVerified] = useState(false);
 
     const checkSystemStatus = async () => {
         try {
@@ -108,6 +109,8 @@ export const AuthProvider = ({ children }) => {
         user,
         loading,
         systemStatus,
+        isSubAdminVerified,
+        setSubAdminVerified,
         checkSystemStatus,
         checkAuth,
         login,
