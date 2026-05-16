@@ -12,6 +12,7 @@ import useShifts from '../../hooks/useShifts';
 
 const PAGE_BG = { background: '#F8FAFC' };
 const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
+const LABEL = 'block text-sm font-semibold text-gray-700 mb-2';
 const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
 const BTN_SECONDARY = 'px-4 py-2.5 rounded-xl text-sm text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 font-medium transition-all disabled:opacity-50 shadow-sm';
 const BTN_DANGER = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
@@ -1046,7 +1047,7 @@ const StudentManagement = () => {
                                             exit={{ opacity: 0, scale: 0.95, y: -6 }}
                                             transition={{ duration: 0.15 }}
                                             className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
-                                            style={{ background: 'rgba(13,13,20,0.97)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)' }}
+                                            style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(12px)' }}
                                         >
                                             <div className="px-3 py-2 border-b border-gray-100">
                                                 <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
@@ -1055,21 +1056,21 @@ const StudentManagement = () => {
                                                 {
                                                     label: 'Export PDF',
                                                     icon: <IoDownloadOutline size={15} />,
-                                                    color: 'text-indigo-400',
+                                                    color: 'text-indigo-600',
                                                     bg: 'hover:bg-indigo-500/10',
                                                     action: () => { generateStudentTablePDF(); setShowSettingsMenu(false); }
                                                 },
                                                 {
                                                     label: 'Swap Seats',
                                                     icon: <IoSwapHorizontal size={15} />,
-                                                    color: 'text-orange-400',
+                                                    color: 'text-orange-600',
                                                     bg: 'hover:bg-orange-500/10',
                                                     action: () => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); setShowSettingsMenu(false); }
                                                 },
                                                 {
                                                     label: 'Reset All QRs',
                                                     icon: <IoRefresh size={15} />,
-                                                    color: 'text-red-400',
+                                                    color: 'text-red-600',
                                                     bg: 'hover:bg-red-500/10',
                                                     action: () => { handleResetAllQrs(); setShowSettingsMenu(false); }
                                                 },
@@ -1080,7 +1081,7 @@ const StudentManagement = () => {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                                         </svg>
                                                     ),
-                                                    color: 'text-orange-400',
+                                                    color: 'text-orange-600',
                                                     bg: 'hover:bg-orange-500/10',
                                                     action: () => { setBulkResetResult(null); setShowBulkResetModal(true); setShowSettingsMenu(false); }
                                                 },
@@ -1393,7 +1394,7 @@ const StudentManagement = () => {
                 )}
 
                 {/* ─── Swap Seats Modal ───────────────────────────────────────── */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showSwapModal}
                     onClose={() => { setShowSwapModal(false); setError(''); }}
                     title="Swap Seats"
@@ -1422,8 +1423,8 @@ const StudentManagement = () => {
                                 id="swap-student-a"
                                 value={swapStudentId1}
                                 onChange={e => setSwapStudentId1(e.target.value)}
-                                className={INPUT}
-                                style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}
+                                className={INPUT + ' bg-white text-gray-900'}
+                                style={{ colorScheme: 'light' }}
                                 required
                             >
                                 <option value="">— Select Student A —</option>
@@ -1488,8 +1489,8 @@ const StudentManagement = () => {
                                 id="swap-student-b"
                                 value={swapStudentId2}
                                 onChange={e => setSwapStudentId2(e.target.value)}
-                                className={INPUT}
-                                style={{ backgroundColor: '#0d0d12', colorScheme: 'dark' }}
+                                className={INPUT + ' bg-white text-gray-900'}
+                                style={{ colorScheme: 'light' }}
                                 required
                             >
                                 <option value="">— Select Student B —</option>
@@ -1541,7 +1542,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Session Details Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showSessionModal}
                     onClose={() => setShowSessionModal(false)}
                     title="Session Details"
@@ -1593,7 +1594,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Credit Details Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showCreditModal}
                     onClose={() => setShowCreditModal(false)}
                     title="Mock Test / Credit Details"
@@ -1659,7 +1660,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* View ID Card Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showIdCardModal}
                     onClose={() => setShowIdCardModal(false)}
                     title="Student ID Card"
@@ -1690,14 +1691,14 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Add/Edit Student Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showModal}
                     onClose={() => setShowModal(false)}
                     title={editMode ? 'Edit Student' : 'Add New Student'}
                 >
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium mb-2">Name</label>
+                            <label className={LABEL}>Name</label>
                             <input
                                 type="text"
                                 value={formData.name}
@@ -1707,7 +1708,7 @@ const StudentManagement = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">Email (Optional)</label>
+                            <label className={LABEL}>Email (Optional)</label>
                             <input
                                 type="email"
                                 value={formData.email}
@@ -1717,7 +1718,7 @@ const StudentManagement = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">Mobile Number</label>
+                            <label className={LABEL}>Mobile Number</label>
                             <input
                                 type="tel"
                                 value={formData.mobile}
@@ -1732,7 +1733,7 @@ const StudentManagement = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-2">Address</label>
+                            <label className={LABEL}>Address</label>
                             <textarea
                                 value={formData.address}
                                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -1784,33 +1785,33 @@ const StudentManagement = () => {
                                 max={new Date().toISOString().split('T')[0]}
                                 onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
                                 className={INPUT}
-                                style={{ colorScheme: 'dark' }}
+                                style={{ colorScheme: 'light' }}
                             />
                             <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
                         </div>
                         {editMode && formData.seatId && (
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Shift</label>
+                                    <label className={LABEL}>Shift</label>
                                     <select
                                         value={formData.shift}
                                         onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
-                                        className={INPUT}
+                                        className={INPUT + ' bg-white text-gray-900'}
                                     >
-                                        <option value="" className="bg-gray-50">No shift assigned</option>
+                                        <option value="" className="bg-white text-gray-900">No shift assigned</option>
                                         {shifts.map(shift => (
-                                            <option key={shift.id} value={shift.id} className="bg-gray-50">
+                                            <option key={shift.id} value={shift.id} className="bg-white text-gray-900">
                                                 {shift.name} ({getShiftTimeRange(shift)})
                                             </option>
                                         ))}
                                         {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                            <option value="full" className="bg-gray-50">Full Day (9 AM - 9 PM)</option>
+                                            <option value="full" className="bg-white text-gray-900">Full Day (9 AM - 9 PM)</option>
                                         )}
                                     </select>
                                     <p className="text-xs text-gray-600 mt-1">Change the shift for the student's currently assigned seat. If they don't have a seat yet, use the Assign Seat button instead.</p>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Negotiated Price (Optional)</label>
+                                    <label className={LABEL}>Negotiated Price (Optional)</label>
                                     <input
                                         type="number"
                                         value={formData.negotiatedPrice}
@@ -1851,7 +1852,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Assign Seat Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showSeatModal}
                     onClose={() => setShowSeatModal(false)}
                     title={`Assign Seat to ${selectedStudent?.name}`}
@@ -1949,7 +1950,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Delete Confirmation Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showDeleteModal}
                     onClose={() => setShowDeleteModal(false)}
                     title={selectedStudent?.isActive && !hardDelete ? "⚠️ Remove Student" : "🗑️ Delete Permanently"}
@@ -2054,7 +2055,7 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Reset Password Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showResetPasswordModal}
                     onClose={() => {
                         setShowResetPasswordModal(false);
@@ -2092,63 +2093,63 @@ const StudentManagement = () => {
                 </Modal>
 
                 {/* Archive View Modal */}
-                <Modal theme="dark"
+                <Modal theme="light"
                     isOpen={showArchiveModal}
                     onClose={() => setShowArchiveModal(false)}
                     title={selectedArchive ? `Archive Report: ${selectedArchive.name}` : 'Archive Report'}
                 >
                     {selectedArchive && (
-                        <div className="space-y-6">
+                        <div className="space-y-5">
                             {/* Header Info */}
-                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                            <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
                                 {selectedArchive.profileImage ? (
                                     <img
                                         src={selectedArchive.profileImage.startsWith('http') ? selectedArchive.profileImage : `${BASE_URL}${selectedArchive.profileImage}`}
                                         alt={selectedArchive.name}
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-white/20"
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
                                     />
                                 ) : (
-                                    <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center text-xl font-bold">
-                                        {selectedArchive.name.charAt(0)}
+                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-xl font-bold text-white shrink-0">
+                                        {selectedArchive.name.charAt(0).toUpperCase()}
                                     </div>
                                 )}
                                 <div>
-                                    <h3 className="text-xl font-bold">{selectedArchive.name}</h3>
-                                    <p className="text-gray-600">{selectedArchive.email}</p>
-                                    <div className="flex gap-4 text-xs text-gray-500 mt-1">
-                                        <span>Joined: {new Date(selectedArchive.joinedAt).toLocaleDateString()}</span>
-                                        <span className="text-red-400">Deleted: {new Date(selectedArchive.deletedAt).toLocaleDateString()}</span>
+                                    <h3 className="text-xl font-bold text-gray-900">{selectedArchive.name}</h3>
+                                    <p className="text-gray-600 text-sm">{selectedArchive.email}</p>
+                                    <div className="flex gap-4 text-xs mt-1.5">
+                                        <span className="text-gray-500">Joined: {new Date(selectedArchive.joinedAt).toLocaleDateString()}</span>
+                                        <span className="text-red-500 font-medium">Deleted: {new Date(selectedArchive.deletedAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/20">
-                                    <h4 className="text-blue-400 text-sm font-semibold mb-2">Total Fees Recorded</h4>
-                                    <p className="text-2xl font-bold">₹{selectedArchive.fees.reduce((acc, f) => acc + f.amount, 0)}</p>
-                                    <p className="text-xs text-gray-600">{selectedArchive.fees.length} transactions</p>
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                                    <h4 className="text-blue-700 text-sm font-semibold mb-2">Total Fees Recorded</h4>
+                                    <p className="text-2xl font-black text-gray-900">₹{selectedArchive.fees.reduce((acc, f) => acc + f.amount, 0)}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{selectedArchive.fees.length} transactions</p>
                                 </div>
-                                <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
-                                    <h4 className="text-purple-400 text-sm font-semibold mb-2">Attendance Days</h4>
-                                    <p className="text-2xl font-bold">{selectedArchive.attendance.filter(a => a.status === 'present').length}</p>
-                                    <p className="text-xs text-gray-600">Out of {selectedArchive.attendance.length} recorded days</p>
+                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                                    <h4 className="text-purple-700 text-sm font-semibold mb-2">Attendance Days</h4>
+                                    <p className="text-2xl font-black text-gray-900">{selectedArchive.attendance.filter(a => a.status === 'present').length}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">Out of {selectedArchive.attendance.length} recorded days</p>
                                 </div>
                             </div>
 
                             {/* Fee History */}
                             <div>
-                                <h4 className="font-semibold mb-3 border-b border-gray-200 pb-2">Fee History</h4>
+                                <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">Fee History</h4>
                                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                                     {selectedArchive.fees.length === 0 ? (
-                                        <p className="text-sm text-gray-500">No fee records found.</p>
+                                        <p className="text-sm text-gray-500 py-2">No fee records found.</p>
                                     ) : (
                                         selectedArchive.fees.map((fee, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                                                <span>{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                                            <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm">
+                                                <span className="text-gray-700">{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                                                 <div className="flex items-center gap-3">
-                                                    <span className="font-mono">₹{fee.amount}</span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${fee.status === 'paid' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'}`}>{fee.status}</span>
+                                                    <span className="font-mono font-semibold text-gray-900">₹{fee.amount}</span>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${fee.status === 'paid' ? 'text-green-700 bg-green-100 border-green-300' : 'text-yellow-700 bg-yellow-100 border-yellow-300'}`}>{fee.status}</span>
                                                 </div>
                                             </div>
                                         ))
@@ -2158,29 +2159,29 @@ const StudentManagement = () => {
 
                             {/* Attendance History */}
                             <div>
-                                <h4 className="font-semibold mb-3 border-b border-gray-200 pb-2">Recent Attendance</h4>
+                                <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">Recent Attendance</h4>
                                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
                                     {selectedArchive.attendance.length === 0 ? (
-                                        <p className="text-sm text-gray-500">No attendance records found.</p>
+                                        <p className="text-sm text-gray-500 py-2">No attendance records found.</p>
                                     ) : (
                                         selectedArchive.attendance.slice(0, 20).map((att, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                                                <span>{new Date(att.date).toLocaleDateString()}</span>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${att.status === 'present' ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{att.status}</span>
+                                            <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm">
+                                                <span className="text-gray-700">{new Date(att.date).toLocaleDateString()}</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${att.status === 'present' ? 'text-green-700 bg-green-100 border-green-300' : 'text-red-700 bg-red-100 border-red-300'}`}>{att.status}</span>
                                             </div>
                                         ))
                                     )}
                                 </div>
                             </div>
 
-                            <div className="flex justify-end">
+                            <div className="flex justify-end pt-1">
                                 <button onClick={() => setShowArchiveModal(false)} className={BTN_SECONDARY}>Close Report</button>
                             </div>
                         </div>
                     )}
                 </Modal>
 
-                <Modal theme="dark" isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
+                <Modal theme="light" isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
                     <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
                         <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
                             <p className="text-sm text-blue-300">

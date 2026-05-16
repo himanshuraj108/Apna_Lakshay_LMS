@@ -10,7 +10,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const PAGE_BG = { background: '#050508' };
+const PAGE_BG = { background: '#F8FAFC' };
 
 const FeeManagement = () => {
     const [fees, setFees] = useState([]);
@@ -196,25 +196,25 @@ const FeeManagement = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/admin">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-medium transition-all">
+                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
                             <IoArrowBack size={16} /> Back
                         </motion.button>
                     </Link>
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
                             <div className="p-1.5 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg">
-                                <IoCashOutline size={14} className="text-white" />
+                                <IoCashOutline size={14} className="text-gray-900" />
                             </div>
                             <span className="text-xs font-bold uppercase tracking-widest text-yellow-400">Admin</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-white">Fee Management</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Fee Management</h1>
                     </div>
                     
                     {/* Toggle Switch */}
-                    <div className="ml-auto flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
+                    <div className="ml-auto flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl">
                         <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold text-white leading-tight">Online Payments</span>
-                            <span className="text-[10px] text-gray-400 font-medium">Allow students to pay via Razorpay</span>
+                            <span className="text-sm font-bold text-gray-900 leading-tight">Online Payments</span>
+                            <span className="text-[10px] text-gray-600 font-medium">Allow students to pay via Razorpay</span>
                         </div>
                         <button
                             onClick={toggleOnlinePayment}
@@ -245,7 +245,7 @@ const FeeManagement = () => {
                             className="relative bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 overflow-hidden group">
                             <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60`} />
                             <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} w-fit mb-3`} style={{ boxShadow: `0 6px 20px -4px ${glow}` }}>
-                                <Icon size={18} className="text-white" />
+                                <Icon size={18} className="text-gray-900" />
                             </div>
                             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{label}</p>
                             <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent`}>{value}</p>
@@ -260,7 +260,7 @@ const FeeManagement = () => {
                             <button key={t.key} onClick={() => setFilter(t.key)}
                                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${filter === t.key
                                     ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg shadow-purple-500/25'
-                                    : 'bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400'}`}>
+                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'}`}>
                                 {t.label} <span className="opacity-70">({t.count})</span>
                             </button>
                         ))}
@@ -276,7 +276,7 @@ const FeeManagement = () => {
                     </motion.button>
 
                     {/* Show Inactive Toggle */}
-                    <label className="flex items-center gap-2.5 cursor-pointer select-none bg-white/5 border border-white/10 px-3 py-2 rounded-xl">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl">
                         <div className="relative">
                             <input
                                 type="checkbox"
@@ -291,14 +291,14 @@ const FeeManagement = () => {
                                 className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow"
                             />
                         </div>
-                        <span className="text-xs font-semibold text-gray-400">Show Inactive</span>
+                        <span className="text-xs font-semibold text-gray-600">Show Inactive</span>
                     </label>
                 </div>
 
                 {/* Table */}
                 {loading ? (
                     <div className="bg-white/3 border border-white/8 rounded-2xl overflow-hidden">
-                        {[...Array(5)].map((_, i) => <div key={i} className="h-16 border-b border-white/5 animate-pulse bg-white/2" />)}
+                        {[...Array(5)].map((_, i) => <div key={i} className="h-16 border-b border-gray-100 animate-pulse bg-white/2" />)}
                     </div>
                 ) : (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
@@ -316,7 +316,7 @@ const FeeManagement = () => {
                                         <tr><td colSpan={6} className="text-center py-12 text-gray-500">No fee records found</td></tr>
                                     ) : filteredFees.map(fee => (
                                         <tr key={fee._id}
-                                            className="border-b border-white/5 transition-colors"
+                                            className="border-b border-gray-100 transition-colors"
                                             style={{
                                                 background: fee.status === 'partial' ? 'rgba(251,146,60,0.07)' : 'transparent',
                                             }}
@@ -324,17 +324,17 @@ const FeeManagement = () => {
                                             onMouseLeave={e => e.currentTarget.style.background = fee.status === 'partial' ? 'rgba(251,146,60,0.07)' : 'transparent'}
                                         >
                                             <td className="px-5 py-4">
-                                                <p className="font-semibold text-white text-sm">{fee.student?.name || 'Unknown'}</p>
+                                                <p className="font-semibold text-gray-900 text-sm">{fee.student?.name || 'Unknown'}</p>
                                                 <p className="text-xs text-gray-500 mt-0.5">{fee.student?.email}</p>
                                             </td>
-                                            <td className="px-5 py-4 text-sm text-gray-300">
+                                            <td className="px-5 py-4 text-sm text-gray-700">
                                                 {new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} – {new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
                                             </td>
-                                            <td className="px-5 py-4 text-right font-bold text-white">₹{fee.amount}</td>
-                                            <td className="px-5 py-4 text-sm text-gray-400">{new Date(fee.dueDate).toLocaleDateString('en-IN')}</td>
+                                            <td className="px-5 py-4 text-right font-bold text-gray-900">₹{fee.amount}</td>
+                                            <td className="px-5 py-4 text-sm text-gray-600">{new Date(fee.dueDate).toLocaleDateString('en-IN')}</td>
                                             <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-1.5 items-start">
-                                                    <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_COLORS[fee.status] || 'text-gray-400 bg-white/5 border-white/10'}`}>
+                                                    <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_COLORS[fee.status] || 'text-gray-600 bg-gray-50 border-gray-200'}`}>
                                                         {fee.status}
                                                     </span>
                                                     {fee.status === 'partial' && fee.partialPaid > 0 && (
@@ -363,7 +363,7 @@ const FeeManagement = () => {
                                                 ) : new Date() >= new Date(fee.cycleStart) || fee.student?.isActive === false ? (
                                                     <div className="flex items-center justify-end gap-2">
                                                         {fee.student?.isActive === false && (
-                                                            <span className="text-[11px] font-semibold text-gray-500 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">Inactive</span>
+                                                            <span className="text-[11px] font-semibold text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1 rounded-full">Inactive</span>
                                                         )}
                                                         <motion.button 
                                                             whileHover={{ scale: 1.05 }} 
@@ -397,29 +397,29 @@ const FeeManagement = () => {
                     >
                         <motion.div
                             initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-                            className="bg-[#0d0d14] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+                            className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-md shadow-2xl"
                             onClick={e => e.stopPropagation()}
                         >
                             {/* Modal Header */}
                             <div className="flex items-center justify-between mb-5">
                                 <div className="flex items-center gap-2">
                                     <div className="p-1.5 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg">
-                                        <IoWalletOutline size={14} className="text-white" />
+                                        <IoWalletOutline size={14} className="text-gray-900" />
                                     </div>
-                                    <h2 className="text-base font-bold text-white">Mark Fee Payment</h2>
+                                    <h2 className="text-base font-bold text-gray-900">Mark Fee Payment</h2>
                                 </div>
-                                <button onClick={closePayModal} className="text-gray-500 hover:text-white transition-colors">
+                                <button onClick={closePayModal} className="text-gray-500 hover:text-gray-900 transition-colors">
                                     <IoCloseCircle size={22} />
                                 </button>
                             </div>
 
                             {/* Student Info */}
-                            <div className="bg-white/5 border border-white/8 rounded-xl px-4 py-3 mb-5">
-                                <p className="text-sm font-semibold text-white">{payModal.student?.name}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{payModal.student?.email}</p>
+                            <div className="bg-gray-50 border border-white/8 rounded-xl px-4 py-3 mb-5">
+                                <p className="text-sm font-semibold text-gray-900">{payModal.student?.name}</p>
+                                <p className="text-xs text-gray-600 mt-0.5">{payModal.student?.email}</p>
                                 <div className="flex items-center gap-3 mt-2">
                                     <span className="text-xs text-gray-500">Total Amount:</span>
-                                    <span className="text-sm font-bold text-white">₹{payModal.amount}</span>
+                                    <span className="text-sm font-bold text-gray-900">₹{payModal.amount}</span>
                                     {payModal.partialPaid > 0 && (
                                         <span className="text-xs text-orange-400">· ₹{payModal.partialPaid} already paid</span>
                                     )}
@@ -435,16 +435,16 @@ const FeeManagement = () => {
 
                             {/* Payment Type Select */}
                             <div className="mb-4">
-                                <label className="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Payment Type</label>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Payment Type</label>
                                 <select
                                     value={payType}
                                     onChange={e => { setPayType(e.target.value); setPartialAmt(''); setError(''); }}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-purple-500/50"
-                                    style={{ colorScheme: 'dark' }}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-purple-500/50"
+                                    style={{ colorScheme: 'light' }}
                                 >
-                                    <option value="full" className="bg-[#0d0d14]">Full Paid</option>
-                                    <option value="partial" className="bg-[#0d0d14]">Partial Paid</option>
-                                    <option value="cancel" className="bg-[#0d0d14]">Cancel Payment (Inactive Period)</option>
+                                    <option value="full" className="bg-white text-gray-900">Full Paid</option>
+                                    <option value="partial" className="bg-white text-gray-900">Partial Paid</option>
+                                    <option value="cancel" className="bg-white text-gray-900">Cancel Payment (Inactive Period)</option>
                                 </select>
                             </div>
 
@@ -455,7 +455,7 @@ const FeeManagement = () => {
                                         initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                                         className="overflow-hidden mb-4"
                                     >
-                                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
+                                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">
                                             Amount Paid (₹) <span className="text-orange-400">· Outstanding = ₹{payModal.amount} - entered amount</span>
                                         </label>
                                         <input
@@ -465,7 +465,7 @@ const FeeManagement = () => {
                                             value={partialAmt}
                                             onChange={e => setPartialAmt(e.target.value)}
                                             placeholder={`Enter amount (max ₹${payModal.amount - 1})`}
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-orange-500/50 placeholder-gray-600"
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-orange-500/50 placeholder-gray-600"
                                         />
                                         {partialAmt && !isNaN(partialAmt) && Number(partialAmt) > 0 && Number(partialAmt) < payModal.amount && (
                                             <div className="flex justify-between text-xs mt-2 px-1">
@@ -479,7 +479,7 @@ const FeeManagement = () => {
 
                             {/* Action Buttons */}
                             <div className="flex gap-3 mt-2">
-                                <button onClick={closePayModal} className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 rounded-xl text-sm font-semibold transition-all">
+                                <button onClick={closePayModal} className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-all">
                                     Cancel
                                 </button>
                                 <button
