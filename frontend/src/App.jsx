@@ -209,15 +209,15 @@ function App() {
                 <Route path="/admin/sub-admins" element={<ProtectedRoute superAdminOnly><SubAdminManagement /></ProtectedRoute>} />
 
                 {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
-                <Route path="/admin/students" element={<ProtectedRoute adminOnly><SubAdminPinGuard><StudentManagement /></SubAdminPinGuard></ProtectedRoute>} />
-                <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><SubAdminPinGuard><AttendanceManagement /></SubAdminPinGuard></ProtectedRoute>} />
-                <Route path="/admin/fees" element={<ProtectedRoute adminOnly><SubAdminPinGuard><FeeManagement /></SubAdminPinGuard></ProtectedRoute>} />
-                <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><SubAdminPinGuard><NotificationManagement /></SubAdminPinGuard></ProtectedRoute>} />
-                <Route path="/admin/requests" element={<ProtectedRoute adminOnly><SubAdminPinGuard><RequestManagement /></SubAdminPinGuard></ProtectedRoute>} />
-                <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><SubAdminPinGuard><VacantSeats /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentManagement /></ProtectedRoute>} />
+                <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><AttendanceManagement /></ProtectedRoute>} />
+                <Route path="/admin/fees" element={<ProtectedRoute adminOnly><FeeManagement /></ProtectedRoute>} />
+                <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><NotificationManagement /></ProtectedRoute>} />
+                <Route path="/admin/requests" element={<ProtectedRoute adminOnly><RequestManagement /></ProtectedRoute>} />
+                <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><VacantSeats /></ProtectedRoute>} />
 
                 {/* Sub-Admin Dashboard */}
-                <Route path="/sub-admin" element={<ProtectedRoute><SubAdminPinGuard><SubAdminDashboard /></SubAdminPinGuard></ProtectedRoute>} />
+                <Route path="/sub-admin" element={<ProtectedRoute><SubAdminDashboard /></ProtectedRoute>} />
 
 
                 {/* Student Routes */}

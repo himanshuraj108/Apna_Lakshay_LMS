@@ -16,7 +16,12 @@ const FEATURES = [
 
 const SubAdminPinGuard = ({ children }) => {
     const { user, logout } = useAuth();
-    const [isVerified, setIsVerified] = useState(false);
+    const [isVerified, setIsVerified] = useState(() => {
+        if (user?.role !== 'subadmin') return true;
+        if (user?.hasPin === false) return true;
+        if (sessionStorage.getItem(`subAdminPinVerified_${user?.id}`) === 'true') return true;
+        return false;
+    });
     const [pin, setPin] = useState(['', '', '', '']);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
