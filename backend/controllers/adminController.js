@@ -2369,7 +2369,7 @@ exports.getVacantSeats = async (req, res) => {
 
         // ── 4. Load all seats
         const seats = await Seat.find()
-            .populate('room', 'name')
+            .populate('room', 'name hasAc')
             .populate('floor', 'name level')
             .lean();
 
@@ -2418,6 +2418,7 @@ exports.getVacantSeats = async (req, res) => {
                         seatId:     seat._id.toString(),
                         seatNumber: seat.number,
                         roomName:   seat.room?.name  || 'Unknown Room',
+                        hasAc:      seat.room?.hasAc || false,
                         floorId:    seat.floor?._id?.toString() || '',
                         floorName:  seat.floor?.name || 'Unknown Floor',
                         shiftId:    shift._id.toString(),
