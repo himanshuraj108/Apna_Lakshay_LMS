@@ -10,11 +10,14 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import useBackPath from '../../hooks/useBackPath';
+import { useAuth } from '../../context/AuthContext';
 
 const PAGE_BG = { background: '#F8FAFC' };
 
 const FeeManagement = () => {
     const backPath = useBackPath();
+    const { user } = useAuth();
+    const isSubAdmin = user?.role === 'subadmin';
     const [fees, setFees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(true);
@@ -213,21 +216,23 @@ const FeeManagement = () => {
                     </div>
                     
                     {/* Toggle Switch */}
-                    <div className="ml-auto flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl">
-                        <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold text-gray-900 leading-tight">Online Payments</span>
-                            <span className="text-[10px] text-gray-600 font-medium">Allow students to pay via Razorpay</span>
+                    {!isSubAdmin && (
+                        <div className="ml-auto flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2.5 rounded-xl">
+                            <div className="flex flex-col items-end">
+                                <span className="text-sm font-bold text-gray-900 leading-tight">Online Payments</span>
+                                <span className="text-[10px] text-gray-600 font-medium">Allow students to pay via Razorpay</span>
+                            </div>
+                            <button
+                                onClick={toggleOnlinePayment}
+                                className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${onlinePaymentEnabled ? 'bg-purple-500' : 'bg-white/20'}`}
+                            >
+                                <motion.div
+                                    animate={{ x: onlinePaymentEnabled ? 24 : 0 }}
+                                    className="w-4 h-4 rounded-full bg-white shadow-md relative z-10"
+                                />
+                            </button>
                         </div>
-                        <button
-                            onClick={toggleOnlinePayment}
-                            className={`w-12 h-6 rounded-full p-1 transition-colors relative flex items-center ${onlinePaymentEnabled ? 'bg-purple-500' : 'bg-white/20'}`}
-                        >
-                            <motion.div
-                                animate={{ x: onlinePaymentEnabled ? 24 : 0 }}
-                                className="w-4 h-4 rounded-full bg-white shadow-md relative z-10"
-                            />
-                        </button>
-                    </div>
+                    )}
                 </motion.div>
 
                 {/* Toasts */}
@@ -237,7 +242,67 @@ const FeeManagement = () => {
                 </AnimatePresence>
 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {isSubAdmin ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                        {loading ? (
+                            [...Array(4)].map((_, i) => <div key={i} className="h-44 bg-white border border-gray-100 rounded-2xl animate-pulse" />)
+                        ) : (() => {
+                            const pendingFees = baseFees.filter(f => ['pending', 'partial', 'overdue'].includes(f.status));
+                            if (pendingFees.length === 0) {
+                                return <div className="col-span-full text-center py-12 text-gray-500 bg-white border border-gray-200 rounded-2xl shadow-sm font-semibold">No pending fees found 🎉</div>;
+                            }
+                            return pendingFees.map(fee => (
+                                <motion.div 
+                                    key={fee._id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative overflow-hidden group"
+                                >
+                                    <div className={`absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r ${fee.status === 'overdue' ? 'from-red-500 to-rose-500' : fee.status === 'partial' ? 'from-orange-400 to-amber-500' : 'from-yellow-400 to-orange-500'}`} />
+                                    <div>
+                                        <div className="flex justify-between items-start mb-3 mt-1">
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-base">{fee.student?.name || 'Unknown'}</h3>
+                                                <p className="text-[11px] text-gray-500">{fee.student?.email}</p>
+                                            </div>
+                                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${STATUS_COLORS[fee.status] || 'text-gray-600 bg-gray-50 border-gray-200'}`}>
+                                                {fee.status}
+                                            </span>
+                                        </div>
+                                        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-4">
+                                            <div className="flex justify-between text-sm mb-1">
+                                                <span className="text-gray-500 text-xs">Total Amount:</span>
+                                                <span className="font-bold text-gray-900">₹{fee.amount}</span>
+                                            </div>
+                                            {fee.status === 'partial' && (
+                                                <div className="flex justify-between text-xs mt-1 border-t border-gray-200 pt-1.5">
+                                                    <span className="text-gray-500">Paid:</span>
+                                                    <span className="font-bold text-green-600">₹{fee.partialPaid}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between text-xs mt-1 border-t border-gray-200 pt-1.5">
+                                                <span className="text-gray-500 font-bold">Due:</span>
+                                                <span className="font-bold text-orange-600">₹{fee.status === 'partial' ? fee.outstanding : fee.amount}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[10px] mt-2 pt-2 border-t border-gray-200">
+                                                <span className="text-gray-500 uppercase tracking-wider">Due:</span>
+                                                <span className="font-bold text-gray-700">{new Date(fee.dueDate).toLocaleDateString('en-IN')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => openPayModal(fee)}
+                                        className="w-full flex justify-center items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-xl text-sm font-bold shadow-md shadow-green-500/20 transition-all"
+                                    >
+                                        <IoWalletOutline size={16} /> Action
+                                    </button>
+                                </motion.div>
+                            ));
+                        })()}
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     {[
                         { label: 'Total Collected', value: `₹${totalCollected}`, color: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)', icon: IoCheckmarkCircle },
                         { label: 'Total Pending', value: `₹${totalPending}`, color: 'from-yellow-400 to-orange-500', glow: 'rgba(245,158,11,0.3)', icon: IoTimeOutline },
@@ -385,6 +450,8 @@ const FeeManagement = () => {
                             </table>
                         </div>
                     </motion.div>
+                )}
+                    </>
                 )}
             </div>
 
