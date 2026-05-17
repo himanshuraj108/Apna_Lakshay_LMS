@@ -388,7 +388,7 @@ exports.getDashboard = async (req, res) => {
         // 2. Total Seats 
         const totalSeats = await Seat.countDocuments();
 
-        // 3. Occupied Seats
+        // 3. Occupied Seats (Active assignments)
         const occupiedSeatsAgg = await Seat.aggregate([
             { $unwind: '$assignments' },
             { $match: { 'assignments.status': 'active' } },
@@ -409,9 +409,17 @@ exports.getDashboard = async (req, res) => {
                     ]
                 }
             },
-            { $count: 'count' }
+            { $group: { _id: '$assignments._id', studentId: { $first: '$studentInfo._id' }, price: { $first: '$assignments.price' } } }
         ]);
-        const occupiedSeats = occupiedSeatsAgg[0]?.count || 0;
+        
+        const occupiedSeats = occupiedSeatsAgg.length;
+        
+        // 1b. Active Students (Distinct students from active assignments)
+        const activeStudentIds = new Set(occupiedSeatsAgg.map(s => s.studentId.toString()));
+        const activeStudents = activeStudentIds.size;
+        
+        // 3b. Expected Monthly Fee (sum of prices for all active assignments)
+        const expectedMonthlyFee = occupiedSeatsAgg.reduce((sum, curr) => sum + (curr.price || 0), 0);
 
         // 4. Fees Collected
         const feesCollectedAgg = await Fee.aggregate([
@@ -465,9 +473,11 @@ exports.getDashboard = async (req, res) => {
             success: true,
             data: {
                 totalStudents,
+                activeStudents,
                 totalSeats,
                 occupiedSeats,
                 availableSeats: totalSeats - occupiedSeats, // Dynamic availability based on this mode's occupancy
+                expectedMonthlyFee,
                 feesCollected,
                 pendingRequests
             }
