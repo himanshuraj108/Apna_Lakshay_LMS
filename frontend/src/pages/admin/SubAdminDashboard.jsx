@@ -1,11 +1,13 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 import { motion } from 'framer-motion';
 import {
     IoShieldCheckmarkOutline, IoCalendarOutline, IoPersonOutline,
     IoCashOutline, IoNotificationsOutline, IoDocumentTextOutline,
     IoSearchOutline, IoLogOutOutline, IoChevronForwardOutline,
-    IoLockClosedOutline
+    IoLockClosedOutline, IoSparklesOutline, IoBedOutline
 } from 'react-icons/io5';
 
 const PERM_CARDS = {
@@ -22,6 +24,24 @@ const ALL_PERMS = Object.keys(PERM_CARDS);
 const SubAdminDashboard = () => {
     const { user, logout } = useAuth();
     const permissions = user?.permissions || [];
+    
+    const [stats, setStats] = useState(null);
+    const [loadingStats, setLoadingStats] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardStats = async () => {
+            try {
+                // Fetch stats for custom mode which is the active mode for the LMS
+                const res = await api.get(`/admin/dashboard?mode=custom`);
+                setStats(res.data.data);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+        fetchDashboardStats();
+    }, []);
 
     const allowedCards = permissions.map(p => PERM_CARDS[p]).filter(Boolean);
     const lockedCards  = ALL_PERMS.filter(p => !permissions.includes(p)).map(p => PERM_CARDS[p]).filter(Boolean);
@@ -69,6 +89,41 @@ const SubAdminDashboard = () => {
                         </p>
                     </div>
                 </motion.div>
+
+                {/* ── Stats ── */}
+                {!loadingStats && stats && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="grid grid-cols-2 gap-3 mb-7"
+                    >
+                        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-green-500 to-teal-500" />
+                            <div className="flex items-center gap-2 mb-2 mt-1">
+                                <div className="p-1.5 bg-gradient-to-br from-green-500 to-teal-500 text-white rounded-lg shadow-md" style={{ boxShadow: '0 4px 12px -2px rgba(16,185,129,0.35)' }}>
+                                    <IoBedOutline size={16} />
+                                </div>
+                                <p className="text-gray-500 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">Occupied Seats</p>
+                            </div>
+                            <p className="text-2xl font-black bg-gradient-to-br from-green-500 to-teal-500 bg-clip-text text-transparent ml-1">
+                                {stats.occupiedSeats} / {stats.totalSeats}
+                            </p>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-yellow-400 to-orange-500" />
+                            <div className="flex items-center gap-2 mb-2 mt-1">
+                                <div className="p-1.5 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-lg shadow-md" style={{ boxShadow: '0 4px 12px -2px rgba(245,158,11,0.35)' }}>
+                                    <IoCashOutline size={16} />
+                                </div>
+                                <p className="text-gray-500 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">Fees Collected</p>
+                            </div>
+                            <p className="text-2xl font-black bg-gradient-to-br from-yellow-400 to-orange-500 bg-clip-text text-transparent ml-1">
+                                ₹{stats.feesCollected}
+                            </p>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* ── Modules ── */}
                 {allowedCards.length === 0 ? (
