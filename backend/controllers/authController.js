@@ -190,12 +190,12 @@ exports.getMe = async (req, res) => {
             return res.status(200).json({
                 success: true,
                 user: {
-                    id: req.user.id,
-                    name: req.user.name,
-                    email: req.user.name, // sub-admins have no email field
+                    id: sub ? sub._id : req.user.id,
+                    name: sub ? sub.name : req.user.name,
+                    email: sub ? sub.username : req.user.name, // sub-admins have username, not email
                     role: 'subadmin',
-                    permissions: req.user.permissions,
-                    isActive: true,
+                    permissions: sub ? sub.permissions : req.user.permissions,
+                    isActive: sub ? sub.isActive : true,
                     hasPin: sub ? !!sub.pin : false
                 }
             });

@@ -40,6 +40,11 @@ export const AuthProvider = ({ children }) => {
 
             // Start system status check in background (instant open)
             checkSystemStatus();
+            
+            // Silently fetch fresh user profile in background if logged in
+            if (token) {
+                checkAuth();
+            }
 
             setLoading(false);
         };
