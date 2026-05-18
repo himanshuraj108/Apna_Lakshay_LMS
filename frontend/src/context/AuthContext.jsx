@@ -30,7 +30,6 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const initAuth = async () => {
-            // Check if user is logged in on mount
             const token = localStorage.getItem('token');
             const savedUser = localStorage.getItem('user');
 
@@ -38,12 +37,14 @@ export const AuthProvider = ({ children }) => {
                 setUser(JSON.parse(savedUser));
             }
 
-            // Start system status check in background (instant open)
+            // Start system status check in background
             checkSystemStatus();
-            
-            // Silently fetch fresh user profile in background if logged in
+
+            // IMPORTANT: Await the fresh profile fetch before removing the
+            // loading gate, so ProtectedRoute always sees complete user data
+            // (including seat/seatNumber) before deciding to redirect.
             if (token) {
-                checkAuth();
+                await checkAuth();
             }
 
             setLoading(false);
