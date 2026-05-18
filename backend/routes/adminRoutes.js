@@ -77,6 +77,15 @@ const {
     updateFloorPrices
 } = require('../controllers/seatController');
 
+const {
+    getTempAssignments,
+    createTempAssignment,
+    updateTempAssignment,
+    revokeTempAssignment,
+    getStudentTempAssignments,
+    splitSeatAssign
+} = require('../controllers/tempSeatController');
+
 const { protect, adminOnly, superAdminOnly } = require('../middleware/auth');
 
 // All routes are protected and admin-only
@@ -133,6 +142,16 @@ router.put('/rooms/:roomId/prices', updateRoomPrices);  // Update all seats in a
 router.put('/floors/:floorId/prices', updateFloorPrices);  // Update all seats on a floor
 router.put('/rooms/:id/layout', updateRoomLayout);  // Update room layout
 router.post('/fix-seats', fixSeatOccupancy);
+
+// Split Seat Assignment (multiple seats, different shifts, one student)
+router.post('/seats/split-assign', splitSeatAssign);
+
+// Temporary Seat Assignments
+router.get('/temp-seats', getTempAssignments);
+router.post('/temp-seats', createTempAssignment);
+router.get('/temp-seats/student/:studentId', getStudentTempAssignments);
+router.put('/temp-seats/:id', updateTempAssignment);
+router.delete('/temp-seats/:id', revokeTempAssignment);
 
 // Attendance
 router.post('/attendance', markAttendance);
