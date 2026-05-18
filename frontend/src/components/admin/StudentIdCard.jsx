@@ -85,7 +85,7 @@ const StudentIdCard = ({ student }) => {
             {/* Header / Brand */}
             <div className={`bg-gradient-to-r ${theme.gradient} pt-6 pb-20 text-center relative overflow-hidden transition-colors duration-300`}>
                 <div className="absolute top-0 left-0 w-full h-full bg-gray-100 opacity-30 pattern-grid-lg"></div>
-                <h3 className="text-gray-900 font-bold text-xl relative z-10 tracking-widest uppercase">Apna Lakshay</h3>
+                <h3 className="text-white font-bold text-xl relative z-10 tracking-widest uppercase">Apna Lakshay</h3>
                 <p className="text-blue-100 text-xs tracking-wider uppercase relative z-10 mt-1">Library Management System</p>
             </div>
 
@@ -164,24 +164,26 @@ const StudentIdCard = ({ student }) => {
                             <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
                             {/* Multi-shift / split-seat support */}
                             {student.shifts && student.shifts.length > 0 ? (
-                                <div className="flex flex-col items-end gap-1">
+                                <div className="flex flex-col items-end gap-1.5">
                                     {student.shifts.map((s, i) => {
                                         const c = SEAT_COLORS[i % SEAT_COLORS.length];
                                         return (
-                                            <div key={i} className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${c.bg} ${c.border}`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                                                <p className={`font-bold text-[10px] ${c.text}`}>{s.name}</p>
+                                            <div key={i} className={`flex flex-row items-center justify-center gap-1.5 px-2 py-1 rounded-md border whitespace-nowrap ${c.bg} ${c.border}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.dot}`} />
+                                                <p className={`font-bold text-[10px] leading-none ${c.text}`}>{s.name}</p>
                                                 {s.startTime && s.endTime && (
-                                                    <p className="text-gray-500 text-[9px]">{s.startTime}–{s.endTime}</p>
+                                                    <p className="text-gray-600 text-[9px] leading-none font-medium">{s.startTime} – {s.endTime}</p>
                                                 )}
                                             </div>
                                         );
                                     })}
                                 </div>
                             ) : (
-                                <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-600'}`}>
-                                    {getFormattedShift()}
-                                </p>
+                                <div className={`px-2 py-1 rounded-md border whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'bg-purple-100 border-purple-300' : 'bg-gray-100 border-gray-300'}`}>
+                                    <p className={`font-bold text-[10px] leading-none ${student.seat?.number || student.seatNumber ? 'text-purple-700' : 'text-gray-600'}`}>
+                                        {getFormattedShift()}
+                                    </p>
+                                </div>
                             )}
                         </div>
 

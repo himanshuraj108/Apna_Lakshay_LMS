@@ -7,12 +7,13 @@ import {
     IoShieldCheckmarkOutline, IoCalendarOutline, IoPersonOutline,
     IoCashOutline, IoNotificationsOutline, IoDocumentTextOutline,
     IoSearchOutline, IoLogOutOutline, IoChevronForwardOutline,
-    IoLockClosedOutline, IoSparklesOutline, IoBedOutline
+    IoLockClosedOutline, IoSparklesOutline, IoBedOutline, IoIdCard
 } from 'react-icons/io5';
 
 const PERM_CARDS = {
     attendance:    { title: 'Attendance',       path: '/admin/attendance',    icon: IoCalendarOutline,      color: 'from-orange-500 to-red-500',    bg: 'bg-orange-50',   border: 'border-orange-200',   iconColor: 'text-orange-600', desc: 'Mark & view daily attendance' },
     students:      { title: 'Students',          path: '/admin/students',      icon: IoPersonOutline,        color: 'from-blue-500 to-indigo-600',   bg: 'bg-blue-50',     border: 'border-blue-200',     iconColor: 'text-blue-600',   desc: 'Browse student list & details' },
+    id_cards:      { title: 'Student ID Cards',  path: '/admin/students?tab=id-cards', icon: IoIdCard,         color: 'from-purple-500 to-pink-500',   bg: 'bg-purple-50',   border: 'border-purple-200',   iconColor: 'text-purple-600', desc: 'View and print student ID cards' },
     fees:          { title: 'Fee Status',         path: '/admin/fees',          icon: IoCashOutline,          color: 'from-yellow-400 to-orange-500', bg: 'bg-yellow-50',   border: 'border-yellow-200',   iconColor: 'text-yellow-600', desc: 'View student fee records' },
     notifications: { title: 'Notifications',     path: '/admin/notifications', icon: IoNotificationsOutline, color: 'from-pink-500 to-rose-500',     bg: 'bg-pink-50',     border: 'border-pink-200',     iconColor: 'text-pink-600',   desc: 'Send announcements to students' },
     requests:      { title: 'Student Requests',  path: '/admin/requests',      icon: IoDocumentTextOutline,  color: 'from-indigo-500 to-purple-600', bg: 'bg-indigo-50',   border: 'border-indigo-200',   iconColor: 'text-indigo-600', desc: 'Handle seat & shift requests' },

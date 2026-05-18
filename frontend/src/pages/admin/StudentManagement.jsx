@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal, IoWarning, IoGitBranch, IoClose, IoCheckmark } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal, IoWarning, IoGitBranch, IoClose, IoCheckmark, IoSearchOutline } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -57,7 +57,7 @@ const StudentManagement = () => {
     const [deletePassword, setDeletePassword] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState(tabParam || 'all'); // Initialize from URL or default
+    const [activeTab, setActiveTab] = useState(tabParam || ((isSubAdmin && !user?.permissions?.includes('students')) ? 'id-cards' : 'all')); // Initialize from URL or default
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showIdCardModal, setShowIdCardModal] = useState(false);
@@ -95,6 +95,7 @@ const StudentManagement = () => {
 
     // Show / hide inactive students (default: hidden)
     const [showInactive, setShowInactive] = useState(false);
+    const [idCardSearchSeat, setIdCardSearchSeat] = useState('');
 
     // Settings gear dropdown
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -1095,1302 +1096,1341 @@ const StudentManagement = () => {
 
     return (
         <>
-        <div className="relative min-h-screen" style={PAGE_BG}>
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600/6 blur-3xl" />
-                <div className="absolute bottom-[5%] left-[-5%] w-[400px] h-[400px] rounded-full bg-indigo-600/6 blur-3xl" />
-            </div>
-            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
-                {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3 flex-wrap">
-                    <div className="flex items-center gap-3">
-                        <Link to={backPath}>
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                                <IoArrowBack size={16} /> <span className="hidden sm:inline">Back</span>
-                            </motion.button>
-                        </Link>
-                        <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg"><IoPeopleOutline size={14} className="text-gray-900" /></div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
+            <div className="relative min-h-screen" style={PAGE_BG}>
+                <div className="fixed inset-0 pointer-events-none z-0">
+                    <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600/6 blur-3xl" />
+                    <div className="absolute bottom-[5%] left-[-5%] w-[400px] h-[400px] rounded-full bg-indigo-600/6 blur-3xl" />
+                </div>
+                <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+                    {/* Header */}
+                    <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+                        <div className="flex items-center gap-3">
+                            <Link to={backPath}>
+                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                    className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
+                                    <IoArrowBack size={16} /> <span className="hidden sm:inline">Back</span>
+                                </motion.button>
+                            </Link>
+                            <div>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg"><IoPeopleOutline size={14} className="text-gray-900" /></div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
+                                </div>
+                                <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Student Management</h1>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Student Management</h1>
                         </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap items-center">
-                        {/* ── Settings Gear Dropdown ── */}
-                        <div className="relative">
-                            <motion.button
-                                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                onClick={() => setShowSettingsMenu(prev => !prev)}
-                                className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-gray-900 rounded-xl text-sm font-semibold transition-all"
-                                title="Settings"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-300 ${showSettingsMenu ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Settings
+                        <div className="flex gap-2 flex-wrap items-center">
+                            {/* ── Settings Gear Dropdown ── */}
+                            <div className="relative">
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                    onClick={() => setShowSettingsMenu(prev => !prev)}
+                                    className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-gray-900 rounded-xl text-sm font-semibold transition-all"
+                                    title="Settings"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-300 ${showSettingsMenu ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    Settings
+                                </motion.button>
+
+                                <AnimatePresence>
+                                    {showSettingsMenu && (
+                                        <>
+                                            {/* Backdrop to close */}
+                                            <div className="fixed inset-0 z-30" onClick={() => setShowSettingsMenu(false)} />
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                                                transition={{ duration: 0.15 }}
+                                                className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
+                                                style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(12px)' }}
+                                            >
+                                                <div className="px-3 py-2 border-b border-gray-100">
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
+                                                </div>
+                                                {[
+                                                    {
+                                                        label: 'Export PDF',
+                                                        icon: <IoDownloadOutline size={15} />,
+                                                        color: 'text-indigo-600',
+                                                        bg: 'hover:bg-indigo-500/10',
+                                                        action: () => { generateStudentTablePDF(); setShowSettingsMenu(false); }
+                                                    },
+                                                    {
+                                                        label: 'Swap Seats',
+                                                        icon: <IoSwapHorizontal size={15} />,
+                                                        color: 'text-orange-600',
+                                                        bg: 'hover:bg-orange-500/10',
+                                                        action: () => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); setShowSettingsMenu(false); }
+                                                    },
+                                                    {
+                                                        label: 'Reset All QRs',
+                                                        icon: <IoRefresh size={15} />,
+                                                        color: 'text-red-600',
+                                                        bg: 'hover:bg-red-500/10',
+                                                        action: () => { handleResetAllQrs(); setShowSettingsMenu(false); }
+                                                    },
+                                                    {
+                                                        label: 'Reset All Passwords to Mobile',
+                                                        icon: (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                            </svg>
+                                                        ),
+                                                        color: 'text-orange-600',
+                                                        bg: 'hover:bg-orange-500/10',
+                                                        action: () => { setBulkResetResult(null); setShowBulkResetModal(true); setShowSettingsMenu(false); }
+                                                    },
+                                                ].map((item, i) => (
+                                                    <button key={i} onClick={item.action}
+                                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium ${item.color} ${item.bg} transition-colors text-left`}>
+                                                        {item.icon}
+                                                        {item.label}
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {/* ── Add Student ── */}
+                            <motion.button whileHover={{ scale: 1.03 }} onClick={openAddModal}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25">
+                                <IoAdd size={16} /> Add Student
                             </motion.button>
-
-                            <AnimatePresence>
-                                {showSettingsMenu && (
-                                    <>
-                                        {/* Backdrop to close */}
-                                        <div className="fixed inset-0 z-30" onClick={() => setShowSettingsMenu(false)} />
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.95, y: -6 }}
-                                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95, y: -6 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
-                                            style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(12px)' }}
-                                        >
-                                            <div className="px-3 py-2 border-b border-gray-100">
-                                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
-                                            </div>
-                                            {[
-                                                {
-                                                    label: 'Export PDF',
-                                                    icon: <IoDownloadOutline size={15} />,
-                                                    color: 'text-indigo-600',
-                                                    bg: 'hover:bg-indigo-500/10',
-                                                    action: () => { generateStudentTablePDF(); setShowSettingsMenu(false); }
-                                                },
-                                                {
-                                                    label: 'Swap Seats',
-                                                    icon: <IoSwapHorizontal size={15} />,
-                                                    color: 'text-orange-600',
-                                                    bg: 'hover:bg-orange-500/10',
-                                                    action: () => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); setShowSettingsMenu(false); }
-                                                },
-                                                {
-                                                    label: 'Reset All QRs',
-                                                    icon: <IoRefresh size={15} />,
-                                                    color: 'text-red-600',
-                                                    bg: 'hover:bg-red-500/10',
-                                                    action: () => { handleResetAllQrs(); setShowSettingsMenu(false); }
-                                                },
-                                                {
-                                                    label: 'Reset All Passwords to Mobile',
-                                                    icon: (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                                        </svg>
-                                                    ),
-                                                    color: 'text-orange-600',
-                                                    bg: 'hover:bg-orange-500/10',
-                                                    action: () => { setBulkResetResult(null); setShowBulkResetModal(true); setShowSettingsMenu(false); }
-                                                },
-                                            ].map((item, i) => (
-                                                <button key={i} onClick={item.action}
-                                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium ${item.color} ${item.bg} transition-colors text-left`}>
-                                                    {item.icon}
-                                                    {item.label}
-                                                </button>
-                                            ))}
-                                        </motion.div>
-                                    </>
-                                )}
-                            </AnimatePresence>
                         </div>
+                    </motion.div>
 
-                        {/* ── Add Student ── */}
-                        <motion.button whileHover={{ scale: 1.03 }} onClick={openAddModal}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25">
-                            <IoAdd size={16} /> Add Student
-                        </motion.button>
-                    </div>
-                </motion.div>
+                    {/* Tab Navigation */}
+                    <div className="flex gap-2 mb-5 overflow-x-auto pb-1 flex-wrap">
+                        {(() => {
+                            const tabs = [];
+                            if (!isSubAdmin || user?.permissions?.includes('students')) {
+                                tabs.push(
+                                    { id: 'all', label: `All (${students.length})` },
+                                    { id: 'admin', label: `Admin Reg. (${students.filter(s => ((s.registrationSource === 'admin' || !s.registrationSource) && s.isActive)).length})` },
+                                    { id: 'self', label: `Self Reg. (${students.filter(s => s.registrationSource === 'self' && s.isActive).length})` },
+                                    { id: 'active', label: `Active (${students.filter(s => s.isActive).length})` },
+                                    { id: 'pending', label: `Pending (${students.filter(s => !getStudentSeat(s._id) && s.isActive).length})` },
+                                    { id: 'inactive', label: `Inactive (${students.filter(s => !s.isActive).length})` }
+                                );
+                            }
+                            if (!isSubAdmin || user?.permissions?.includes('id_cards') || user?.permissions?.includes('students')) {
+                                tabs.push({ id: 'id-cards', label: 'ID Cards', icon: <IoIdCard size={13} /> });
+                            }
+                            if (!isSubAdmin) {
+                                tabs.push({ id: 'history', label: 'Deleted', icon: <IoTrash size={13} /> });
+                            }
+                            return tabs;
+                        })().map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
+                                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
+                                    : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                {tab.icon}{tab.label}
+                            </button>
+                        ))}
 
-                {/* Tab Navigation */}
-                <div className="flex gap-2 mb-5 overflow-x-auto pb-1 flex-wrap">
-                    {[
-                        { id: 'all', label: `All (${students.length})` },
-                        { id: 'admin', label: `Admin Reg. (${students.filter(s => ((s.registrationSource === 'admin' || !s.registrationSource) && s.isActive)).length})` },
-                        { id: 'self', label: `Self Reg. (${students.filter(s => s.registrationSource === 'self' && s.isActive).length})` },
-                        { id: 'active', label: `Active (${students.filter(s => s.isActive).length})` },
-                        { id: 'pending', label: `Pending (${students.filter(s => !getStudentSeat(s._id) && s.isActive).length})` },
-                        { id: 'inactive', label: `Inactive (${students.filter(s => !s.isActive).length})` },
-                        { id: 'id-cards', label: 'ID Cards', icon: <IoIdCard size={13} /> },
-                        !isSubAdmin && { id: 'history', label: 'Deleted', icon: <IoTrash size={13} /> },
-                    ].filter(Boolean).map(tab => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
-                                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
-                                : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
-                            {tab.icon}{tab.label}
-                        </button>
-                    ))}
-
-                    <select
-                        value={acFilter}
-                        onChange={(e) => setAcFilter(e.target.value)}
-                        className="ml-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 outline-none hover:bg-gray-100 transition-colors"
-                    >
-                        <option value="all" className="bg-gray-50">All Rooms</option>
-                        <option value="ac" className="bg-gray-50">AC Rooms Only</option>
-                        <option value="non-ac" className="bg-gray-50">Non-AC Rooms Only</option>
-                    </select>
-
-                    {/* Show Inactive toggle */}
-                    {activeTab === 'all' && (
-                        <button
-                            onClick={() => setShowInactive(p => !p)}
-                            className="ml-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-all"
-                            style={{
-                                background: showInactive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
-                                borderColor: showInactive ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)',
-                                color: showInactive ? '#f87171' : '#6b7280',
-                            }}
+                        <select
+                            value={acFilter}
+                            onChange={(e) => setAcFilter(e.target.value)}
+                            className="ml-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 outline-none hover:bg-gray-100 transition-colors"
                         >
-                            <span
-                                className="relative inline-flex w-8 h-4 rounded-full transition-colors duration-200 shrink-0"
-                                style={{ background: showInactive ? '#ef4444' : 'rgba(255,255,255,0.12)' }}
+                            <option value="all" className="bg-gray-50">All Rooms</option>
+                            <option value="ac" className="bg-gray-50">AC Rooms Only</option>
+                            <option value="non-ac" className="bg-gray-50">Non-AC Rooms Only</option>
+                        </select>
+
+                        {/* Show Inactive toggle */}
+                        {activeTab === 'all' && (
+                            <button
+                                onClick={() => setShowInactive(p => !p)}
+                                className="ml-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-all"
+                                style={{
+                                    background: showInactive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
+                                    borderColor: showInactive ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)',
+                                    color: showInactive ? '#f87171' : '#6b7280',
+                                }}
                             >
                                 <span
-                                    className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200"
-                                    style={{ transform: showInactive ? 'translateX(16px)' : 'translateX(0)' }}
-                                />
-                            </span>
-                            Show Inactive
-                        </button>
-                    )}
-
-                    {activeTab === 'history' && (
-                        <motion.button whileHover={{ scale: 1.03 }} onClick={handleClearArchives}
-                            disabled={archivedStudents.length === 0}
-                            className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all disabled:opacity-40">
-                            <IoTrash size={13} /> Clear All
-                        </motion.button>
-                    )}
-                </div>
-
-                {selectedStudentIds.length > 0 && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                        className="flex items-center justify-between bg-blue-500/10 border border-blue-500/25 px-4 py-3 rounded-xl mb-5">
-                        <span className="text-blue-300 text-sm font-medium">{selectedStudentIds.length} student(s) selected</span>
-                        <div className="flex gap-3">
-                            <button onClick={() => setSelectedStudentIds([])} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
-                            <button onClick={() => setShowBulkFeeModal(true)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors">
-                                Edit Fees
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
-                {success && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-green-500/10 border border-green-500/25 text-green-400 px-4 py-3 rounded-xl mb-5 text-sm">
-                        {success}
-                    </motion.div>
-                )}
-                {error && !showDeleteModal && !showResetPasswordModal && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl mb-5 text-sm">
-                        {error}
-                    </motion.div>
-                )}
-
-                {loading ? (
-                    <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-white/3 rounded-xl animate-pulse" />)}</div>
-                ) : (
-                    <>
-                        {activeTab === 'id-cards' ? (
-                            <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] gap-8">
-                                {shiftFilter && (
-                                    <div className="col-span-full bg-purple-500/10 border border-purple-500/25 rounded-xl p-4 mb-2 flex justify-between items-center">
-                                        <p className="text-purple-300 text-sm font-medium">
-                                            Showing students for: <span className="text-gray-900 font-bold">
-                                                {shifts.find(s => s._id === shiftFilter)?.name || 'Selected Shift'}
-                                            </span>
-                                        </p>
-                                        <button onClick={() => window.location.href = '/admin/students?tab=id-cards'}
-                                            className={BTN_SECONDARY}>View All</button>
-                                    </div>
-                                )}
-                                {(() => {
-                                    const filtered = students.filter(s => {
-                                        if (!s.isActive) return false;
-                                        if (shiftFilter && !hasShiftAssignment(s._id, shiftFilter)) return false;
-
-                                        if (acFilter !== 'all') {
-                                            const hasAc = s.seat?.room?.hasAc;
-                                            if (acFilter === 'ac' && !hasAc) return false;
-                                            if (acFilter === 'non-ac' && hasAc) return false;
-                                        }
-
-                                        return true;
-                                    });
-                                    return filtered.length === 0 ? (
-                                        <div className="col-span-full text-center p-12 bg-white/3 rounded-2xl border border-white/8">
-                                            <p className="text-gray-500">{shiftFilter ? 'No students found for this shift.' : 'No active students found.'}</p>
-                                        </div>
-                                    ) : filtered.map(student => (
-                                        <div key={student._id} className="flex justify-center p-4">
-                                            <StudentIdCard student={{ ...student, seatNumber: getStudentSeat(student._id) }} />
-                                        </div>
-                                    ));
-                                })()}
-                            </div>
-                        ) : activeTab === 'history' ? (
-                            <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
-                                <div className="h-px bg-gradient-to-r from-red-500/60 to-orange-500/60" />
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-white/8">
-                                                {['Name', 'Email', 'Joined', 'Deleted At', 'Actions'].map((h, i) => (
-                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 4 ? 'text-right' : 'text-left'}`}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {archivedStudents.length === 0 ? (
-                                                <tr><td colSpan="5" className="text-center p-8 text-gray-600 text-sm">No deleted students found.</td></tr>
-                                            ) : archivedStudents.map(student => (
-                                                <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
-                                                    <td className="px-5 py-3.5 font-medium text-sm text-gray-900">{student.name}</td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
-                                                    <td className="px-5 py-3.5 text-xs text-gray-500">{new Date(student.joinedAt).toLocaleDateString()}</td>
-                                                    <td className="px-5 py-3.5 text-xs text-red-400">{new Date(student.deletedAt).toLocaleDateString()}</td>
-                                                    <td className="px-5 py-3.5 text-right">
-                                                        <button onClick={() => handleViewArchive(student._id)}
-                                                            className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-xs font-medium mr-2 hover:bg-blue-500/20 transition-all">View Report</button>
-                                                        <button onClick={() => handleDeleteArchive(student._id)}
-                                                            className="p-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-all"><IoTrash size={14} /></button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
-                                <div className="h-px bg-gradient-to-r from-blue-500/60 to-indigo-500/60" />
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-white/8">
-                                                <th className="px-5 py-3 w-10 text-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
-                                                        onChange={(e) => setSelectedStudentIds(e.target.checked ? filteredStudents.map(s => s._id) : [])}
-                                                        className="rounded border-gray-600 bg-black/20"
-                                                    />
-                                                </th>
-                                                {['#', 'Name', 'Email', 'Shift', 'Status', 'Presence', 'Credits', 'Created', 'Fee', 'Actions'].map((h, i) => (
-                                                    <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 9 ? 'text-right' : 'text-left'}`}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredStudents.length === 0 ? (
-                                                <tr><td colSpan="11" className="text-center p-10 text-gray-600 text-sm">
-                                                    {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
-                                                    {activeTab === 'active' && 'No active students found.'}
-                                                    {activeTab === 'inactive' && 'No inactive students found.'}
-                                                    {activeTab === 'pending' && 'No students pending allocation.'}
-                                                </td></tr>
-                                            ) : filteredStudents.map((student, idx) => (
-                                                <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
-                                                    <td className="px-5 py-3.5 w-10 text-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedStudentIds.includes(student._id)}
-                                                            onChange={(e) => {
-                                                                if (e.target.checked) setSelectedStudentIds(prev => [...prev, student._id]);
-                                                                else setSelectedStudentIds(prev => prev.filter(id => id !== student._id));
-                                                            }}
-                                                            className="rounded border-gray-600 bg-black/20"
-                                                        />
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-xs font-bold text-gray-600 w-10 tabular-nums">{idx + 1}</td>
-                                                    <td className="px-5 py-3.5 font-semibold text-sm text-gray-900">{student.name}</td>
-                                                    <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
-                                                    <td className="px-5 py-3.5 text-sm">
-                                                        {(() => {
-                                                            const s = getStudentShifts(student._id);
-                                                            if (!s && student.isActive) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
-                                                            return <span className="text-gray-600 text-xs">{s || 'N/A'}</span>;
-                                                        })()}
-                                                    </td>
-                                                    <td className="px-5 py-3.5">
-                                                        {(() => {
-                                                            const hasSeat = getStudentSeat(student._id);
-                                                            const hasShifts = getStudentShifts(student._id);
-                                                            if (student.isActive && (!hasSeat || !hasShifts)) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
-                                                            return <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${student.isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{student.isActive ? 'Active' : 'Inactive'}</span>;
-                                                        })()}
-                                                    </td>
-                                                    <td className="px-5 py-3.5">
-                                                        <div className="flex flex-col gap-1.5">
-                                                            <div className="flex items-center gap-1.5" title={student.lastActive ? `Last Active: ${new Date(student.lastActive).toLocaleString()}` : 'Online status'}>
-                                                                <span className={`w-2 h-2 rounded-full ${student.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-500'}`} />
-                                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isOnline ? 'text-green-400' : 'text-gray-600'}`}>
-                                                                    {student.isOnline ? 'Online' : 'Offline'}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-1.5" title={student.lastLogin ? `Last Login: ${new Date(student.lastLogin).toLocaleString()}` : 'Login status'}>
-                                                                <span className={`w-2 h-2 rounded-full ${student.isLoggedIn ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'bg-gray-600'}`} />
-                                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isLoggedIn ? 'text-blue-400' : 'text-gray-500'}`}>
-                                                                    {student.isLoggedIn ? 'Logged In' : 'Logged Out'}
-                                                                </span>
-                                                            </div>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedSessionStudent(student);
-                                                                    setShowSessionModal(true);
-                                                                }}
-                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-gray-900 bg-gray-100 hover:bg-white/20 rounded border border-gray-200 transition-colors self-start"
-                                                            >
-                                                                Details
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-xs text-gray-700 font-medium">
-                                                        <div className="flex flex-col gap-1.5 items-start">
-                                                            <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-1 rounded-md w-fit">
-                                                                <span className="font-bold">{Math.min(student.mockTestCredits ?? 2, 2)}</span> / 2
-                                                            </div>
-                                                            <button
-                                                                onClick={() => fetchCreditHistory(student)}
-                                                                className="mt-1 px-2 py-1 text-[10px] font-medium text-gray-900 bg-gray-100 hover:bg-white/20 rounded border border-gray-200 transition-colors"
-                                                            >
-                                                                Details
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
-                                                    <td className="px-5 py-3.5 text-xs font-bold text-emerald-400">{getStudentFee(student)}</td>
-                                                    <td className="px-5 py-3.5 text-right">
-                                                        <div className="flex items-center justify-end gap-3">
-                                                            {student.isActive ? (
-                                                                <>
-                                                                    <button onClick={() => openIdCardModal(student)} className="text-purple-400 hover:text-purple-300 transition-colors" title="Show ID Card"><IoIdCard size={18} /></button>
-                                                                    <button onClick={() => openSeatAssignModal(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Assign Seat"><IoBedOutline size={18} /></button>
-                                                                    <button onClick={() => openSplitSeatModal(student)} className="text-cyan-400 hover:text-cyan-300 transition-colors" title="Split Seat Assignment"><IoGitBranch size={18} /></button>
-                                                                    <button onClick={() => openTempSeatModal(student)} className="text-orange-400 hover:text-orange-300 transition-colors" title="Temp Seat Assignment"><IoWarning size={18} /></button>
-                                                                    <button onClick={() => openResetPasswordModal(student)} className="text-yellow-400 hover:text-yellow-300 transition-colors" title="Reset Password"><IoKey size={18} /></button>
-                                                                    <button onClick={() => openEditModal(student)} className="text-blue-400 hover:text-blue-300 transition-colors" title="Edit"><IoPencil size={18} /></button>
-                                                                </>
-                                                            ) : (
-                                                                <button onClick={() => handleReactivate(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Reactivate"><IoRefresh size={18} /></button>
-                                                            )}
-                                                            <button onClick={() => openDeleteModal(student)} className="text-red-400 hover:text-red-300 transition-colors" title="Delete"><IoTrash size={18} /></button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {/* ─── Swap Seats Modal ───────────────────────────────────────── */}
-                <Modal theme="light"
-                    isOpen={showSwapModal}
-                    onClose={() => { setShowSwapModal(false); setError(''); }}
-                    title="Swap Seats"
-                >
-                    <form onSubmit={handleSwapSeats} className="space-y-5">
-                        {/* Info banner */}
-                        <div className="flex items-start gap-3 bg-orange-500/8 border border-orange-500/20 rounded-xl px-4 py-3">
-                            <IoSwapHorizontal size={18} className="text-orange-400 shrink-0 mt-0.5" />
-                            <p className="text-orange-300 text-xs leading-relaxed">
-                                Only the <span className="font-bold text-orange-200">seat</span> will change between the two students.
-                                Shift, fee amount, and all other data remain <span className="font-bold text-orange-200">unchanged</span>.
-                            </p>
-                        </div>
-
-                        {/* Error inside modal */}
-                        {error && showSwapModal && (
-                            <div className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Student 1 */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold uppercase tracking-widest text-gray-600">Student A</label>
-                            <select
-                                id="swap-student-a"
-                                value={swapStudentId1}
-                                onChange={e => setSwapStudentId1(e.target.value)}
-                                className={INPUT + ' bg-white text-gray-900'}
-                                style={{ colorScheme: 'light' }}
-                                required
-                            >
-                                <option value="">— Select Student A —</option>
-                                {students.filter(s => s.isActive && getStudentSeat(s._id)).map(s => (
-                                    <option key={s._id} value={s._id}>
-                                        {s.name} — Seat {getStudentSeat(s._id)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Visual Swap Preview */}
-                        <div className="flex items-center justify-center gap-4 py-2">
-                            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
-                                {swapStudentId1 ? (() => {
-                                    const s = students.find(x => x._id === swapStudentId1);
-                                    return s ? (
-                                        <>
-                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
-                                                {s.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
-                                            <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
-                                        </>
-                                    ) : null;
-                                })() : (
-                                    <p className="text-gray-600 text-xs py-2">Student A</p>
-                                )}
-                            </div>
-                            <div className="flex flex-col items-center gap-1 shrink-0">
-                                <motion.div
-                                    animate={swapStudentId1 && swapStudentId2 ? { rotate: [0, 180, 360] } : {}}
-                                    transition={{ duration: 0.6, ease: 'easeInOut' }}
-                                    className="p-2.5 rounded-full bg-orange-500/15 border border-orange-500/30"
+                                    className="relative inline-flex w-8 h-4 rounded-full transition-colors duration-200 shrink-0"
+                                    style={{ background: showInactive ? '#ef4444' : 'rgba(255,255,255,0.12)' }}
                                 >
-                                    <IoSwapHorizontal size={20} className="text-orange-400" />
-                                </motion.div>
-                                <span className="text-gray-600 text-[10px]">swap</span>
-                            </div>
-                            <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
-                                {swapStudentId2 ? (() => {
-                                    const s = students.find(x => x._id === swapStudentId2);
-                                    return s ? (
-                                        <>
-                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
-                                                {s.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
-                                            <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
-                                        </>
-                                    ) : null;
-                                })() : (
-                                    <p className="text-gray-600 text-xs py-2">Student B</p>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Student 2 */}
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold uppercase tracking-widest text-gray-600">Student B</label>
-                            <select
-                                id="swap-student-b"
-                                value={swapStudentId2}
-                                onChange={e => setSwapStudentId2(e.target.value)}
-                                className={INPUT + ' bg-white text-gray-900'}
-                                style={{ colorScheme: 'light' }}
-                                required
-                            >
-                                <option value="">— Select Student B —</option>
-                                {students.filter(s => s.isActive && getStudentSeat(s._id) && s._id !== swapStudentId1).map(s => (
-                                    <option key={s._id} value={s._id}>
-                                        {s.name} — Seat {getStudentSeat(s._id)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Confirmation summary */}
-                        {swapStudentId1 && swapStudentId2 && (() => {
-                            const s1 = students.find(x => x._id === swapStudentId1);
-                            const s2 = students.find(x => x._id === swapStudentId2);
-                            if (!s1 || !s2) return null;
-                            return (
-                                <div className="bg-white/4 border border-gray-200 rounded-xl p-4 space-y-2">
-                                    <p className="text-[11px] uppercase tracking-widest text-gray-500 font-bold mb-2">After swap</p>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="font-semibold text-gray-900">{s1.name}</span>
-                                        <span className="text-gray-500">→</span>
-                                        <span className="font-bold text-green-400">Seat {getStudentSeat(s2._id)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span className="font-semibold text-gray-900">{s2.name}</span>
-                                        <span className="text-gray-500">→</span>
-                                        <span className="font-bold text-green-400">Seat {getStudentSeat(s1._id)}</span>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {/* Actions */}
-                        <div className="flex justify-end gap-3 pt-1">
-                            <button type="button" onClick={() => { setShowSwapModal(false); setError(''); }} className={BTN_SECONDARY}>
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={swapLoading || !swapStudentId1 || !swapStudentId2 || swapStudentId1 === swapStudentId2}
-                                className="px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all flex items-center gap-2"
-                            >
-                                <IoSwapHorizontal size={15} />
-                                {swapLoading ? 'Swapping...' : 'Confirm Swap'}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-
-                {/* Session Details Modal */}
-                <Modal theme="light"
-                    isOpen={showSessionModal}
-                    onClose={() => setShowSessionModal(false)}
-                    title="Session Details"
-                >
-                    <div className="space-y-4">
-                        {selectedSessionStudent && (
-                            <>
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
-                                        {selectedSessionStudent.name?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h4 className="text-gray-900 font-bold truncate">{selectedSessionStudent.name}</h4>
-                                        <p className="text-gray-600 text-sm truncate">{selectedSessionStudent.email}</p>
-                                    </div>
-                                </div>
-                                <div className="grid gap-3">
-                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-600 text-sm">Status</span>
-                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-600'}`}>
-                                            {selectedSessionStudent.isOnline ? 'Online' : 'Offline'}
-                                        </span>
-                                    </div>
-                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-600 text-sm">Session</span>
-                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isLoggedIn ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-600'}`}>
-                                            {selectedSessionStudent.isLoggedIn ? 'Logged In' : 'Logged Out'}
-                                        </span>
-                                    </div>
-                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-600 text-sm">Last Active</span>
-                                        <span className="text-gray-900 text-sm font-medium">
-                                            {selectedSessionStudent.lastActive ? new Date(selectedSessionStudent.lastActive).toLocaleString() : 'N/A'}
-                                        </span>
-                                    </div>
-                                    <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
-                                        <span className="text-gray-600 text-sm">Last Login</span>
-                                        <span className="text-gray-900 text-sm font-medium">
-                                            {selectedSessionStudent.lastLogin ? new Date(selectedSessionStudent.lastLogin).toLocaleString() : 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="mt-6 flex justify-end">
-                                    <button onClick={() => setShowSessionModal(false)} className={BTN_SECONDARY}>Close</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </Modal>
-
-                {/* Credit Details Modal */}
-                <Modal theme="light"
-                    isOpen={showCreditModal}
-                    onClose={() => setShowCreditModal(false)}
-                    title="Mock Test / Credit Details"
-                >
-                    <div className="space-y-4 max-h-[70vh] overflow-y-auto w-full p-2">
-                        {selectedCreditStudent && (
-                            <>
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
-                                        {selectedCreditStudent.name?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <h4 className="text-gray-900 font-bold truncate">{selectedCreditStudent.name}</h4>
-                                        <p className="text-gray-600 text-sm truncate">{selectedCreditStudent.email}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-[10px] text-gray-600 uppercase font-bold tracking-wider mb-1">Current Credits</div>
-                                        <div className="text-xl font-black text-purple-400">{Math.min(selectedCreditStudent.mockTestCredits ?? 2, 2)}<span className="text-sm text-gray-500 font-medium">/2</span></div>
-                                    </div>
-                                </div>
-
-                                {creditLoading ? (
-                                    <div className="text-center p-8 text-gray-600">Loading history logs...</div>
-                                ) : creditHistory.length === 0 ? (
-                                    <div className="text-center p-8 text-gray-900/40 border border-gray-100 bg-gray-50 rounded-xl border-dashed">No mock test history found.</div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest pl-1">Attempt Logs</h4>
-                                        {creditHistory.map(att => (
-                                            <div key={att._id} className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                                                <div>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-gray-900 font-bold text-sm tracking-wide">{att.patternName}</span>
-                                                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded ${att.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-500'}`}>{att.status}</span>
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-600 font-medium">Generated: {new Date(att.startedAt).toLocaleString()}</div>
-                                                </div>
-
-                                                {att.status === 'completed' && (
-                                                    <div className="flex gap-4 items-center bg-black/20 rounded-lg p-2 px-3 border border-gray-100">
-                                                        <div className="text-center">
-                                                            <div className="text-[10px] text-gray-500 font-bold uppercase">Score</div>
-                                                            <div className="text-sm font-bold text-blue-400">{att.score} <span className="text-xs text-gray-500 font-medium">/{att.maxScore}</span></div>
-                                                        </div>
-                                                        <div className="w-px h-8 bg-gray-100" />
-                                                        <div className="text-center">
-                                                            <div className="text-[10px] text-gray-500 font-bold uppercase">Acc</div>
-                                                            <div className={`text-sm font-bold ${att.percentage >= 60 ? 'text-green-400' : 'text-orange-400'}`}>{att.percentage}%</div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <div className="mt-6 flex justify-end">
-                                    <button onClick={() => setShowCreditModal(false)} className={BTN_SECONDARY}>Close</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </Modal>
-
-                {/* View ID Card Modal */}
-                <Modal theme="light"
-                    isOpen={showIdCardModal}
-                    onClose={() => setShowIdCardModal(false)}
-                    title="Student ID Card"
-                >
-                    <div className="flex flex-col items-center justify-center p-4">
-                        {selectedStudent && (
-                            <>
-                                <div id="student-id-card-preview" className="p-4 bg-white rounded-xl">
-                                    <StudentIdCard
-                                        student={{
-                                            ...selectedStudent,
-                                            seatNumber: getStudentSeat(selectedStudent._id)
-                                        }}
+                                    <span
+                                        className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200"
+                                        style={{ transform: showInactive ? 'translateX(16px)' : 'translateX(0)' }}
                                     />
-                                </div>
-                                <div className="mt-5 flex flex-col sm:flex-row gap-3 w-full">
-                                    <button onClick={() => setShowIdCardModal(false)} className={BTN_SECONDARY + ' flex-1'}>Close</button>
-                                    <button onClick={handleDownloadPNG} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/20">
-                                        <IoDownload size={14} /> PNG
-                                    </button>
-                                    <button onClick={handleDownloadPDF} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20">
-                                        <IoDownload size={14} /> PDF
-                                    </button>
-                                </div>
-                            </>
+                                </span>
+                                Show Inactive
+                            </button>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <motion.button whileHover={{ scale: 1.03 }} onClick={handleClearArchives}
+                                disabled={archivedStudents.length === 0}
+                                className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold transition-all disabled:opacity-40">
+                                <IoTrash size={13} /> Clear All
+                            </motion.button>
                         )}
                     </div>
-                </Modal>
 
-                {/* Add/Edit Student Modal */}
-                <Modal theme="light"
-                    isOpen={showModal}
-                    onClose={() => setShowModal(false)}
-                    title={editMode ? 'Edit Student' : 'Add New Student'}
-                >
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className={LABEL}>Name</label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className={INPUT}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className={LABEL}>Email (Optional)</label>
-                            <input
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className={INPUT}
-                                placeholder="student@gmail.com (Leave blank if not available)"
-                            />
-                        </div>
-                        <div>
-                            <label className={LABEL}>Mobile Number</label>
-                            <input
-                                type="tel"
-                                value={formData.mobile}
-                                onChange={(e) => {
-                                    const val = e.target.value.replace(/\D/g, '');
-                                    if (val.length <= 10) setFormData({ ...formData, mobile: val });
-                                }}
-                                className={INPUT}
-                                placeholder="Enter 10-digit mobile number"
-                                pattern="[0-9]{10}"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className={LABEL}>Address</label>
-                            <textarea
-                                value={formData.address}
-                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                className={INPUT + ' min-h-[80px]'}
-                                placeholder="Enter student address"
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">{editMode ? 'New Password (Optional)' : 'Generated Password'}</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className={INPUT + ' flex-1 font-mono text-center tracking-wider'}
-                                    placeholder={editMode ? "Leave blank to keep current" : "Generating..."}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, password: formData.mobile })}
-                                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-xl transition-colors font-medium whitespace-nowrap"
-                                    title="Set password to mobile number"
-                                >
-                                    Use Mobile
+                    {selectedStudentIds.length > 0 && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center justify-between bg-blue-500/10 border border-blue-500/25 px-4 py-3 rounded-xl mb-5">
+                            <span className="text-blue-300 text-sm font-medium">{selectedStudentIds.length} student(s) selected</span>
+                            <div className="flex gap-3">
+                                <button onClick={() => setSelectedStudentIds([])} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Cancel</button>
+                                <button onClick={() => setShowBulkFeeModal(true)} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors">
+                                    Edit Fees
                                 </button>
-                                {!editMode && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-                                            let password = '';
-                                            for (let i = 0; i < 8; i++) { password += charset.charAt(Math.floor(Math.random() * charset.length)); }
-                                            setFormData({ ...formData, password: password });
-                                        }}
-                                        className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-xl transition-colors font-medium whitespace-nowrap"
-                                    >
-                                        Random
-                                    </button>
-                                )}
                             </div>
-                            <p className="text-xs text-gray-600 mt-1">
-                                {editMode ? "Enter a new password or click 'Use Mobile' to reset." : "This password will be used for first-time login."}
-                            </p>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Registration Date</label>
-                            <input type="date" value={formData.joinedAt}
-                                max={new Date().toISOString().split('T')[0]}
-                                onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
-                                className={INPUT}
-                                style={{ colorScheme: 'light' }}
-                            />
-                            <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
-                        </div>
-                        {editMode && formData.seatId && (
-                            <div className="space-y-4">
-                                <div>
-                                    <label className={LABEL}>Shift</label>
-                                    <select
-                                        value={formData.shift}
-                                        onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
-                                        className={INPUT + ' bg-white text-gray-900'}
-                                    >
-                                        <option value="" className="bg-white text-gray-900">No shift assigned</option>
-                                        {shifts.map(shift => (
-                                            <option key={shift.id} value={shift.id} className="bg-white text-gray-900">
-                                                {shift.name} ({getShiftTimeRange(shift)})
-                                            </option>
-                                        ))}
-                                        {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                            <option value="full" className="bg-white text-gray-900">Full Day (9 AM - 9 PM)</option>
-                                        )}
-                                    </select>
-                                    <p className="text-xs text-gray-600 mt-1">Change the shift for the student's currently assigned seat. If they don't have a seat yet, use the Assign Seat button instead.</p>
-                                </div>
-                                <div>
-                                    <label className={LABEL}>Negotiated Price (Optional)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.negotiatedPrice}
-                                        onChange={(e) => setFormData({ ...formData, negotiatedPrice: e.target.value })}
-                                        className={INPUT}
-                                        placeholder="Leave empty for base price"
-                                    />
-                                    <p className="text-xs text-gray-600 mt-1">Override the base price for this shift. Leave empty to use default pricing.</p>
-                                </div>
-                            </div>
-                        )}
-                        {editMode && (
-                            <div className="flex items-center gap-2 mt-4 mb-4">
-                                <input
-                                    type="checkbox"
-                                    id="sendMail"
-                                    checked={formData.sendMail}
-                                    onChange={(e) => setFormData({ ...formData, sendMail: e.target.checked })}
-                                    className="w-4 h-4 rounded border-gray-600 text-emerald-500 focus:ring-emerald-500 bg-transparent cursor-pointer"
-                                />
-                                <label htmlFor="sendMail" className="text-sm text-gray-700 cursor-pointer">
-                                    Send Email Notification to Student
-                                </label>
-                            </div>
-                        )}
-                        <div className="flex gap-3 mt-4">
-                            <button type="submit" disabled={loading} className={BTN_PRIMARY + ' flex-1'}>
-                                {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Student' : 'Create Student')}
-                            </button>
-                            <button type="button" onClick={() => setShowModal(false)} disabled={loading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
-                        </div>
-                        {!editMode && !formData.password && (
-                            <p className="text-sm text-gray-600">
-                                Note: Password defaults to **Student's Mobile Number** if left empty.
-                            </p>
-                        )}
-                    </form>
-                </Modal>
-
-                {/* Assign Seat Modal */}
-                <Modal theme="light"
-                    isOpen={showSeatModal}
-                    onClose={() => setShowSeatModal(false)}
-                    title={`Assign Seat to ${selectedStudent?.name}`}
-                >
-                    <form onSubmit={handleSeatAssignment} className="space-y-4">
-                        {/* Selected Student Details */}
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
-                                {selectedStudent?.name?.charAt(0)?.toUpperCase() || 'S'}
-                            </div>
-                            <div className="min-w-0">
-                                <h4 className="text-gray-900 font-bold truncate">{selectedStudent?.name}</h4>
-                                <p className="text-gray-600 text-sm truncate">{selectedStudent?.email}</p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Select Seat</label>
-                            <select
-                                value={seatFormData.seatId}
-                                onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
-                                className={INPUT}
-                            >
-                                <option value="" className="bg-gray-50">Choose a seat...</option>
-                                {availableSeats.length === 0 ? (
-                                    <option disabled className="bg-gray-50">No available seats</option>
-                                ) : (
-                                    availableSeats.map(seat => (
-                                        <option key={seat._id} value={seat._id} className="bg-gray-50">
-                                            {seat.displayName}
-                                            {seat.isFullyBooked ? ' (Fully Booked)' : seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
-                                        </option>
-                                    ))
-                                )}
-                            </select>
-                            {availableSeats.length === 0 && (
-                                <p className="text-sm text-red-400 mt-2">
-                                    No available seats. All seats are currently fully occupied.
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Shift</label>
-                            <select
-                                value={seatFormData.shift}
-                                onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
-                                className={INPUT}
-                            >
-                                <option value="" className="bg-gray-50">Select shift...</option>
-                                {(() => {
-                                    const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
-                                    return availableShifts.map(shift => (
-                                        <option key={shift.id} value={shift.id} className="bg-gray-50">
-                                            {shift.name} ({getShiftTimeRange(shift)})
-                                        </option>
-                                    ));
-                                })()}
-                                {!isCustom && !shifts.some(s => s.id === 'full') &&
-                                    (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
-                                        <option value="full" className="bg-gray-50">Full Day (9 AM - 9 PM)</option>
-                                    )}
-                            </select>
-                            {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
-                                <p className="text-sm text-yellow-400 mt-2">
-                                    No available shifts for this seat. All shifts are taken.
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">
-                                Negotiated Price (Optional)
-                            </label>
-                            <input
-                                type="number"
-                                value={seatFormData.negotiatedPrice}
-                                onChange={(e) => setSeatFormData({ ...seatFormData, negotiatedPrice: e.target.value })}
-                                className={INPUT}
-                                placeholder="Leave empty for base price"
-                            />
-                            <p className="text-sm text-gray-600 mt-1">
-                                If left empty, base price for selected shift will be used
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button type="submit" disabled={availableSeats.length === 0 || assigningSeat}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold shadow-lg shadow-green-500/20 disabled:opacity-50">
-                                {assigningSeat ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Assigning...</>) : (<><IoBedOutline size={15} /> Assign Seat</>)}
-                            </button>
-                            <button type="button" onClick={() => setShowSeatModal(false)} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
-                        </div>
-                    </form>
-                </Modal>
-
-                {/* Delete Confirmation Modal */}
-                <Modal theme="light"
-                    isOpen={showDeleteModal}
-                    onClose={() => setShowDeleteModal(false)}
-                    title={selectedStudent?.isActive && !hardDelete ? "⚠️ Remove Student" : "🗑️ Delete Permanently"}
-                >
-                    <form onSubmit={handleDelete} className="space-y-4">
-                        {/* Student Details */}
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
-                            <h3 className="text-lg font-semibold text-red-400 mb-3">Student Details</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Name:</span>
-                                    <span className="font-medium">{selectedStudent?.name}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Email:</span>
-                                    <span className="font-medium">{selectedStudent?.email}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                                    <span className="text-gray-600">Status</span>
-                                    {selectedStudent?.registrationSource === 'self' && !selectedStudent?.seat ? (
-                                        <span className="text-yellow-400 font-medium">Pending Allocation</span>
-                                    ) : (
-                                        <span className={selectedStudent?.isActive ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
-                                            {selectedStudent?.isActive ? 'Active' : 'Inactive'}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Joined:</span>
-                                    <span className="font-medium">
-                                        {selectedStudent && new Date(selectedStudent.createdAt).toLocaleDateString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Warning Message */}
-                        <div className={`border rounded-lg p-3 ${selectedStudent?.isActive && !hardDelete
-                            ? 'bg-yellow-500/10 border-yellow-500/30'
-                            : 'bg-red-500/10 border-red-500/30'
-                            }`}>
-                            <p className={`text-sm ${selectedStudent?.isActive && !hardDelete ? 'text-yellow-400' : 'text-red-400'
-                                }`}>
-                                {selectedStudent?.isActive && !hardDelete ? (
-                                    <>⚠️ This will mark the student as inactive and free up their assigned seat. They can be restored later.</>
-                                ) : (
-                                    <>🗑️ This will PERMANENTLY delete this student from the database. This action CANNOT be undone!</>
-                                )}
-                            </p>
-                        </div>
-
-                        {/* Hard Delete Checkbox (Only for active students) */}
-                        {selectedStudent?.isActive && (
-                            <div className="flex items-center gap-2 px-1">
-                                <input
-                                    type="checkbox"
-                                    id="hardDelete"
-                                    checked={hardDelete}
-                                    onChange={(e) => setHardDelete(e.target.checked)}
-                                    className="w-4 h-4 text-red-600 rounded focus:ring-red-500 bg-gray-700 border-gray-600"
-                                />
-                                <label htmlFor="hardDelete" className="text-sm text-gray-700 select-none cursor-pointer">
-                                    Permanently delete from database (Skip inactive state)
-                                </label>
-                            </div>
-                        )}
-
-                        {/* Error Display */}
-                        {error && (
-                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Password Input */}
-                        <div>
-                            <label className="block text-sm font-medium mb-2">
-                                Enter Your Admin Password to Confirm
-                            </label>
-                            <input
-                                type="password"
-                                value={deletePassword}
-                                onChange={(e) => setDeletePassword(e.target.value)}
-                                className={INPUT}
-                                placeholder="Admin password"
-                                required
-                                autoFocus
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                                For security, please enter your admin password
-                            </p>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                            <button type="submit" disabled={deleteLoading || !deletePassword} className={BTN_DANGER + ' flex-1'}>
-                                {deleteLoading ? 'Processing...' : (selectedStudent?.isActive && !hardDelete ? 'Remove Student' : 'Delete Permanently')}
-                            </button>
-                            <button type="button" onClick={() => setShowDeleteModal(false)} disabled={deleteLoading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
-                        </div>
-                    </form>
-                </Modal>
-
-                {/* Reset Password Modal */}
-                <Modal theme="light"
-                    isOpen={showResetPasswordModal}
-                    onClose={() => {
-                        setShowResetPasswordModal(false);
-                        setSelectedStudent(null);
-                        setError('');
-                    }}
-                    title="Reset Student Password"
-                >
-                    <div className="space-y-4">
-                        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                            <p className="text-yellow-400 font-semibold mb-2">⚠️ Reset Password Confirmation</p>
-                            <p className="text-sm text-gray-700">
-                                This will generate a new random password for <strong>{selectedStudent?.name}</strong> and send it to their email:
-                                <br />
-                                <span className="text-blue-400">{selectedStudent?.email}</span>
-                            </p>
-                            <p className="text-xs text-gray-600 mt-2">
-                                The student will also receive an in-app notification.
-                            </p>
-                        </div>
-
-                        {error && (
-                            <div className="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm">
-                                {error}
-                            </div>
-                        )}
-
-                        <div className="flex gap-3">
-                            <button onClick={() => { setShowResetPasswordModal(false); setSelectedStudent(null); setError(''); }} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
-                            <button onClick={handleResetPassword} disabled={resetPasswordLoading} className={BTN_PRIMARY + ' flex-1'}>
-                                {resetPasswordLoading ? 'Resetting...' : 'Reset & Send Email'}
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
-
-                {/* Archive View Modal */}
-                <Modal theme="light"
-                    isOpen={showArchiveModal}
-                    onClose={() => setShowArchiveModal(false)}
-                    title={selectedArchive ? `Archive Report: ${selectedArchive.name}` : 'Archive Report'}
-                >
-                    {selectedArchive && (
-                        <div className="space-y-5">
-                            {/* Header Info */}
-                            <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                                {selectedArchive.profileImage ? (
-                                    <img
-                                        src={selectedArchive.profileImage.startsWith('http') ? selectedArchive.profileImage : `${BASE_URL}${selectedArchive.profileImage}`}
-                                        alt={selectedArchive.name}
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                                    />
-                                ) : (
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-xl font-bold text-white shrink-0">
-                                        {selectedArchive.name.charAt(0).toUpperCase()}
-                                    </div>
-                                )}
-                                <div>
-                                    <h3 className="text-xl font-bold text-gray-900">{selectedArchive.name}</h3>
-                                    <p className="text-gray-600 text-sm">{selectedArchive.email}</p>
-                                    <div className="flex gap-4 text-xs mt-1.5">
-                                        <span className="text-gray-500">Joined: {new Date(selectedArchive.joinedAt).toLocaleDateString()}</span>
-                                        <span className="text-red-500 font-medium">Deleted: {new Date(selectedArchive.deletedAt).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                                    <h4 className="text-blue-700 text-sm font-semibold mb-2">Total Fees Recorded</h4>
-                                    <p className="text-2xl font-black text-gray-900">₹{selectedArchive.fees.reduce((acc, f) => acc + f.amount, 0)}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{selectedArchive.fees.length} transactions</p>
-                                </div>
-                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
-                                    <h4 className="text-purple-700 text-sm font-semibold mb-2">Attendance Days</h4>
-                                    <p className="text-2xl font-black text-gray-900">{selectedArchive.attendance.filter(a => a.status === 'present').length}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">Out of {selectedArchive.attendance.length} recorded days</p>
-                                </div>
-                            </div>
-
-                            {/* Fee History */}
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">Fee History</h4>
-                                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
-                                    {selectedArchive.fees.length === 0 ? (
-                                        <p className="text-sm text-gray-500 py-2">No fee records found.</p>
-                                    ) : (
-                                        selectedArchive.fees.map((fee, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm">
-                                                <span className="text-gray-700">{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-mono font-semibold text-gray-900">₹{fee.amount}</span>
-                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${fee.status === 'paid' ? 'text-green-700 bg-green-100 border-green-300' : 'text-yellow-700 bg-yellow-100 border-yellow-300'}`}>{fee.status}</span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Attendance History */}
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">Recent Attendance</h4>
-                                <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
-                                    {selectedArchive.attendance.length === 0 ? (
-                                        <p className="text-sm text-gray-500 py-2">No attendance records found.</p>
-                                    ) : (
-                                        selectedArchive.attendance.slice(0, 20).map((att, idx) => (
-                                            <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm">
-                                                <span className="text-gray-700">{new Date(att.date).toLocaleDateString()}</span>
-                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${att.status === 'present' ? 'text-green-700 bg-green-100 border-green-300' : 'text-red-700 bg-red-100 border-red-300'}`}>{att.status}</span>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end pt-1">
-                                <button onClick={() => setShowArchiveModal(false)} className={BTN_SECONDARY}>Close Report</button>
-                            </div>
-                        </div>
-                    )}
-                </Modal>
-
-                <Modal theme="light" isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
-                    <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
-                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
-                            <p className="text-sm text-blue-300">
-                                You have selected <span className="font-bold text-gray-900">{selectedStudentIds.length}</span> student(s).
-                                This will instantly adjust the current active seat price for all of them.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Operation</label>
-                            <select
-                                value={bulkFeeOperation}
-                                onChange={(e) => setBulkFeeOperation(e.target.value)}
-                                className={INPUT}
-                            >
-                                <option value="increase" className="bg-gray-50">Increase Fee (+)</option>
-                                <option value="decrease" className="bg-gray-50">Decrease Fee (-)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Amount to {bulkFeeOperation === 'increase' ? 'Add' : 'Subtract'} (₹)</label>
-                            <input
-                                type="number"
-                                required
-                                min="1"
-                                value={bulkFeeAmount}
-                                onChange={(e) => setBulkFeeAmount(e.target.value)}
-                                className={INPUT}
-                                placeholder="e.g. 200"
-                            />
-                        </div>
-
-                        <div className="flex gap-4 mt-6">
-                            <button type="button" onClick={() => setShowBulkFeeModal(false)} className={BTN_SECONDARY}>Cancel</button>
-                            <button type="submit" disabled={bulkFeeLoading || !bulkFeeAmount} className={BTN_PRIMARY}>
-                                {bulkFeeLoading ? 'Applying...' : 'Apply Changes'}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-
-                {/* ── Bulk Reset Passwords to Mobile Modal ── */}
-                <AnimatePresence>
-                    {showBulkResetModal && (
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                            style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
-                            onClick={() => !bulkResetLoading && setShowBulkResetModal(false)}
-                        >
-                            <motion.div
-                                initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-                                className="bg-[#0d0d14] border border-orange-500/20 rounded-2xl p-7 w-full max-w-md shadow-2xl"
-                                onClick={e => e.stopPropagation()}
-                            >
-                                {/* Icon */}
-                                <div className="flex justify-center mb-5">
-                                    <div className="w-14 h-14 rounded-2xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Reset All Passwords</h2>
-                                <p className="text-gray-600 text-sm text-center mb-1">
-                                    This will set every student's login password to their registered mobile number.
-                                </p>
-                                <p className="text-orange-400 text-xs text-center mb-6 font-semibold">
-                                    ⚠ This action affects ALL students with a mobile number and cannot be undone.
-                                </p>
-
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-sm text-gray-700 space-y-1">
-                                    <p>• Students without a mobile number will be skipped.</p>
-                                    <p>• Each password will become the student's 10-digit mobile number.</p>
-                                    <p>• Students must use their mobile number to log in after this.</p>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => setShowBulkResetModal(false)}
-                                        disabled={bulkResetLoading}
-                                        className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleBulkResetPasswordsToMobile}
-                                        disabled={bulkResetLoading}
-                                        className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                                    >
-                                        {bulkResetLoading ? (
-                                            <>
-                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                                                </svg>
-                                                Resetting...
-                                            </>
-                                        ) : 'Yes, Reset All Passwords'}
-                                    </button>
-                                </div>
-                            </motion.div>
                         </motion.div>
                     )}
-                </AnimatePresence>
+
+                    {success && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                            className="bg-green-500/10 border border-green-500/25 text-green-400 px-4 py-3 rounded-xl mb-5 text-sm">
+                            {success}
+                        </motion.div>
+                    )}
+                    {error && !showDeleteModal && !showResetPasswordModal && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                            className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl mb-5 text-sm">
+                            {error}
+                        </motion.div>
+                    )}
+
+                    {loading ? (
+                        <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-white/3 rounded-xl animate-pulse" />)}</div>
+                    ) : (
+                        <>
+                            {activeTab === 'id-cards' ? (
+                                <div className="flex flex-col gap-6">
+                                    <div className="flex justify-between items-center gap-4 flex-wrap bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                                        <div className="flex-1 min-w-[250px] relative">
+                                            <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search by Seat No (e.g. A 22)"
+                                                value={idCardSearchSeat}
+                                                onChange={(e) => setIdCardSearchSeat(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] gap-8">
+                                        {shiftFilter && (
+                                            <div className="col-span-full bg-purple-500/10 border border-purple-500/25 rounded-xl p-4 mb-2 flex justify-between items-center">
+                                                <p className="text-purple-300 text-sm font-medium">
+                                                    Showing students for: <span className="text-gray-900 font-bold">
+                                                        {shifts.find(s => s._id === shiftFilter)?.name || 'Selected Shift'}
+                                                    </span>
+                                                </p>
+                                                <button onClick={() => window.location.href = '/admin/students?tab=id-cards'}
+                                                    className={BTN_SECONDARY}>View All</button>
+                                            </div>
+                                        )}
+                                        {(() => {
+                                            const filtered = students.filter(s => {
+                                                if (!s.isActive) return false;
+                                                if (shiftFilter && !hasShiftAssignment(s._id, shiftFilter)) return false;
+
+                                                if (acFilter !== 'all') {
+                                                    const hasAc = s.seat?.room?.hasAc;
+                                                    if (acFilter === 'ac' && !hasAc) return false;
+                                                    if (acFilter === 'non-ac' && hasAc) return false;
+                                                }
+
+                                                if (idCardSearchSeat) {
+                                                    const searchStr = idCardSearchSeat.toLowerCase();
+                                                    const seatNum = getStudentSeat(s._id)?.toLowerCase() || '';
+                                                    let match = seatNum.includes(searchStr);
+
+                                                    if (!match && s.tempAssignments && s.tempAssignments.length > 0) {
+                                                        match = s.tempAssignments.some(ta => {
+                                                            const tempSeatNum = (ta.seat?.number || ta.seatNumber || '') + '';
+                                                            return tempSeatNum.toLowerCase().includes(searchStr);
+                                                        });
+                                                    }
+
+                                                    if (!match) return false;
+                                                }
+
+                                                return true;
+                                            });
+                                            return filtered.length === 0 ? (
+                                                <div className="col-span-full text-center p-12 bg-white/3 rounded-2xl border border-gray-200">
+                                                    <p className="text-gray-500">{shiftFilter ? 'No students found for this shift.' : idCardSearchSeat ? 'No students match this seat number.' : 'No active students found.'}</p>
+                                                </div>
+                                            ) : filtered.map(student => (
+                                                <div key={student._id} className="flex justify-center p-4">
+                                                    <StudentIdCard student={{ ...student, seatNumber: getStudentSeat(student._id) }} />
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                </div>
+                            ) : activeTab === 'history' ? (
+                                <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                                    <div className="h-px bg-gradient-to-r from-red-500/60 to-orange-500/60" />
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-white/8">
+                                                    {['Name', 'Email', 'Joined', 'Deleted At', 'Actions'].map((h, i) => (
+                                                        <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 4 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {archivedStudents.length === 0 ? (
+                                                    <tr><td colSpan="5" className="text-center p-8 text-gray-600 text-sm">No deleted students found.</td></tr>
+                                                ) : archivedStudents.map(student => (
+                                                    <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
+                                                        <td className="px-5 py-3.5 font-medium text-sm text-gray-900">{student.name}</td>
+                                                        <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
+                                                        <td className="px-5 py-3.5 text-xs text-gray-500">{new Date(student.joinedAt).toLocaleDateString()}</td>
+                                                        <td className="px-5 py-3.5 text-xs text-red-400">{new Date(student.deletedAt).toLocaleDateString()}</td>
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <button onClick={() => handleViewArchive(student._id)}
+                                                                className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl text-xs font-medium mr-2 hover:bg-blue-500/20 transition-all">View Report</button>
+                                                            <button onClick={() => handleDeleteArchive(student._id)}
+                                                                className="p-1.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl hover:bg-red-500/20 transition-all"><IoTrash size={14} /></button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
+                                    <div className="h-px bg-gradient-to-r from-blue-500/60 to-indigo-500/60" />
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-white/8">
+                                                    <th className="px-5 py-3 w-10 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
+                                                            onChange={(e) => setSelectedStudentIds(e.target.checked ? filteredStudents.map(s => s._id) : [])}
+                                                            className="rounded border-gray-600 bg-black/20"
+                                                        />
+                                                    </th>
+                                                    {['#', 'Name', 'Email', 'Shift', 'Status', 'Presence', 'Credits', 'Created', 'Fee', 'Actions'].map((h, i) => (
+                                                        <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${i === 9 ? 'text-right' : 'text-left'}`}>{h}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredStudents.length === 0 ? (
+                                                    <tr><td colSpan="11" className="text-center p-10 text-gray-600 text-sm">
+                                                        {activeTab === 'all' && 'No students found. Click "Add Student" to create one.'}
+                                                        {activeTab === 'active' && 'No active students found.'}
+                                                        {activeTab === 'inactive' && 'No inactive students found.'}
+                                                        {activeTab === 'pending' && 'No students pending allocation.'}
+                                                    </td></tr>
+                                                ) : filteredStudents.map((student, idx) => (
+                                                    <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
+                                                        <td className="px-5 py-3.5 w-10 text-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedStudentIds.includes(student._id)}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) setSelectedStudentIds(prev => [...prev, student._id]);
+                                                                    else setSelectedStudentIds(prev => prev.filter(id => id !== student._id));
+                                                                }}
+                                                                className="rounded border-gray-600 bg-black/20"
+                                                            />
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-xs font-bold text-gray-600 w-10 tabular-nums">{idx + 1}</td>
+                                                        <td className="px-5 py-3.5 font-semibold text-sm text-gray-900">{student.name}</td>
+                                                        <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
+                                                        <td className="px-5 py-3.5 text-sm">
+                                                            {(() => {
+                                                                const s = getStudentShifts(student._id);
+                                                                if (!s && student.isActive) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
+                                                                return <span className="text-gray-600 text-xs">{s || 'N/A'}</span>;
+                                                            })()}
+                                                        </td>
+                                                        <td className="px-5 py-3.5">
+                                                            {(() => {
+                                                                const hasSeat = getStudentSeat(student._id);
+                                                                const hasShifts = getStudentShifts(student._id);
+                                                                if (student.isActive && (!hasSeat || !hasShifts)) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
+                                                                return <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${student.isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{student.isActive ? 'Active' : 'Inactive'}</span>;
+                                                            })()}
+                                                        </td>
+                                                        <td className="px-5 py-3.5">
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <div className="flex items-center gap-1.5" title={student.lastActive ? `Last Active: ${new Date(student.lastActive).toLocaleString()}` : 'Online status'}>
+                                                                    <span className={`w-2 h-2 rounded-full ${student.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-500'}`} />
+                                                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isOnline ? 'text-green-400' : 'text-gray-600'}`}>
+                                                                        {student.isOnline ? 'Online' : 'Offline'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center gap-1.5" title={student.lastLogin ? `Last Login: ${new Date(student.lastLogin).toLocaleString()}` : 'Login status'}>
+                                                                    <span className={`w-2 h-2 rounded-full ${student.isLoggedIn ? 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'bg-gray-600'}`} />
+                                                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${student.isLoggedIn ? 'text-blue-400' : 'text-gray-500'}`}>
+                                                                        {student.isLoggedIn ? 'Logged In' : 'Logged Out'}
+                                                                    </span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedSessionStudent(student);
+                                                                        setShowSessionModal(true);
+                                                                    }}
+                                                                    className="mt-1 px-2 py-1 text-[10px] font-medium text-gray-900 bg-gray-100 hover:bg-white/20 rounded border border-gray-200 transition-colors self-start"
+                                                                >
+                                                                    Details
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-xs text-gray-700 font-medium">
+                                                            <div className="flex flex-col gap-1.5 items-start">
+                                                                <div className="flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 px-2 py-1 rounded-md w-fit">
+                                                                    <span className="font-bold">{Math.min(student.mockTestCredits ?? 2, 2)}</span> / 2
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => fetchCreditHistory(student)}
+                                                                    className="mt-1 px-2 py-1 text-[10px] font-medium text-gray-900 bg-gray-100 hover:bg-white/20 rounded border border-gray-200 transition-colors"
+                                                                >
+                                                                    Details
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-xs text-gray-600">{new Date(student.createdAt).toLocaleDateString()}</td>
+                                                        <td className="px-5 py-3.5 text-xs font-bold text-emerald-400">{getStudentFee(student)}</td>
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <div className="flex items-center justify-end gap-3">
+                                                                {student.isActive ? (
+                                                                    <>
+                                                                        <button onClick={() => openIdCardModal(student)} className="text-purple-400 hover:text-purple-300 transition-colors" title="Show ID Card"><IoIdCard size={18} /></button>
+                                                                        <button onClick={() => openSeatAssignModal(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Assign Seat"><IoBedOutline size={18} /></button>
+                                                                        <button onClick={() => openSplitSeatModal(student)} className="text-cyan-400 hover:text-cyan-300 transition-colors" title="Split Seat Assignment"><IoGitBranch size={18} /></button>
+                                                                        <button onClick={() => openTempSeatModal(student)} className="text-orange-400 hover:text-orange-300 transition-colors" title="Temp Seat Assignment"><IoWarning size={18} /></button>
+                                                                        <button onClick={() => openResetPasswordModal(student)} className="text-yellow-400 hover:text-yellow-300 transition-colors" title="Reset Password"><IoKey size={18} /></button>
+                                                                        <button onClick={() => openEditModal(student)} className="text-blue-400 hover:text-blue-300 transition-colors" title="Edit"><IoPencil size={18} /></button>
+                                                                    </>
+                                                                ) : (
+                                                                    <button onClick={() => handleReactivate(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Reactivate"><IoRefresh size={18} /></button>
+                                                                )}
+                                                                <button onClick={() => openDeleteModal(student)} className="text-red-400 hover:text-red-300 transition-colors" title="Delete"><IoTrash size={18} /></button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ─── Swap Seats Modal ───────────────────────────────────────── */}
+                    <Modal theme="light"
+                        isOpen={showSwapModal}
+                        onClose={() => { setShowSwapModal(false); setError(''); }}
+                        title="Swap Seats"
+                    >
+                        <form onSubmit={handleSwapSeats} className="space-y-5">
+                            {/* Info banner */}
+                            <div className="flex items-start gap-3 bg-orange-500/8 border border-orange-500/20 rounded-xl px-4 py-3">
+                                <IoSwapHorizontal size={18} className="text-orange-400 shrink-0 mt-0.5" />
+                                <p className="text-orange-300 text-xs leading-relaxed">
+                                    Only the <span className="font-bold text-orange-200">seat</span> will change between the two students.
+                                    Shift, fee amount, and all other data remain <span className="font-bold text-orange-200">unchanged</span>.
+                                </p>
+                            </div>
+
+                            {/* Error inside modal */}
+                            {error && showSwapModal && (
+                                <div className="bg-red-500/10 border border-red-500/25 text-red-400 px-4 py-3 rounded-xl text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            {/* Student 1 */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-600">Student A</label>
+                                <select
+                                    id="swap-student-a"
+                                    value={swapStudentId1}
+                                    onChange={e => setSwapStudentId1(e.target.value)}
+                                    className={INPUT + ' bg-white text-gray-900'}
+                                    style={{ colorScheme: 'light' }}
+                                    required
+                                >
+                                    <option value="">— Select Student A —</option>
+                                    {students.filter(s => s.isActive && getStudentSeat(s._id)).map(s => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name} — Seat {getStudentSeat(s._id)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Visual Swap Preview */}
+                            <div className="flex items-center justify-center gap-4 py-2">
+                                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+                                    {swapStudentId1 ? (() => {
+                                        const s = students.find(x => x._id === swapStudentId1);
+                                        return s ? (
+                                            <>
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
+                                                    {s.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                                <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
+                                            </>
+                                        ) : null;
+                                    })() : (
+                                        <p className="text-gray-600 text-xs py-2">Student A</p>
+                                    )}
+                                </div>
+                                <div className="flex flex-col items-center gap-1 shrink-0">
+                                    <motion.div
+                                        animate={swapStudentId1 && swapStudentId2 ? { rotate: [0, 180, 360] } : {}}
+                                        transition={{ duration: 0.6, ease: 'easeInOut' }}
+                                        className="p-2.5 rounded-full bg-orange-500/15 border border-orange-500/30"
+                                    >
+                                        <IoSwapHorizontal size={20} className="text-orange-400" />
+                                    </motion.div>
+                                    <span className="text-gray-600 text-[10px]">swap</span>
+                                </div>
+                                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+                                    {swapStudentId2 ? (() => {
+                                        const s = students.find(x => x._id === swapStudentId2);
+                                        return s ? (
+                                            <>
+                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm mx-auto mb-1.5">
+                                                    {s.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                                <p className="text-orange-400 text-[11px] font-bold mt-0.5">Seat {getStudentSeat(s._id)}</p>
+                                            </>
+                                        ) : null;
+                                    })() : (
+                                        <p className="text-gray-600 text-xs py-2">Student B</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Student 2 */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase tracking-widest text-gray-600">Student B</label>
+                                <select
+                                    id="swap-student-b"
+                                    value={swapStudentId2}
+                                    onChange={e => setSwapStudentId2(e.target.value)}
+                                    className={INPUT + ' bg-white text-gray-900'}
+                                    style={{ colorScheme: 'light' }}
+                                    required
+                                >
+                                    <option value="">— Select Student B —</option>
+                                    {students.filter(s => s.isActive && getStudentSeat(s._id) && s._id !== swapStudentId1).map(s => (
+                                        <option key={s._id} value={s._id}>
+                                            {s.name} — Seat {getStudentSeat(s._id)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Confirmation summary */}
+                            {swapStudentId1 && swapStudentId2 && (() => {
+                                const s1 = students.find(x => x._id === swapStudentId1);
+                                const s2 = students.find(x => x._id === swapStudentId2);
+                                if (!s1 || !s2) return null;
+                                return (
+                                    <div className="bg-white/4 border border-gray-200 rounded-xl p-4 space-y-2">
+                                        <p className="text-[11px] uppercase tracking-widest text-gray-500 font-bold mb-2">After swap</p>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="font-semibold text-gray-900">{s1.name}</span>
+                                            <span className="text-gray-500">→</span>
+                                            <span className="font-bold text-green-400">Seat {getStudentSeat(s2._id)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="font-semibold text-gray-900">{s2.name}</span>
+                                            <span className="text-gray-500">→</span>
+                                            <span className="font-bold text-green-400">Seat {getStudentSeat(s1._id)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-3 pt-1">
+                                <button type="button" onClick={() => { setShowSwapModal(false); setError(''); }} className={BTN_SECONDARY}>
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={swapLoading || !swapStudentId1 || !swapStudentId2 || swapStudentId1 === swapStudentId2}
+                                    className="px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all flex items-center gap-2"
+                                >
+                                    <IoSwapHorizontal size={15} />
+                                    {swapLoading ? 'Swapping...' : 'Confirm Swap'}
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
+
+                    {/* Session Details Modal */}
+                    <Modal theme="light"
+                        isOpen={showSessionModal}
+                        onClose={() => setShowSessionModal(false)}
+                        title="Session Details"
+                    >
+                        <div className="space-y-4">
+                            {selectedSessionStudent && (
+                                <>
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                            {selectedSessionStudent.name?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-gray-900 font-bold truncate">{selectedSessionStudent.name}</h4>
+                                            <p className="text-gray-600 text-sm truncate">{selectedSessionStudent.email}</p>
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-3">
+                                        <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                            <span className="text-gray-600 text-sm">Status</span>
+                                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-600'}`}>
+                                                {selectedSessionStudent.isOnline ? 'Online' : 'Offline'}
+                                            </span>
+                                        </div>
+                                        <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                            <span className="text-gray-600 text-sm">Session</span>
+                                            <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${selectedSessionStudent.isLoggedIn ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-600'}`}>
+                                                {selectedSessionStudent.isLoggedIn ? 'Logged In' : 'Logged Out'}
+                                            </span>
+                                        </div>
+                                        <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                            <span className="text-gray-600 text-sm">Last Active</span>
+                                            <span className="text-gray-900 text-sm font-medium">
+                                                {selectedSessionStudent.lastActive ? new Date(selectedSessionStudent.lastActive).toLocaleString() : 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="bg-gray-50 border border-gray-200 p-3 rounded-xl flex justify-between items-center">
+                                            <span className="text-gray-600 text-sm">Last Login</span>
+                                            <span className="text-gray-900 text-sm font-medium">
+                                                {selectedSessionStudent.lastLogin ? new Date(selectedSessionStudent.lastLogin).toLocaleString() : 'N/A'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-6 flex justify-end">
+                                        <button onClick={() => setShowSessionModal(false)} className={BTN_SECONDARY}>Close</button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </Modal>
+
+                    {/* Credit Details Modal */}
+                    <Modal theme="light"
+                        isOpen={showCreditModal}
+                        onClose={() => setShowCreditModal(false)}
+                        title="Mock Test / Credit Details"
+                    >
+                        <div className="space-y-4 max-h-[70vh] overflow-y-auto w-full p-2">
+                            {selectedCreditStudent && (
+                                <>
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                            {selectedCreditStudent.name?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className="text-gray-900 font-bold truncate">{selectedCreditStudent.name}</h4>
+                                            <p className="text-gray-600 text-sm truncate">{selectedCreditStudent.email}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] text-gray-600 uppercase font-bold tracking-wider mb-1">Current Credits</div>
+                                            <div className="text-xl font-black text-purple-400">{Math.min(selectedCreditStudent.mockTestCredits ?? 2, 2)}<span className="text-sm text-gray-500 font-medium">/2</span></div>
+                                        </div>
+                                    </div>
+
+                                    {creditLoading ? (
+                                        <div className="text-center p-8 text-gray-600">Loading history logs...</div>
+                                    ) : creditHistory.length === 0 ? (
+                                        <div className="text-center p-8 text-gray-900/40 border border-gray-100 bg-gray-50 rounded-xl border-dashed">No mock test history found.</div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest pl-1">Attempt Logs</h4>
+                                            {creditHistory.map(att => (
+                                                <div key={att._id} className="bg-gray-50 border border-gray-200 p-4 rounded-xl flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-gray-900 font-bold text-sm tracking-wide">{att.patternName}</span>
+                                                            <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded ${att.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-500'}`}>{att.status}</span>
+                                                        </div>
+                                                        <div className="text-[11px] text-gray-600 font-medium">Generated: {new Date(att.startedAt).toLocaleString()}</div>
+                                                    </div>
+
+                                                    {att.status === 'completed' && (
+                                                        <div className="flex gap-4 items-center bg-black/20 rounded-lg p-2 px-3 border border-gray-100">
+                                                            <div className="text-center">
+                                                                <div className="text-[10px] text-gray-500 font-bold uppercase">Score</div>
+                                                                <div className="text-sm font-bold text-blue-400">{att.score} <span className="text-xs text-gray-500 font-medium">/{att.maxScore}</span></div>
+                                                            </div>
+                                                            <div className="w-px h-8 bg-gray-100" />
+                                                            <div className="text-center">
+                                                                <div className="text-[10px] text-gray-500 font-bold uppercase">Acc</div>
+                                                                <div className={`text-sm font-bold ${att.percentage >= 60 ? 'text-green-400' : 'text-orange-400'}`}>{att.percentage}%</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="mt-6 flex justify-end">
+                                        <button onClick={() => setShowCreditModal(false)} className={BTN_SECONDARY}>Close</button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </Modal>
+
+                    {/* View ID Card Modal */}
+                    <Modal theme="light"
+                        isOpen={showIdCardModal}
+                        onClose={() => setShowIdCardModal(false)}
+                        title="Student ID Card"
+                    >
+                        <div className="flex flex-col items-center justify-center p-4">
+                            {selectedStudent && (
+                                <>
+                                    <div id="student-id-card-preview" className="p-4 bg-white rounded-xl">
+                                        <StudentIdCard
+                                            student={{
+                                                ...selectedStudent,
+                                                seatNumber: getStudentSeat(selectedStudent._id)
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="mt-5 flex flex-col sm:flex-row gap-3 w-full">
+                                        <button onClick={() => setShowIdCardModal(false)} className={BTN_SECONDARY + ' flex-1'}>Close</button>
+                                        <button onClick={handleDownloadPNG} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/20">
+                                            <IoDownload size={14} /> PNG
+                                        </button>
+                                        <button onClick={handleDownloadPDF} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20">
+                                            <IoDownload size={14} /> PDF
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </Modal>
+
+                    {/* Add/Edit Student Modal */}
+                    <Modal theme="light"
+                        isOpen={showModal}
+                        onClose={() => setShowModal(false)}
+                        title={editMode ? 'Edit Student' : 'Add New Student'}
+                    >
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className={LABEL}>Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className={INPUT}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className={LABEL}>Email (Optional)</label>
+                                <input
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className={INPUT}
+                                    placeholder="student@gmail.com (Leave blank if not available)"
+                                />
+                            </div>
+                            <div>
+                                <label className={LABEL}>Mobile Number</label>
+                                <input
+                                    type="tel"
+                                    value={formData.mobile}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val.length <= 10) setFormData({ ...formData, mobile: val });
+                                    }}
+                                    className={INPUT}
+                                    placeholder="Enter 10-digit mobile number"
+                                    pattern="[0-9]{10}"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className={LABEL}>Address</label>
+                                <textarea
+                                    value={formData.address}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    className={INPUT + ' min-h-[80px]'}
+                                    placeholder="Enter student address"
+                                />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">{editMode ? 'New Password (Optional)' : 'Generated Password'}</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        className={INPUT + ' flex-1 font-mono text-center tracking-wider'}
+                                        placeholder={editMode ? "Leave blank to keep current" : "Generating..."}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, password: formData.mobile })}
+                                        className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-xl transition-colors font-medium whitespace-nowrap"
+                                        title="Set password to mobile number"
+                                    >
+                                        Use Mobile
+                                    </button>
+                                    {!editMode && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                                                let password = '';
+                                                for (let i = 0; i < 8; i++) { password += charset.charAt(Math.floor(Math.random() * charset.length)); }
+                                                setFormData({ ...formData, password: password });
+                                            }}
+                                            className="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-xl transition-colors font-medium whitespace-nowrap"
+                                        >
+                                            Random
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-600 mt-1">
+                                    {editMode ? "Enter a new password or click 'Use Mobile' to reset." : "This password will be used for first-time login."}
+                                </p>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Registration Date</label>
+                                <input type="date" value={formData.joinedAt}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
+                                    className={INPUT}
+                                    style={{ colorScheme: 'light' }}
+                                />
+                                <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
+                            </div>
+                            {editMode && formData.seatId && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className={LABEL}>Shift</label>
+                                        <select
+                                            value={formData.shift}
+                                            onChange={(e) => setFormData({ ...formData, shift: e.target.value })}
+                                            className={INPUT + ' bg-white text-gray-900'}
+                                        >
+                                            <option value="" className="bg-white text-gray-900">No shift assigned</option>
+                                            {shifts.map(shift => (
+                                                <option key={shift.id} value={shift.id} className="bg-white text-gray-900">
+                                                    {shift.name} ({getShiftTimeRange(shift)})
+                                                </option>
+                                            ))}
+                                            {!isCustom && !shifts.some(s => s.id === 'full') && (
+                                                <option value="full" className="bg-white text-gray-900">Full Day (9 AM - 9 PM)</option>
+                                            )}
+                                        </select>
+                                        <p className="text-xs text-gray-600 mt-1">Change the shift for the student's currently assigned seat. If they don't have a seat yet, use the Assign Seat button instead.</p>
+                                    </div>
+                                    <div>
+                                        <label className={LABEL}>Negotiated Price (Optional)</label>
+                                        <input
+                                            type="number"
+                                            value={formData.negotiatedPrice}
+                                            onChange={(e) => setFormData({ ...formData, negotiatedPrice: e.target.value })}
+                                            className={INPUT}
+                                            placeholder="Leave empty for base price"
+                                        />
+                                        <p className="text-xs text-gray-600 mt-1">Override the base price for this shift. Leave empty to use default pricing.</p>
+                                    </div>
+                                </div>
+                            )}
+                            {editMode && (
+                                <div className="flex items-center gap-2 mt-4 mb-4">
+                                    <input
+                                        type="checkbox"
+                                        id="sendMail"
+                                        checked={formData.sendMail}
+                                        onChange={(e) => setFormData({ ...formData, sendMail: e.target.checked })}
+                                        className="w-4 h-4 rounded border-gray-600 text-emerald-500 focus:ring-emerald-500 bg-transparent cursor-pointer"
+                                    />
+                                    <label htmlFor="sendMail" className="text-sm text-gray-700 cursor-pointer">
+                                        Send Email Notification to Student
+                                    </label>
+                                </div>
+                            )}
+                            <div className="flex gap-3 mt-4">
+                                <button type="submit" disabled={loading} className={BTN_PRIMARY + ' flex-1'}>
+                                    {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Student' : 'Create Student')}
+                                </button>
+                                <button type="button" onClick={() => setShowModal(false)} disabled={loading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
+                            </div>
+                            {!editMode && !formData.password && (
+                                <p className="text-sm text-gray-600">
+                                    Note: Password defaults to **Student's Mobile Number** if left empty.
+                                </p>
+                            )}
+                        </form>
+                    </Modal>
+
+                    {/* Assign Seat Modal */}
+                    <Modal theme="light"
+                        isOpen={showSeatModal}
+                        onClose={() => setShowSeatModal(false)}
+                        title={`Assign Seat to ${selectedStudent?.name}`}
+                    >
+                        <form onSubmit={handleSeatAssignment} className="space-y-4">
+                            {/* Selected Student Details */}
+                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4 flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                                    {selectedStudent?.name?.charAt(0)?.toUpperCase() || 'S'}
+                                </div>
+                                <div className="min-w-0">
+                                    <h4 className="text-gray-900 font-bold truncate">{selectedStudent?.name}</h4>
+                                    <p className="text-gray-600 text-sm truncate">{selectedStudent?.email}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Select Seat</label>
+                                <select
+                                    value={seatFormData.seatId}
+                                    onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
+                                    className={INPUT}
+                                >
+                                    <option value="" className="bg-gray-50">Choose a seat...</option>
+                                    {availableSeats.length === 0 ? (
+                                        <option disabled className="bg-gray-50">No available seats</option>
+                                    ) : (
+                                        availableSeats.map(seat => (
+                                            <option key={seat._id} value={seat._id} className="bg-gray-50">
+                                                {seat.displayName}
+                                                {seat.isFullyBooked ? ' (Fully Booked)' : seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                                {availableSeats.length === 0 && (
+                                    <p className="text-sm text-red-400 mt-2">
+                                        No available seats. All seats are currently fully occupied.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Shift</label>
+                                <select
+                                    value={seatFormData.shift}
+                                    onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
+                                    className={INPUT}
+                                >
+                                    <option value="" className="bg-gray-50">Select shift...</option>
+                                    {(() => {
+                                        const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
+                                        return availableShifts.map(shift => (
+                                            <option key={shift.id} value={shift.id} className="bg-gray-50">
+                                                {shift.name} ({getShiftTimeRange(shift)})
+                                            </option>
+                                        ));
+                                    })()}
+                                    {!isCustom && !shifts.some(s => s.id === 'full') &&
+                                        (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
+                                            <option value="full" className="bg-gray-50">Full Day (9 AM - 9 PM)</option>
+                                        )}
+                                </select>
+                                {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
+                                    <p className="text-sm text-yellow-400 mt-2">
+                                        No available shifts for this seat. All shifts are taken.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Negotiated Price (Optional)
+                                </label>
+                                <input
+                                    type="number"
+                                    value={seatFormData.negotiatedPrice}
+                                    onChange={(e) => setSeatFormData({ ...seatFormData, negotiatedPrice: e.target.value })}
+                                    className={INPUT}
+                                    placeholder="Leave empty for base price"
+                                />
+                                <p className="text-sm text-gray-600 mt-1">
+                                    If left empty, base price for selected shift will be used
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button type="submit" disabled={availableSeats.length === 0 || assigningSeat}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold shadow-lg shadow-green-500/20 disabled:opacity-50">
+                                    {assigningSeat ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Assigning...</>) : (<><IoBedOutline size={15} /> Assign Seat</>)}
+                                </button>
+                                <button type="button" onClick={() => setShowSeatModal(false)} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
+                            </div>
+                        </form>
+                    </Modal>
+
+                    {/* Delete Confirmation Modal */}
+                    <Modal theme="light"
+                        isOpen={showDeleteModal}
+                        onClose={() => setShowDeleteModal(false)}
+                        title={selectedStudent?.isActive && !hardDelete ? "⚠️ Remove Student" : "🗑️ Delete Permanently"}
+                    >
+                        <form onSubmit={handleDelete} className="space-y-4">
+                            {/* Student Details */}
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-4">
+                                <h3 className="text-lg font-semibold text-red-400 mb-3">Student Details</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Name:</span>
+                                        <span className="font-medium">{selectedStudent?.name}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Email:</span>
+                                        <span className="font-medium">{selectedStudent?.email}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                                        <span className="text-gray-600">Status</span>
+                                        {selectedStudent?.registrationSource === 'self' && !selectedStudent?.seat ? (
+                                            <span className="text-yellow-400 font-medium">Pending Allocation</span>
+                                        ) : (
+                                            <span className={selectedStudent?.isActive ? "text-green-400 font-medium" : "text-red-400 font-medium"}>
+                                                {selectedStudent?.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Joined:</span>
+                                        <span className="font-medium">
+                                            {selectedStudent && new Date(selectedStudent.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Warning Message */}
+                            <div className={`border rounded-lg p-3 ${selectedStudent?.isActive && !hardDelete
+                                ? 'bg-yellow-500/10 border-yellow-500/30'
+                                : 'bg-red-500/10 border-red-500/30'
+                                }`}>
+                                <p className={`text-sm ${selectedStudent?.isActive && !hardDelete ? 'text-yellow-400' : 'text-red-400'
+                                    }`}>
+                                    {selectedStudent?.isActive && !hardDelete ? (
+                                        <>⚠️ This will mark the student as inactive and free up their assigned seat. They can be restored later.</>
+                                    ) : (
+                                        <>🗑️ This will PERMANENTLY delete this student from the database. This action CANNOT be undone!</>
+                                    )}
+                                </p>
+                            </div>
+
+                            {/* Hard Delete Checkbox (Only for active students) */}
+                            {selectedStudent?.isActive && (
+                                <div className="flex items-center gap-2 px-1">
+                                    <input
+                                        type="checkbox"
+                                        id="hardDelete"
+                                        checked={hardDelete}
+                                        onChange={(e) => setHardDelete(e.target.checked)}
+                                        className="w-4 h-4 text-red-600 rounded focus:ring-red-500 bg-gray-700 border-gray-600"
+                                    />
+                                    <label htmlFor="hardDelete" className="text-sm text-gray-700 select-none cursor-pointer">
+                                        Permanently delete from database (Skip inactive state)
+                                    </label>
+                                </div>
+                            )}
+
+                            {/* Error Display */}
+                            {error && (
+                                <div className="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            {/* Password Input */}
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Enter Your Admin Password to Confirm
+                                </label>
+                                <input
+                                    type="password"
+                                    value={deletePassword}
+                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    className={INPUT}
+                                    placeholder="Admin password"
+                                    required
+                                    autoFocus
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    For security, please enter your admin password
+                                </p>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3">
+                                <button type="submit" disabled={deleteLoading || !deletePassword} className={BTN_DANGER + ' flex-1'}>
+                                    {deleteLoading ? 'Processing...' : (selectedStudent?.isActive && !hardDelete ? 'Remove Student' : 'Delete Permanently')}
+                                </button>
+                                <button type="button" onClick={() => setShowDeleteModal(false)} disabled={deleteLoading} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
+                            </div>
+                        </form>
+                    </Modal>
+
+                    {/* Reset Password Modal */}
+                    <Modal theme="light"
+                        isOpen={showResetPasswordModal}
+                        onClose={() => {
+                            setShowResetPasswordModal(false);
+                            setSelectedStudent(null);
+                            setError('');
+                        }}
+                        title="Reset Student Password"
+                    >
+                        <div className="space-y-4">
+                            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                                <p className="text-yellow-400 font-semibold mb-2">⚠️ Reset Password Confirmation</p>
+                                <p className="text-sm text-gray-700">
+                                    This will generate a new random password for <strong>{selectedStudent?.name}</strong> and send it to their email:
+                                    <br />
+                                    <span className="text-blue-400">{selectedStudent?.email}</span>
+                                </p>
+                                <p className="text-xs text-gray-600 mt-2">
+                                    The student will also receive an in-app notification.
+                                </p>
+                            </div>
+
+                            {error && (
+                                <div className="bg-red-500/20 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button onClick={() => { setShowResetPasswordModal(false); setSelectedStudent(null); setError(''); }} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
+                                <button onClick={handleResetPassword} disabled={resetPasswordLoading} className={BTN_PRIMARY + ' flex-1'}>
+                                    {resetPasswordLoading ? 'Resetting...' : 'Reset & Send Email'}
+                                </button>
+                            </div>
+                        </div>
+                    </Modal>
+
+                    {/* Archive View Modal */}
+                    <Modal theme="light"
+                        isOpen={showArchiveModal}
+                        onClose={() => setShowArchiveModal(false)}
+                        title={selectedArchive ? `Archive Report: ${selectedArchive.name}` : 'Archive Report'}
+                    >
+                        {selectedArchive && (
+                            <div className="space-y-5">
+                                {/* Header Info */}
+                                <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                                    {selectedArchive.profileImage ? (
+                                        <img
+                                            src={selectedArchive.profileImage.startsWith('http') ? selectedArchive.profileImage : `${BASE_URL}${selectedArchive.profileImage}`}
+                                            alt={selectedArchive.name}
+                                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-xl font-bold text-white shrink-0">
+                                            {selectedArchive.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900">{selectedArchive.name}</h3>
+                                        <p className="text-gray-600 text-sm">{selectedArchive.email}</p>
+                                        <div className="flex gap-4 text-xs mt-1.5">
+                                            <span className="text-gray-500">Joined: {new Date(selectedArchive.joinedAt).toLocaleDateString()}</span>
+                                            <span className="text-red-500 font-medium">Deleted: {new Date(selectedArchive.deletedAt).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                                        <h4 className="text-blue-700 text-sm font-semibold mb-2">Total Fees Recorded</h4>
+                                        <p className="text-2xl font-black text-gray-900">₹{selectedArchive.fees.reduce((acc, f) => acc + f.amount, 0)}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">{selectedArchive.fees.length} transactions</p>
+                                    </div>
+                                    <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                                        <h4 className="text-purple-700 text-sm font-semibold mb-2">Attendance Days</h4>
+                                        <p className="text-2xl font-black text-gray-900">{selectedArchive.attendance.filter(a => a.status === 'present').length}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5">Out of {selectedArchive.attendance.length} recorded days</p>
+                                    </div>
+                                </div>
+
+                                {/* Fee History */}
+                                <div>
+                                    <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">Fee History</h4>
+                                    <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+                                        {selectedArchive.fees.length === 0 ? (
+                                            <p className="text-sm text-gray-500 py-2">No fee records found.</p>
+                                        ) : (
+                                            selectedArchive.fees.map((fee, idx) => (
+                                                <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm">
+                                                    <span className="text-gray-700">{new Date(fee.year, fee.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="font-mono font-semibold text-gray-900">₹{fee.amount}</span>
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${fee.status === 'paid' ? 'text-green-700 bg-green-100 border-green-300' : 'text-yellow-700 bg-yellow-100 border-yellow-300'}`}>{fee.status}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Attendance History */}
+                                <div>
+                                    <h4 className="font-bold text-gray-900 mb-3 border-b border-gray-200 pb-2">Recent Attendance</h4>
+                                    <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+                                        {selectedArchive.attendance.length === 0 ? (
+                                            <p className="text-sm text-gray-500 py-2">No attendance records found.</p>
+                                        ) : (
+                                            selectedArchive.attendance.slice(0, 20).map((att, idx) => (
+                                                <div key={idx} className="flex justify-between items-center p-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm">
+                                                    <span className="text-gray-700">{new Date(att.date).toLocaleDateString()}</span>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${att.status === 'present' ? 'text-green-700 bg-green-100 border-green-300' : 'text-red-700 bg-red-100 border-red-300'}`}>{att.status}</span>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end pt-1">
+                                    <button onClick={() => setShowArchiveModal(false)} className={BTN_SECONDARY}>Close Report</button>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
+
+                    <Modal theme="light" isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Edit Fees">
+                        <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
+                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 mb-4">
+                                <p className="text-sm text-blue-300">
+                                    You have selected <span className="font-bold text-gray-900">{selectedStudentIds.length}</span> student(s).
+                                    This will instantly adjust the current active seat price for all of them.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Operation</label>
+                                <select
+                                    value={bulkFeeOperation}
+                                    onChange={(e) => setBulkFeeOperation(e.target.value)}
+                                    className={INPUT}
+                                >
+                                    <option value="increase" className="bg-gray-50">Increase Fee (+)</option>
+                                    <option value="decrease" className="bg-gray-50">Decrease Fee (-)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Amount to {bulkFeeOperation === 'increase' ? 'Add' : 'Subtract'} (₹)</label>
+                                <input
+                                    type="number"
+                                    required
+                                    min="1"
+                                    value={bulkFeeAmount}
+                                    onChange={(e) => setBulkFeeAmount(e.target.value)}
+                                    className={INPUT}
+                                    placeholder="e.g. 200"
+                                />
+                            </div>
+
+                            <div className="flex gap-4 mt-6">
+                                <button type="button" onClick={() => setShowBulkFeeModal(false)} className={BTN_SECONDARY}>Cancel</button>
+                                <button type="submit" disabled={bulkFeeLoading || !bulkFeeAmount} className={BTN_PRIMARY}>
+                                    {bulkFeeLoading ? 'Applying...' : 'Apply Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
+
+                    {/* ── Bulk Reset Passwords to Mobile Modal ── */}
+                    <AnimatePresence>
+                        {showBulkResetModal && (
+                            <motion.div
+                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                                style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)' }}
+                                onClick={() => !bulkResetLoading && setShowBulkResetModal(false)}
+                            >
+                                <motion.div
+                                    initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+                                    className="bg-[#0d0d14] border border-orange-500/20 rounded-2xl p-7 w-full max-w-md shadow-2xl"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    {/* Icon */}
+                                    <div className="flex justify-center mb-5">
+                                        <div className="w-14 h-14 rounded-2xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Reset All Passwords</h2>
+                                    <p className="text-gray-600 text-sm text-center mb-1">
+                                        This will set every student's login password to their registered mobile number.
+                                    </p>
+                                    <p className="text-orange-400 text-xs text-center mb-6 font-semibold">
+                                        ⚠ This action affects ALL students with a mobile number and cannot be undone.
+                                    </p>
+
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-sm text-gray-700 space-y-1">
+                                        <p>• Students without a mobile number will be skipped.</p>
+                                        <p>• Each password will become the student's 10-digit mobile number.</p>
+                                        <p>• Students must use their mobile number to log in after this.</p>
+                                    </div>
+
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => setShowBulkResetModal(false)}
+                                            disabled={bulkResetLoading}
+                                            className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleBulkResetPasswordsToMobile}
+                                            disabled={bulkResetLoading}
+                                            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                                        >
+                                            {bulkResetLoading ? (
+                                                <>
+                                                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                                    </svg>
+                                                    Resetting...
+                                                </>
+                                            ) : 'Yes, Reset All Passwords'}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
-        </div>
 
             {/* ═══════════════════════════════════════════════════════════════
                 TEMP SEAT ASSIGNMENT MODAL

@@ -11,6 +11,7 @@ import api from '../../utils/api';
 const ALL_PERMISSIONS = [
     { key: 'attendance',    label: 'Attendance Management',  desc: 'Mark & view daily attendance' },
     { key: 'students',      label: 'View Students',          desc: 'View student list & details' },
+    { key: 'id_cards',      label: 'Student ID Cards',       desc: 'View and print student ID cards' },
     { key: 'fees',          label: 'Fee Status',             desc: 'View fee records (read-only)' },
     { key: 'notifications', label: 'Send Notifications',     desc: 'Send announcements to students' },
     { key: 'requests',      label: 'Student Requests',       desc: 'View & handle seat/shift requests' },

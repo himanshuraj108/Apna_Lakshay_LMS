@@ -196,7 +196,7 @@ const AdminDashboard = () => {
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.92, y: -8 }}
                                             transition={{ duration: 0.15 }}
-                                            className="absolute right-0 top-full mt-2 z-40 w-80 rounded-2xl shadow-2xl overflow-hidden"
+                                            className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 w-80 max-w-[90vw] rounded-2xl shadow-2xl overflow-hidden"
                                             style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' }}
                                         >
                                             {/* Header */}
