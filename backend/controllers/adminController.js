@@ -15,6 +15,7 @@ const Shift = require('../models/Shift');
 const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
 const MockTestAttempt = require('../models/MockTestAttempt');
+const TempSeatAssignment = require('../models/TempSeatAssignment');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -527,6 +528,25 @@ exports.getStudents = async (req, res) => {
         });
 
         const io = req.app.get('io');
+
+        // Fetch temp assignments BEFORE mapping students (needed inside map)
+        const tempAssignments = await TempSeatAssignment.find({
+            borrowerStudent: { $in: studentIds },
+            status: 'active'
+        })
+            .populate({ path: 'seat', select: 'number room floor', populate: [{ path: 'room', select: 'name roomId hasAc' }, { path: 'floor', select: 'name' }] })
+            .populate('shift', 'name startTime endTime')
+            .populate('originalOwner', 'name studentId')
+            .lean();
+
+        // Build a map: studentId -> [tempAssignments]
+        const tempMap = {};
+        tempAssignments.forEach(ta => {
+            const sid = ta.borrowerStudent.toString();
+            if (!tempMap[sid]) tempMap[sid] = [];
+            tempMap[sid].push(ta);
+        });
+
         // Transform students to include resolved shift info and ensure registrationSource
         const studentsWithShift = students.map(student => {
             let shiftInfo = null;
@@ -568,6 +588,7 @@ exports.getStudents = async (req, res) => {
                 shifts: shiftsArr,             // NEW: full array [{name, startTime, endTime}]
                 registrationSource: student.registrationSource || 'admin',
                 currentFee: feeMap[student._id.toString()] || null,
+                tempAssignments: tempMap[student._id.toString()] || [],
                 isOnline,
                 isLoggedIn: student.isLoggedIn || false,
                 lastLogin: student.lastLogin || null,
