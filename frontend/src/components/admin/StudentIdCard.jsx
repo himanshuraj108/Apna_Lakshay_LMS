@@ -1,10 +1,18 @@
 import { motion } from 'framer-motion';
-import { IoPersonCircleOutline } from 'react-icons/io5';
+import { IoPersonCircleOutline, IoWarning } from 'react-icons/io5';
 import { QRCodeCanvas } from 'qrcode.react';
 import { IoCellular } from 'react-icons/io5';
 import { FaWind, FaBan } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
 import { BASE_URL } from '../../utils/api';
+
+// Seat chip colors for split-seat multi-assignments
+const SEAT_COLORS = [
+    { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300', dot: 'bg-purple-500' },
+    { bg: 'bg-blue-100',   text: 'text-blue-700',   border: 'border-blue-300',   dot: 'bg-blue-500'   },
+    { bg: 'bg-teal-100',   text: 'text-teal-700',   border: 'border-teal-300',   dot: 'bg-teal-500'   },
+    { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300', dot: 'bg-indigo-500' },
+];
 
 const StudentIdCard = ({ student }) => {
     const { getShiftName } = useShifts();
@@ -14,36 +22,27 @@ const StudentIdCard = ({ student }) => {
     const studentId = id ? id.slice(-6).toUpperCase() : '------';
     const verificationUrl = `${window.location.origin}/admin/verify/${id}`;
 
-    // Check if student is self-registered without seat
-    // Treat undefined/null registrationSource as 'admin' (existing students)
-    // Check if student has no seat assigned
-    // Treat undefined/null registrationSource as 'admin' (existing students)
-    // Treat undefined/null registrationSource as 'admin' (existing students)
     const registrationSource = student.registrationSource || 'admin';
 
     // Strict Active Check: Must have a verified Seat AND a Shift assigned.
-    // getStudents populates 'shift' field if a valid active assignment exists.
     const isPending = !student.seat?.number && !student.seatNumber || !student.shift;
 
-
+    // Temp assignments (caution badges)
+    const tempAssignments = student.tempAssignments || [];
 
     // Helper to get formatted shift name
     const getFormattedShift = () => {
         let shiftName = 'N/A';
 
-        // 1. If we have the shift name directly
         if (student.shift && typeof student.shift === 'string') {
             shiftName = student.shift;
         } else if (student.shift && student.shift.name) {
-            // If populated object
             shiftName = student.shift.name;
         } else {
-            // 2. Try lookup
             const shiftVal = student.shift?._id || student.shift || student.seat?.shift;
             if (shiftVal) shiftName = getShiftName(shiftVal);
         }
 
-        // 3. Append details if available (from backend population)
         if (student.shift?.startTime && student.shift?.endTime) {
             return `${shiftName} (${student.shift.startTime} - ${student.shift.endTime})`;
         } else if (student.shiftDetails?.startTime && student.shiftDetails?.endTime) {
@@ -73,6 +72,9 @@ const StudentIdCard = ({ student }) => {
     };
 
     const theme = getTheme();
+
+    // Determine if student has split seats (multiple seat assignments from shifts array with different seats)
+    const hasSplitSeats = student.shifts && student.shifts.length > 1;
 
     return (
         <motion.div
@@ -137,7 +139,7 @@ const StudentIdCard = ({ student }) => {
                         <div className="text-right">
                             <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
                             {(student.seat?.number || student.seatNumber) ? (
-                                <p className="font-bold text-lg text-purple-600">
+                                <p className="font-bold text-lg text-purple-600 truncate" title={(student.roomId || student.seat?.room?.roomId || student.seat?.roomId) ? `${student.roomId || student.seat?.room?.roomId || student.seat?.roomId} - ${student.seat?.number || student.seatNumber}` : (student.seat?.number || student.seatNumber)}>
                                     {(student.roomId || student.seat?.room?.roomId || student.seat?.roomId)
                                         ? `${student.roomId || student.seat?.room?.roomId || student.seat?.roomId} - ${student.seat?.number || student.seatNumber}`
                                         : (student.seat?.number || student.seatNumber)
@@ -160,19 +162,21 @@ const StudentIdCard = ({ student }) => {
                         </div>
                         <div className="text-right">
                             <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Shift</p>
-                            {/* Multi-shift support: show all assigned shifts */}
+                            {/* Multi-shift / split-seat support */}
                             {student.shifts && student.shifts.length > 0 ? (
-                                <div className="flex flex-col items-end gap-0.5">
-                                    {student.shifts.map((s, i) => (
-                                        <div key={i}>
-                                            <p className={`font-bold text-[10px] ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-600'}`}>
-                                                {s.name}
-                                            </p>
-                                            {s.startTime && s.endTime && (
-                                                <p className="text-gray-600 text-[9px]">{s.startTime}–{s.endTime}</p>
-                                            )}
-                                        </div>
-                                    ))}
+                                <div className="flex flex-col items-end gap-1">
+                                    {student.shifts.map((s, i) => {
+                                        const c = SEAT_COLORS[i % SEAT_COLORS.length];
+                                        return (
+                                            <div key={i} className={`flex items-center gap-1 px-2 py-0.5 rounded-md border ${c.bg} ${c.border}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                                                <p className={`font-bold text-[10px] ${c.text}`}>{s.name}</p>
+                                                {s.startTime && s.endTime && (
+                                                    <p className="text-gray-500 text-[9px]">{s.startTime}–{s.endTime}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <p className={`font-medium text-[10px] font-bold whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'text-purple-600' : 'text-gray-600'}`}>
@@ -182,15 +186,52 @@ const StudentIdCard = ({ student }) => {
                         </div>
 
                         {/* Address Row */}
-                        {student.address && (
-                            <div className="col-span-2 text-left mt-2 pt-2 border-t border-gray-100">
-                                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Address</p>
-                                <p className="font-medium text-gray-700 text-xs leading-tight line-clamp-2" title={student.address}>
-                                    {student.address}
-                                </p>
-                            </div>
-                        )}
+
                     </div>
+
+                    {/* ⚠️ Temp Seat Caution Badges */}
+                    {tempAssignments.length > 0 && (
+                        <div className="w-full mt-4 pt-3 border-t-2 border-dashed border-red-200">
+                            <p className="text-[10px] uppercase tracking-widest text-red-500 font-bold mb-2 flex items-center gap-1">
+                                <IoWarning size={12} />
+                                Temporary Seats
+                            </p>
+                            <div className="flex flex-col gap-1.5">
+                                {tempAssignments.map((ta, i) => (
+                                    <div key={i} className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+                                        <IoWarning size={14} className="text-red-500 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-red-700 font-black text-[11px] truncate" title={`${ta.seat?.room?.roomId || ta.seat?.room?.name || 'Seat'} ${ta.seat?.number || '?'} — ${ta.shift?.name || '?'}`}>
+                                                {ta.seat?.room?.roomId || ta.seat?.room?.name || 'Seat'} {ta.seat?.number || '?'} — {ta.shift?.name || '?'}
+                                            </p>
+                                            {ta.shift?.startTime && ta.shift?.endTime && (
+                                                <p className="text-red-400 text-[9px]">{ta.shift.startTime} – {ta.shift.endTime}</p>
+                                            )}
+                                            {ta.originalOwner && (
+                                                <p className="text-red-400 text-[9px]">Owner: {ta.originalOwner.name}</p>
+                                            )}
+                                            {ta.note && (
+                                                <p className="text-red-500 text-[9px] italic mt-0.5 break-words whitespace-pre-wrap">{ta.note}</p>
+                                            )}
+                                        </div>
+                                        <span className="text-[9px] bg-red-100 border border-red-300 text-red-600 font-bold px-1.5 py-0.5 rounded-full uppercase flex-shrink-0">
+                                            Temp
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Address Block */}
+                    {student.address && (
+                        <div className="w-full text-left mt-3 pt-3 border-t border-gray-100">
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Address</p>
+                            <p className="font-medium text-gray-700 text-xs leading-tight line-clamp-2" title={student.address}>
+                                {student.address}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Footer / Barcode Area */}
                     <div className="w-full mt-6 pt-4 border-t-2 border-dashed border-gray-100 flex justify-between items-center group-hover:border-blue-100 transition-colors">
