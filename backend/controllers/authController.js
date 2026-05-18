@@ -268,6 +268,23 @@ exports.getMe = async (req, res) => {
                         } catch (err) { console.error('Failed to self-heal seat reference:', err); }
                     }
                 }
+            } else {
+                // Check if student has a temporary seat
+                const TempSeatAssignment = require('../models/TempSeatAssignment');
+                const tempAssignment = await TempSeatAssignment.findOne({ borrowerStudent: user._id, status: 'active' }).populate({
+                    path: 'seat',
+                    populate: { path: 'room floor' }
+                }).populate('shift');
+                if (tempAssignment && tempAssignment.seat) {
+                    userData.seat = tempAssignment.seat._id;
+                    userData.seatNumber = tempAssignment.seat.number;
+                    userData.roomId = tempAssignment.seat.room?.roomId || tempAssignment.seat.room?.name || null;
+                    userData.shift = tempAssignment.shift ? tempAssignment.shift.name : 'Temp Shift';
+                    userData.shiftDetails = tempAssignment.shift ? {
+                        startTime: tempAssignment.shift.startTime,
+                        endTime: tempAssignment.shift.endTime
+                    } : null;
+                }
             }
         } catch (seatError) {
             console.error('Error fetching seat for profile:', seatError);
