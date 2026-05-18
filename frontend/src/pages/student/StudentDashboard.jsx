@@ -369,7 +369,7 @@ const StudentDashboard = () => {
     const [directMarkLoading, setDirectMarkLoading]   = useState(false);
     const { logout, user } = useAuth();
     const isActive = user?.isActive;
-    const hasSeat = dashboardData?.seat;
+    const hasSeat = dashboardData?.seat || (dashboardData?.tempAssignments?.length > 0);
     const navigate = useNavigate();
 
     const SETTINGS_KEY = 'lms_location_required';
@@ -556,7 +556,7 @@ const StudentDashboard = () => {
                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <AnimatePresence>
                 {showLocationPrompt && <LocationPromptModal onClose={() => setShowLocationPrompt(false)} onEnable={handleEnableLocation} enabling={enablingLocation} />}
-                {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, shifts: dashboardData?.seat?.shifts, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails }} onClose={() => setShowIDCard(false)} />}
+                {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, shifts: dashboardData?.seat?.shifts, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails, tempAssignments: dashboardData?.tempAssignments?.map(ta => ({ seat: { number: ta.seatNumber, room: { roomId: ta.room } }, shift: { name: ta.shiftName, startTime: ta.startTime, endTime: ta.endTime }, note: ta.note })) }} onClose={() => setShowIDCard(false)} />}
                 {showNewspaper && <NewspaperModal onClose={() => setShowNewspaper(false)} />}
 
                 {/* ── Manual Attendance Modal (PIN or Direct) ── */}
@@ -745,41 +745,72 @@ const StudentDashboard = () => {
                                 </div>
                                 <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>My Seat</span>
                             </div>
-                            <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>
-                                    {dashboardData?.seat
-                                        ? (dashboardData.seat.roomId
-                                            ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}`
-                                            : dashboardData.seat.number)
-                                        : '—'
-                                    }
-                                </p>
-                            {dashboardData?.seat?.shifts && dashboardData.seat.shifts.length > 0 ? (
-                                <div className="flex flex-wrap gap-1 mt-1 z-10 relative">
-                                    {dashboardData.seat.shifts.map((s, i) => (
-                                        <span key={i} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
-                                            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#059669' }}>
-                                            {s.name}{s.startTime ? ` ${s.startTime}–${s.endTime}` : ''} 
-                                        </span>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-[11px] z-10 relative" style={{ color: '#9CA3AF' }}>{dashboardData?.seat?.shift ? `${dashboardData.seat.shift.toUpperCase()} Shift` : 'Not Assigned'}</p>
-                            )}
+                            {(() => {
+                                const displaySeats = [];
+                                if (dashboardData?.seat) {
+                                    displaySeats.push({
+                                        isTemp: false,
+                                        number: dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}` : dashboardData.seat.number,
+                                        shifts: dashboardData.seat.shifts || (dashboardData.seat.shift ? [{ name: dashboardData.seat.shift }] : [])
+                                    });
+                                }
+                                if (dashboardData?.tempAssignments?.length > 0) {
+                                    dashboardData.tempAssignments.forEach(ta => {
+                                        displaySeats.push({
+                                            isTemp: true,
+                                            number: ta.room ? `${ta.room} - ${ta.seatNumber}` : ta.seatNumber || '?',
+                                            shifts: [{ name: ta.shiftName, startTime: ta.startTime, endTime: ta.endTime }]
+                                        });
+                                    });
+                                }
 
-                            {dashboardData?.seat?.number && (
-                                <div className="absolute top-8 right-2 flex items-center justify-center w-[48px] h-[48px] transform rotate-[-18deg] border-[2px] border-emerald-600 text-emerald-600 rounded-full pointer-events-none mix-blend-multiply opacity-60">
-                                    <div className="absolute inset-[1.5px] border-[0.5px] border-emerald-600 rounded-full" />
-                                    <div className="flex flex-col items-center justify-center w-full">
-                                        <p className="font-bold text-[3.5px] tracking-[0.1em] uppercase text-center leading-[1.2] mb-[1px]">
-                                            APNA LAKSHAY<br/>LIBRARY
-                                        </p>
-                                        <div className="w-[85%] h-[0.5px] bg-emerald-600 mb-[1px]" />
-                                        <p className="font-black text-[5.5px] tracking-widest uppercase text-center" style={{ transform: 'scaleY(1.2)' }}>
-                                            CONFIRMED
-                                        </p>
+                                if (displaySeats.length === 0) {
+                                    return (
+                                        <div className="z-10 relative mt-2">
+                                            <p className="text-xl sm:text-2xl font-black mb-0.5" style={{ color: '#111827' }}>—</p>
+                                            <p className="text-[11px]" style={{ color: '#9CA3AF' }}>Not Assigned</p>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="flex flex-col gap-3 z-10 relative mt-1">
+                                        {displaySeats.map((ds, i) => (
+                                            <div key={i} className="flex justify-between items-center relative">
+                                                <div className="min-w-0 flex-1 pr-2">
+                                                    <p className="text-xl sm:text-2xl font-black mb-0.5 truncate" style={{ color: ds.isTemp ? '#ef4444' : '#111827' }} title={ds.number}>
+                                                        {ds.number}
+                                                    </p>
+                                                    <div className="flex flex-wrap gap-1 mt-1">
+                                                        {ds.shifts.map((s, j) => (
+                                                            <span key={j} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-full" title={`${s.name}${s.startTime ? ` ${s.startTime}–${s.endTime}` : ''}`}
+                                                                style={{ 
+                                                                    background: ds.isTemp ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', 
+                                                                    border: `1px solid ${ds.isTemp ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`, 
+                                                                    color: ds.isTemp ? '#dc2626' : '#059669' 
+                                                                }}>
+                                                                {s.name}{s.startTime ? ` ${s.startTime}–${s.endTime}` : ''} 
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className={`flex items-center justify-center w-[48px] h-[48px] transform rotate-[-18deg] border-[2px] rounded-full mix-blend-multiply opacity-60 flex-shrink-0 ml-2 ${ds.isTemp ? 'border-red-600 text-red-600' : 'border-emerald-600 text-emerald-600'}`}>
+                                                    <div className={`absolute inset-[1.5px] border-[0.5px] rounded-full ${ds.isTemp ? 'border-red-600' : 'border-emerald-600'}`} />
+                                                    <div className="flex flex-col items-center justify-center w-full">
+                                                        <p className="font-bold text-[3.5px] tracking-[0.1em] uppercase text-center leading-[1.2] mb-[1px]">
+                                                            APNA LAKSHAY<br/>LIBRARY
+                                                        </p>
+                                                        <div className={`w-[85%] h-[0.5px] mb-[1px] ${ds.isTemp ? 'bg-red-600' : 'bg-emerald-600'}`} />
+                                                        <p className={`font-black tracking-widest uppercase text-center ${ds.isTemp ? 'text-[4px]' : 'text-[5px]'}`} style={{ transform: 'scaleY(1.2)' }}>
+                                                            {ds.isTemp ? 'TEMPORARY' : 'CONFIRMED'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     </Link>
 
