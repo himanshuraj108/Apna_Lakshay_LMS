@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
 import api from '../../utils/api';
-import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal } from 'react-icons/io5';
+import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal, IoWarning, IoGitBranch, IoClose, IoCheckmark } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -103,6 +103,19 @@ const StudentManagement = () => {
     const [showBulkResetModal, setShowBulkResetModal] = useState(false);
     const [bulkResetLoading, setBulkResetLoading] = useState(false);
     const [bulkResetResult, setBulkResetResult] = useState(null);
+
+    // Temporary Seat Assignment States
+    const [showTempSeatModal, setShowTempSeatModal] = useState(false);
+    const [tempSeatStudent, setTempSeatStudent] = useState(null);
+    const [tempSeatList, setTempSeatList] = useState([]);
+    const [tempSeatLoading, setTempSeatLoading] = useState(false);
+    const [tempForm, setTempForm] = useState({ seatId: '', shiftId: '', originalOwnerId: '', note: '', endDate: '' });
+
+    // Split Seat Assignment States
+    const [showSplitModal, setShowSplitModal] = useState(false);
+    const [splitStudent, setSplitStudent] = useState(null);
+    const [splitPairs, setSplitPairs] = useState([{ seatId: '', shiftId: '', price: '' }, { seatId: '', shiftId: '', price: '' }]);
+    const [splitLoading, setSplitLoading] = useState(false);
 
     useEffect(() => {
         fetchStudents();
@@ -468,6 +481,85 @@ const StudentManagement = () => {
     const openIdCardModal = (student) => {
         setSelectedStudent(student);
         setShowIdCardModal(true);
+    };
+
+    // ─── Temp Seat Handlers ──────────────────────────────────────────────────
+    const openTempSeatModal = async (student) => {
+        setTempSeatStudent(student);
+        setTempForm({ seatId: '', shiftId: '', originalOwnerId: '', note: '', endDate: '' });
+        setTempSeatLoading(true);
+        setShowTempSeatModal(true);
+        try {
+            const res = await api.get(`/admin/temp-seats/student/${student._id}`);
+            setTempSeatList(res.data.assignments || []);
+        } catch { setTempSeatList([]); }
+        finally { setTempSeatLoading(false); }
+    };
+
+    const handleCreateTempSeat = async (e) => {
+        e.preventDefault();
+        setError('');
+        setTempSeatLoading(true);
+        try {
+            await api.post('/admin/temp-seats', {
+                borrowerStudentId: tempSeatStudent._id,
+                seatId: tempForm.seatId,
+                shiftId: tempForm.shiftId,
+                originalOwnerId: tempForm.originalOwnerId || undefined,
+                note: tempForm.note,
+                endDate: tempForm.endDate || undefined
+            });
+            setSuccess('Temporary seat assigned!');
+            const res = await api.get(`/admin/temp-seats/student/${tempSeatStudent._id}`);
+            setTempSeatList(res.data.assignments || []);
+            setTempForm({ seatId: '', shiftId: '', originalOwnerId: '', note: '', endDate: '' });
+            fetchStudents();
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to assign temp seat');
+        } finally { setTempSeatLoading(false); }
+    };
+
+    const handleRevokeTempSeat = async (id) => {
+        if (!window.confirm('Revoke this temporary seat assignment?')) return;
+        setTempSeatLoading(true);
+        try {
+            await api.delete(`/admin/temp-seats/${id}`);
+            const res = await api.get(`/admin/temp-seats/student/${tempSeatStudent._id}`);
+            setTempSeatList(res.data.assignments || []);
+            fetchStudents();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to revoke');
+        } finally { setTempSeatLoading(false); }
+    };
+
+    // ─── Split Seat Handlers ─────────────────────────────────────────────────
+    const openSplitSeatModal = (student) => {
+        setSplitStudent(student);
+        setSplitPairs([{ seatId: '', shiftId: '', price: '' }, { seatId: '', shiftId: '', price: '' }]);
+        setShowSplitModal(true);
+    };
+
+    const handleSplitAssign = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSplitLoading(true);
+        try {
+            await api.post('/admin/seats/split-assign', {
+                studentId: splitStudent._id,
+                assignments: splitPairs.map(p => ({
+                    seatId: p.seatId,
+                    shiftId: p.shiftId,
+                    price: p.price ? Number(p.price) : 0
+                }))
+            });
+            setSuccess(`Split seat assigned to ${splitStudent.name}!`);
+            setShowSplitModal(false);
+            fetchStudents(); fetchFloors();
+            setTimeout(() => setSuccess(''), 4000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to create split assignment');
+        } finally { setSplitLoading(false); }
     };
 
     const handleDownloadPNG = async () => {
@@ -1002,6 +1094,7 @@ const StudentManagement = () => {
     });
 
     return (
+        <>
         <div className="relative min-h-screen" style={PAGE_BG}>
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600/6 blur-3xl" />
@@ -1379,6 +1472,8 @@ const StudentManagement = () => {
                                                                 <>
                                                                     <button onClick={() => openIdCardModal(student)} className="text-purple-400 hover:text-purple-300 transition-colors" title="Show ID Card"><IoIdCard size={18} /></button>
                                                                     <button onClick={() => openSeatAssignModal(student)} className="text-green-400 hover:text-green-300 transition-colors" title="Assign Seat"><IoBedOutline size={18} /></button>
+                                                                    <button onClick={() => openSplitSeatModal(student)} className="text-cyan-400 hover:text-cyan-300 transition-colors" title="Split Seat Assignment"><IoGitBranch size={18} /></button>
+                                                                    <button onClick={() => openTempSeatModal(student)} className="text-orange-400 hover:text-orange-300 transition-colors" title="Temp Seat Assignment"><IoWarning size={18} /></button>
                                                                     <button onClick={() => openResetPasswordModal(student)} className="text-yellow-400 hover:text-yellow-300 transition-colors" title="Reset Password"><IoKey size={18} /></button>
                                                                     <button onClick={() => openEditModal(student)} className="text-blue-400 hover:text-blue-300 transition-colors" title="Edit"><IoPencil size={18} /></button>
                                                                 </>
@@ -2296,6 +2391,243 @@ const StudentManagement = () => {
                 </AnimatePresence>
             </div>
         </div>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                TEMP SEAT ASSIGNMENT MODAL
+            ═══════════════════════════════════════════════════════════════ */}
+            <AnimatePresence>
+                {showTempSeatModal && tempSeatStudent && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-amber-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                                        <IoWarning size={20} className="text-orange-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-black text-gray-900">Temporary Seat Assignment</h2>
+                                        <p className="text-sm text-gray-500">{tempSeatStudent.name}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => { setShowTempSeatModal(false); setTempSeatList([]); setError(''); }}
+                                    className="p-2 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-xl transition-all">
+                                    <IoClose size={20} />
+                                </button>
+                            </div>
+
+                            <div className="overflow-y-auto flex-1 p-5 space-y-5">
+                                {/* Existing Temp Assignments */}
+                                {tempSeatLoading ? (
+                                    <div className="text-center py-8 text-gray-400 text-sm">Loading...</div>
+                                ) : tempSeatList.length > 0 ? (
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Active Temporary Seats</p>
+                                        <div className="space-y-2">
+                                            {tempSeatList.map(ta => (
+                                                <div key={ta._id} className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                                                    <IoWarning size={18} className="text-red-500 flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-red-800 text-sm">
+                                                            Seat {ta.seat?.number} — {ta.shift?.name}
+                                                        </p>
+                                                        <p className="text-red-400 text-xs">{ta.shift?.startTime} – {ta.shift?.endTime}</p>
+                                                        {ta.originalOwner && <p className="text-gray-500 text-xs">Owner: {ta.originalOwner.name}</p>}
+                                                        {ta.note && <p className="text-gray-400 text-xs italic">{ta.note}</p>}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => handleRevokeTempSeat(ta._id)}
+                                                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-all">
+                                                            Revoke
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                        <p className="text-gray-400 text-sm">No active temporary seats for this student</p>
+                                    </div>
+                                )}
+
+                                {/* Add New Temp Seat Form */}
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Assign New Temporary Seat</p>
+                                    <form onSubmit={handleCreateTempSeat} className="space-y-3 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-700 mb-1">Seat *</label>
+                                                <select required value={tempForm.seatId}
+                                                    onChange={e => setTempForm(p => ({ ...p, seatId: e.target.value }))}
+                                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none">
+                                                    <option value="">Select seat...</option>
+                                                    {availableSeats.map(s => (
+                                                        <option key={s._id} value={s._id}>{s.displayName}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-700 mb-1">Shift *</label>
+                                                <select required value={tempForm.shiftId}
+                                                    onChange={e => setTempForm(p => ({ ...p, shiftId: e.target.value }))}
+                                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none">
+                                                    <option value="">Select shift...</option>
+                                                    {shifts.map(s => (
+                                                        <option key={s.id} value={s.id}>{s.name} ({s.startTime}–{s.endTime})</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-700 mb-1">Original Owner (absent student)</label>
+                                                <select value={tempForm.originalOwnerId}
+                                                    onChange={e => setTempForm(p => ({ ...p, originalOwnerId: e.target.value }))}
+                                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none">
+                                                    <option value="">None / Unknown</option>
+                                                    {students.filter(s => s.isActive && s._id !== tempSeatStudent._id).map(s => (
+                                                        <option key={s._id} value={s._id}>{s.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-700 mb-1">Valid Until (optional)</label>
+                                                <input type="date" value={tempForm.endDate}
+                                                    onChange={e => setTempForm(p => ({ ...p, endDate: e.target.value }))}
+                                                    className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 mb-1">Note (reason)</label>
+                                            <input type="text" value={tempForm.note} placeholder="e.g. Student X absent 11AM-4PM daily"
+                                                onChange={e => setTempForm(p => ({ ...p, note: e.target.value }))}
+                                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:border-orange-400 outline-none" />
+                                        </div>
+                                        {error && <p className="text-red-600 text-xs font-semibold">{error}</p>}
+                                        <button type="submit" disabled={tempSeatLoading}
+                                            className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                                            <IoWarning size={16} />
+                                            {tempSeatLoading ? 'Assigning...' : 'Assign Temporary Seat'}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                SPLIT SEAT ASSIGNMENT MODAL
+            ═══════════════════════════════════════════════════════════════ */}
+            <AnimatePresence>
+                {showSplitModal && splitStudent && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
+                                        <IoGitBranch size={20} className="text-cyan-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-black text-gray-900">Split Seat Assignment</h2>
+                                        <p className="text-sm text-gray-500">{splitStudent.name} — different seats for different shifts</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => { setShowSplitModal(false); setError(''); }}
+                                    className="p-2 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-xl transition-all">
+                                    <IoClose size={20} />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSplitAssign} className="overflow-y-auto flex-1 p-5 space-y-4">
+                                <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-3 text-xs text-cyan-700 font-medium">
+                                    Assign <strong>different seats</strong> for each shift window. The student will occupy Seat A during Shift 1 and Seat B during Shift 2 (etc.).
+                                </div>
+
+                                {/* Pair Rows */}
+                                {splitPairs.map((pair, i) => {
+                                    const colors = ['border-purple-200 bg-purple-50', 'border-blue-200 bg-blue-50', 'border-teal-200 bg-teal-50', 'border-indigo-200 bg-indigo-50'];
+                                    const labels = ['purple', 'blue', 'teal', 'indigo'];
+                                    return (
+                                        <div key={i} className={`border rounded-xl p-4 ${colors[i % colors.length]}`}>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide">Seat {i + 1}</p>
+                                                {splitPairs.length > 2 && (
+                                                    <button type="button" onClick={() => setSplitPairs(p => p.filter((_, idx) => idx !== i))}
+                                                        className="text-red-400 hover:text-red-600 text-xs font-semibold">Remove</button>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <div className="col-span-1">
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Seat *</label>
+                                                    <select required value={pair.seatId}
+                                                        onChange={e => setSplitPairs(p => p.map((x, idx) => idx === i ? { ...x, seatId: e.target.value } : x))}
+                                                        className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-800 focus:border-cyan-400 outline-none">
+                                                        <option value="">Select seat...</option>
+                                                        {availableSeats.filter(s => !s.isFullyBooked).map(s => (
+                                                            <option key={s._id} value={s._id}>{s.floorName} - {s.roomName} - {s.number}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Shift *</label>
+                                                    <select required value={pair.shiftId}
+                                                        onChange={e => setSplitPairs(p => p.map((x, idx) => idx === i ? { ...x, shiftId: e.target.value } : x))}
+                                                        className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-800 focus:border-cyan-400 outline-none">
+                                                        <option value="">Select shift...</option>
+                                                        {shifts.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name} ({s.startTime}–{s.endTime})</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Price (₹)</label>
+                                                    <input type="number" min="0" value={pair.price} placeholder="0"
+                                                        onChange={e => setSplitPairs(p => p.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))}
+                                                        className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-800 focus:border-cyan-400 outline-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Add more pairs */}
+                                {splitPairs.length < 4 && (
+                                    <button type="button"
+                                        onClick={() => setSplitPairs(p => [...p, { seatId: '', shiftId: '', price: '' }])}
+                                        className="w-full py-2 border-2 border-dashed border-cyan-300 text-cyan-600 hover:bg-cyan-50 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2">
+                                        <IoAdd size={16} /> Add Another Seat-Shift Pair
+                                    </button>
+                                )}
+
+                                {error && <p className="text-red-600 text-xs font-semibold bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>}
+
+                                <div className="flex gap-3 pt-2">
+                                    <button type="button" onClick={() => { setShowSplitModal(false); setError(''); }}
+                                        className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-all">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" disabled={splitLoading}
+                                        className="flex-1 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                                        <IoGitBranch size={16} />
+                                        {splitLoading ? 'Assigning...' : 'Confirm Split Assignment'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     );
 };
 
