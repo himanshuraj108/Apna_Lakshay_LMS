@@ -9,6 +9,7 @@ const { storage } = require('../config/cloudinary');
 const SystemSetting = require('../models/SystemSetting');
 const Holiday = require('../models/Holiday');
 const Settings = require('../models/Settings');
+const TempSeatAssignment = require('../models/TempSeatAssignment');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
@@ -78,7 +79,7 @@ exports.getDashboard = async (req, res) => {
         // ==========================================
         // PERFORMANCE OPTIMIZATION: Run independent queries in parallel
         // ==========================================
-        const [seat, student, unreadCount, activeRequestsCount, settings] = await Promise.all([
+        const [seat, student, unreadCount, activeRequestsCount, settings, rawTempAssignments] = await Promise.all([
             // Query 1: Get seat info
             Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
                 .populate('floor room')
@@ -103,7 +104,16 @@ exports.getDashboard = async (req, res) => {
             }),
 
             // Query 5: System Settings
-            Settings.findOne().lean()
+            Settings.findOne().lean(),
+
+            // Query 6: Temp Seats
+            TempSeatAssignment.find({ borrowerStudent: studentId, status: 'active' })
+                .populate({
+                    path: 'seat',
+                    populate: { path: 'room floor' }
+                })
+                .populate('shift')
+                .lean()
         ]);
 
         let assignedSeatData = null;
@@ -140,6 +150,17 @@ exports.getDashboard = async (req, res) => {
                 assignedAt: myAssignments[0]?.assignedAt
             };
         }
+
+        const tempAssignments = rawTempAssignments || []; // Result of Query 6
+        const formattedTempAssignments = tempAssignments.map(ta => ({
+            seatNumber: ta.seat?.number,
+            floor: ta.seat?.floor?.name || '?',
+            room: ta.seat?.room?.roomId || ta.seat?.room?.name || '?',
+            shiftName: ta.shift?.name || 'Unknown Shift',
+            startTime: ta.shift?.startTime,
+            endTime: ta.shift?.endTime,
+            note: ta.note
+        }));
 
         // Get current month attendance
         const now = new Date();
@@ -328,6 +349,7 @@ exports.getDashboard = async (req, res) => {
                 feeReminder, // Add reminder data
                 unreadNotifications: unreadCount,
                 requestsCount: activeRequestsCount,
+                tempAssignments: formattedTempAssignments, // Temp Seats
                 doubtCredits: (() => {
                     // Reset if it's a new day
                     const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -363,7 +385,15 @@ exports.getMySeat = async (req, res) => {
                 }
             });
 
-        if (!seat) {
+        const tempAssignments = await TempSeatAssignment.find({ borrowerStudent: studentId, status: 'active' })
+            .populate({
+                path: 'seat',
+                populate: { path: 'floor room' }
+            })
+            .populate('shift')
+            .lean();
+
+        if (!seat && tempAssignments.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'No seat assigned'
@@ -391,9 +421,27 @@ exports.getMySeat = async (req, res) => {
         const shiftName = shiftsArr.map(s => s.name).join(' + ') || 'N/A';
         const shiftId = myAssignments[0]?.shift?._id || myAssignments[0]?.legacyShift || null;
 
+        // Build formatted temp assignments
+        const formattedTempAssignments = tempAssignments.map(ta => ({
+            _id: ta._id,
+            seat: {
+                number: ta.seat?.number,
+                floor: ta.seat?.floor,
+                room: ta.seat?.room,
+            },
+            shift: {
+                name: ta.shift?.name,
+                startTime: ta.shift?.startTime,
+                endTime: ta.shift?.endTime
+            },
+            note: ta.note,
+            startDate: ta.startDate,
+            endDate: ta.endDate
+        }));
+
         res.status(200).json({
             success: true,
-            seat: {
+            seat: seat ? {
                 _id: seat._id,
                 number: seat.number,
                 floor: seat.floor,
@@ -404,7 +452,8 @@ exports.getMySeat = async (req, res) => {
                 price: myAssignments[0]?.price || 0,
                 basePrices: seat.basePrices,
                 shiftPrices: seat.shiftPrices
-            }
+            } : null,
+            tempAssignments: formattedTempAssignments
         });
     } catch (error) {
         res.status(500).json({
