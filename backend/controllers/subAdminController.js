@@ -99,7 +99,7 @@ exports.loginSubAdmin = async (req, res) => {
         const token = jwt.sign(
             { id: sub._id, role: 'subadmin', permissions: sub.permissions },
             process.env.JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: '365d' }
         );
 
         res.json({
