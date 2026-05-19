@@ -182,7 +182,8 @@ exports.sendCredentialsEmail = async (name, email, password) => {
     body: `<p style="margin:0 0 16px;">Dear <strong>${name}</strong>,</p><p style="margin:0 0 16px;">Your student account at Apna Lakshay Library has been created. Below are your login credentials.</p>`,
     table: { rows: [
       { label: 'Email Address', value: email, bold: true },
-      { label: 'Temporary Password', value: `<code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;">${password}</code>`, bold: true, highlight: true },
+      // { label: 'Temporary Password', value: `<code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;">${password}</code>`, bold: true, highlight: true },
+      { label: 'Temporary Password', value: `<code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-family:monospace;font-size:15px;">Your Mobile No.</code>`, bold: true, highlight: true },
     ]},
     cta: { label: 'Sign In to Dashboard', url: `${APP_URL}/login` },
     note: 'For your security, please change your password immediately after your first login. If you did not expect this email, contact the administration.',
