@@ -4213,19 +4213,34 @@ exports.swapSeats = async (req, res) => {
         }
 
         // ─── Perform the swap ─────────────────────────────────────────────────
-        // We only change the `student` field inside the active assignment.
-        // Everything else (shift, price, type, assignedAt, etc.) stays intact.
+        // Find the specific assignment objects to swap their metadata
+        const asgn1 = seat1.assignments.find(a => a.student.toString() === studentId1 && a.status === 'active');
+        const asgn2 = seat2.assignments.find(a => a.student.toString() === studentId2 && a.status === 'active');
 
-        // Update seat1: replace student1 → student2 in its active assignment
+        // Update seat1: replace student1's assignment with student2's assignment data
         await Seat.updateOne(
             { _id: seat1._id, 'assignments': { $elemMatch: { student: new mongoose.Types.ObjectId(studentId1), status: 'active' } } },
-            { $set: { 'assignments.$.student': new mongoose.Types.ObjectId(studentId2) } }
+            { $set: { 
+                'assignments.$.student': new mongoose.Types.ObjectId(studentId2),
+                'assignments.$.price': asgn2.price,
+                'assignments.$.shift': asgn2.shift,
+                'assignments.$.legacyShift': asgn2.legacyShift,
+                'assignments.$.type': asgn2.type,
+                'assignments.$.assignedAt': asgn2.assignedAt
+            } }
         );
 
-        // Update seat2: replace student2 → student1 in its active assignment
+        // Update seat2: replace student2's assignment with student1's assignment data
         await Seat.updateOne(
             { _id: seat2._id, 'assignments': { $elemMatch: { student: new mongoose.Types.ObjectId(studentId2), status: 'active' } } },
-            { $set: { 'assignments.$.student': new mongoose.Types.ObjectId(studentId1) } }
+            { $set: { 
+                'assignments.$.student': new mongoose.Types.ObjectId(studentId1),
+                'assignments.$.price': asgn1.price,
+                'assignments.$.shift': asgn1.shift,
+                'assignments.$.legacyShift': asgn1.legacyShift,
+                'assignments.$.type': asgn1.type,
+                'assignments.$.assignedAt': asgn1.assignedAt
+            } }
         );
 
         // Update the User.seat reference for both students
