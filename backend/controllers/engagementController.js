@@ -152,32 +152,52 @@ const getStreakStats = async (req, res) => {
     }
 };
 
-// @desc    Get Library Leaderboard
-// @route   GET /api/student/engagement/leaderboard
 const getLeaderboard = async (req, res) => {
     try {
         const { sortBy = 'xp' } = req.query;
-        let sortField = 'totalXP';
-        if (sortBy === 'streak') sortField = 'currentStreak';
-        if (sortBy === 'focus') sortField = 'totalFocusTime';
 
-        const leaderboard = await StudyStreak.find({})
-            .populate('user', 'name studentId profileImage')
-            .sort({ [sortField]: -1 })
-            .limit(20);
+        // Fetch all active students who are not disabled
+        const students = await User.find({ role: 'student', isDisabled: { $ne: true } })
+            .select('name studentId profileImage');
 
-        // Map data to handle missing users gracefully
-        const cleanLeaderboard = leaderboard
-            .filter(item => item.user)
-            .map((item, index) => ({
-                rank: index + 1,
-                userId: item.user._id,
-                name: item.user.name,
-                studentId: item.user.studentId,
-                profileImage: item.user.profileImage,
-                value: sortBy === 'xp' ? item.totalXP : sortBy === 'streak' ? item.currentStreak : item.totalFocusTime,
-                level: item.level
-            }));
+        // Fetch StudyStreak records for these students
+        const studentIds = students.map(s => s._id);
+        const streaks = await StudyStreak.find({ user: { $in: studentIds } });
+
+        // Map streaks by student ID string
+        const streakMap = {};
+        streaks.forEach(s => {
+            if (s.user) {
+                streakMap[s.user.toString()] = s;
+            }
+        });
+
+        // Combine student and streak details into a leaderboard record
+        const cleanLeaderboard = students.map(student => {
+            const streak = streakMap[student._id.toString()] || {
+                totalXP: 0,
+                currentStreak: 0,
+                totalFocusTime: 0,
+                level: 1
+            };
+
+            return {
+                userId: student._id,
+                name: student.name,
+                studentId: student.studentId,
+                profileImage: student.profileImage,
+                value: sortBy === 'xp' ? (streak.totalXP || 0) : sortBy === 'streak' ? (streak.currentStreak || 0) : (streak.totalFocusTime || 0),
+                level: streak.level || 1
+            };
+        });
+
+        // Sort in descending order based on the requested value
+        cleanLeaderboard.sort((a, b) => b.value - a.value);
+
+        // Assign ranks to the sorted records
+        cleanLeaderboard.forEach((item, index) => {
+            item.rank = index + 1;
+        });
 
         res.json({ success: true, leaderboard: cleanLeaderboard });
     } catch (error) {
