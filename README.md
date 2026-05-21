@@ -222,32 +222,55 @@ npm install
 
 Create a secure configuration file `backend/.env`:
 ```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/apna_lakshay_lms
-JWT_SECRET=your_ultra_secure_jwt_passphrase_32_chars
-JWT_EXPIRE=365d
+PORT=
+MONGODB_URI=
+JWT_SECRET=
+JWT_EXPIRE=
 
-# AI API Access Keys
-GROQ_API_KEY=gsk_your_primary_key_here
-GROQ_API_KEY_2=gsk_your_backup_key_2
-GROQ_API_KEY_3=gsk_your_backup_key_3
-GOOGLE_BOOKS_API_KEY=your_google_books_key
+# Email Configuration (Google App Password)
+EMAIL_USER=
+EMAIL_PASSWORD=
+EMAIL_FROM_ADDRESS=
+
+# Backup Email Configuration (Brevo SMTP)
+BREVO_HOST=
+BREVO_PORT=
+BREVO_USER=
+BREVO_PASS=
+
+# App Download Link (for mobile users)
+APK_DOWNLOAD_URL=
+
+# Frontend URL (for CORS)
+FRONTEND_URL=
+# Admin Credentials (for seed and fallback)
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# RSS2JSON API Key (for Exam Alerts feed)
+RSS2JSON_KEY=
+
+# Google Books API Key
+GOOGLE_BOOKS_API_KEY=
+
+# Groq AI API Key (Mock Test -- Free, Fast Llama 3)
+GROQ_API_KEY=
+GROQ_API_KEY_2=
+GROQ_API_KEY_3=
+
+# Library Geolocation (for attendance geo-fence)
+LIBRARY_LAT=
+LIBRARY_LNG=
+LIBRARY_RADIUS_M=
 
 # Payment Integrations
-RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_secret
-
-# E-Mail SMTP Server (Brevo / Nodemailer)
-BREVO_HOST=smtp-relay.brevo.com
-BREVO_PORT=587
-BREVO_USER=your_brevo_verified_email@domain.com
-BREVO_PASS=your_smtp_key
-EMAIL_FROM_ADDRESS=support@apnalakshay.com
-
-# Geographic Fencing (Geodesic Coordinates)
-LIBRARY_LAT=28.6139
-LIBRARY_LNG=77.2090
-LIBRARY_RADIUS_M=15
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
 ```
 
 ### 3. Database Seeding & Launch
