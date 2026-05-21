@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import Card from '../../components/ui/Card';
@@ -18,9 +18,30 @@ import AdmissionForm from '../../components/admin/AdmissionForm';
 import PaymentReceipt from '../../components/admin/PaymentReceipt';
 
 
+const EXAM_TARGETS = [
+    { value: 'ssc_cgl', label: 'SSC CGL' },
+    { value: 'ssc_chsl', label: 'SSC CHSL' },
+    { value: 'ssc_gd', label: 'SSC GD Constable' },
+    { value: 'ssc_mts', label: 'SSC MTS' },
+    { value: 'ssc_cpo', label: 'SSC CPO' },
+    { value: 'upsc_cse', label: 'UPSC CSE' },
+    { value: 'upsc_cds', label: 'UPSC CDS' },
+    { value: 'ibps_po', label: 'IBPS PO' },
+    { value: 'ibps_clerk', label: 'IBPS Clerk' },
+    { value: 'sbi_po', label: 'SBI PO' },
+    { value: 'sbi_clerk', label: 'SBI Clerk' },
+    { value: 'rrb_ntpc', label: 'RRB NTPC' },
+    { value: 'jee_main', label: 'JEE Main' },
+    { value: 'neet_ug', label: 'NEET UG' },
+    { value: 'generic', label: 'General Aptitude & Knowledge' }
+];
+
 const Profile = () => {
     const { user, updateUser, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const selectRef = useRef(null);
+    const [pulseHighlight, setPulseHighlight] = useState(false);
     // ... existing hooks ...
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
     const [profile, setProfile] = useState(null);
@@ -43,6 +64,24 @@ const Profile = () => {
         fetchProfile();
         fetchFirstFee();
     }, []);
+
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        if (queryParams.get('focus') === 'examTarget') {
+            if (profile) {
+                const timer = setTimeout(() => {
+                    if (selectRef.current) {
+                        selectRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        selectRef.current.focus();
+                        setPulseHighlight(true);
+                        // Turn off pulse highlight after 6 seconds
+                        setTimeout(() => setPulseHighlight(false), 6000);
+                    }
+                }, 500);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [location.search, profile]);
 
     const fetchProfile = async () => {
         try {
@@ -111,6 +150,20 @@ const Profile = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const handleExamTargetChange = async (e) => {
+        const newTarget = e.target.value;
+        try {
+            const response = await api.put('/student/profile', { examTarget: newTarget });
+            setProfile(prev => ({ ...prev, ...response.data.user }));
+            updateUser(response.data.user);
+            setSuccess('Exam target updated successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (error) {
+            setError(error.response?.data?.message || 'Failed to update exam target');
+            setTimeout(() => setError(''), 3000);
+        }
     };
 
     const fetchAvailableShifts = async () => {
@@ -383,6 +436,44 @@ const Profile = () => {
                         <InfoRow icon={IoMail}      label="Email Address" value={profile?.email}                  color="text-blue-500" />
                         <InfoRow icon={IoCall}      label="Phone Number"  value={profile?.mobile || 'Not provided'} color="text-green-500" />
                         <InfoRow icon={IoLocation}  label="Address"       value={profile?.address || 'Not provided'} color="text-orange-500" />
+                        <div className="flex items-center gap-4 py-3.5 border-b border-gray-100 group">
+                            <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0 transition-colors text-orange-500 animate-pulse">
+                                <IoSend size={15} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Exam Target (For Daily Quiz & Mock Tests)</p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                    <select
+                                        ref={selectRef}
+                                        value={profile?.examTarget || 'generic'}
+                                        onChange={handleExamTargetChange}
+                                        className={`text-sm font-semibold mt-1 bg-white border rounded-lg px-2 py-1 text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all cursor-pointer ${
+                                            pulseHighlight 
+                                                ? 'border-orange-500 ring-4 ring-orange-500/50 scale-[1.02] shadow-lg shadow-orange-500/20' 
+                                                : 'border-gray-300'
+                                        }`}
+                                    >
+                                        {EXAM_TARGETS.map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                    <AnimatePresence>
+                                        {pulseHighlight && (
+                                            <motion.div
+                                                initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                                exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                                                transition={{ duration: 0.3 }}
+                                                className="mt-1 sm:mt-0 inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold rounded-lg shadow-md shadow-orange-500/30"
+                                            >
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                                First step: Please select your target exam to customize your daily challenges!
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+                        </div>
                         <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
                         <InfoRow icon={IoCalendar}  label="Member Since"
                             value={profile?.createdAt
