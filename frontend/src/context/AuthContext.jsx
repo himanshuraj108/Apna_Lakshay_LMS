@@ -69,8 +69,7 @@ export const AuthProvider = ({ children }) => {
                 const meRes = await api.get('/auth/me');
                 if (meRes.data.success) {
                     const fullUser = meRes.data.user;
-                    localStorage.setItem('user', JSON.stringify(fullUser));
-                    setUser(fullUser);
+                    updateUser(fullUser);
                 }
             } catch (_) {
                 // Non-critical: if /me fails, basic userData is still usable
@@ -92,9 +91,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     const updateUser = (userData) => {
-        const newUser = { ...user, ...userData };
-        localStorage.setItem('user', JSON.stringify(newUser));
-        setUser(newUser);
+        setUser((prevUser) => {
+            const currentVal = prevUser || JSON.parse(localStorage.getItem('user')) || {};
+            const newUser = { ...currentVal, ...userData };
+            localStorage.setItem('user', JSON.stringify(newUser));
+            return newUser;
+        });
     };
 
     const checkAuth = async () => {

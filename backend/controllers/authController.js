@@ -164,7 +164,12 @@ exports.login = async (req, res) => {
                 isActive: user.isActive,
                 registrationSource: user.registrationSource,
                 profileImage: user.profileImage,
-                createdAt: user.createdAt
+                createdAt: user.createdAt,
+                studentId: user.studentId,
+                examTarget: user.examTarget,
+                mockTestCredits: user.mockTestCredits,
+                bonusMockTestCredits: user.bonusMockTestCredits || 0,
+                doubtCredits: user.doubtCredits || 0
             }
         });
     } catch (error) {
@@ -227,7 +232,10 @@ exports.getMe = async (req, res) => {
             address: user.address,
             seat: user.seat,
             seatAssignedAt: user.seatAssignedAt, // Use persistent date from User model
-            mockTestCredits: user.mockTestCredits
+            mockTestCredits: user.mockTestCredits,
+            bonusMockTestCredits: user.bonusMockTestCredits || 0,
+            examTarget: user.examTarget,
+            doubtCredits: user.doubtCredits || 0
         };
 
         try {
@@ -528,12 +536,20 @@ exports.verifySeatLogin = async (req, res) => {
             token,
             password: plainPassword,
             user: {
-                _id: user._id, 
-                name: user.name, 
-                role: user.role, 
-                email: user.email, 
+                id: user._id,
+                name: user.name,
+                email: user.email,
                 mobile: user.mobile,
-                seat: user.seat ? user.seat.number : 'No Seat'
+                role: user.role,
+                isActive: user.isActive,
+                profileImage: user.profileImage,
+                registrationSource: user.registrationSource,
+                createdAt: user.createdAt,
+                studentId: user.studentId,
+                examTarget: user.examTarget,
+                mockTestCredits: user.mockTestCredits,
+                bonusMockTestCredits: user.bonusMockTestCredits || 0,
+                doubtCredits: user.doubtCredits || 0
             }
         });
     } catch (error) {
@@ -796,7 +812,12 @@ exports.verifyOtpAndAutoLogin = async (req, res) => {
                 isActive: user.isActive,
                 profileImage: user.profileImage,
                 registrationSource: user.registrationSource,
-                createdAt: user.createdAt
+                createdAt: user.createdAt,
+                studentId: user.studentId,
+                examTarget: user.examTarget,
+                mockTestCredits: user.mockTestCredits,
+                bonusMockTestCredits: user.bonusMockTestCredits || 0,
+                doubtCredits: user.doubtCredits || 0
             }
         });
     } catch (error) {
