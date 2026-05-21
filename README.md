@@ -1,648 +1,331 @@
-# Apna Lakshay — Library Management System
+# Apna Lakshay -- Production-Grade Library Management System
 
-**Live:** https://apnalakshay.com
+[![Production Ready](https://img.shields.io/badge/Status-Production--Ready-success.svg?style=flat-for-the-badge)](https://apnalakshay.com)
+[![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue.svg?style=flat-for-the-badge)](https://mongodb.com)
+[![Deployment](https://img.shields.io/badge/Deployment-VPS%20%7C%20PM2-purple.svg?style=flat-for-the-badge)](https://pm2.keymetrics.io/)
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg?style=flat-for-the-badge)](https://apnalakshay.com)
 
-A production-ready, full-stack MERN web application for offline library seat booking, digital attendance, fee management, and AI-powered academic support. Currently live and used by 100+ students daily.
+**Live Production System:** [https://apnalakshay.com](https://apnalakshay.com)
 
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Frontend** | React.js, Vite, Tailwind CSS, Framer Motion |
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB (Mongoose ODM) |
-| **Authentication** | JWT (JSON Web Tokens) + bcrypt |
-| **Email** | Nodemailer (Google App Password + Brevo SMTP) |
-| **Payments** | Razorpay (online fee collection) |
-| **AI** | Groq API (Llama 3.1 8B) + Google Gemini API |
-| **Real-time** | Socket.IO |
-| **QR Code** | qrcode.react + GPS verification |
-| **PDF** | jsPDF (receipts, reports, ID cards) |
+A premium, full-stack, production-ready MERN enterprise suite engineered for modern offline libraries. The system handles end-to-end operations including interactive seat booking grids, multi-shift allocations, location-verified QR check-ins, automated billing cycles with partial payment tracking, and AI-powered academic engines. Built for scale, high reliability, and elite UI/UX standards, this codebase is designed according to enterprise software architecture best practices.
 
 ---
 
-## Quick Start
+## System Architecture & Services Flow
+
+The system employs a layered decoupled MVC structure on the backend, complemented by a reactive frontend leveraging Context API, Tailwind CSS, and Framer Motion for high-fidelity animations.
+
+```mermaid
+graph TD
+    %% Styling Configuration
+    classDef client fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0369a1;
+    classDef gateway fill:#fae8ff,stroke:#c084fc,stroke-width:2px,color:#86198f;
+    classDef service fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e;
+    classDef database fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#166534;
+    classDef fallback fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#991b1b;
+
+    %% Elements
+    subgraph ClientLayer ["Client Interface (SPA / React)"]
+        UI["Student & Admin Dashboards"]:::client
+        SocketClient["Socket.IO Client"]:::client
+    end
+
+    subgraph APIHost ["API & Routing Gateway (Express / Node)"]
+        Router["Express Router & Rate Limiter"]:::gateway
+        AuthMiddleware["JWT JWT-based Security Context"]:::gateway
+    end
+
+    subgraph CoreServices ["Backend Controller & Business Logic"]
+        AuthCtrl["Auth & Target Persistence Controller"]:::service
+        SeatCtrl["Multi-Shift Overlap Validator"]:::service
+        AttCtrl["GPS-Fenced Attendance Engine"]:::service
+        FeeCtrl["Partial Payment Billing System"]:::service
+        EngagementCtrl["Leaderboard & Streak Manager"]:::service
+    end
+
+    subgraph DatabaseLayer ["Persistent Storage Layer"]
+        MongoDB[("MongoDB Atlas Database")]:::database
+    end
+
+    subgraph ExternalServices ["Third-Party Service Connectors"]
+        Razorpay["Razorpay payment Gateway"]:::gateway
+        SMTP["Brevo SMTP / Nodemailer HTML Mailer"]:::gateway
+        
+        subgraph AIEngine ["Resilient AI Fallback Pipeline"]
+            GroqEngine["Groq API (Llama 3.1 8B)"]:::fallback
+            GeminiEngine["Google Gemini API (Fallback)"]:::fallback
+        end
+    end
+
+    %% Connections
+    UI -->|HTTPS REST Request| Router
+    SocketClient <-->|Websocket Event Duplex| Router
+    Router --> AuthMiddleware
+    AuthMiddleware --> AuthCtrl
+    AuthMiddleware --> SeatCtrl
+    AuthMiddleware --> AttCtrl
+    AuthMiddleware --> FeeCtrl
+    AuthMiddleware --> EngagementCtrl
+
+    %% DB Actions
+    AuthCtrl <--> MongoDB
+    SeatCtrl <--> MongoDB
+    AttCtrl <--> MongoDB
+    FeeCtrl <--> MongoDB
+    EngagementCtrl <--> MongoDB
+
+    %% Integrations
+    FeeCtrl <-->|Secure API Signature| Razorpay
+    FeeCtrl -->|HTML Receipt Generation| SMTP
+    SeatCtrl -->|Notification Broadcast| SMTP
+    
+    %% AI Pipeline Routing
+    UI -->|Ask Doubt / Mock Gen| AIEngine
+    GroqEngine -.->|Rate Limit Fallback| GeminiEngine
+```
+
+---
+
+## GPS-Restricted QR Attendance Control Flow
+
+Attendance integrity is enforced via a two-layer control loop: cryptographic token verification and geographic distance validation within a 15-meter radius, using highly precise spherical geodesy (Haversine formula).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Student as Student (Mobile / Client)
+    actor Scanner as Library Barcode / QR Scanner
+    participant Gateway as Express Backend Router
+    participant DB as MongoDB Atlas
+    
+    Note over Student, DB: Step 1: Secure Handshake & Local GPS Lock
+    Student->>Student: Get High-Accuracy GPS Coordinates
+    Student->>Student: Generate Instant QR (Token + ID)
+    Student->>Scanner: Scan QR Code (AL- prefix decode)
+    
+    Note over Scanner, Gateway: Step 2: Payload Extraction & Cryptographic Check
+    Scanner->>Gateway: API Call with QR Payload & Device GPS
+    Gateway->>Gateway: Parse Student Code (Filters "AL-" / "HL-" Barcode prefixes)
+    Gateway->>DB: Fetch Active Session Token & Geofence Settings
+    DB-->>Gateway: Active Member Token & Library GPS Coordinates
+    
+    Note over Gateway, DB: Step 3: Geographic Boundary & Time Validation
+    Gateway->>Gateway: Compute Distance (Haversine Matrix Check)
+    alt Distance > Allowed Geofence Radius (e.g. 15m)
+        Gateway-->>Student: Reject Access (Location Violation Event)
+    else Distance <= Allowed Geofence Radius
+        Gateway->>Gateway: Resolve IST Timezone Boundaries
+        Gateway->>DB: Upsert Attendance Record (Atomic check-in state)
+        DB-->>Gateway: Successful Check-in Acknowledge
+        Gateway-->>Student: Approve Entry (Access Granted Sound Played)
+    end
+```
+
+---
+
+## Multi-Shift Seat Overlap Verification Flow
+
+Seats can be allocated to multiple students over distinct, non-overlapping time shifts. Conflicts are prevented via a deterministic interval overlap matrix prior to insertion.
+
+```mermaid
+graph TD
+    classDef proc fill:#f1f5f9,stroke:#64748b,stroke-dasharray: 5 5;
+    classDef decision fill:#ffedd5,stroke:#ea580c;
+    classDef endPoint fill:#f0fdf4,stroke:#16a34a;
+    classDef errPoint fill:#fef2f2,stroke:#dc2626;
+
+    A[Admin Initiates Multi-Shift Allocation] --> B[Fetch Selected Seat & Desired Shifts Array]
+    B --> C[Retrieve All Existing Active Assignments for Selected Seat]:::proc
+    C --> D{Evaluate Shift Overlaps:<br>doTimeRangesOverlap startA, endA, startB, endB}:::decision
+    
+    D -->|True: Intersecting Slots Found| E[Return Conflict Error: Seat Occupied during Time Windows]:::errPoint
+    D -->|False: Zero Conflicts| F[Construct Transactional Assignments Object Array]:::proc
+    
+    F --> G[Assign Price to the First Shift Block, Zero-Out Secondary Shifts]:::proc
+    G --> H[Update Seat via MongoDB collection.updateOne Bypass timestamps]:::proc
+    H --> I[Generate Single Fee Record for Combined Shift Price]:::proc
+    I --> J[Success Broadcast Email Details to Student]:::endPoint
+```
+
+---
+
+## Technical Implementations & Production Details
+
+This codebase solves critical enterprise-level challenges through resilient architectural decisions:
+
+### 1. Robust Leaderboard Logic (Active Student Mapping)
+* **Problem**: Traditional engagement trackers only query streak documents. Newly registered students who do not yet have an active study log are completely left out of leaderboard views.
+* **Solution**: Re-implemented the engagement resolver to query the primary `User` collection directly for all active, non-disabled student profiles. The engine then populates corresponding `StudyStreak` documents on the fly. Missing values default to Level 1, 0 XP, 0 streak days, and 0 focus hours safely—preventing frontend ranking pagination failures.
+
+### 2. Reliable Context Persistence (Preventing Target Reset)
+* **Problem**: Incomplete backend payload returns during seat logins caused the frontend `AuthContext` to overwrite the local cache, resetting custom `examTarget` configurations to "generic" on page refresh.
+* **Solution**: Refactored `verifySeatLogin` in the authentication controller to include complete profile objects (including explicit `examTarget` and outstanding test credits). Complemented this with a state fallback pipeline in the frontend context to prevent hydration race conditions.
+
+### 3. Date-Locked Multi-Key Round-Robin AI Pipeline
+* **Problem**: Severe rate-limiting during high-concurrency exam preparation periods.
+* **Solution**: Engineered a dynamic API scheduler that rotates requests among a stack of active Groq keys. If the entire Groq stack triggers an HTTP 429 (Rate Limit), a fallback exception catcher shifts the traffic dynamically to Google Gemini API, ensuring zero student downtime.
+
+### 4. Mongoose Timestamp Override Bypass
+* **Problem**: Setting `timestamps: true` in Mongoose models locks the `createdAt` and `updatedAt` properties, making backdated admissions impossible to persist since `.save()` overwrites the inputs with the system time.
+* **Solution**: Bypassed Mongoose schema locks using a native MongoDB driver update:
+  ```js
+  await User.collection.updateOne(
+      { _id: userId },
+      { $set: { createdAt: new Date(backdatedAdmissionDate) } }
+  );
+  ```
+
+---
+
+## Technology Stack
+
+| Layer | Technology | Production Detail |
+|---|---|---|
+| **Frontend** | React.js (Vite Core) | SPA, Client-side routing, high-performance bundling |
+| **Styling** | Tailwind CSS & Vanilla CSS | Dynamic Tailwind layers, HSL-themed UI tokens, Glassmorphism |
+| **Animations** | Framer Motion | Smooth dashboard transitions, modular micro-animations |
+| **Backend** | Node.js, Express.js | Structured controller-route MVC architecture |
+| **Database** | MongoDB (Mongoose ODM) | Document storage, deep subdocument embedding for seats |
+| **Real-time** | Socket.IO | High-concurrency bidirectional event loops for online status |
+| **Security** | JWT (JSON Web Tokens) & bcrypt | Cryptographic session tokens, salt-hashed authorization |
+| **Payments** | Razorpay Gateways | Direct webhook integration, secure online invoice settlements |
+| **Mailing** | Brevo SMTP / Nodemailer | E-Commerce-style responsive HTML transacting templates |
+| **AI Processing** | Groq & Gemini Pipelines | Intelligent syllabi mock generator, active chat sessions |
+
+---
+
+## Quick Start Guide
 
 ### Prerequisites
+* **Node.js** v18.0.0 or higher
+* **MongoDB** instance running locally on `mongodb://localhost:27017` or a MongoDB Atlas Cloud URI
+* **Razorpay Key Credentials** (Merchant account details for Sandbox testing)
+* **Groq API Cloud Key(s)** and **Google Gemini API Key**
 
-- Node.js v16 or higher
-- MongoDB running on `localhost:27017`
-- Google App Password for email notifications
-- Razorpay account (for online payments)
-- Groq API key (for AI features)
+### 1. Installation Blueprint
 
-### Installation
-
-**1. Clone the repository**
 ```bash
+# Clone the repository
 git clone https://github.com/himanshuraj108/Apna_Lakshay_LMS.git
 cd Apna_Lakshay_LMS
-```
 
-**2. Install Backend dependencies**
-```bash
+# Install Backend Node Modules
 cd backend
 npm install
-```
 
-**3. Install Frontend dependencies**
-```bash
+# Install Frontend Node Modules
 cd ../frontend
 npm install
 ```
 
-**4. Configure Environment Variables**
+### 2. Environment Configuration
 
-Create `backend/.env`:
+Create a secure configuration file `backend/.env`:
 ```env
-ADMIN_EMAIL=
-ADMIN_PASSWORD=
-APK_DOWNLOAD_URL=
-BREVO_HOST=
-BREVO_PASS=
-BREVO_PORT=
-BREVO_USER=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-CLOUDINARY_CLOUD_NAME=
-EMAIL_FROM_ADDRESS=
-EMAIL_PASSWORD=
-EMAIL_USER=
-FRONTEND_URL=
-GOOGLE_BOOKS_API_KEY=
-GROQ_API_KEY=
-GROQ_API_KEY_2=
-GROQ_API_KEY_3=
-JWT_EXPIRE=
-JWT_SECRET=
-LIBRARY_LAT=
-LIBRARY_LNG=
-LIBRARY_RADIUS_M=
-MONGODB_URI=
-PORT=
-RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
-RSS2JSON_KEY=
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/apna_lakshay_lms
+JWT_SECRET=your_ultra_secure_jwt_passphrase_32_chars
+JWT_EXPIRE=365d
+
+# AI API Access Keys
+GROQ_API_KEY=gsk_your_primary_key_here
+GROQ_API_KEY_2=gsk_your_backup_key_2
+GROQ_API_KEY_3=gsk_your_backup_key_3
+GOOGLE_BOOKS_API_KEY=your_google_books_key
+
+# Payment Integrations
+RAZORPAY_KEY_ID=rzp_test_your_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+
+# E-Mail SMTP Server (Brevo / Nodemailer)
+BREVO_HOST=smtp-relay.brevo.com
+BREVO_PORT=587
+BREVO_USER=your_brevo_verified_email@domain.com
+BREVO_PASS=your_smtp_key
+EMAIL_FROM_ADDRESS=support@apnalakshay.com
+
+# Geographic Fencing (Geodesic Coordinates)
+LIBRARY_LAT=28.6139
+LIBRARY_LNG=77.2090
+LIBRARY_RADIUS_M=15
 ```
 
-### Seed Database
+### 3. Database Seeding & Launch
 
 ```bash
-cd backend
+# Seed the initial floors, custom shifts, and default admin credentials
+cd ../backend
 node scripts/seedData.js
-```
 
-This creates:
-- Admin user (`email: admin`, `password: admin123`)
-- Ground Floor: 1 Room, 20 Seats
-- First Floor: 2 Rooms (7 + 12 seats)
-- Second Floor: 1 Room, 5 Seats
-- **Total: 40 Seats**
+# Launch Backend Engine
+npm start
 
-### Run Application
-
-**Terminal 1 — Backend:**
-```bash
-cd backend
-node server.js
-```
-Backend runs on: `http://localhost:5000`
-
-**Terminal 2 — Frontend:**
-```bash
-cd frontend
+# In a new terminal: Launch Frontend Client
+cd ../frontend
 npm run dev
 ```
-Frontend runs on: `http://localhost:5173`
+
+* **Backend Gateway:** `http://localhost:5000`
+* **Frontend Web App:** `http://localhost:5173`
 
 ---
 
-## Default Credentials
+## Default Credentials Matrix
 
-| Role | Email | Password |
+| System Role | Username / E-Mail Address | Secret Password |
 |---|---|---|
-| Admin | `admin` | `admin123` |
-| Student | Created by admin via email | Sent via email |
+| **Global Admin** | `admin` | `admin123` |
+| **Demo Student** | `student@apnalakshay.com` | Generated & sent via SMTP mailer during creation |
 
 ---
 
-## Features
+## Production-Grade Features List
 
-### Admin Features
+### Enterprise Admin Suite
+* **Real-time Analytics Desk**: Track operational capacities, current seated volume, active online logs via web sockets, and payment pipelines.
+* **Granular Student Management**: Fully operational CRUD console including status deactivation, custom profile photos, and backdated admissions.
+* **Dynamic Geofenced Attendance**: Manual check-in overrides, instant barcode scanning processing, automated daily report builders, and Excel/PDF generators.
+* **Flexible Seat Configuration**: Multi-floor visual map builder allowing AC/Non-AC tagging, granular seat status views, and instant seat-swaps preserving pricing rules.
+* **Advanced Fee Invoicing**: Multi-shift balance split, customizable partial payment entries with colored highlights, and global payment gate toggle overrides.
 
-#### Dashboard & Analytics
-- Real-time stats: total students, occupied seats, fees collected, pending requests
-- Peak hours graph (attendance by time slot)
-- Recent activity feed
-- Online student indicators (Socket.IO)
-
-#### Student Management
-- Full CRUD: create, edit, deactivate, permanently delete students
-- Backdated admission date support — enter any past date as the join date
-- Admission date correctly determines fee billing cycle (e.g., joined Apr 30 → Apr cycle, not May)
-- Show/hide inactive students toggle (default: hidden, clean workspace)
-- Student ID card generator with QR code (PDF export)
-- Profile image management
-- Password reset (manual entry or auto-set to mobile number)
-- AI credit management (manual or auto-calculated from fee amount)
-- View individual student's AI chat history
-
-#### Seat Management
-- Floor → Room → Seat hierarchy
-- Dynamic room creation with seat count
-- Seat availability with visual room grid
-- **Multi-shift seat assignment**: assign a student to multiple non-overlapping shifts (e.g., Shift 1 AND Shift 3 on the same seat)
-- Time-based overlap detection: prevents double-booking the same seat at the same time
-- Negotiated price per student per shift (or total for multi-shift)
-- Seat swap between two students
-- Seat vacancy public view (no login required)
-
-#### Shift Management
-- Create custom shifts with name, start time, and end time (e.g., `Morning 6:00–12:00`)
-- Update and deactivate shifts
-- All shifts pulled dynamically from database — nothing hardcoded
-- Shifts displayed with time ranges in the ID card for each student
-
-#### Attendance
-- Daily attendance marking with QR code scan + GPS verification
-- Manual attendance override by admin
-- Holiday marking
-- Monthly attendance reports per student
-- Download attendance report as PDF
-
-#### Fee Management
-- Mark fee as **fully paid** → email receipt sent
-- Mark fee as **partially paid** → shows paid amount + outstanding balance in orange
-- Outstanding balance tracked per student
-- **Bulk fee update** across multiple students with configurable increase/decrease
-- Download fee report (PDF) with full history
-- **Online payment toggle**: enable or disable Razorpay for students globally with one switch
-- Show/hide inactive students in fee table
-
-#### Notifications & Announcements
-- Send global announcements (all students)
-- Send individual targeted notifications
-- Notification types: seat, fee, announcement, request
-
-#### Requests & Approvals
-- Students submit change requests (seat, shift, profile)
-- Admin approves or rejects with comments
-- Email sent on approval/rejection
+### Premium Student Experience
+* **Double-Sided Digital ID Card**: Beautiful sliding glassmorphic card equipped with:
+  * **3D Flip Interaction**: Flips seamlessly on tap to display active rules, streak boosters, and rewards systems.
+  * **QR Code Zoom Overlays**: Responsive barcode modal zoom optimized for high-speed scanner terminal decoding.
+* **Monthly Attendance Calendar & Rankings**: Visual present/absent color grids accompanied by inclusive leaderboard rankings, highlighting the student with custom themes.
+* **Interactive AI Doubt Assistant**: Conversational session engine pre-programmed with specific civil service and government examination syllabi.
+* **Mock Test Generator**: Instant adaptive tests with standard negative-marking mechanisms, saved progress records, and dynamic scorecard breakdowns.
+* **Built-in Study Tools**: High-fidelity Pomodoro timers, collaborative study streak rewards, and editable checklist boards.
 
 ---
 
-### Student Features
+## Complete Architecture Changelog
 
-#### Dashboard
-- Seat card: seat number, floor, room, AC/Non-AC badge, shift(s) with time
-- Attendance card: present days, percentage, rank in class
-- Fee card: status badge (paid/pending/overdue/partial), amount, due date
-- Notification card: unread count, latest message
-- Online payment reminder modal (if fee pending and Razorpay enabled)
+### v3.0.0 -- Leaderboard Resiliency, Persistent Auth Contexts & Zoomable QR Cards (May 2026)
+* **Inclusive Engagement Leaderboards**: Updated engagement queries to list all registered students, gracefully defaulting absent StudyStreak entries to basic stats (Level 1, 0 XP) rather than omitting students without database documents.
+* **Exam Target Hydration**: Integrated target persistence in the seat login controller and React authentication hooks. Resolves standard page reload hydration issues, securing state consistency.
+* **Multi-Prefix Barcode Parsing**: Enhanced scanner input parsing logic to seamlessly resolve both AL- and HL- student card prefixes on check-in.
+* **Double-Sided 3D Card Animations**: Rolled out absolute CSS 3D transform layers for profile student cards, featuring interactive flip states with rules content on the back.
+* **High-Contrast QR Modal**: Integrated full-view overlay zooms with SVG renderers for seamless scanner check-ins.
 
-#### Seat View
-- Visual room grid with own seat highlighted in purple
-- Floor/room selector
-- Shows all occupied shifts on each seat
+### v2.5.0 -- Sub-Admin Permissions, Login Expiration & Seat Swap Enhancements (May 2026)
+* **Sub-Admin ID Access**: Added specific id-card privileges to sub-admin configurations.
+* **Ultra-Extended Sessions**: Extended JWT expiration parameters for secondary admin endpoints to 365 days, mitigating daily session timeouts.
+* **Atomic Seat Swap Controller**: Created transactional seat swap endpoints, ensuring all seat types, negotiated fee configurations, and shift dates transfer concurrently.
+* **Mobile ID Layout Polish**: Wrapped layout sections in ID components to prevent typography overflowing.
 
-#### Attendance
-- Monthly attendance log (present/absent/holiday per day)
-- Attendance percentage chart
-- **Rankings table**: all students ranked by attendance percentage
-  - Top-5 students highlighted with green achievement background
-  - Tied ranks both highlighted (inclusive tie-handling)
-  - Own name highlighted in blue for easy identification
-  - Gold/silver/bronze colored rank labels (no emojis)
+### v2.4.0 -- Unified Settings & PIN Attendance (May 2026)
+* **FAB Pulse Contexts**: Refactored dashboard entry structures to display responsive, pulsing check-in actions.
+* **Offline PIN Fallback**: Configured keypads to allow local pin code authentication when GPS signal boundaries fail.
+* **Dynamic Global Toggles**: Unified settings into a clean dropdown control block on the admin panel.
 
-#### Fee Status & History
-- Full fee history (all months)
-- Status badges: `Paid` (green), `Pending` (yellow), `Overdue` (red), `Partial` (orange)
-- Partial payment breakdown: shows Paid, Outstanding, Total
-- **Pay Online** button (shown only when admin enables Razorpay)
-- Download payment receipt (PDF)
-- Billing cycle: `Apr 30 – May 29` format based on join date
-
-#### AI Doubt Board
-- Ask subject-specific academic questions
-- Subjects: Maths, Science, History, Polity, Economy, Geography, Current Affairs, English
-- Powered by **Groq API (Llama 3.1 8B)**
-- Multi-key round-robin rotation across multiple Groq API keys
-- **Fallback chain**: Groq → Gemini on rate limit
-- Per-student daily credit limit
-- Session history saved
-
-#### AI Mock Test Generator
-- Generates exam-pattern MCQ tests dynamically
-- Exams supported: SSC CGL, SSC CHSL, SSC GD, UPSC Prelims, Railway, Banking
-- Section-wise syllabus awareness
-- Negative marking support
-- Multi-model fallback (Groq → Gemini)
-- Test attempts saved and reviewable
-
-#### Study Tools
-- Study planner / to-do list with deadline tracking
-- Pomodoro session timer
-- Study streak tracking
-
-#### Profile
-- Upload profile photo
-- Change mobile number, address
-- Submit change requests for seat/shift
+### v2.1.0 -- Partial Billing & Razorpay Sandbox (Apr 2026)
+* **Dynamic Balances**: Integrated orange partial-payment statuses, tracking outstanding amounts per billing cycle.
+* **E-Mail Receipts**: Upgraded Nodemailer actions to automatically deliver responsive HTML receipts upon full or partial settlement.
 
 ---
 
-### Public Features (No Login Required)
+## Engineering Core
 
-- View seat availability by floor/room
-- See which seats are free, partially booked, or fully booked
-- Available seats show prices; occupied seats show "Occupied"
-- Mobile-optimized with modal: "Download App" / "Continue in Browser"
-
----
-
-## Multi-Shift Assignment
-
-A student can be assigned to multiple shifts on the same seat (e.g., Shift 1 from 6:00–12:00 AND Shift 3 from 18:00–22:00).
-
-### How it works
-
-1. Admin opens **Assign Seat** modal for a student
-2. Selects a seat from the dropdown
-3. The shift selector shows **checkboxes** for all available (non-conflicting) shifts
-4. Admin checks multiple shifts (e.g., Shift 1 ✓, Shift 3 ✓)
-5. Optionally enters a combined negotiated price
-6. Submits → backend creates one assignment entry per shift
-7. Fee record created with the total combined price
-
-### ID Card display
-
-```
-Shift        Shift 1
-             06:00–12:00
-             Shift 3
-             18:00–22:00
-```
-
-### Seat availability logic
-
-- A seat slot is marked occupied only for the specific shift time window
-- Other time windows remain available for other students
-- Full-day assignment blocks all windows
-
----
-
-## Email System
-
-All emails use premium branded HTML templates with the Apna Lakshay identity.
-
-| Trigger | Email Sent |
-|---|---|
-| Student account created | Login credentials |
-| Seat assigned | Seat details + shift(s) |
-| Fee fully paid | Payment receipt |
-| Fee partially paid | Paid amount, Outstanding, Total |
-| Bulk fee update | Old fee vs New fee comparison |
-| Fee reminder (5 days before due) | Reminder with due date |
-| Request approved | Approval confirmation |
-| Request rejected | Rejection with reason |
-| Admin announcement | Broadcast message |
-
----
-
-## Fee Billing Cycle Logic
-
-The fee cycle is anchored to the student's **admission date** (not the current date).
-
-| Admission Date | First Fee Cycle | Due Date |
-|---|---|---|
-| Apr 30 | Apr 30 – May 29 | Apr 30 |
-| May 15 | May 15 – Jun 14 | May 15 |
-| Jan 1 | Jan 1 – Jan 31 | Jan 1 |
-
-If a student is added with a backdated admission (e.g., admin adds them today but sets join date to Apr 30), the first fee is correctly created for the **April cycle**, not the current month.
-
----
-
-## Admission Date Update Fix
-
-Mongoose's `timestamps: true` silently blocks `createdAt` changes via `.save()`. The admin update uses a raw MongoDB `collection.updateOne` with `$set` to bypass this and force-write the new admission date to the database.
-
----
-
-## UI/UX Highlights
-
-- **Premium dark theme** with purple-to-pink gradients
-- **Glassmorphism cards** with frosted glass effect
-- **Framer Motion** micro-animations on all pages
-- **Skeleton loaders** for all async data (no spinners)
-- **Color-coded statuses**:
-  -  Green: Available / Paid / Present / Top-5 Attendance
-  -  Red: Occupied / Overdue / Absent / Inactive
-  -  Yellow: Due Soon / Pending / Warning
-  -  Orange: Partial Payment (row highlight + badge + breakdown)
-  -  Purple: Own seat highlight / Selected shifts
-- **Fully responsive**: Desktop, Tablet, Mobile
-- **Show/hide inactive** toggles in Fee Management and Student Management
-
----
-
-## Project Structure
-
-```
-lms/
-├── backend/
-│   ├── controllers/
-│   │   ├── adminController.js     # All admin business logic
-│   │   ├── studentController.js   # Student dashboard + fees
-│   │   ├── authController.js      # Login, JWT, password
-│   │   ├── publicController.js    # Public seat availability
-│   │   └── settingsController.js  # System settings
-│   ├── models/
-│   │   ├── User.js                # Student/Admin schema
-│   │   ├── Seat.js                # Seat + assignments[]
-│   │   ├── Shift.js               # Shift (name, startTime, endTime)
-│   │   ├── Fee.js                 # Fee records (partial support)
-│   │   ├── Attendance.js          # Daily attendance
-│   │   ├── Floor.js / Room.js     # Library layout
-│   │   ├── Notification.js        # Student notifications
-│   │   ├── Request.js             # Change requests
-│   │   ├── Settings.js            # System settings
-│   │   ├── DoubtSession.js        # AI doubt chat history
-│   │   └── MockTestAttempt.js     # AI mock test records
-│   ├── routes/
-│   │   ├── adminRoutes.js
-│   │   ├── studentRoutes.js
-│   │   ├── authRoutes.js
-│   │   └── publicRoutes.js
-│   ├── middleware/
-│   │   ├── auth.js                # JWT verification
-│   │   └── errorHandler.js
-│   ├── services/
-│   │   └── emailService.js        # Nodemailer templates
-│   ├── utils/
-│   │   └── timeUtils.js           # Shift overlap detection
-│   ├── scripts/
-│   │   └── seedData.js
-│   └── server.js
-│
-└── frontend/
-    └── src/
-        ├── components/
-        │   ├── admin/
-        │   │   ├── StudentIdCard.jsx       # Multi-shift ID card
-        │   │   ├── RoomGrid.jsx
-        │   │   ├── UpdateFloorPricesModal.jsx
-        │   │   └── UpdateRoomPricesModal.jsx
-        │   └── student/
-        │       └── StudentRoomGrid.jsx
-        ├── pages/
-        │   ├── admin/
-        │   │   ├── AdminDashboard.jsx
-        │   │   ├── StudentManagement.jsx   # Multi-shift assign modal
-        │   │   ├── FeeManagement.jsx
-        │   │   ├── AttendanceManagement.jsx
-        │   │   └── VacantSeats.jsx
-        │   ├── student/
-        │   │   ├── StudentDashboard.jsx
-        │   │   ├── Attendance.jsx          # Rankings + top-5 green
-        │   │   ├── FeeStatus.jsx
-        │   │   └── AiDoubtBoard.jsx
-        │   └── public/
-        │       └── PublicVacantSeats.jsx
-        ├── hooks/
-        │   └── useShifts.js
-        ├── context/
-        │   └── AuthContext.jsx
-        ├── utils/
-        │   └── api.js
-        └── App.jsx
-```
-
----
-
-## API Endpoints
-
-### Auth
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/auth/login` | Login (admin or student) |
-| GET | `/api/auth/me` | Get current user |
-| POST | `/api/auth/forgot-password` | Send OTP |
-| POST | `/api/auth/reset-password` | Reset with OTP |
-
-### Public
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/public/seats` | Seat availability (no auth) |
-| GET | `/api/public/floors` | Floor/room structure |
-
-### Admin (Protected — Admin Only)
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/admin/dashboard` | Dashboard stats |
-| GET | `/api/admin/students` | All students (with shifts[] array) |
-| POST | `/api/admin/students` | Create student |
-| PUT | `/api/admin/students/:id` | Update student (name, email, joinedAt, etc.) |
-| DELETE | `/api/admin/students/:id` | Deactivate or delete |
-| POST | `/api/admin/seats/assign` | Assign seat with shifts[] array |
-| GET | `/api/admin/shifts` | All shifts |
-| POST | `/api/admin/shifts` | Create shift |
-| PUT | `/api/admin/shifts/:id` | Update shift |
-| DELETE | `/api/admin/shifts/:id` | Delete shift |
-| POST | `/api/admin/attendance` | Mark attendance |
-| PUT | `/api/admin/fees/:id/paid` | Mark fee fully paid |
-| PUT | `/api/admin/fees/:id/partial` | Record partial payment |
-| PUT | `/api/admin/fees/bulk-update` | Bulk fee update |
-| POST | `/api/admin/notifications` | Send notification |
-| GET | `/api/admin/settings` | Get system settings |
-| PUT | `/api/admin/settings` | Update settings (online payment toggle, etc.) |
-| GET | `/api/admin/requests` | All student requests |
-| PUT | `/api/admin/requests/:id` | Approve/reject request |
-
-### Student (Protected — Student Only)
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/student/dashboard` | Dashboard (seat, attendance, fee, notifs) |
-| GET | `/api/student/seat` | My seat + shift details |
-| GET | `/api/student/attendance` | Attendance log + rankings |
-| GET | `/api/student/fees` | Fee history (includes partial) |
-| GET | `/api/student/notifications` | My notifications |
-| POST | `/api/student/request` | Submit change request |
-| PUT | `/api/student/profile` | Update profile |
-| POST | `/api/student/profile/image` | Upload profile image |
-| POST | `/api/student/doubt/ask` | Ask AI doubt (Groq) |
-| GET | `/api/student/doubt/history` | Doubt session history |
-| POST | `/api/student/mock-test/generate` | Generate AI mock test |
-| GET | `/api/student/mock-test/history` | Past mock test attempts |
-| POST | `/api/student/fees/:id/create-order` | Create Razorpay order |
-| POST | `/api/student/fees/:id/verify-payment` | Verify Razorpay payment |
-
----
-
-## Security
-
-- JWT token-based authentication with expiry
-- Passwords hashed with **bcrypt** (salt rounds: 10)
-- Role-based route protection (admin vs student)
-- Input validation on all endpoints
-- Error handling middleware (no stack traces in production)
-- QR tokens are secret (`select: false` in schema)
-- Raw MongoDB `collection.updateOne` used for `createdAt` override (Mongoose timestamp bypass)
-
----
-
-## Seat Assignment — Technical Detail
-
-### Assignments Array (Seat model)
-
-Each seat has an `assignments[]` subdocument array:
-
-```js
-assignments: [{
-  student: ObjectId,        // ref User
-  shift:   ObjectId,        // ref Shift (null for legacy)
-  type:    'specific' | 'full_day',
-  status:  'active' | 'cancelled' | 'expired',
-  price:   Number,          // total price (first shift carries full amount)
-  assignedAt: Date
-}]
-```
-
-### Multi-shift creation
-
-When admin assigns Shift 1 + Shift 3 to a student:
-1. Two entries are pushed to `seat.assignments[]`
-2. First entry: `price = totalPrice` (negotiated or summed)
-3. Second entry: `price = 0` (avoids double-counting in fee)
-4. One `Fee` document created with `amount = totalPrice`
-
-### Overlap detection
-
-For each requested shift, the backend checks all OTHER students' active assignments on that seat for time overlap using `doTimeRangesOverlap(startA, endA, startB, endB)`.
-
----
-
-## Ranking System (Attendance)
-
-- Ranked by monthly attendance percentage (higher = better rank)
-- Same percentage → same rank (tie-inclusive)
-- Top-5 cutoff uses `top5Cutoff` — the percentage of the student ranked 5th
-- All students at or above `top5Cutoff` get the green achievement highlight
-- Student's own row highlighted in blue/purple regardless of rank
-
----
-
-## Troubleshooting
-
-**MongoDB connection error:**
-```bash
-mongod --dbpath "C:\data\db"
-```
-
-**Port already in use:**
-- Backend: change `PORT` in `.env`
-- Frontend: change port in `vite.config.js`
-
-**Email not sending:**
-- Verify Google App Password (not your Gmail password)
-- Check `EMAIL_USER` and `EMAIL_PASSWORD` in `.env`
-- Enable "Less secure app access" or use App Password
-
-**Admission date not updating:**
-- Fixed via raw MongoDB `collection.updateOne` — Mongoose `timestamps: true` blocks `createdAt` updates via `.save()`
-
-**Fee cycle showing wrong month:**
-- Fixed: fee month now derived from `student.createdAt` (join date), not `new Date()` (today)
-
-**Razorpay button not visible:**
-- Admin must enable the online payment toggle in Settings
-
----
-
-## Production Deployment
-
-```bash
-# 1. Build frontend
-cd frontend && npm run build
-
-# 2. Serve static files from backend (configure in server.js)
-# 3. Set all .env variables in production environment
-# 4. Use PM2 for backend process management
-pm2 start server.js --name apna-lakshay
-
-# 5. Set up Nginx reverse proxy for domain
-```
-
-**Recommended production stack:**
-- VPS: DigitalOcean / Render / Railway
-- Database: MongoDB Atlas
-- Frontend: Vercel or served from Express static
-- Domain: Cloudflare DNS
-
----
-
-## Changelog
-
-### v2.5.0 — Sub-Admin Permissions, Login Expiration & Seat Swap Enhancements (May 2026)
-- **Sub-Admin ID Cards Access:** Added `'id_cards'` permission to the allowed backend whitelist, enabling sub-admins to view and manage Student ID Cards.
-- **Persistent Sub-Admin Sessions:** Increased JWT expiration for sub-admin logins from 8 hours to 365 days, preventing random daily logouts.
-- **Atomic Seat Swap:** Upgraded the seat swap controller (`swapSeats`) to transfer the entire assignment metadata (pricing, shift configuration, type, and joining date) rather than just the student ID. This completely swaps their agreed fees and shifts alongside their physical seats.
-- **ID Card UI Polish:** Fixed layout issues in `StudentIdCard.jsx` where shift details were squished or wrapped, applying `whitespace-nowrap` and flex tuning.
-
-### v2.4.0 — UX & Attendance Overhaul (May 2026)
-- Overhauled Student Dashboard Attendance UX with a centered overlay, pulsing FAB, and glassmorphism blur effects
-- Added Admin toggle to show/hide the Login Screen Attendance check-in button globally
-- Implemented PIN-based manual attendance check-in/out, bypassing QR code when enabled by admin
-- Fixed IST timezone issue for midnight attendance reporting, ensuring late-night check-ins correctly register
-- Consolidated Admin Dashboard settings into a unified "Settings" dropdown for global toggles (Maintenance Mode, PIN Attendance, Login Attendance, Time Restriction, Location)
-- Migrated Admin Dashboard components and pages to a clean light-mode theme
-- Fixed MongoDB array `$elemMatch` queries to accurately track active seat assignments in profiles and dashboards
-
-### v2.3.0 — Multi-Shift Support (May 2026)
-- Admin can assign students to multiple non-overlapping shifts simultaneously
-- Seat assign modal replaced single dropdown with interactive multi-checkbox UI
-- ID card dynamically shows all assigned shifts with time ranges
-- Backend `assignSeat` accepts `shifts[]` array; creates one assignment per shift
-- `getStudents` API now returns `shifts: [{name, startTime, endTime}]` array
-
-### v2.2.0 — Fee Billing Cycle Fix (May 2026)
-- Fixed: backdated admission (e.g., Apr 30) now correctly creates April fee cycle
-- Fixed: admission date update now persists via raw MongoDB bypass of Mongoose timestamps
-- Added: Show Inactive student toggle in Student Management (default hidden)
-
-### v2.1.0 — Partial Fee System (Apr 2026)
-- Admin can record partial payments with paid amount + outstanding balance
-- Student dashboard shows partial fee card with orange badge
-- Fee Status page shows breakdown: Paid / Outstanding / Total
-- Email template for partial payment with 3-column summary
-- Online payment toggle hides "Pay Online" and "Online: Attempted" when disabled
-
-### v2.0.0 — Attendance Rankings Overhaul (Apr 2026)
-- Top-5 students highlighted with green achievement row
-- Tied ranks both highlighted (inclusive top-5 cutoff)
-- Gold/silver/bronze colored rank labels replacing emoji badges
-- Self-row highlighted in blue for easy personal identification
-
-### v1.5.0 — AI Features (Mar 2026)
-- AI Doubt Board with subject-aware prompting (Groq Llama 3.1 8B)
-- AI Mock Test Generator for SSC/UPSC with negative marking
-- Multi-key round-robin rotation + Groq → Gemini fallback chain
-
-### v1.0.0 — Core System (Jan 2026)
-- Seat booking, QR attendance, fee management
-- Razorpay integration, email notifications
-- Admin and Student role-based dashboards
-
----
-
-## Developer
-
-Developed by **Himanshu Raj**
-
----
-
-## License
-
-Proprietary — All Rights Reserved
+* **Lead Architect:** [Himanshu Raj](https://github.com/himanshuraj108)
+* **Enterprise License:** Proprietary -- All Rights Reserved. Used in live production daily.
