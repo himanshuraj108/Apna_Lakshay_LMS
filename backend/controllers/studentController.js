@@ -1206,11 +1206,15 @@ exports.withdrawRequest = async (req, res) => {
 // @route   PUT /api/student/profile
 exports.updateProfile = async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, examTarget } = req.body;
+
+        const updateData = {};
+        if (name !== undefined) updateData.name = name;
+        if (examTarget !== undefined) updateData.examTarget = examTarget;
 
         const user = await User.findByIdAndUpdate(
             req.user.id,
-            { name },
+            updateData,
             { new: true, runValidators: true }
         ).select('-password');
 
@@ -1755,6 +1759,12 @@ exports.markAttendanceByQr = async (req, res) => {
                 message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
             }
             type = 'entry';
+            try {
+                const { updateStreakAndXP } = require('./engagementController');
+                await updateStreakAndXP(studentId, 50, 'attendance');
+            } catch (err) {
+                console.error('Error updating streak on QR check-in:', err);
+            }
         }
 
         res.status(200).json({
@@ -1902,6 +1912,12 @@ exports.markSelfAttendance = async (req, res) => {
                 message = `Welcome, ${user.name}! Entry marked at ${attendance.entryTime}`;
             }
             type = 'entry';
+            try {
+                const { updateStreakAndXP } = require('./engagementController');
+                await updateStreakAndXP(studentId, 50, 'attendance');
+            } catch (err) {
+                console.error('Error updating streak on self check-in:', err);
+            }
         }
 
         res.status(200).json({ success: true, message, type, attendance });
@@ -2044,6 +2060,12 @@ exports.markAttendanceByPin = async (req, res) => {
             }
             message = `Welcome, ${user.name}! Entry marked at ${entryTime} via PIN.`;
             type = 'entry';
+            try {
+                const { updateStreakAndXP } = require('./engagementController');
+                await updateStreakAndXP(studentId, 50, 'attendance');
+            } catch (err) {
+                console.error('Error updating streak on PIN check-in:', err);
+            }
         }
 
         res.status(200).json({ success: true, message, type, attendance });
@@ -2149,6 +2171,12 @@ exports.markAttendanceDirectly = async (req, res) => {
             }
             message = `Welcome, ${user.name}! Entry marked at ${entryTime}.`;
             type = 'entry';
+            try {
+                const { updateStreakAndXP } = require('./engagementController');
+                await updateStreakAndXP(studentId, 50, 'attendance');
+            } catch (err) {
+                console.error('Error updating streak on direct check-in:', err);
+            }
         }
 
         res.status(200).json({ success: true, message, type, attendance });

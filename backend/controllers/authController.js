@@ -656,6 +656,12 @@ exports.markKioskAttendancePublic = async (req, res) => {
             existingAny.markedBy = student._id;
             if (geoDistance !== null) existingAny.distanceMeters = geoDistance;
             await existingAny.save();
+            try {
+                const { updateStreakAndXP } = require('./engagementController');
+                await updateStreakAndXP(student._id, 50, 'attendance');
+            } catch (err) {
+                console.error('Error updating streak on kiosk attendance override:', err);
+            }
         } else if (existingAny) {
             // Student checked in and out already today
             return res.status(400).json({ success: false, message: 'You have already marked your attendance for today.' });
@@ -667,6 +673,12 @@ exports.markKioskAttendancePublic = async (req, res) => {
                 isActive: true, markedBy: student._id,  // student self-marks via kiosk
                 distanceMeters: geoDistance !== null ? geoDistance : undefined
             });
+            try {
+                const { updateStreakAndXP } = require('./engagementController');
+                await updateStreakAndXP(student._id, 50, 'attendance');
+            } catch (err) {
+                console.error('Error updating streak on kiosk attendance:', err);
+            }
         }
 
         res.status(200).json({
