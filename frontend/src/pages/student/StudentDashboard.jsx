@@ -11,12 +11,12 @@ import {
     IoIdCardOutline, IoScan, IoCloseCircle,
     IoChatbubblesOutline, IoHelpCircleOutline,
     IoNewspaper, IoArrowForward,
-    IoFlashOutline, IoSparklesOutline, IoLockClosedOutline,
+    IoFlashOutline, IoSparklesOutline, IoLockClosedOutline, IoGiftOutline,
     IoLibraryOutline, IoAlertCircleOutline, IoTimeOutline, IoDocumentTextOutline,
-    IoLocation, IoLogInOutline, IoLogOutOutline, IoTimerOutline, IoInformationCircleOutline,
+    IoLocation, IoLogInOutline, IoLogOutOutline, IoTimerOutline, IoInformationCircleOutline, IoSyncOutline, IoSwapHorizontalOutline,
     IoLogOutOutline as IoLogoutIcon, IoChevronForward, IoGridOutline, IoMapOutline,
     IoMenuOutline, IoCloseOutline, IoKeypadOutline,
-    IoCameraOutline, IoCameraReverseOutline, IoAddOutline
+    IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -98,6 +98,199 @@ const DASH_STYLE = `
 .label-blink-red{animation:blink-red 1.1s ease-in-out infinite;color:#ef4444;font-weight:800;}
 @keyframes fab-blink{0%,100%{box-shadow:0 8px 32px rgba(16,185,129,0.5),0 0 0 1px rgba(255,255,255,0.12);}50%{box-shadow:0 8px 48px rgba(16,185,129,0.9),0 0 0 4px rgba(16,185,129,0.25);}}
 .fab-blink{animation:fab-blink 1.6s ease-in-out infinite;}
+
+/* --- Premium Flip Card Styles --- */
+.rank-card-container {
+  perspective: 1500px;
+  width: 100%;
+  max-width: 340px;
+  cursor: pointer;
+}
+.rank-card-inner {
+  width: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.rank-card-container.flipped .rank-card-inner {
+  transform: rotateY(180deg);
+}
+.rank-card-front {
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 14px;
+  overflow: hidden;
+  z-index: 2;
+}
+.rank-card-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+  border-radius: 14px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.premium-metallic-card {
+  background: linear-gradient(135deg, #ff6a00 0%, #ff8c00 25%, #ffa500 50%, #ff6a00 75%, #e85d00 100%);
+  background-size: 200% 200%;
+  animation: card-shimmer-bg 4s ease-in-out infinite;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 
+    0 8px 32px -4px rgba(255, 106, 0, 0.55),
+    0 0 0 1px rgba(255, 200, 100, 0.2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 2px rgba(180, 60, 0, 0.3);
+}
+@keyframes card-shimmer-bg {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.premium-back-card {
+  background: linear-gradient(135deg, #1a0a00 0%, #2d1200 40%, #1a0a00 100%);
+  border: 1.5px solid rgba(255, 140, 0, 0.35);
+  box-shadow: 
+    0 8px 32px -4px rgba(255, 106, 0, 0.4),
+    inset 0 1px 2px rgba(255, 255, 255, 0.08);
+}
+.premium-card-glow {
+  position: absolute;
+  top: -20%;
+  right: -20%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 100%);
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(40px);
+}
+.premium-card-glow-2 {
+  position: absolute;
+  bottom: -20%;
+  left: -20%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, rgba(217, 70, 239, 0.1) 60%, transparent 100%);
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(40px);
+}
+.premium-card-chip {
+  width: 28px;
+  height: 20px;
+  background: linear-gradient(135deg, #fffbeb 0%, #f59e0b 50%, #b45309 100%);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.5), 
+    0 1px 3px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(180, 83, 9, 0.4);
+  overflow: hidden;
+}
+.premium-card-chip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(90deg, transparent 50%, rgba(0, 0, 0, 0.15) 50%),
+    linear-gradient(transparent 50%, rgba(0, 0, 0, 0.15) 50%);
+  background-size: 5px 5px;
+}
+.premium-card-hologram {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #ff007f, #7f00ff, #00f0ff, #ffef00, #ff007f);
+  background-size: 300% 300%;
+  animation: holo-rotate 6s linear infinite;
+  opacity: 0.75;
+  mix-blend-mode: color-dodge;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+@keyframes holo-rotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.premium-card-pattern {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.03) 0%, transparent 40%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.01) 0px, rgba(255, 255, 255, 0.01) 1px, transparent 1px, transparent 10px);
+  pointer-events: none;
+}
+.premium-card-overlay-line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.0) 30%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.0) 70%, transparent);
+  transform: skewX(-25deg) translateX(-100%);
+  transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1);
+  pointer-events: none;
+}
+.rank-card-container:hover .premium-card-overlay-line {
+  transform: skewX(-25deg) translateX(280%);
+}
+.premium-card-magnetic-stripe {
+  height: 28px;
+  background: linear-gradient(to bottom, #1e1e1e, #0a0a0a);
+  width: 100%;
+  margin-top: 10px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+.premium-card-signature-panel {
+  height: 24px;
+  background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 6px, #e2e8f0 6px, #e2e8f0 12px);
+  border-radius: 3px;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  color: #1e293b;
+  font-family: 'Dancing Script', 'Caveat', 'Courier New', cursive, serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+.premium-card-cvv {
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0 7px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  font-weight: 800;
+  font-style: italic;
+  font-family: monospace;
+  font-size: 10px;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.25);
+  border: 1px solid #cbd5e1;
+}
+.rank-card-back-content::-webkit-scrollbar {
+  width: 4px;
+}
+.rank-card-back-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+.rank-card-back-content::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.25);
+  border-radius: 2px;
+}
+.rank-card-back-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(251, 191, 36, 0.45);
+}
 `;
 
 /* ─── No-Camera SVG icon: black camera + red diagonal slash ─── */
@@ -393,6 +586,7 @@ const StudentDashboard = () => {
     // Engagement & Gamification States
     const [activeLeftTab, setActiveLeftTab]           = useState('actions');
     const [streakStats, setStreakStats]               = useState(null);
+    const [isCardFlipped, setIsCardFlipped]           = useState(false);
     const [leaderboard, setLeaderboard]               = useState([]);
     const [leaderboardSortBy, setLeaderboardSortBy]   = useState('xp');
     const [dailyQuiz, setDailyQuiz]                   = useState(null);
@@ -781,9 +975,9 @@ const StudentDashboard = () => {
                 </div>
             </header>
 
-            {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            {/* ─────────────────────────────────────────────────────────────
                   PAGE BODY
-               â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+               ───────────────────────────────────────────────────────────── */}
             <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32">
 
                 {/* -- HERO GREETING BAR ------------------------------------------ */}
@@ -803,7 +997,6 @@ const StudentDashboard = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-sm" style={{ color: '#111827' }}>{user?.name?.split(" ")[0]}</span>
-                            <span className="text-sm">{String.fromCodePoint(0x1F44B)}</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -814,102 +1007,71 @@ const StudentDashboard = () => {
                     </div>
                 </motion.div>
 
-                {streakStats && (
+                {/* ── DAILY CHALLENGE — shown here when NOT yet done ── */}
+                <AnimatePresence mode="wait">
+                {!dailyQuizAttempted && dailyQuiz && (
                     <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.05 }}
-                        className="mb-5 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 border border-slate-800/80 shadow-xl shadow-indigo-950/20 relative overflow-hidden text-white"
+                        key="challenge-top"
+                        initial={{ opacity: 0, y: -16, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -16, scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+                        className="mb-5"
                     >
-                        {/* Glow effect */}
-                        <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-                        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
-
-                        {/* Level & XP Progress Column */}
-                        <div className="md:col-span-2 flex flex-col justify-center">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-md">
-                                        <IoSparklesOutline className="text-indigo-400 animate-pulse" size={18} />
+                        <div className="rounded-2xl border-2 border-orange-200 overflow-hidden bg-white relative" style={{ boxShadow: '0 4px 24px rgba(249,115,22,0.12)' }}>
+                            <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500" />
+                            {/* Urgent nudge banner */}
+                            <div className="px-4 pt-4 pb-0 flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 border border-orange-200 text-orange-600 animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />Today's Task
+                                </span>
+                                <span className="text-[9px] font-semibold text-gray-400">Complete before midnight to keep your streak!</span>
+                            </div>
+                            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-md shadow-orange-200 flex-shrink-0">
+                                        <IoSparklesOutline size={15} className="text-white" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }} />
                                     </div>
-                                    <div>
-                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Rank Progression</span>
-                                        <h4 className="text-xl font-black text-white tracking-tight leading-none mt-0.5">Level {streakStats.level || 1}</h4>
+                                    <div className="min-w-0">
+                                        <h2 className="font-black text-xs sm:text-sm text-gray-900 truncate">Daily Challenge</h2>
+                                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-semibold truncate">5 target-focused questions • Up to +70 XP</p>
                                     </div>
                                 </div>
-                                <span className="text-xs font-extrabold text-indigo-300 bg-indigo-950/80 border border-indigo-800/60 px-3 py-1 rounded-full shadow-inner">
-                                    {streakStats.totalXP % 1000} / 1000 XP
+                                <span className="text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600 flex-shrink-0">
+                                    {user?.examTarget && user.examTarget !== 'generic' ? EXAM_TARGET_NAMES[user.examTarget] : 'Select Target'}
                                 </span>
                             </div>
-                            {/* Progress bar */}
-                            <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-[1.5px] relative group cursor-help">
-                                <div 
-                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-500 relative"
-                                    style={{ width: `${(streakStats.totalXP % 1000) / 10}%` }}
-                                >
-                                    {/* Shimmer on progress */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
-                                </div>
-                                {/* Tooltip on hover */}
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-950 text-white border border-slate-800 text-[10px] font-bold px-2 py-1 rounded shadow-xl whitespace-nowrap z-30">
-                                    Total XP: {streakStats.totalXP} | Next Level in {1000 - (streakStats.totalXP % 1000)} XP
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Streak Badge & Stats Column */}
-                        <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-slate-800/80 pt-4 md:pt-0">
-                            {/* Streak Badge */}
-                            <div className="flex items-center gap-4 group relative cursor-help">
-                                <div className="relative">
-                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 flex items-center justify-center shadow-lg shadow-orange-500/35 text-white font-black text-lg transition-all group-hover:scale-105 duration-300 border border-amber-300/20">
-                                        <IoFlashOutline size={28} className="animate-pulse" />
-                                    </div>
-                                    <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-rose-600 border border-white text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-red-500/20">
-                                        {streakStats.currentStreak || 0}
-                                    </span>
-                                </div>
-                                <div>
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block leading-none mb-1">Daily Streak</span>
-                                    <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
-                                        {streakStats.currentStreak || 0} Days Active
-                                    </span>
-                                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
-                                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                                        Active Today!
-                                    </span>
-                                </div>
-
-                                {/* Popover details */}
-                                <div className="absolute bottom-full right-0 mb-2.5 w-56 hidden group-hover:block bg-slate-950/95 backdrop-blur text-white text-[11px] p-3.5 rounded-xl shadow-2xl border border-slate-800 z-30 space-y-2">
-                                    <p className="font-extrabold text-orange-400 border-b border-slate-800 pb-1.5 flex items-center justify-between">
-                                        <span>Streak & XP Details</span>
-                                        <IoFlashOutline size={12} />
-                                    </p>
-                                    <div className="flex justify-between font-medium">
-                                        <span className="text-slate-400">Current Streak:</span>
-                                        <span className="font-bold text-white">{streakStats.currentStreak || 0} days</span>
-                                    </div>
-                                    <div className="flex justify-between font-medium">
-                                        <span className="text-slate-400">Longest Streak:</span>
-                                        <span className="font-bold text-white">{streakStats.longestStreak || 0} days</span>
-                                    </div>
-                                    <div className="flex justify-between font-medium">
-                                        <span className="text-slate-400">Total XP Earned:</span>
-                                        <span className="font-bold text-white">{streakStats.totalXP || 0} XP</span>
-                                    </div>
-                                    {streakStats.achievements && (
-                                        <div className="flex justify-between font-medium">
-                                            <span className="text-slate-400">Achievements:</span>
-                                            <span className="font-bold text-white">{streakStats.achievements.length || 0} unlocked</span>
+                            <div className="px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-6">
+                                    {['+50 XP', '+20 Bonus', 'Streak'].map((label, i) => (
+                                        <div key={i} className="flex flex-col items-center text-center">
+                                            <span className="text-xs font-black text-gray-800 whitespace-nowrap">{label}</span>
+                                            <span className="text-[9px] text-gray-400 whitespace-nowrap">{i === 0 ? 'base reward' : i === 1 ? 'if 5/5' : 'kept alive'}</span>
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
+                                <button
+                                    onClick={() => {
+                                        if (!user?.examTarget || user.examTarget === 'generic') {
+                                            navigate('/student/profile?focus=examTarget');
+                                            return;
+                                        }
+                                        setQuizAnswers([null, null, null, null, null]);
+                                        setCurrentQuizQuestionIndex(0);
+                                        setShowQuizModal(true);
+                                        setQuizError('');
+                                    }}
+                                    className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-sm text-white transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-orange-400/25 self-stretch sm:self-auto"
+                                    style={{ background: 'linear-gradient(135deg, #F97316, #FBBF24)' }}
+                                >
+                                    <IoFlashOutline size={15} className="animate-bounce" />
+                                    Start Challenge
+                                </button>
                             </div>
                         </div>
                     </motion.div>
                 )}
-
+                </AnimatePresence>
 
                 {/* â”€â”€ STATS ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <motion.div
@@ -1079,13 +1241,14 @@ const StudentDashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
                     {/* LEFT: Quick Actions list */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.18, duration: 0.45 }}
-                        className="lg:col-span-3 rounded-2xl border border-gray-200 overflow-hidden bg-white"
-                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-                    >
+                    <div className="lg:col-span-3 flex flex-col gap-4">
+                        <motion.div
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.18, duration: 0.45 }}
+                            className="w-full rounded-2xl border border-gray-200 overflow-hidden bg-white"
+                            style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                        >
                         {/* Header with Tab Switcher */}
                         <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                             <div className="flex gap-1.5 bg-gray-200/60 p-1 rounded-xl">
@@ -1195,7 +1358,7 @@ const StudentDashboard = () => {
                                             {item.live && !item._isNew && (
                                                 <span className="absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
                                                     style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
-                                                    <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: '#ef4444' }} />LIVE
+                                                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#ef4444' }} />LIVE
                                                 </span>
                                             )}
 
@@ -1331,6 +1494,67 @@ const StudentDashboard = () => {
                         )}
                     </motion.div>
 
+                    {/* ── DAILY CHALLENGE — shown here when COMPLETED ── */}
+                    <AnimatePresence mode="wait">
+                        {dailyQuizAttempted && dailyQuiz && (
+                            <motion.div
+                                key="challenge-completed"
+                                initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 16, scale: 0.98 }}
+                                transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+                                className="rounded-2xl border border-emerald-200 bg-white overflow-hidden relative"
+                                style={{ boxShadow: '0 4px 20px rgba(16,185,129,0.08)' }}
+                            >
+                                <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500" />
+                                <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-100 flex-shrink-0">
+                                            <IoCheckmarkCircleOutline size={16} className="text-white" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h2 className="font-black text-xs sm:text-sm text-gray-900 truncate">Daily Challenge</h2>
+                                            <p className="text-[9px] sm:text-[10px] text-gray-400 font-semibold truncate">Completed for today! Keep it up!</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex-shrink-0">
+                                        {user?.examTarget && user.examTarget !== 'generic' ? EXAM_TARGET_NAMES[user.examTarget] : 'Select Target'}
+                                    </span>
+                                </div>
+                                
+                                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100 flex flex-col items-center">
+                                            <span className="text-xs font-black text-emerald-700">{dailyQuizAttempt?.score || 0}/5</span>
+                                            <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-wide">Score</span>
+                                        </div>
+                                        <div className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-100 flex flex-col items-center">
+                                            <span className="text-xs font-black text-amber-700">+{dailyQuizAttempt?.xpAwarded || 0}</span>
+                                            <span className="text-[8px] font-bold text-amber-500 uppercase tracking-wide">XP Earned</span>
+                                        </div>
+                                        <div className="text-left">
+                                            <h4 className="text-xs font-black text-gray-800">Excellent Work!</h4>
+                                            <p className="text-[10px] text-gray-400 font-semibold">Streak maintained successfully</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <button
+                                        onClick={() => {
+                                            setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]);
+                                            setCurrentQuizQuestionIndex(0);
+                                            setShowQuizModal(true);
+                                        }}
+                                        className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl font-extrabold text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-all active:scale-95 flex-shrink-0 self-stretch sm:self-auto"
+                                    >
+                                        <IoDocumentTextOutline size={14} />
+                                        Review Solutions
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
                     {/* RIGHT: Learning + ID card shortcuts */}
                     <motion.div
                         initial={{ opacity: 0, y: 16 }}
@@ -1338,89 +1562,6 @@ const StudentDashboard = () => {
                         transition={{ delay: 0.24, duration: 0.45 }}
                         className="lg:col-span-2 flex flex-col gap-4"
                     >
-                        {/* Daily Target Challenge Card */}
-                        <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white relative" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-400 to-amber-500" />
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
-                                        <IoSparklesOutline size={14} className="text-orange-500 animate-spin" style={{ animationDuration: '6s' }} />
-                                    </div>
-                                    <h2 className="font-bold text-sm" style={{ color: '#111827' }}>Daily Challenge</h2>
-                                </div>
-                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-50 border border-orange-100 text-orange-650">
-                                    {EXAM_TARGET_NAMES[user?.examTarget] || 'General Aptitude'}
-                                </span>
-                            </div>
-
-                            <div className="p-4 flex flex-col gap-3">
-                                {dailyQuiz ? (
-                                    dailyQuizAttempted ? (
-                                        // Completed State
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3.5">
-                                                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                                                    ✓
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-emerald-800">Challenge Completed!</h4>
-                                                    <p className="text-[11px] text-emerald-600 font-medium">
-                                                        You scored {dailyQuizAttempt?.score || 0}/5 and earned +{dailyQuizAttempt?.xpAwarded || 0} XP
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]);
-                                                    setCurrentQuizQuestionIndex(0);
-                                                    setShowQuizModal(true);
-                                                }}
-                                                className="w-full py-2.5 bg-gray-50 border border-gray-200 text-gray-700 font-extrabold rounded-xl text-xs hover:bg-gray-100 transition-all flex items-center justify-center gap-1.5"
-                                            >
-                                                <IoDocumentTextOutline size={14} />
-                                                Review Solutions
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        // Unattempted State
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center bg-orange-50/50 border border-orange-100/50 rounded-xl p-3">
-                                                <div>
-                                                    <h4 className="text-xs font-black text-gray-805">Date-Locked Quiz</h4>
-                                                    <p className="text-[10px] text-gray-400 mt-0.5">5 target-focused questions generated daily</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-xs font-black text-orange-600 block">Up to +70 XP</span>
-                                                    <span className="text-[9px] text-gray-400 font-semibold block leading-none">+ Streak Boost</span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    if (!user?.examTarget || user.examTarget === 'generic') {
-                                                        navigate('/student/profile?focus=examTarget');
-                                                        return;
-                                                    }
-                                                    setQuizAnswers([null, null, null, null, null]);
-                                                    setCurrentQuizQuestionIndex(0);
-                                                    setShowQuizModal(true);
-                                                    setQuizError('');
-                                                }}
-                                                className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold rounded-xl text-xs hover:opacity-95 transition-all shadow-md shadow-orange-500/10 flex items-center justify-center gap-1.5"
-                                            >
-                                                <IoFlashOutline size={14} className="animate-bounce" />
-                                                Start Daily Challenge
-                                            </button>
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-4 gap-2">
-                                        <div className="w-5 h-5 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-                                        <p className="text-[10px] font-semibold text-gray-400">Loading daily challenge...</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Learning section */}
                         <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
                             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
