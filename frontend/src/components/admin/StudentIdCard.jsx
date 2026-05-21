@@ -134,7 +134,7 @@ const StudentIdCard = ({ student }) => {
                     <div className="w-full grid grid-cols-2 gap-y-4 gap-x-2 text-sm border-t border-gray-100 pt-4">
                         <div className="text-left">
                             <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">ID Number</p>
-                            <p className="font-mono font-bold text-gray-700 text-sm">HL-{studentId}</p>
+                            <p className="font-mono font-bold text-gray-700 text-sm">AL-{studentId}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
