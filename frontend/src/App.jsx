@@ -110,6 +110,7 @@ const StudentChatHistory = lazy(() => import('./pages/admin/StudentChatHistory')
 const VacantSeats = lazy(() => import('./pages/admin/VacantSeats'));
 const SubAdminManagement = lazy(() => import('./pages/admin/SubAdminManagement'));
 const SubAdminDashboard = lazy(() => import('./pages/admin/SubAdminDashboard'));
+const StudentActivities = lazy(() => import('./pages/admin/StudentActivities'));
 
 // Student Pages - Lazy Loaded
 const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
@@ -207,6 +208,7 @@ function App() {
                 <Route path="/admin/chat-history" element={<ProtectedRoute superAdminOnly><StudentChatHistory /></ProtectedRoute>} />
                 <Route path="/admin/manage-cards" element={<ProtectedRoute superAdminOnly><ManageCards /></ProtectedRoute>} />
                 <Route path="/admin/sub-admins" element={<ProtectedRoute superAdminOnly><SubAdminManagement /></ProtectedRoute>} />
+                <Route path="/admin/activities" element={<ProtectedRoute superAdminOnly><StudentActivities /></ProtectedRoute>} />
 
                 {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
                 <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentManagement /></ProtectedRoute>} />

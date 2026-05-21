@@ -4286,3 +4286,150 @@ exports.swapSeats = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Get engagement activities of all students
+// @route   GET /api/admin/engagement/activities
+exports.getStudentEngagementActivities = async (req, res) => {
+    try {
+        const StudyStreak = require('../models/StudyStreak');
+        const DailyQuizAttempt = require('../models/DailyQuizAttempt');
+        const User = require('../models/User');
+
+        const { search = '', page = 1, limit = 20, sortBy = 'xp' } = req.query;
+
+        // Build query for students
+        const userQuery = { role: 'student', isDisabled: { $ne: true } };
+        if (search) {
+            userQuery.name = { $regex: search, $options: 'i' };
+        }
+
+        // Fetch matching students
+        const students = await User.find(userQuery).select('name studentId email mobile profileImage examTarget');
+        const studentIds = students.map(s => s._id);
+
+        // Fetch streaks
+        const streaks = await StudyStreak.find({ user: { $in: studentIds } });
+        const streakMap = {};
+        streaks.forEach(s => {
+            streakMap[s.user.toString()] = s;
+        });
+
+        // Fetch quiz attempt counts for these students
+        const quizAttempts = await DailyQuizAttempt.aggregate([
+            { $match: { user: { $in: studentIds } } },
+            { $group: { _id: '$user', count: { $sum: 1 } } }
+        ]);
+        const quizCountMap = {};
+        quizAttempts.forEach(q => {
+            quizCountMap[q._id.toString()] = q.count;
+        });
+
+        // Combine into rich activity records
+        let records = students.map(student => {
+            const streakInfo = streakMap[student._id.toString()] || {
+                currentStreak: 0,
+                longestStreak: 0,
+                totalXP: 0,
+                level: 1,
+                totalFocusTime: 0,
+                achievements: []
+            };
+
+            return {
+                _id: student._id,
+                name: student.name,
+                studentId: student.studentId,
+                email: student.email,
+                mobile: student.mobile,
+                profileImage: student.profileImage,
+                examTarget: student.examTarget,
+                currentStreak: streakInfo.currentStreak,
+                longestStreak: streakInfo.longestStreak,
+                totalXP: streakInfo.totalXP,
+                level: streakInfo.level,
+                totalFocusTime: streakInfo.totalFocusTime,
+                achievementsCount: streakInfo.achievements ? streakInfo.achievements.length : 0,
+                quizAttemptsCount: quizCountMap[student._id.toString()] || 0
+            };
+        });
+
+        // Sort records
+        if (sortBy === 'xp') {
+            records.sort((a, b) => b.totalXP - a.totalXP);
+        } else if (sortBy === 'streak') {
+            records.sort((a, b) => b.currentStreak - a.currentStreak);
+        } else if (sortBy === 'focus') {
+            records.sort((a, b) => b.totalFocusTime - a.totalFocusTime);
+        } else if (sortBy === 'quiz') {
+            records.sort((a, b) => b.quizAttemptsCount - a.quizAttemptsCount);
+        }
+
+        // Pagination
+        const total = records.length;
+        const startIndex = (parseInt(page) - 1) * parseInt(limit);
+        const endIndex = startIndex + parseInt(limit);
+        const paginatedRecords = records.slice(startIndex, endIndex);
+
+        res.json({
+            success: true,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / parseInt(limit)),
+            activities: paginatedRecords
+        });
+    } catch (error) {
+        console.error('Get student engagement activities error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Get complete engagement and test details of a specific student
+// @route   GET /api/admin/students/:id/engagement-details
+exports.getStudentEngagementDetails = async (req, res) => {
+    try {
+        const studentId = req.params.id;
+        const User = require('../models/User');
+        const StudyStreak = require('../models/StudyStreak');
+        const DailyQuizAttempt = require('../models/DailyQuizAttempt');
+        const MockTestAttempt = require('../models/MockTestAttempt');
+
+        const student = await User.findById(studentId).select('name studentId email mobile profileImage examTarget');
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        // Fetch StudyStreak/Activity logs
+        let streak = await StudyStreak.findOne({ user: studentId });
+        if (!streak) {
+            streak = {
+                currentStreak: 0,
+                longestStreak: 0,
+                totalXP: 0,
+                level: 1,
+                totalFocusTime: 0,
+                achievements: [],
+                activityLog: []
+            };
+        }
+
+        // Fetch Daily Quiz Attempts (populated with DailyQuiz questions to see options/subject/date)
+        const quizAttempts = await DailyQuizAttempt.find({ user: studentId })
+            .populate('quiz')
+            .sort({ completedAt: -1 });
+
+        // Fetch Mock Test Attempts (metadata)
+        const mockTestAttempts = await MockTestAttempt.find({ user: studentId })
+            .sort({ startedAt: -1 });
+
+        res.json({
+            success: true,
+            student,
+            streak,
+            quizAttempts,
+            mockTestAttempts
+        });
+    } catch (error) {
+        console.error('Get student engagement details error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};

@@ -133,6 +133,7 @@ const AdminDashboard = () => {
         { title: 'Discussion Management', path: '/admin/chat',               icon: IoChatbubblesOutline,      color: 'from-violet-500 to-fuchsia-500', desc: 'Monitor chat rooms & students' },
         { title: 'Kiosk Mode',            path: '/admin/kiosk',              icon: IoScanOutline,             color: 'from-purple-500 to-pink-500',    desc: 'QR kiosk for entry scanning' },
         { title: 'Vacant Seats',          path: '/admin/vacant-seats',       icon: IoSearchOutline,           color: 'from-emerald-500 to-teal-500',   desc: 'View all vacant seat-shift slots' },
+        { title: 'Engagement & Activity Logs', path: '/admin/activities',   icon: IoSparklesOutline,         color: 'from-orange-500 to-amber-500',   desc: 'Streaks, XP, mock tests & target choices', isNew: true },
         { title: 'Manage Cards',          path: '/admin/manage-cards',       icon: IoGridOutline,             color: 'from-yellow-400 to-orange-500',  desc: 'Dashboard cards · AI credits · Reorder' },
     ];
 

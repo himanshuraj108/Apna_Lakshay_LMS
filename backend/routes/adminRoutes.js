@@ -58,7 +58,9 @@ const {
     resetAllQrTokens,
     markAttendanceByQrAdmin,
     getStudentMockTests,
-    swapSeats
+    swapSeats,
+    getStudentEngagementActivities,
+    getStudentEngagementDetails
 } = require('../controllers/adminController');
 
 // Settings come from settingsController
@@ -245,5 +247,9 @@ router.post('/sub-admins', superAdminOnly, createSubAdmin);
 router.put('/sub-admins/:id', superAdminOnly, updateSubAdmin);
 router.delete('/sub-admins/:id', superAdminOnly, deleteSubAdmin);
 router.post('/verify-subadmin-pin', verifySubAdminPin); // accessible by subadmins
+
+// Engagement Activities (Super Admin only)
+router.get('/engagement/activities', superAdminOnly, getStudentEngagementActivities);
+router.get('/students/:id/engagement-details', superAdminOnly, getStudentEngagementDetails);
 
 module.exports = router;
