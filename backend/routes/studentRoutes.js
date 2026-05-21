@@ -37,6 +37,7 @@ const { protect, checkMaintenanceMode, authorizeActive } = require('../middlewar
 
 
 const { getCardConfig } = require('../controllers/manageCardsController');
+const { getStreakStats, getLeaderboard, getDailyQuiz, submitDailyQuiz } = require('../controllers/engagementController');
 
 // All routes are protected and maintenance-checked
 router.use(protect, checkMaintenanceMode);
@@ -74,6 +75,12 @@ router.post('/mock-test/generate-more/:attemptId', generateMoreQuestions);
 router.post('/mock-test/evaluate', evaluateTest);
 router.post('/mock-test/submit/:attemptId', submitTest);
 router.get('/mock-test/history', getMyMockTests);
+
+// Engagement (Streak, Leaderboard, Daily Quiz)
+router.get('/engagement/streak-stats', getStreakStats);
+router.get('/engagement/leaderboard', getLeaderboard);
+router.get('/engagement/daily-quiz', getDailyQuiz);
+router.post('/engagement/daily-quiz/submit', submitDailyQuiz);
 
 // My Seat
 router.get('/seat', getMySeat);
