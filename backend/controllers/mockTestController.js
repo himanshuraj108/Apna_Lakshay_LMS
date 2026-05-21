@@ -104,6 +104,20 @@ const EXAM_PATTERNS = {
             { id: 'maths', name: 'Mathematics', weight: 30, topics: 'Calculus, Algebra, Coordinate Geometry, Vectors, 3D Geometry, Probability' }
         ]
     },
+    'neet_ug': {
+        name: 'NEET UG',
+        type: 'National Testing Agency',
+        desc: 'National Eligibility cum Entrance Test for undergraduate medical courses.',
+        duration: 180,
+        positive: 4,
+        negative: 1,
+        totalQuestions: 180,
+        sections: [
+            { id: 'physics', name: 'Physics', weight: 45, topics: 'Mechanics, Electrodynamics, Optics, Thermodynamics, Modern Physics' },
+            { id: 'chemistry', name: 'Chemistry', weight: 45, topics: 'Physical Chemistry, Inorganic Chemistry, Organic Chemistry' },
+            { id: 'biology', name: 'Biology', weight: 90, topics: 'Diversity in Living World, Cell Structure and Function, Plant Physiology, Human Physiology, Reproduction, Genetics and Evolution, Biology and Human Welfare, Biotechnology, Ecology' }
+        ]
+    },
     'rrb_ntpc': {
         name: 'RRB NTPC CBT-1',
         type: 'Railway Recruitment Boards',
@@ -144,7 +158,6 @@ const EXAM_ALIASES = {
     'ssc_cpo': 'ssc_cgl',
     'upsc_cds': 'upsc_cse',
     'rrb_gd': 'rrb_ntpc',
-    'neet_ug': 'jee_main', // we can add specific later, map to generic science/math for now
 };
 
 // ─── Groq API Call ───────────────────────────────────────────────────
@@ -328,7 +341,8 @@ const generateTest = async (req, res) => {
             user.mockTestCreditsResetDate = currentDateIST;
         }
 
-        if (user.mockTestCredits <= 0) {
+        const totalAvailable = (user.mockTestCredits || 0) + (user.bonusMockTestCredits || 0);
+        if (totalAvailable <= 0) {
             return res.status(403).json({ success: false, message: `Daily Mock Test limit reached (0/2). Resets tomorrow at midnight.` });
         }
 
@@ -456,7 +470,11 @@ const generateTest = async (req, res) => {
         }
 
         // Deduct credit ONLY after questions are successfully generated
-        user.mockTestCredits -= 1;
+        if (user.mockTestCredits > 0) {
+            user.mockTestCredits -= 1;
+        } else if (user.bonusMockTestCredits > 0) {
+            user.bonusMockTestCredits -= 1;
+        }
         await user.save({ validateBeforeSave: false });
 
         // Build the exam config for subsequent "generate more" calls
@@ -722,12 +740,17 @@ const getCredits = async (req, res) => {
             await user.save({ validateBeforeSave: false });
         }
 
-        res.json({ success: true, credits: user.mockTestCredits, maxCredits: 2 });
+        res.json({
+            success: true,
+            credits: user.mockTestCredits,
+            bonusCredits: user.bonusMockTestCredits || 0,
+            maxCredits: 2
+        });
     } catch (err) {
         console.error('getCredits error:', err.message);
         res.status(500).json({ success: false, message: 'Failed to fetch credits' });
     }
 };
 
-module.exports = { getExamPattern, generateTest, generateMoreQuestions, evaluateTest, submitTest, getMyMockTests, getCredits };
+module.exports = { getExamPattern, generateTest, generateMoreQuestions, evaluateTest, submitTest, getMyMockTests, getCredits, callGroq, extractJSON };
 

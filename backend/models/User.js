@@ -65,6 +65,15 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 2
     },
+    bonusMockTestCredits: {
+        type: Number,
+        default: 0
+    },
+    examTarget: {
+        type: String,
+        enum: ['ssc_cgl', 'ssc_chsl', 'ssc_gd', 'ssc_mts', 'ssc_cpo', 'upsc_cse', 'upsc_cds', 'ibps_po', 'ibps_clerk', 'sbi_po', 'sbi_clerk', 'rrb_ntpc', 'jee_main', 'neet_ug', 'generic'],
+        default: 'generic'
+    },
     mockTestCreditsResetDate: {
         type: String,
         default: null
