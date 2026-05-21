@@ -42,6 +42,8 @@ const Profile = () => {
     const location = useLocation();
     const selectRef = useRef(null);
     const [pulseHighlight, setPulseHighlight] = useState(false);
+    const [showQrZoom, setShowQrZoom] = useState(false);
+    const [isCardFlipped, setIsCardFlipped] = useState(false);
     // ... existing hooks ...
     const { shifts, isCustom, getShiftTimeRange } = useShifts();
     const [profile, setProfile] = useState(null);
@@ -383,43 +385,143 @@ const Profile = () => {
                 {/* ── Main Grid ── */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
 
-                    {/* QR / ID Card */}
+                    {/* ── Flip ID Card ── */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                        className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col items-center text-center overflow-hidden relative"
-                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                        className="flex flex-col items-center"
+                        style={{ perspective: '1000px' }}
                     >
-                        <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #F97316, #FB923C, transparent)' }} />
-                        <div className="flex items-center gap-2 mb-4 self-start">
-                            <IoQrCode className="text-orange-400" size={16} />
-                            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#9CA3AF' }}>Digital ID</span>
+                        <style>{`
+                            .id-card-wrap { width: 280px; height: 175px; position: relative; cursor: pointer; }
+                            .id-card-wrap:hover .id-card-inner { box-shadow: 0 20px 60px rgba(0,0,0,0.45); }
+                            .id-card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.65s cubic-bezier(0.4,0.2,0.2,1), box-shadow 0.3s; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.28); }
+                            .id-card-inner.flipped { transform: rotateY(180deg); }
+                            .id-card-face { position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; -webkit-backface-visibility: hidden; overflow: hidden; }
+                            .id-card-back { transform: rotateY(180deg); }
+                            .id-card-shine { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 50%, rgba(255,255,255,0.06) 100%); pointer-events: none; border-radius: 14px; }
+                            .id-card-pattern { position: absolute; inset: 0; opacity: 0.06; background-image: repeating-linear-gradient(45deg, #fff 0, #fff 1px, transparent 0, transparent 50%); background-size: 8px 8px; pointer-events: none; }
+                        `}</style>
+
+                        <div className="id-card-wrap" onClick={() => setIsCardFlipped(f => !f)}>
+                            <div className={`id-card-inner${isCardFlipped ? ' flipped' : ''}`}>
+
+                                {/* ── FRONT ── */}
+                                <div className="id-card-face" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1040 40%, #2d1060 100%)' }}>
+                                    <div className="id-card-pattern" />
+                                    <div className="id-card-shine" />
+                                    {/* Orange accent top stripe */}
+                                    <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg,#F97316,#FBBF24,#F97316)' }} />
+
+                                    {/* Header */}
+                                    <div style={{ position:'absolute', top:'10px', left:'12px', right:'12px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                        <div>
+                                            <p style={{ fontSize:'8px', fontWeight:900, color:'#F97316', letterSpacing:'0.15em', textTransform:'uppercase', margin:0 }}>APNA LAKSHYA</p>
+                                            <p style={{ fontSize:'6px', color:'rgba(255,255,255,0.45)', letterSpacing:'0.1em', textTransform:'uppercase', margin:0 }}>Library Member Card</p>
+                                        </div>
+                                        <div style={{ width:'22px', height:'22px', borderRadius:'6px', background:'linear-gradient(135deg,#F97316,#FB923C)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                            <IoShieldCheckmark size={12} style={{ color:'#fff' }} />
+                                        </div>
+                                    </div>
+
+                                    {/* Main content row */}
+                                    <div style={{ position:'absolute', top:'34px', left:'12px', right:'12px', bottom:'28px', display:'flex', alignItems:'center', gap:'10px' }}>
+                                        {/* Left: avatar + info */}
+                                        <div style={{ flex:1, minWidth:0 }}>
+                                            <div style={{ width:'36px', height:'36px', borderRadius:'8px', background:'linear-gradient(135deg,#F97316,#FBBF24)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'6px', border:'2px solid rgba(255,255,255,0.2)' }}>
+                                                <IoPerson size={18} style={{ color:'#fff' }} />
+                                            </div>
+                                            <p style={{ fontSize:'9px', fontWeight:900, color:'#ffffff', letterSpacing:'0.04em', margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{profile?.name}</p>
+                                            <p style={{ fontSize:'6px', color:'rgba(255,255,255,0.45)', margin:'0 0 3px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{profile?.email}</p>
+                                            <p style={{ fontSize:'6px', color:'rgba(255,255,255,0.35)', margin:0, fontFamily:'monospace', letterSpacing:'0.08em' }}>
+                                                AL-{(profile?._id || profile?.id || '').slice(-6).toUpperCase()}
+                                            </p>
+                                            {/* Status badge */}
+                                            <div style={{ display:'inline-flex', alignItems:'center', gap:'4px', background: profile?.isActive ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)', border:`1px solid ${profile?.isActive ? 'rgba(74,222,128,0.35)' : 'rgba(248,113,113,0.35)'}`, borderRadius:'99px', padding:'2px 7px', marginTop:'5px' }}>
+                                                <span style={{ width:'5px', height:'5px', borderRadius:'50%', background: profile?.isActive ? '#4ade80' : '#f87171', display:'inline-block', boxShadow: profile?.isActive ? '0 0 5px #4ade80' : 'none' }} />
+                                                <span style={{ fontSize:'6px', fontWeight:800, color: profile?.isActive ? '#4ade80' : '#f87171', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                                                    {profile?.isActive ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: QR code */}
+                                        {profile?.isActive && profile?.seat ? (
+                                            <div
+                                                onClick={e => { e.stopPropagation(); setShowQrZoom(true); }}
+                                                title="Tap to zoom QR"
+                                                style={{ background:'#ffffff', borderRadius:'8px', padding:'5px', boxShadow:'0 4px 12px rgba(0,0,0,0.4)', flexShrink:0, cursor:'zoom-in', position:'relative' }}
+                                            >
+                                                <QRCodeSVG
+                                                    value={JSON.stringify({ token: user?.qrToken, id: user?.id || user?._id })}
+                                                    size={62} level="H" includeMargin={false}
+                                                />
+                                                <div style={{ position:'absolute', bottom:'-3px', right:'-3px', background:'#F97316', borderRadius:'50%', width:'14px', height:'14px', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 1px 4px rgba(0,0,0,0.4)' }}>
+                                                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35" strokeLinecap="round"/><path d="M11 8v6M8 11h6" strokeLinecap="round"/></svg>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ width:'72px', height:'72px', borderRadius:'8px', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                                <IoLockClosed size={20} style={{ color:'rgba(255,255,255,0.25)' }} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Bottom row */}
+                                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'24px', borderTop:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', background:'rgba(0,0,0,0.2)' }}>
+                                        <span style={{ fontSize:'6px', color:'rgba(255,255,255,0.3)', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>
+                                            {profile?.seat ? `Seat: ${profile.seatNumber || profile.seat?.number || profile.seat}` : 'No Seat Assigned'}
+                                        </span>
+                                        <span style={{ fontSize:'6px', color:'rgba(255,140,0,0.65)', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' }}>TAP TO FLIP →</span>
+                                    </div>
+                                </div>
+
+                                {/* ── BACK (Instructions) ── */}
+                                <div className="id-card-back id-card-face" style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1040 40%, #2d1060 100%)' }}>
+                                    <div className="id-card-pattern" />
+                                    <div className="id-card-shine" />
+                                    <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:'linear-gradient(90deg,#F97316,#FBBF24,#F97316)' }} />
+
+                                    {/* Mag stripe */}
+                                    <div style={{ position:'absolute', top:'16px', left:0, right:0, height:'22px', background:'linear-gradient(to bottom,#111,#000)', boxShadow:'inset 0 2px 4px rgba(0,0,0,0.8)' }} />
+
+                                    {/* Tap back hint */}
+                                    <div style={{ position:'absolute', top:'6px', right:'10px', fontSize:'6px', color:'rgba(255,255,255,0.3)', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>← TAP TO FLIP BACK</div>
+
+                                    {/* Rules content */}
+                                    <div style={{ position:'absolute', top:'44px', left:'12px', right:'12px', bottom:'24px', overflow:'hidden' }}>
+                                        <div style={{ display:'flex', alignItems:'center', gap:'5px', marginBottom:'7px' }}>
+                                            <IoQrCode size={9} style={{ color:'#F97316', flexShrink:0 }} />
+                                            <span style={{ fontSize:'7px', fontWeight:900, color:'#ffffff', letterSpacing:'0.12em', textTransform:'uppercase' }}>LMS Rules &amp; Rewards</span>
+                                        </div>
+                                        {[
+                                            { icon:'⚡', title:'Daily Streak', desc:'Check-in daily to keep your streak alive.' },
+                                            { icon:'✨', title:'Earn XP', desc:'+50 XP check-in · +70 XP Daily Quiz.' },
+                                            { icon:'📈', title:'Level Up', desc:'Every 1,000 XP = new rank level!' },
+                                            { icon:'🎁', title:'Rewards', desc:'Milestones unlock mock test credits.' },
+                                        ].map((item, i) => (
+                                            <div key={i} style={{ display:'flex', gap:'5px', marginBottom:'5px' }}>
+                                                <span style={{ fontSize:'9px', flexShrink:0, lineHeight:1 }}>{item.icon}</span>
+                                                <div>
+                                                    <p style={{ fontSize:'7px', fontWeight:900, color:'#ffffff', margin:'0 0 1px', letterSpacing:'0.03em' }}>{item.title}</p>
+                                                    <p style={{ fontSize:'6px', color:'rgba(255,255,255,0.45)', margin:0, lineHeight:1.4 }}>{item.desc}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Bottom bar */}
+                                    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'24px', borderTop:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', background:'rgba(0,0,0,0.2)' }}>
+                                        <span style={{ fontSize:'6px', color:'rgba(255,255,255,0.3)', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>APNA LAKSHYA LMS</span>
+                                        <span style={{ fontSize:'6px', color:'rgba(255,140,0,0.6)', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' }}>COMPETE &amp; EXCEL</span>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
 
-                        {profile?.isActive && profile?.seat ? (
-                            <>
-                                <div className="p-3 bg-white rounded-xl shadow-md border border-gray-100 mb-4">
-                                    <QRCodeSVG
-                                        value={JSON.stringify({ token: user.qrToken, id: user.id })}
-                                        size={140} level="H" includeMargin={false}
-                                    />
-                                </div>
-                                <p className="font-bold text-base" style={{ color: '#111827' }}>{user?.name}</p>
-                                <p className="text-orange-500 text-xs mt-1 font-mono">
-                                    {user?.qrToken ? '🔒 Secure Token Active' : 'Legacy ID Mode'}
-                                </p>
-                                <p className="text-xs mt-3" style={{ color: '#9CA3AF' }}>Scan for Entry / Exit</p>
-                            </>
-                        ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center py-6">
-                                <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-4">
-                                    <IoLockClosed size={28} style={{ color: '#D1D5DB' }} />
-                                </div>
-                                <p className="font-semibold text-sm" style={{ color: '#6B7280' }}>ID Unavailable</p>
-                                <p className="text-xs mt-1.5 max-w-[140px] leading-relaxed" style={{ color: '#9CA3AF' }}>
-                                    {memberStatus === 'inactive' ? 'Membership inactive' : 'Pending seat allocation'}
-                                </p>
-                            </div>
-                        )}
+                        <p className="text-xs mt-3 text-gray-400">Tap card to flip · Tap QR to zoom</p>
                     </motion.div>
+
+
 
                     {/* Info Card */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
@@ -778,6 +880,57 @@ const Profile = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* ── QR ZOOM MODAL ── */}
+            {showQrZoom && (
+                <div
+                    onClick={() => setShowQrZoom(false)}
+                    style={{ position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.80)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',display:'flex',alignItems:'center',justifyContent:'center' }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)',borderRadius:'20px',padding:'24px 20px 20px',boxShadow:'0 24px 80px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.08)',display:'flex',flexDirection:'column',alignItems:'center',maxWidth:'300px',width:'90%' }}
+                    >
+                        {/* Header row */}
+                        <div style={{ display:'flex',alignItems:'center',gap:'8px',marginBottom:'16px',width:'100%' }}>
+                            <div style={{ width:'30px',height:'30px',borderRadius:'9px',background:'linear-gradient(135deg,#F97316,#FB923C)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>
+                                <IoQrCode size={15} style={{ color:'#fff' }} />
+                            </div>
+                            <div style={{ flex:1 }}>
+                                <p style={{ fontSize:'12px',fontWeight:900,color:'#ffffff',letterSpacing:'0.08em',textTransform:'uppercase',margin:0 }}>Digital ID</p>
+                                <p style={{ fontSize:'9px',color:'rgba(255,255,255,0.45)',fontWeight:600,margin:0 }}>Scan for Entry / Exit</p>
+                            </div>
+                            <button onClick={() => setShowQrZoom(false)} style={{ background:'rgba(255,255,255,0.08)',border:'none',borderRadius:'50%',width:'28px',height:'28px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'rgba(255,255,255,0.6)',flexShrink:0 }}>
+                                <IoClose size={15} />
+                            </button>
+                        </div>
+
+                        {/* QR code */}
+                        <div style={{ background:'#ffffff',borderRadius:'14px',padding:'14px',boxShadow:'0 8px 32px rgba(0,0,0,0.5)',marginBottom:'14px' }}>
+                            <QRCodeSVG
+                                value={JSON.stringify({ token: user?.qrToken, id: user?.id || user?._id })}
+                                size={210}
+                                level="H"
+                                includeMargin={false}
+                            />
+                        </div>
+
+                        {/* Name & ID */}
+                        <p style={{ fontSize:'13px',fontWeight:900,color:'#ffffff',letterSpacing:'0.1em',textTransform:'uppercase',margin:'0 0 3px' }}>{profile?.name}</p>
+                        <p style={{ fontSize:'10px',color:'rgba(255,255,255,0.4)',fontFamily:'monospace',letterSpacing:'0.12em',margin:'0 0 12px' }}>
+                            AL-{(profile?._id || profile?.id || user?._id || user?.id || '').slice(-6).toUpperCase()}
+                        </p>
+
+                        {/* Active badge */}
+                        <div style={{ display:'flex',alignItems:'center',gap:'6px',background:'rgba(74,222,128,0.12)',border:'1px solid rgba(74,222,128,0.3)',borderRadius:'99px',padding:'5px 14px' }}>
+                            <span style={{ width:'7px',height:'7px',borderRadius:'50%',background:'#4ade80',display:'inline-block',boxShadow:'0 0 6px #4ade80' }} />
+                            <span style={{ fontSize:'9px',fontWeight:800,color:'#4ade80',letterSpacing:'0.08em',textTransform:'uppercase' }}>Active Member</span>
+                        </div>
+
+                        <p style={{ fontSize:'8px',color:'rgba(255,255,255,0.22)',marginTop:'12px',textAlign:'center' }}>Tap outside to dismiss</p>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
