@@ -585,6 +585,12 @@ pm2 start server.js --name apna-lakshay
 
 ## Changelog
 
+### v2.5.0 — Sub-Admin Permissions, Login Expiration & Seat Swap Enhancements (May 2026)
+- **Sub-Admin ID Cards Access:** Added `'id_cards'` permission to the allowed backend whitelist, enabling sub-admins to view and manage Student ID Cards.
+- **Persistent Sub-Admin Sessions:** Increased JWT expiration for sub-admin logins from 8 hours to 365 days, preventing random daily logouts.
+- **Atomic Seat Swap:** Upgraded the seat swap controller (`swapSeats`) to transfer the entire assignment metadata (pricing, shift configuration, type, and joining date) rather than just the student ID. This completely swaps their agreed fees and shifts alongside their physical seats.
+- **ID Card UI Polish:** Fixed layout issues in `StudentIdCard.jsx` where shift details were squished or wrapped, applying `whitespace-nowrap` and flex tuning.
+
 ### v2.4.0 — UX & Attendance Overhaul (May 2026)
 - Overhauled Student Dashboard Attendance UX with a centered overlay, pulsing FAB, and glassmorphism blur effects
 - Added Admin toggle to show/hide the Login Screen Attendance check-in button globally
