@@ -11,77 +11,102 @@ A premium, full-stack, production-ready MERN enterprise suite engineered for mod
 
 ---
 
-## System Architecture & Services Flow
+## Master System Architecture & Enterprise Design Blueprint
 
-The system employs a layered decoupled MVC structure on the backend, complemented by a reactive frontend leveraging Context API, Tailwind CSS, and Framer Motion for high-fidelity animations.
+The entire Apna Lakshay LMS system is designed with a highly decoupled, layered architecture. The client interface communicates with a secured Express API gateway layer, driving specialized controller logic that acts as the core database state machine. Third-party gateways are integrated with reliable resilience pipelines, including an AI rate-limit fallback loop.
 
 ```mermaid
-graph TD
-    %% Styling Configuration
-    classDef client fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0369a1;
-    classDef gateway fill:#fae8ff,stroke:#c084fc,stroke-width:2px,color:#86198f;
-    classDef service fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e;
-    classDef database fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#166534;
-    classDef fallback fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#991b1b;
+graph TB
+    %% Styling Configurations
+    classDef clientStyle fill:#f0f9ff,stroke:#0284c7,stroke-width:2px,color:#0369a1;
+    classDef gatewayStyle fill:#fdf4ff,stroke:#c084fc,stroke-width:2px,color:#86198f;
+    classDef controlStyle fill:#fef9c3,stroke:#eab308,stroke-width:2px,color:#854d0e;
+    classDef modelStyle fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534;
+    classDef externStyle fill:#fff1f2,stroke:#f43f5e,stroke-width:2px,color:#9f1239;
 
-    %% Elements
-    subgraph ClientLayer ["Client Interface (SPA / React)"]
-        UI["Student & Admin Dashboards"]:::client
-        SocketClient["Socket.IO Client"]:::client
+    subgraph ClientSPA ["Presentation Layer (React SPA App)"]
+        Dashboards["Student & Admin Dashboards (Framer Motion, Tailwind)"]:::clientStyle
+        AuthCtx["AuthContext Hook (State Persistence Core)"]:::clientStyle
+        IDCard["3D Flip Digital ID Card (Rules Panel & Zoomable QR SVG)"]:::clientStyle
+        TimerPomodoro["Pomodoro Timer & Study Planner Tools"]:::clientStyle
+        PublicGrid["Public Room Seating Availability Board"]:::clientStyle
     end
 
-    subgraph APIHost ["API & Routing Gateway (Express / Node)"]
-        Router["Express Router & Rate Limiter"]:::gateway
-        AuthMiddleware["JWT JWT-based Security Context"]:::gateway
+    subgraph RouterIngress ["API Ingress & Session Security Guard (Express Gateway)"]
+        RouteMux["API Router Routing Multiplexer"]:::gatewayStyle
+        JWTGuard["JWT Token Verification & Session Expiration (365-day Sub-Admins)"]:::gatewayStyle
+        RoleScope["Role Authorization Guard (Admin vs Sub-Admin permissions vs Student)"]:::gatewayStyle
+        GeoFencing["GPS Geofencing Guard (Haversine Spherical Formula)"]:::gatewayStyle
+        SocketBroker["Socket.IO Bidirectional Live Web Socket Broker"]:::gatewayStyle
     end
 
-    subgraph CoreServices ["Backend Controller & Business Logic"]
-        AuthCtrl["Auth & Target Persistence Controller"]:::service
-        SeatCtrl["Multi-Shift Overlap Validator"]:::service
-        AttCtrl["GPS-Fenced Attendance Engine"]:::service
-        FeeCtrl["Partial Payment Billing System"]:::service
-        EngagementCtrl["Leaderboard & Streak Manager"]:::service
+    subgraph CoreControllers ["Core Logic & Service Controllers (Decoupled MVC backend)"]
+        authController["authController (verifySeatLogin, target persistence)"]:::controlStyle
+        engagementController["engagementController (Active student leaderboard, streak XP calculator)"]:::controlStyle
+        seatController["seatController (Multi-shift overlap checker, atomic seat swaps)"]:::controlStyle
+        studentController["studentController (Attendance metrics, fee checks, review solvers)"]:::controlStyle
+        adminController["adminController (Backdated Join updates, student registers CRUD)"]:::controlStyle
     end
 
-    subgraph DatabaseLayer ["Persistent Storage Layer"]
-        MongoDB[("MongoDB Atlas Database")]:::database
+    subgraph DatabaseLayer ["Data Layer (Mongoose ODM / MongoDB Atlas)"]
+        UserModel[("User Collection (credentials, roles, examTarget)")]:::modelStyle
+        SeatModel[("Seat Collection (floor, room, assignments subdocuments)")]:::modelStyle
+        ShiftModel[("Shift Collection (custom names, time ranges)")]:::modelStyle
+        FeeModel[("Fee Collection (billing cycles, partial statuses)")]:::modelStyle
+        AttModel[("Attendance Collection (daily check-in sessions)")]:::modelStyle
+        StreakModel[("StudyStreak Collection (XP levels, consecutive days)")]:::modelStyle
+        DoubtModel[("DoubtSession Collection (subject-aware chat logs)")]:::modelStyle
+        MockModel[("MockTestAttempt Collection (exam templates, review scorecards)")]:::modelStyle
     end
 
-    subgraph ExternalServices ["Third-Party Service Connectors"]
-        Razorpay["Razorpay payment Gateway"]:::gateway
-        SMTP["Brevo SMTP / Nodemailer HTML Mailer"]:::gateway
-        
-        subgraph AIEngine ["Resilient AI Fallback Pipeline"]
-            GroqEngine["Groq API (Llama 3.1 8B)"]:::fallback
-            GeminiEngine["Google Gemini API (Fallback)"]:::fallback
-        end
+    subgraph Integrations ["Third-Party Service Pipelines"]
+        RazorpayGate["Razorpay Gateway (Order creation, hash signature checks)"]:::externStyle
+        SMTPTransactor["Brevo SMTP / Nodemailer (Transactional HTML receipts & broadcasts)"]:::externStyle
+        groqGeminiPipeline["Groq-Gemini AI Pipe (Groq Key Rotator -> Llama 3.1 8B -> Gemini Fallback Engine)"]:::externStyle
     end
 
-    %% Connections
-    UI -->|HTTPS REST Request| Router
-    SocketClient <-->|Websocket Event Duplex| Router
-    Router --> AuthMiddleware
-    AuthMiddleware --> AuthCtrl
-    AuthMiddleware --> SeatCtrl
-    AuthMiddleware --> AttCtrl
-    AuthMiddleware --> FeeCtrl
-    AuthMiddleware --> EngagementCtrl
+    %% Routing Ingress Connections
+    Dashboards -->|REST HTTPS Requests| RouteMux
+    IDCard -->|Barcode Check-In Trigger| RouteMux
+    TimerPomodoro -->|Log Engagement Metrics| RouteMux
+    PublicGrid -->|Unauthenticated Seats Sync| RouteMux
+    SocketBroker <-->|Live Connection Handshake| Dashboards
 
-    %% DB Actions
-    AuthCtrl <--> MongoDB
-    SeatCtrl <--> MongoDB
-    AttCtrl <--> MongoDB
-    FeeCtrl <--> MongoDB
-    EngagementCtrl <--> MongoDB
+    %% Gateway to Controllers
+    RouteMux --> JWTGuard
+    JWTGuard --> RoleScope
+    RoleScope --> GeoFencing
+    GeoFencing --> authController
+    GeoFencing --> engagementController
+    GeoFencing --> seatController
+    GeoFencing --> studentController
+    GeoFencing --> adminController
 
-    %% Integrations
-    FeeCtrl <-->|Secure API Signature| Razorpay
-    FeeCtrl -->|HTML Receipt Generation| SMTP
-    SeatCtrl -->|Notification Broadcast| SMTP
-    
-    %% AI Pipeline Routing
-    UI -->|Ask Doubt / Mock Gen| AIEngine
-    GroqEngine -.->|Rate Limit Fallback| GeminiEngine
+    %% Controllers to Models (Read/Write)
+    authController <--> UserModel
+    engagementController <--> StreakModel
+    engagementController <--> UserModel
+    seatController <--> SeatModel
+    seatController <--> ShiftModel
+    studentController <--> AttModel
+    studentController <--> FeeModel
+    adminController <--> UserModel
+    adminController <--> SeatModel
+    adminController <--> FeeModel
+
+    %% Models Cross Relations
+    UserModel -->|Assigned Shift | ShiftModel
+    SeatModel -->|Subdocument Array| UserModel
+    FeeModel -->|Billing Anchor Date| UserModel
+    StreakModel -->|Engagement Score| UserModel
+    DoubtModel -->|Subject Logs| UserModel
+    MockModel -->|Review Sets| UserModel
+
+    %% Controllers to Integrations
+    studentController <--> RazorpayGate
+    adminController --> SMTPTransactor
+    studentController --> SMTPTransactor
+    studentController <--> groqGeminiPipeline
 ```
 
 ---
