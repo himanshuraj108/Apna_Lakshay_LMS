@@ -614,8 +614,8 @@ exports.getStudent = async (req, res) => {
     try {
         let { id } = req.params;
 
-        // Handle "HL-" prefix from ID card text
-        if (id && id.toUpperCase().startsWith('HL-')) {
+        // Handle "AL-" or "HL-" prefix from ID card text
+        if (id && (id.toUpperCase().startsWith('AL-') || id.toUpperCase().startsWith('HL-'))) {
             id = id.substring(3);
         }
 
@@ -4018,9 +4018,9 @@ exports.markAttendanceByQrAdmin = async (req, res) => {
         }
 
         // 2. Find Student
-        // Handle "HL-" prefix or raw ID
+        // Handle "AL-" or "HL-" prefix or raw ID
         let studentId = qrCode;
-        if (studentId.toUpperCase().startsWith('HL-')) {
+        if (studentId && (studentId.toUpperCase().startsWith('AL-') || studentId.toUpperCase().startsWith('HL-'))) {
             studentId = studentId.substring(3);
         }
 
