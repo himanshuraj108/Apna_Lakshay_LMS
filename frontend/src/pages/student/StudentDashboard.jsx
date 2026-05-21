@@ -28,6 +28,24 @@ import InactiveScreen from '../../components/student/InactiveScreen';
 import AccessDeniedPending from '../../pages/public/AccessDeniedPending';
 import Footer from '../../components/layout/Footer';
 
+const EXAM_TARGET_NAMES = {
+    'ssc_cgl': 'SSC CGL',
+    'ssc_chsl': 'SSC CHSL',
+    'ssc_gd': 'SSC GD Constable',
+    'ssc_mts': 'SSC MTS',
+    'ssc_cpo': 'SSC CPO',
+    'upsc_cse': 'UPSC CSE',
+    'upsc_cds': 'UPSC CDS',
+    'ibps_po': 'IBPS PO',
+    'ibps_clerk': 'IBPS Clerk',
+    'sbi_po': 'SBI PO',
+    'sbi_clerk': 'SBI Clerk',
+    'rrb_ntpc': 'RRB NTPC',
+    'jee_main': 'JEE Main',
+    'neet_ug': 'NEET UG',
+    'generic': 'General Aptitude & Knowledge'
+};
+
 /* ─── Beep + Vibrate (same pattern as QR scanner) ───────────────── */
 let _beepBuffer = null;
 const _audioCtx = typeof window !== 'undefined'
@@ -372,6 +390,21 @@ const StudentDashboard = () => {
     const hasSeat = dashboardData?.seat || (dashboardData?.tempAssignments?.length > 0);
     const navigate = useNavigate();
 
+    // Engagement & Gamification States
+    const [activeLeftTab, setActiveLeftTab]           = useState('actions');
+    const [streakStats, setStreakStats]               = useState(null);
+    const [leaderboard, setLeaderboard]               = useState([]);
+    const [leaderboardSortBy, setLeaderboardSortBy]   = useState('xp');
+    const [dailyQuiz, setDailyQuiz]                   = useState(null);
+    const [dailyQuizAttempted, setDailyQuizAttempted] = useState(false);
+    const [dailyQuizAttempt, setDailyQuizAttempt]     = useState(null);
+    const [showQuizModal, setShowQuizModal]           = useState(false);
+    const [quizAnswers, setQuizAnswers]               = useState([null, null, null, null, null]);
+    const [currentQuizQuestionIndex, setCurrentQuizQuestionIndex] = useState(0);
+    const [quizSubmitting, setQuizSubmitting]         = useState(false);
+    const [quizError, setQuizError]                   = useState('');
+    const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
     const SETTINGS_KEY = 'lms_location_required';
     const getLocationRequired = () => { try { const c = localStorage.getItem(SETTINGS_KEY); if (c !== null) return c === 'true'; } catch (_) { } return true; };
     const loadSettingsCache = async () => { try { const res = await api.get('/public/settings'); if (res.data.success) localStorage.setItem(SETTINGS_KEY, String(res.data.settings.locationAttendance !== false)); } catch (_) { } };
@@ -383,7 +416,51 @@ const StudentDashboard = () => {
         } catch { /* use defaults if fails */ }
     };
 
-    useEffect(() => { fetchDashboardData(); loadSettingsCache(); fetchCardConfig(); fetchPinStatus(); fetchPendingFeedback(); }, []);
+    const fetchEngagementData = async () => {
+        try {
+            const statsRes = await api.get('/student/engagement/streak-stats');
+            if (statsRes.data.success) {
+                setStreakStats(statsRes.data.stats);
+            }
+        } catch (e) {
+            console.error('Error fetching streak stats:', e);
+        }
+
+        try {
+            const quizRes = await api.get('/student/engagement/daily-quiz');
+            if (quizRes.data.success) {
+                setDailyQuiz(quizRes.data.quiz);
+                setDailyQuizAttempted(quizRes.data.attempted);
+                setDailyQuizAttempt(quizRes.data.attempt);
+            }
+        } catch (e) {
+            console.error('Error fetching daily quiz:', e);
+        }
+    };
+
+    const fetchLeaderboard = async (sortByValue) => {
+        setLeaderboardLoading(true);
+        try {
+            const res = await api.get(`/student/engagement/leaderboard?sortBy=${sortByValue}`);
+            if (res.data.success) {
+                setLeaderboard(res.data.leaderboard);
+            }
+        } catch (e) {
+            console.error('Error fetching leaderboard:', e);
+        } finally {
+            setLeaderboardLoading(false);
+        }
+    };
+
+    useEffect(() => { 
+        fetchDashboardData(); 
+        loadSettingsCache(); 
+        fetchCardConfig(); 
+        fetchPinStatus(); 
+        fetchPendingFeedback(); 
+        fetchEngagementData();
+    }, []);
+    
     useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
 
     const fetchPinStatus = async () => {
@@ -409,7 +486,15 @@ const StudentDashboard = () => {
     };
 
     const fetchDashboardData = async () => {
-        try { const res = await api.get('/student/dashboard'); setDashboardData(res.data.data); } catch (e) { console.error(e); } finally { setLoading(false); }
+        try { 
+            const res = await api.get('/student/dashboard'); 
+            setDashboardData(res.data.data); 
+            fetchEngagementData();
+        } catch (e) { 
+            console.error(e); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     const handleLogout = () => { logout(); navigate('/login'); };
@@ -729,6 +814,102 @@ const StudentDashboard = () => {
                     </div>
                 </motion.div>
 
+                {streakStats && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.05 }}
+                        className="mb-5 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 border border-slate-800/80 shadow-xl shadow-indigo-950/20 relative overflow-hidden text-white"
+                    >
+                        {/* Glow effect */}
+                        <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                        {/* Level & XP Progress Column */}
+                        <div className="md:col-span-2 flex flex-col justify-center">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-md">
+                                        <IoSparklesOutline className="text-indigo-400 animate-pulse" size={18} />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Rank Progression</span>
+                                        <h4 className="text-xl font-black text-white tracking-tight leading-none mt-0.5">Level {streakStats.level || 1}</h4>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-extrabold text-indigo-300 bg-indigo-950/80 border border-indigo-800/60 px-3 py-1 rounded-full shadow-inner">
+                                    {streakStats.totalXP % 1000} / 1000 XP
+                                </span>
+                            </div>
+                            {/* Progress bar */}
+                            <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-[1.5px] relative group cursor-help">
+                                <div 
+                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-500 relative"
+                                    style={{ width: `${(streakStats.totalXP % 1000) / 10}%` }}
+                                >
+                                    {/* Shimmer on progress */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse" />
+                                </div>
+                                {/* Tooltip on hover */}
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-950 text-white border border-slate-800 text-[10px] font-bold px-2 py-1 rounded shadow-xl whitespace-nowrap z-30">
+                                    Total XP: {streakStats.totalXP} | Next Level in {1000 - (streakStats.totalXP % 1000)} XP
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Streak Badge & Stats Column */}
+                        <div className="flex items-center justify-between md:justify-end gap-6 border-t md:border-t-0 border-slate-800/80 pt-4 md:pt-0">
+                            {/* Streak Badge */}
+                            <div className="flex items-center gap-4 group relative cursor-help">
+                                <div className="relative">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 flex items-center justify-center shadow-lg shadow-orange-500/35 text-white font-black text-lg transition-all group-hover:scale-105 duration-300 border border-amber-300/20">
+                                        <IoFlashOutline size={28} className="animate-pulse" />
+                                    </div>
+                                    <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-rose-600 border border-white text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg shadow-red-500/20">
+                                        {streakStats.currentStreak || 0}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block leading-none mb-1">Daily Streak</span>
+                                    <span className="text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
+                                        {streakStats.currentStreak || 0} Days Active
+                                    </span>
+                                    <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5">
+                                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                        Active Today!
+                                    </span>
+                                </div>
+
+                                {/* Popover details */}
+                                <div className="absolute bottom-full right-0 mb-2.5 w-56 hidden group-hover:block bg-slate-950/95 backdrop-blur text-white text-[11px] p-3.5 rounded-xl shadow-2xl border border-slate-800 z-30 space-y-2">
+                                    <p className="font-extrabold text-orange-400 border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                                        <span>Streak & XP Details</span>
+                                        <IoFlashOutline size={12} />
+                                    </p>
+                                    <div className="flex justify-between font-medium">
+                                        <span className="text-slate-400">Current Streak:</span>
+                                        <span className="font-bold text-white">{streakStats.currentStreak || 0} days</span>
+                                    </div>
+                                    <div className="flex justify-between font-medium">
+                                        <span className="text-slate-400">Longest Streak:</span>
+                                        <span className="font-bold text-white">{streakStats.longestStreak || 0} days</span>
+                                    </div>
+                                    <div className="flex justify-between font-medium">
+                                        <span className="text-slate-400">Total XP Earned:</span>
+                                        <span className="font-bold text-white">{streakStats.totalXP || 0} XP</span>
+                                    </div>
+                                    {streakStats.achievements && (
+                                        <div className="flex justify-between font-medium">
+                                            <span className="text-slate-400">Achievements:</span>
+                                            <span className="font-bold text-white">{streakStats.achievements.length || 0} unlocked</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
 
                 {/* â”€â”€ STATS ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <motion.div
@@ -905,132 +1086,249 @@ const StudentDashboard = () => {
                         className="lg:col-span-3 rounded-2xl border border-gray-200 overflow-hidden bg-white"
                         style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
                     >
-                        {/* Header */}
-                        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
-                                    <IoFlashOutline size={14} className="text-orange-500" />
-                                </div>
-                                <h2 className="font-bold text-sm" style={{ color: '#111827' }}>Quick Actions</h2>
+                        {/* Header with Tab Switcher */}
+                        <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <div className="flex gap-1.5 bg-gray-200/60 p-1 rounded-xl">
+                                <button
+                                    onClick={() => setActiveLeftTab('actions')}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-200 ${
+                                        activeLeftTab === 'actions'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-805'
+                                    }`}
+                                >
+                                    Quick Actions
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveLeftTab('leaderboard');
+                                        fetchLeaderboard(leaderboardSortBy);
+                                    }}
+                                    className={`px-4 py-1.5 rounded-lg text-xs font-extrabold transition-all duration-200 flex items-center gap-1.5 ${
+                                        activeLeftTab === 'leaderboard'
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-850'
+                                    }`}
+                                >
+                                    <IoSparklesOutline size={11} className={activeLeftTab === 'leaderboard' ? 'text-indigo-650' : ''} />
+                                    Leaderboard
+                                </button>
                             </div>
+                            
+                            {/* Sort Filter — only shown when Leaderboard is active */}
+                            {activeLeftTab === 'leaderboard' && (
+                                <select
+                                    value={leaderboardSortBy}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setLeaderboardSortBy(val);
+                                        fetchLeaderboard(val);
+                                    }}
+                                    className="bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-[11px] font-bold text-gray-600 focus:outline-none focus:border-indigo-400"
+                                >
+                                    <option value="xp">Sort by XP</option>
+                                    <option value="streak">Sort by Streak</option>
+                                    <option value="focus">Sort by Focus Hours</option>
+                                </select>
+                            )}
                         </div>
 
-                        {/* Action grid â€” 3 per row, premium cards */}
-                        <div className="p-4 grid grid-cols-3 gap-3">
-                            {(() => {
-                                const BASE_QA = [
-                                    { id: 'id-card',        icon: IoIdCardOutline,      label: 'ID Card',        accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',   action: () => setShowIDCard(true) },
-                                    { id: 'planner',        icon: IoBookOutline,        label: 'Planner',        accentColor: '#ec4899', accentBg: 'rgba(236,72,153,0.1)',   link: '/student/planner' },
-                                    { id: 'discussion',     icon: IoChatbubblesOutline, label: 'Discussion',     accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/chat' },
-                                    { id: 'newspaper',      icon: IoNewspaper,          label: 'Newspaper',      accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.1)',   action: () => setShowNewspaper(true) },
-                                    { id: 'current-affairs',icon: IoGridOutline,        label: 'Current Affairs',accentColor: '#38bdf8', accentBg: 'rgba(56,189,248,0.1)',   link: '/student/current-affairs', live: true },
-                                    { id: 'exam-alerts',    icon: IoAlertCircleOutline, label: 'Exam Alerts',    accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/exam-alerts', live: true },
-                                    { id: 'my-report',      icon: IoDocumentTextOutline,label: 'My Report',      accentColor: '#14b8a6', accentBg: 'rgba(20,184,166,0.1)',   link: '/student/report' },
-                                    { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Ask AI',         accentColor: '#FACC15', accentBg: 'rgba(250,204,21,0.1)',   link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits} credits left` : 'AI powered' },
-                                    { id: 'support',        icon: IoHelpCircleOutline,  label: 'Support',        accentColor: '#eab308', accentBg: 'rgba(234,179,8,0.1)',    action: () => setShowSupportModal(true), badge: dashboardData?.requestsCount || 0 },
-                                ];
-                                const cfg = cardConfig?.quickActions;
-                                if (!cfg) return BASE_QA;
-                                return BASE_QA
-                                    .map(c => { const cf = cfg.find(x => x.id === c.id); return cf ? { ...c, _order: cf.order ?? 99, _visible: cf.visible !== false, _isNew: !!cf.isNew } : { ...c, _order: 99, _visible: true, _isNew: false }; })
-                                    .filter(c => c._visible)
-                                    .sort((a,b) => (a._order ?? 99) - (b._order ?? 99));
-                            })().map((item, i) => {
-                                const Card = (
-                                    <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0, y: 12 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.18 + i * 0.06, type: 'spring', stiffness: 120 }}
-                                        whileHover={{ y: -3 }}
-                                        onClick={item.action}
-                                        className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group"
-                                        style={{
-                                            background: `linear-gradient(145deg, ${item.accentBg}, rgba(255,255,255,0.02))`,
-                                            border: '1px solid #F3F4F6',
-                                            padding: '14px 14px 16px',
-                                            minHeight: '110px',
-                                            transition: 'border-color 0.2s, box-shadow 0.2s',
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.borderColor = `${item.accentColor}40`;
-                                            e.currentTarget.style.boxShadow = `0 8px 32px -8px ${item.accentColor}30`;
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                                            e.currentTarget.style.boxShadow = 'none';
-                                        }}
-                                    >
-                                        {/* Accent line top */}
-                                        <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl opacity-70 group-hover:opacity-100 transition-opacity"
-                                            style={{ background: `linear-gradient(90deg, ${item.accentColor}, transparent)` }} />
+                        {activeLeftTab === 'actions' ? (
+                            /* Action grid — 3 per row, premium cards */
+                            <div className="p-4 grid grid-cols-3 gap-3">
+                                {(() => {
+                                    const BASE_QA = [
+                                        { id: 'id-card',        icon: IoIdCardOutline,      label: 'ID Card',        accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',   action: () => setShowIDCard(true) },
+                                        { id: 'planner',        icon: IoBookOutline,        label: 'Planner',        accentColor: '#ec4899', accentBg: 'rgba(236,72,153,0.1)',   link: '/student/planner' },
+                                        { id: 'discussion',     icon: IoChatbubblesOutline, label: 'Discussion',     accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/chat' },
+                                        { id: 'newspaper',      icon: IoNewspaper,          label: 'Newspaper',      accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.1)',   action: () => setShowNewspaper(true) },
+                                        { id: 'current-affairs',icon: IoGridOutline,        label: 'Current Affairs',accentColor: '#38bdf8', accentBg: 'rgba(56,189,248,0.1)',   link: '/student/current-affairs', live: true },
+                                        { id: 'exam-alerts',    icon: IoAlertCircleOutline, label: 'Exam Alerts',    accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',   link: '/student/exam-alerts', live: true },
+                                        { id: 'my-report',      icon: IoDocumentTextOutline,label: 'My Report',      accentColor: '#14b8a6', accentBg: 'rgba(20,184,166,0.1)',   link: '/student/report' },
+                                        { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Ask AI',         accentColor: '#FACC15', accentBg: 'rgba(250,204,21,0.1)',   link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits} credits left` : 'AI powered' },
+                                        { id: 'support',        icon: IoHelpCircleOutline,  label: 'Support',        accentColor: '#eab308', accentBg: 'rgba(234,179,8,0.1)',    action: () => setShowSupportModal(true), badge: dashboardData?.requestsCount || 0 },
+                                    ];
+                                    const cfg = cardConfig?.quickActions;
+                                    if (!cfg) return BASE_QA;
+                                    return BASE_QA
+                                        .map(c => { const cf = cfg.find(x => x.id === c.id); return cf ? { ...c, _order: cf.order ?? 99, _visible: cf.visible !== false, _isNew: !!cf.isNew } : { ...c, _order: 99, _visible: true, _isNew: false }; })
+                                        .filter(c => c._visible)
+                                        .sort((a,b) => (a._order ?? 99) - (b._order ?? 99));
+                                })().map((item, i) => {
+                                    const Card = (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.18 + i * 0.06, type: 'spring', stiffness: 120 }}
+                                            whileHover={{ y: -3 }}
+                                            onClick={item.action}
+                                            className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group"
+                                            style={{
+                                                background: `linear-gradient(145deg, ${item.accentBg}, rgba(255,255,255,0.02))`,
+                                                border: '1px solid #F3F4F6',
+                                                padding: '14px 14px 16px',
+                                                minHeight: '110px',
+                                                transition: 'border-color 0.2s, box-shadow 0.2s',
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.borderColor = `${item.accentColor}40`;
+                                                e.currentTarget.style.boxShadow = `0 8px 32px -8px ${item.accentColor}30`;
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                                                e.currentTarget.style.boxShadow = 'none';
+                                            }}
+                                        >
+                                            {/* Accent line top */}
+                                            <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl opacity-70 group-hover:opacity-100 transition-opacity"
+                                                style={{ background: `linear-gradient(90deg, ${item.accentColor}, transparent)` }} />
 
-                                        {/* Ghost icon â€” large faded background accent */}
-                                        <item.icon
-                                            size={56}
-                                            className="absolute -bottom-2 -right-2 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity"
-                                            style={{ color: item.accentColor }}
-                                        />
+                                            {/* Ghost icon — large faded background accent */}
+                                            <item.icon
+                                                size={56}
+                                                className="absolute -bottom-2 -right-2 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity"
+                                                style={{ color: item.accentColor }}
+                                            />
 
-                                        {/* LIVE badge */}
-                                        {item.live && !item._isNew && (
-                                            <span className="absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
-                                                style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
-                                                <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: '#ef4444' }} />LIVE
-                                            </span>
-                                        )}
-
-                                        {/* NEW badge */}
-                                        {item._isNew && (
-                                            <span className="new-badge-blink absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
-                                                style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.35)', color: '#FACC15' }}>
-                                                NEW
-                                            </span>
-                                        )}
-
-                                        {/* Badge count */}
-                                        {item.badge > 0 && (
-                                            <span className="absolute top-3 right-3 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center">
-                                                {item.badge > 9 ? '9+' : item.badge}
-                                            </span>
-                                        )}
-
-                                        {/* Icon box */}
-                                        <div className="relative w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105 duration-200"
-                                            style={{ background: `${item.accentColor}18` }}>
-                                            <item.icon size={18} style={{ color: item.accentColor }} />
-                                        </div>
-
-                                        {/* Label + optional desc + custom buttons */}
-                                        <div className="mt-auto pt-2">
-                                            <p className="text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
-                                            
-                                            {item.desc && (
-                                                <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>
-                                                    {item.desc}
-                                                </p>
+                                            {/* LIVE badge */}
+                                            {item.live && !item._isNew && (
+                                                <span className="absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
+                                                    style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+                                                    <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: '#ef4444' }} />LIVE
+                                                </span>
                                             )}
 
-                                            {item.id === 'support' && item.badge > 0 && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setShowHistoryModal(true);
-                                                    }}
-                                                    className="relative z-20 w-full block text-[10px] mt-0.5 font-bold underline tracking-wide text-right"
-                                                    style={{ color: item.accentColor }}
+                                            {/* NEW badge */}
+                                            {item._isNew && (
+                                                <span className="new-badge-blink absolute top-3 right-3 flex items-center gap-0.5 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full tracking-wider"
+                                                    style={{ background: 'rgba(250,204,21,0.15)', border: '1px solid rgba(250,204,21,0.35)', color: '#FACC15' }}>
+                                                    NEW
+                                                </span>
+                                            )}
+
+                                            {/* Badge count */}
+                                            {item.badge > 0 && (
+                                                <span className="absolute top-3 right-3 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                                                    {item.badge > 9 ? '9+' : item.badge}
+                                                </span>
+                                            )}
+
+                                            {/* Icon box */}
+                                            <div className="relative w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105 duration-200"
+                                                style={{ background: `${item.accentColor}18` }}>
+                                                <item.icon size={18} style={{ color: item.accentColor }} />
+                                            </div>
+
+                                            {/* Label + optional desc + custom buttons */}
+                                            <div className="mt-auto pt-2">
+                                                <p className="text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
+                                                
+                                                {item.desc && (
+                                                    <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>
+                                                        {item.desc}
+                                                    </p>
+                                                )}
+
+                                                {item.id === 'support' && item.badge > 0 && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setShowHistoryModal(true);
+                                                        }}
+                                                        className="relative z-20 w-full block text-[10px] mt-0.5 font-bold underline tracking-wide text-right"
+                                                        style={{ color: item.accentColor }}
+                                                    >
+                                                        View Status &rarr;
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                    return item.link
+                                        ? <Link key={i} to={item.link} className="block">{Card}</Link>
+                                        : <div key={i}>{Card}</div>;
+                                })}
+                            </div>
+                        ) : (
+                            /* Leaderboard list */
+                            <div className="p-4">
+                                {leaderboardLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                        <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                                        <p className="text-xs font-semibold text-gray-400">Loading leaderboard...</p>
+                                    </div>
+                                ) : leaderboard.length === 0 ? (
+                                    <div className="text-center py-10">
+                                        <p className="text-sm font-bold text-gray-400">No active students on the leaderboard yet.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                                        {leaderboard.map((item) => {
+                                            const isCurrentUser = item.userId === user?.id;
+                                            const isTop3 = item.rank <= 3;
+                                            const rankTheme = item.rank === 1
+                                                ? { bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-amber-600', badge: '🥇' }
+                                                : item.rank === 2
+                                                ? { bg: 'bg-slate-300/20 border-slate-300/30', text: 'text-slate-500', badge: '🥈' }
+                                                : item.rank === 3
+                                                ? { bg: 'bg-orange-300/10 border-orange-300/20', text: 'text-orange-600', badge: '🥉' }
+                                                : { bg: 'bg-gray-50 border-gray-100', text: 'text-gray-500', badge: `#${item.rank}` };
+
+                                            return (
+                                                <div
+                                                    key={item.userId}
+                                                    className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-150 ${
+                                                        isCurrentUser 
+                                                            ? 'bg-indigo-50/50 border-indigo-200 shadow-sm' 
+                                                            : 'bg-white border-gray-100 hover:border-gray-200'
+                                                    }`}
                                                 >
-                                                    View Status &rarr;
-                                                </button>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                );
-                                return item.link
-                                    ? <Link key={i} to={item.link} className="block">{Card}</Link>
-                                    : <div key={i}>{Card}</div>;
-                            })}
-                        </div>
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        {/* Rank badge */}
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs border ${rankTheme.bg} ${rankTheme.text}`}>
+                                                            {rankTheme.badge}
+                                                        </div>
+
+                                                        {/* User Avatar */}
+                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200/50 flex items-center justify-center font-bold text-[11px] text-indigo-700 shrink-0 uppercase">
+                                                            {item.name ? item.name.split(' ').map(w => w[0]).join('').slice(0, 2) : '?'}
+                                                        </div>
+
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className={`text-xs font-bold truncate ${isCurrentUser ? 'text-indigo-900' : 'text-gray-900'}`}>
+                                                                    {item.name}
+                                                                </span>
+                                                                {isCurrentUser && (
+                                                                    <span className="text-[8px] bg-indigo-600 text-white font-extrabold px-1 rounded">YOU</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-400 font-medium">{item.studentId || 'No ID'}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right">
+                                                            <span className="text-xs font-black text-gray-800">
+                                                                {leaderboardSortBy === 'xp'
+                                                                    ? `${item.value || 0} XP`
+                                                                    : leaderboardSortBy === 'streak'
+                                                                    ? `${item.value || 0} Days`
+                                                                    : `${(item.value || 0).toFixed(1)} hrs`}
+                                                            </span>
+                                                            <div className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
+                                                                Level {item.level || 1}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </motion.div>
 
                     {/* RIGHT: Learning + ID card shortcuts */}
@@ -1040,6 +1338,89 @@ const StudentDashboard = () => {
                         transition={{ delay: 0.24, duration: 0.45 }}
                         className="lg:col-span-2 flex flex-col gap-4"
                     >
+                        {/* Daily Target Challenge Card */}
+                        <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white relative" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-400 to-amber-500" />
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                                        <IoSparklesOutline size={14} className="text-orange-500 animate-spin" style={{ animationDuration: '6s' }} />
+                                    </div>
+                                    <h2 className="font-bold text-sm" style={{ color: '#111827' }}>Daily Challenge</h2>
+                                </div>
+                                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-50 border border-orange-100 text-orange-650">
+                                    {EXAM_TARGET_NAMES[user?.examTarget] || 'General Aptitude'}
+                                </span>
+                            </div>
+
+                            <div className="p-4 flex flex-col gap-3">
+                                {dailyQuiz ? (
+                                    dailyQuizAttempted ? (
+                                        // Completed State
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3.5">
+                                                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                                                    ✓
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-emerald-800">Challenge Completed!</h4>
+                                                    <p className="text-[11px] text-emerald-600 font-medium">
+                                                        You scored {dailyQuizAttempt?.score || 0}/5 and earned +{dailyQuizAttempt?.xpAwarded || 0} XP
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]);
+                                                    setCurrentQuizQuestionIndex(0);
+                                                    setShowQuizModal(true);
+                                                }}
+                                                className="w-full py-2.5 bg-gray-50 border border-gray-200 text-gray-700 font-extrabold rounded-xl text-xs hover:bg-gray-100 transition-all flex items-center justify-center gap-1.5"
+                                            >
+                                                <IoDocumentTextOutline size={14} />
+                                                Review Solutions
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        // Unattempted State
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center bg-orange-50/50 border border-orange-100/50 rounded-xl p-3">
+                                                <div>
+                                                    <h4 className="text-xs font-black text-gray-805">Date-Locked Quiz</h4>
+                                                    <p className="text-[10px] text-gray-400 mt-0.5">5 target-focused questions generated daily</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs font-black text-orange-600 block">Up to +70 XP</span>
+                                                    <span className="text-[9px] text-gray-400 font-semibold block leading-none">+ Streak Boost</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    if (!user?.examTarget || user.examTarget === 'generic') {
+                                                        navigate('/student/profile?focus=examTarget');
+                                                        return;
+                                                    }
+                                                    setQuizAnswers([null, null, null, null, null]);
+                                                    setCurrentQuizQuestionIndex(0);
+                                                    setShowQuizModal(true);
+                                                    setQuizError('');
+                                                }}
+                                                className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold rounded-xl text-xs hover:opacity-95 transition-all shadow-md shadow-orange-500/10 flex items-center justify-center gap-1.5"
+                                            >
+                                                <IoFlashOutline size={14} className="animate-bounce" />
+                                                Start Daily Challenge
+                                            </button>
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-4 gap-2">
+                                        <div className="w-5 h-5 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                                        <p className="text-[10px] font-semibold text-gray-400">Loading daily challenge...</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Learning section */}
                         <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
                             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
@@ -1135,6 +1516,223 @@ const StudentDashboard = () => {
                     <Footer />
                 </div>
             </main>
+
+            {/* Daily Quiz Modal */}
+            <AnimatePresence>
+                {showQuizModal && dailyQuiz && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+                            className="w-full max-w-xl bg-white border border-gray-200 rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            {/* Accent Line top */}
+                            <div className="h-1 w-full bg-gradient-to-r from-orange-500 to-amber-500" />
+
+                            {/* Header */}
+                            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <h3 className="text-gray-900 font-black text-base flex items-center gap-1.5">
+                                        <IoSparklesOutline className="text-orange-500 animate-spin" style={{ animationDuration: '8s' }} />
+                                        Daily Challenge: {EXAM_TARGET_NAMES[user?.examTarget] || 'General Aptitude'}
+                                    </h3>
+                                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mt-0.5">
+                                        {dailyQuizAttempted ? 'Review Mode' : 'Live Challenge'} • Date: {dailyQuiz.date}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowQuizModal(false)}
+                                    className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-800 transition-colors"
+                                >
+                                    <IoCloseCircle size={22} />
+                                </button>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between text-xs text-gray-505 font-semibold bg-white">
+                                <span className="text-[11px]">Question {currentQuizQuestionIndex + 1} of 5</span>
+                                <div className="w-1/2 h-2 bg-gray-100 rounded-full overflow-hidden border border-gray-200/50 p-[1px]">
+                                    <div 
+                                        className="h-full rounded-full bg-orange-500 transition-all duration-300"
+                                        style={{ width: `${((currentQuizQuestionIndex + 1) / 5) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5 overflow-y-auto flex-1 space-y-4">
+                                {(() => {
+                                    const currentQuestion = dailyQuiz.questions[currentQuizQuestionIndex];
+                                    const selectedAnswer = quizAnswers[currentQuizQuestionIndex];
+                                    const isAttempted = dailyQuizAttempted;
+                                    const correctOptionIndex = isAttempted 
+                                        ? dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex]?.correct
+                                        : null;
+
+                                    return (
+                                        <div className="space-y-4">
+                                            {/* Question card */}
+                                            <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                                                {currentQuestion.subject && (
+                                                    <span className="text-[9px] font-black uppercase bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md mb-2 inline-block">
+                                                        {currentQuestion.subject}
+                                                    </span>
+                                                )}
+                                                <p className="text-sm font-bold text-gray-800 leading-relaxed whitespace-pre-line">
+                                                    {currentQuestion.question}
+                                                </p>
+                                            </div>
+
+                                            {/* Options */}
+                                            <div className="space-y-2.5">
+                                                {currentQuestion.options.map((option, idx) => {
+                                                    const optionLetter = ['A', 'B', 'C', 'D'][idx];
+                                                    const isSelected = selectedAnswer === idx;
+
+                                                    let optionStyle = 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/10';
+                                                    
+                                                    if (isSelected && !isAttempted) {
+                                                        optionStyle = 'border-orange-500 bg-orange-50/20';
+                                                    }
+
+                                                    if (isAttempted) {
+                                                        const isCorrect = idx === correctOptionIndex;
+                                                        const isUserWrong = isSelected && !isCorrect;
+
+                                                        if (isCorrect) {
+                                                            optionStyle = 'border-emerald-500 bg-emerald-50/40 text-emerald-900';
+                                                        } else if (isUserWrong) {
+                                                            optionStyle = 'border-red-500 bg-red-50/40 text-red-900';
+                                                        } else {
+                                                            optionStyle = 'border-gray-200 opacity-60';
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            disabled={isAttempted}
+                                                            onClick={() => {
+                                                                const newAnswers = [...quizAnswers];
+                                                                newAnswers[currentQuizQuestionIndex] = idx;
+                                                                setQuizAnswers(newAnswers);
+                                                                setQuizError('');
+                                                            }}
+                                                            className={`w-full p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all ${optionStyle}`}
+                                                        >
+                                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                                                isSelected
+                                                                    ? 'bg-orange-500 border-orange-500 text-white'
+                                                                    : 'border-gray-300 text-gray-500'
+                                                            }`}>
+                                                                {optionLetter}
+                                                            </div>
+                                                            <span className="text-xs font-bold leading-normal text-gray-800">{option}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Explanation & Solution section */}
+                                            {isAttempted && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-1.5"
+                                                >
+                                                    <h5 className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
+                                                        <IoInformationCircleOutline size={14} className="text-indigo-600" />
+                                                        Explanation
+                                                    </h5>
+                                                    <p className="text-xs text-indigo-900/90 leading-relaxed font-medium">
+                                                        {dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex]?.explanation || 'No explanation available.'}
+                                                    </p>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div className="flex gap-2">
+                                    <button
+                                        disabled={currentQuizQuestionIndex === 0}
+                                        onClick={() => setCurrentQuizQuestionIndex(prev => prev - 1)}
+                                        className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 disabled:opacity-40 disabled:hover:text-gray-600 transition-colors"
+                                    >
+                                        &larr; Previous
+                                    </button>
+                                    <button
+                                        disabled={currentQuizQuestionIndex === 4}
+                                        onClick={() => setCurrentQuizQuestionIndex(prev => prev + 1)}
+                                        className="px-4 py-2 text-xs font-bold text-gray-600 hover:text-gray-900 disabled:opacity-40 disabled:hover:text-gray-600 transition-colors"
+                                    >
+                                        Next &rarr;
+                                    </button>
+                                </div>
+
+                                {quizError && <p className="text-red-500 text-xs font-semibold mr-4">{quizError}</p>}
+
+                                {!dailyQuizAttempted ? (
+                                    currentQuizQuestionIndex === 4 ? (
+                                        <button
+                                            onClick={async () => {
+                                                if (quizAnswers.some(ans => ans === null)) {
+                                                    setQuizError('Please answer all 5 questions.');
+                                                    return;
+                                                }
+                                                setQuizSubmitting(true);
+                                                setQuizError('');
+                                                try {
+                                                    const res = await api.post('/student/engagement/daily-quiz/submit', { answers: quizAnswers });
+                                                    if (res.data.success) {
+                                                        playSuccessBeep();
+                                                        setDailyQuizAttempted(true);
+                                                        setDailyQuizAttempt(res.data.attempt);
+                                                        // Refresh engagement stats & parent dashboard
+                                                        fetchDashboardData();
+                                                        fetchEngagementData();
+                                                        setCurrentQuizQuestionIndex(0);
+                                                    }
+                                                } catch (e) {
+                                                    setQuizError(e.response?.data?.message || 'Submission failed. Please try again.');
+                                                } finally {
+                                                    setQuizSubmitting(false);
+                                                }
+                                            }}
+                                            disabled={quizSubmitting}
+                                            className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-extrabold rounded-xl text-xs hover:opacity-95 disabled:opacity-50 transition-all flex items-center gap-1.5"
+                                        >
+                                            {quizSubmitting ? (
+                                                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting...</>
+                                            ) : (
+                                                <>✓ Submit Challenge</>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setCurrentQuizQuestionIndex(prev => prev + 1)}
+                                            className="px-4 py-2 bg-orange-500 hover:bg-orange-650 text-white font-extrabold rounded-xl text-xs transition-colors"
+                                        >
+                                            Continue
+                                        </button>
+                                    )
+                                ) : (
+                                    <button
+                                        onClick={() => setShowQuizModal(false)}
+                                        className="px-5 py-2 bg-gray-900 text-white font-extrabold rounded-xl text-xs hover:bg-gray-800 transition-colors"
+                                    >
+                                        Close Review
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* ── Speed Dial FAB: Mark Attendance (camera + no-camera) ── */}
             {!showScanner && (
