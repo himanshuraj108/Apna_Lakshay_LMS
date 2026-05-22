@@ -54,7 +54,12 @@ const userSchema = new mongoose.Schema({
     },
     profileImage: {
         type: String,
-        default: null
+        default: '/uploads/avatars/avatar1.svg'
+    },
+    gender: {
+        type: String,
+        enum: ['male', 'female', 'other'],
+        default: 'male'
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -164,6 +169,31 @@ userSchema.index({ qrToken: 1 }, { sparse: true });
 
 // Index on createdAt for sorting (already created by timestamps: true)
 // Index on updatedAt for sorting (already created by timestamps: true)
+
+// Assign deterministic stable default avatar out of 10 for students matching their gender preference
+userSchema.pre('save', function (next) {
+    if (this.role === 'student' && (!this.profileImage || this.profileImage.startsWith('/uploads/avatars/'))) {
+        const str = String(this._id || '');
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash += str.charCodeAt(i);
+        }
+        const index = (hash % 10) + 1;
+        const gender = this.gender || 'male';
+        if (gender === 'female') {
+            this.profileImage = `/uploads/avatars/avatar_female${index}.svg`;
+        } else if (gender === 'other') {
+            if (hash % 2 === 0) {
+                this.profileImage = `/uploads/avatars/avatar_female${index}.svg`;
+            } else {
+                this.profileImage = `/uploads/avatars/avatar_male${index}.svg`;
+            }
+        } else {
+            this.profileImage = `/uploads/avatars/avatar_male${index}.svg`;
+        }
+    }
+    next();
+});
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {

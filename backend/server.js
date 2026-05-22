@@ -94,6 +94,51 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ MongoDB connected successfully');
 
+    // Run database self-healing migration for student avatars
+    try {
+      const User = require('./models/User');
+      const students = await User.find({ role: 'student' });
+      let healCount = 0;
+      
+      const getDeterministicAvatar = (id, gender) => {
+        const str = String(id || '');
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          hash += str.charCodeAt(i);
+        }
+        const index = (hash % 10) + 1;
+        const g = gender || 'male';
+        if (g === 'female') {
+          return `/uploads/avatars/avatar_female${index}.svg`;
+        } else if (g === 'other') {
+          if (hash % 2 === 0) {
+            return `/uploads/avatars/avatar_female${index}.svg`;
+          } else {
+            return `/uploads/avatars/avatar_male${index}.svg`;
+          }
+        } else {
+          return `/uploads/avatars/avatar_male${index}.svg`;
+        }
+      };
+
+      for (const student of students) {
+        const isDefault = !student.profileImage || student.profileImage.startsWith('/uploads/avatars/');
+        if (isDefault) {
+          const correctAvatar = getDeterministicAvatar(student._id, student.gender);
+          if (student.profileImage !== correctAvatar) {
+            student.profileImage = correctAvatar;
+            await student.save({ validateBeforeSave: false });
+            healCount++;
+          }
+        }
+      }
+      if (healCount > 0) {
+        console.log(`⚡ Healed default avatars for ${healCount} student(s) out of 10`);
+      }
+    } catch (migrationError) {
+      console.error('⚠️ Avatar self-healing migration error:', migrationError);
+    }
+
     // Initialize public chat room
     try {
       const { initializePublicRoom } = require('./controllers/chatInitializer');

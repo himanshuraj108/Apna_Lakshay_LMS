@@ -145,6 +145,11 @@ exports.login = async (req, res) => {
 
         // Normal login flow continues...
 
+        // Self-heal: If student has no profileImage, assign default avatar
+        if (!user.profileImage && user.role === 'student') {
+            user.profileImage = '/uploads/avatars/avatar1.svg';
+        }
+
         // Update login status (non-blocking)
         user.isLoggedIn = true;
         user.lastLogin = new Date();
@@ -169,7 +174,8 @@ exports.login = async (req, res) => {
                 examTarget: user.examTarget,
                 mockTestCredits: user.mockTestCredits,
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
-                doubtCredits: user.doubtCredits || 0
+                doubtCredits: user.doubtCredits || 0,
+                gender: user.gender
             }
         });
     } catch (error) {
@@ -209,6 +215,12 @@ exports.getMe = async (req, res) => {
 
         const user = await User.findById(req.user.id).select('+qrToken');
 
+        // Self-heal: If student has no profileImage, assign default avatar
+        if (!user.profileImage && user.role === 'student') {
+            user.profileImage = '/uploads/avatars/avatar1.svg';
+            await User.findByIdAndUpdate(user._id, { profileImage: '/uploads/avatars/avatar1.svg' });
+        }
+
         // Check and Reset Daily Mock Test Credits (00:00 IST) (non-blocking update)
         const currentDateIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
         if (user.mockTestCreditsResetDate !== currentDateIST) {
@@ -235,7 +247,8 @@ exports.getMe = async (req, res) => {
             mockTestCredits: user.mockTestCredits,
             bonusMockTestCredits: user.bonusMockTestCredits || 0,
             examTarget: user.examTarget,
-            doubtCredits: user.doubtCredits || 0
+            doubtCredits: user.doubtCredits || 0,
+            gender: user.gender
         };
 
         try {
@@ -549,7 +562,8 @@ exports.verifySeatLogin = async (req, res) => {
                 examTarget: user.examTarget,
                 mockTestCredits: user.mockTestCredits,
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
-                doubtCredits: user.doubtCredits || 0
+                doubtCredits: user.doubtCredits || 0,
+                gender: user.gender
             }
         });
     } catch (error) {
@@ -817,7 +831,8 @@ exports.verifyOtpAndAutoLogin = async (req, res) => {
                 examTarget: user.examTarget,
                 mockTestCredits: user.mockTestCredits,
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
-                doubtCredits: user.doubtCredits || 0
+                doubtCredits: user.doubtCredits || 0,
+                gender: user.gender
             }
         });
     } catch (error) {
