@@ -49,4 +49,24 @@ api.interceptors.response.use(
     }
 );
 
+export const getDeterministicAvatar = (id, gender) => {
+    if (!id) return '/uploads/avatars/avatar1.svg';
+    const str = String(id);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash += str.charCodeAt(i);
+    }
+    const index = (hash % 10) + 1;
+    const g = (gender || '').toLowerCase() || 'male';
+    if (g === 'female') {
+        return `/uploads/avatars/avatar_female${index}.svg`;
+    } else if (g === 'other') {
+        return hash % 2 === 0 
+            ? `/uploads/avatars/avatar_female${index}.svg` 
+            : `/uploads/avatars/avatar_male${index}.svg`;
+    } else {
+        return `/uploads/avatars/avatar_male${index}.svg`;
+    }
+};
+
 export default api;
