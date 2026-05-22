@@ -1201,22 +1201,35 @@ exports.withdrawRequest = async (req, res) => {
         });
     }
 };
-
 // @desc    Update profile
 // @route   PUT /api/student/profile
 exports.updateProfile = async (req, res) => {
     try {
-        const { name, examTarget } = req.body;
+        const { name, examTarget, avatar, gender } = req.body;
 
-        const updateData = {};
-        if (name !== undefined) updateData.name = name;
-        if (examTarget !== undefined) updateData.examTarget = examTarget;
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
 
-        const user = await User.findByIdAndUpdate(
-            req.user.id,
-            updateData,
-            { new: true, runValidators: true }
-        ).select('-password');
+        if (name !== undefined) user.name = name;
+        if (examTarget !== undefined) user.examTarget = examTarget;
+
+        if (gender !== undefined) {
+            user.gender = gender;
+        }
+
+        if (avatar !== undefined) {
+            // Validate it is one of the 10 built-in study avatars
+            if (avatar.startsWith('/uploads/avatars/avatar') && avatar.endsWith('.svg')) {
+                user.profileImage = avatar;
+            }
+        }
+
+        await user.save();
 
         res.status(200).json({
             success: true,
@@ -1303,9 +1316,7 @@ exports.deleteProfileImage = async (req, res) => {
         const user = await User.findById(req.user.id);
 
         // Cloudinary images persist even after removing from DB
-        // If you want to delete from Cloudinary too, you'll need the publicId
-        // For now, just remove the reference from the database
-        user.profileImage = null;
+        user.profileImage = undefined;
         await user.save();
 
         res.status(200).json({

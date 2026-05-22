@@ -157,7 +157,7 @@ const getLeaderboard = async (req, res) => {
         const { sortBy = 'xp' } = req.query;
 
         // Fetch all active students who are not disabled
-        const students = await User.find({ role: 'student', isDisabled: { $ne: true } })
+        const students = await User.find({ role: 'student', isActive: true, isDisabled: { $ne: true } })
             .select('name studentId profileImage');
 
         // Fetch StudyStreak records for these students
