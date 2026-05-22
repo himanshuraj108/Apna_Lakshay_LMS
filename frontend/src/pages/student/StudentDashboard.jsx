@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardSkeleton } from '../../components/ui/SkeletonLoader';
 import IDCard from '../../components/dashboard/IDCard';
-import api from '../../utils/api';
+import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 import {
     IoBedOutline, IoCalendarOutline, IoCashOutline,
     IoBookOutline, IoNotificationsOutline, IoPersonOutline,
@@ -990,13 +990,22 @@ const StudentDashboard = () => {
                 >
                     <div className="flex items-center gap-3">
                         <div className="relative shrink-0">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-md">
-                                {initials}
+                            <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-orange-200/50 shadow-md">
+                                    <img 
+                                        src={(() => {
+                                            const img = (!user?.profileImage || user.profileImage === '/uploads/avatars/avatar1.svg')
+                                                ? getDeterministicAvatar(user?._id || user?.id, user?.gender)
+                                                : user.profileImage;
+                                            return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                        })()} 
+                                        alt={user.name} 
+                                        className="w-full h-full object-cover" 
+                                    />
                             </div>
                             {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#FFF7ED]" />}
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm" style={{ color: '#111827' }}>{user?.name?.split(" ")[0]}</span>
+                            <span className="font-bold text-sm" style={{ color: '#111827' }}>{user?.name?.split(" ")[0]} 👋</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
