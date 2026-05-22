@@ -7,8 +7,8 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import SkeletonLoader, { ProfileSkeleton } from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
-import api, { BASE_URL } from '../../utils/api';
-import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward, IoDocumentTextOutline, IoReceiptOutline } from 'react-icons/io5';
+import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
+import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward, IoDocumentTextOutline, IoReceiptOutline, IoMaleFemale, IoSparkles } from 'react-icons/io5';
 import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import CombinedSeatShiftModal from '../../components/student/CombinedSeatShiftModal';
@@ -36,6 +36,8 @@ const EXAM_TARGETS = [
     { value: 'generic', label: 'General Aptitude & Knowledge' }
 ];
 
+// Dynamic gender-specific study avatars are loaded inside the component
+
 const Profile = () => {
     const { user, updateUser, logout } = useAuth();
     const navigate = useNavigate();
@@ -61,10 +63,43 @@ const Profile = () => {
     const [availableShifts, setAvailableShifts] = useState([]);
     const [occupiedShifts, setOccupiedShifts] = useState([]);
     const [loadingShifts, setLoadingShifts] = useState(false);
+    const [streakStats, setStreakStats] = useState(null);
+    const [loadingStreak, setLoadingStreak] = useState(true);
+    const [coverQuote, setCoverQuote] = useState({ content: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" });
+
+
+    const getStudyAvatars = () => {
+        const gender = (profile?.gender || 'male').toLowerCase();
+        if (gender === 'female') {
+            return Array.from({ length: 10 }, (_, i) => `/uploads/avatars/avatar_female${i + 1}.svg`);
+        } else if (gender === 'other') {
+            return Array.from({ length: 10 }, (_, i) => 
+                i % 2 === 0 
+                    ? `/uploads/avatars/avatar_female${i + 1}.svg`
+                    : `/uploads/avatars/avatar_male${i + 1}.svg`
+            );
+        } else {
+            return Array.from({ length: 10 }, (_, i) => `/uploads/avatars/avatar_male${i + 1}.svg`);
+        }
+    };
 
     useEffect(() => {
         fetchProfile();
         fetchFirstFee();
+        fetchStreakStats();
+
+        // Choose random motivation quote for card cover
+        const quotes = [
+            { content: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+            { content: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+            { content: "Strive for progress, not perfection.", author: "Unknown" },
+            { content: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+            { content: "The future belongs to those who prepare for it today.", author: "Malcolm X" },
+            { content: "Doubt kills more dreams than failure ever will.", author: "Suzy Kassem" },
+            { content: "The beautiful thing about learning is that nobody can take it away from you.", author: "B.B. King" }
+        ];
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        setCoverQuote(randomQuote);
     }, []);
 
     useEffect(() => {
@@ -105,6 +140,15 @@ const Profile = () => {
             const paid = fees.filter(f => f.status === 'paid').sort((a, b) => new Date(a.paidDate) - new Date(b.paidDate));
             setLatestFee(paid[0] || fees[0] || null);
         } catch(e) { /* silent */ }
+    };
+
+    const fetchStreakStats = async () => {
+        try {
+            const res = await api.get('/student/engagement/streak-stats');
+            if (res.data.success) setStreakStats(res.data.stats);
+        } catch(e) { /* silent */ } finally {
+            setLoadingStreak(false);
+        }
     };
 
     const handleImageUpload = async (e) => {
@@ -164,6 +208,19 @@ const Profile = () => {
             setTimeout(() => setSuccess(''), 3000);
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to update exam target');
+            setTimeout(() => setError(''), 3000);
+        }
+    };
+
+    const handleAvatarChange = async (avatarPath) => {
+        try {
+            const response = await api.put('/student/profile', { avatar: avatarPath });
+            setProfile(prev => ({ ...prev, ...response.data.user }));
+            updateUser(response.data.user);
+            setSuccess('Avatar updated successfully!');
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (error) {
+            setError(error.response?.data?.message || 'Failed to update avatar');
             setTimeout(() => setError(''), 3000);
         }
     };
@@ -245,9 +302,13 @@ const Profile = () => {
     }[memberStatus];
 
     const initials = (profile?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    const imgSrc = profile?.profileImage
-        ? (profile.profileImage.startsWith('http') ? profile.profileImage : `${BASE_URL}${profile.profileImage}`)
-        : null;
+    const imgSrc = (() => {
+        const img = (!profile?.profileImage || profile.profileImage === '/uploads/avatars/avatar1.svg')
+            ? getDeterministicAvatar(profile?._id || profile?.id, profile?.gender)
+            : profile.profileImage;
+        return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+    })();
+    const isDefaultAvatar = !profile?.profileImage || profile.profileImage.startsWith('/uploads/avatars/');
 
     const InfoRow = ({ icon: Icon, label, value, color = 'text-gray-400' }) => (
         <div className="flex items-center gap-4 py-3.5 border-b border-gray-100 last:border-0 group">
@@ -274,113 +335,215 @@ const Profile = () => {
             {/* ── Content ── */}
             <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
 
-                {/* ── Top bar ── */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-3">
-                    <Link to="/student">
-                        <motion.button whileHover={{ scale: 1.05, x: -3 }} whileTap={{ scale: 0.97 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-                            style={{ color: '#374151' }}
-                        >
-                            <IoArrowBack size={16} /> Back to Dashboard
-                        </motion.button>
-                    </Link>
-                    <div className="flex items-center gap-2">
+                {/* ── Center aligned Top Bar and Redesigned Profile Card ── */}
+                <div className="w-full max-w-[420px] mx-auto mb-8">
+                    {/* ── Top bar ── */}
+                    <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3">
+                        <Link to="/student">
+                            <motion.button whileHover={{ scale: 1.03, x: -2 }} whileTap={{ scale: 0.98 }}
+                                className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-[20px] text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm text-gray-700"
+                            >
+                                <IoArrowBack size={16} /> Back to Dashboard
+                            </motion.button>
+                        </Link>
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 text-red-500 rounded-xl text-sm font-medium transition-all"
+                            className="flex items-center justify-center w-12 h-12 bg-[#FFF2F2] hover:bg-[#FFE5E5] border border-[#FFE0E0] hover:border-[#FFCCCC] text-red-500 rounded-[18px] transition-all shadow-sm"
                         >
-                            <IoLogOut size={15} />
+                            <IoLogOut size={20} />
                         </motion.button>
-                    </div>
-                </motion.div>
-
-                {/* ── Toast alerts ── */}
-                {success && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-green-50 border border-green-200 text-green-600 rounded-xl text-sm font-medium">
-                        <IoCheckmarkCircleOutline size={18} /> {success}
                     </motion.div>
-                )}
-                {error && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-red-50 border border-red-200 text-red-500 rounded-xl text-sm font-medium">
-                        <IoCloseCircleOutline size={18} /> {error}
-                    </motion.div>
-                )}
 
-                {/* ── Hero Profile Banner ── */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                    className="bg-white border border-gray-200 relative rounded-2xl overflow-hidden mb-6"
-                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}
-                >
-                    {/* Gradient banner */}
-                    <div className="min-h-[7rem] relative flex flex-col justify-center" style={{ background: 'linear-gradient(135deg, #FFF7ED, #FFEDD5)' }}>
-                        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #F97316, #FB923C, #FBBF24)' }} />
-                        <div className="relative z-10 w-full pl-36 pr-6 py-4">
-                            <MotivationBanner />
+                    {/* ── Toast alerts ── */}
+                    {success && (
+                        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-green-50 border border-green-200 text-green-600 rounded-xl text-sm font-medium">
+                            <IoCheckmarkCircleOutline size={18} /> {success}
+                        </motion.div>
+                    )}
+                    {error && (
+                        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 flex items-center gap-3 px-4 py-3.5 bg-red-50 border border-red-200 text-red-500 rounded-xl text-sm font-medium">
+                            <IoCloseCircleOutline size={18} /> {error}
+                        </motion.div>
+                    )}
+
+                    {/* ── Redesigned Premium Profile Card (Like Screenshot Mockup) ── */}
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                        className="bg-white border border-gray-200 relative rounded-[32px] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                    >
+                        {/* Orange/Yellow Gradient stripe and Motivation Quote Cover */}
+                        <div className="h-32 relative overflow-hidden bg-gradient-to-br from-[#FEF6EB] to-[#FFF9F2] flex items-center px-4 sm:px-8 select-none">
+                            {/* Gradient thin top stripe */}
+                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-300" />
+                            
+                            {/* Decorative grid pattern overlay */}
+                            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,_#F39C12_1px,_transparent_0)] bg-[size:16px_16px]" />
+                            
+                            {/* Responsive Motivation Quote (Restricted to right side to avoid avatar overlap) */}
+                            <div className="relative z-10 flex gap-3 items-center ml-auto max-w-[calc(100%-120px)] sm:max-w-md pr-2">
+                                {/* Sparkle Icon (hidden on extra small mobile screens) */}
+                                <div className="shrink-0 p-2 rounded-xl bg-orange-100/80 border border-orange-200/60 text-orange-600 shadow-sm hidden xs:flex">
+                                    <IoSparkles size={16} className="animate-pulse" />
+                                </div>
+                                
+                                {/* Quote Content */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-gray-800 text-[10px] sm:text-xs italic leading-relaxed font-semibold">
+                                        "{coverQuote.content}"
+                                    </p>
+                                    <p className="text-orange-600 text-[8px] sm:text-[10px] font-bold mt-0.5 tracking-wide uppercase">
+                                        — {coverQuote.author}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="px-6 pb-6">
-                        {/* Avatar */}
-                        <div className="relative -mt-12 mb-4 flex items-end justify-between flex-wrap gap-4">
-                            <div className="relative">
-                                <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
-                                    {imgSrc ? (
-                                        <img src={imgSrc} alt={profile?.name} className="w-full h-full object-cover" crossOrigin="anonymous" />
-                                    ) : (
-                                        <IoPerson size={44} className="text-white/70" />
+                        <div className="px-8 pb-8 relative">
+                            {/* Avatar & Remove Photo Button */}
+                            <div className="flex items-start justify-between gap-4 -mt-14 mb-6">
+                                <div className="relative shrink-0 z-10">
+                                    <div className="w-28 h-28 rounded-[24px] overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center">
+                                        {imgSrc ? (
+                                            <img 
+                                                src={imgSrc} 
+                                                alt={profile?.name} 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.removeAttribute('crossorigin');
+                                                    e.target.src = getDeterministicAvatar(profile?._id || profile?.id, profile?.gender);
+                                                }}
+                                            />
+                                        ) : (
+                                            <IoPerson size={44} className="text-white/70" />
+                                        )}
+                                    </div>
+                                    {/* Upload overlay clickable area */}
+                                    <label htmlFor="image-upload" className="absolute inset-0 flex items-center justify-center rounded-[20px] cursor-pointer transition-all group hover:bg-black/45 bg-transparent">
+                                        <IoCamera size={22} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </label>
+                                    <input type="file" id="image-upload" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                                    
+                                    {/* Green Active Dot */}
+                                    {memberStatus === 'active' && (
+                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#2ECC71] rounded-full border-4 border-white shadow-md z-20" />
                                     )}
                                 </div>
-                                {/* Upload overlay */}
-                                <label htmlFor="image-upload" className={`absolute inset-0 flex items-center justify-center rounded-2xl cursor-pointer transition-all group ${imgSrc ? 'bg-black/0 hover:bg-black/50' : 'bg-black/30 hover:bg-black/50'}`}>
-                                    <IoCamera size={22} className={`text-white transition-opacity ${imgSrc ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`} />
-                                </label>
-                                <input type="file" id="image-upload" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                                {memberStatus === 'active' && (
-                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white shadow" />
-                                )}
-                            </div>
 
-                            <div className="flex gap-2">
-                                {profile?.profileImage && (
-                                    <motion.button whileTap={{ scale: 0.95 }} onClick={handleImageDelete}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-500 hover:bg-red-100 rounded-lg text-xs font-medium transition-all"
-                                    >
-                                        <IoTrash size={13} /> Remove Photo
-                                    </motion.button>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex items-start justify-between flex-wrap gap-3">
-                            <div>
-                                <h1 className="shimmer-p text-3xl font-black">{profile?.name}</h1>
-                                <p className="text-sm mt-1 flex items-center gap-1.5" style={{ color: '#6B7280' }}>
-                                    <IoMail size={13} /> {profile?.email}
-                                </p>
-                                {/* Download buttons */}
-                                <div className="flex gap-2 mt-3 flex-wrap">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                        onClick={() => setShowAdmissionModal(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
-                                    >
-                                        <IoDocumentTextOutline size={13} /> Download Admission Form
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                        onClick={() => { fetchFirstFee(); setShowReceiptModal(true); }}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-400 hover:to-red-400 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
-                                    >
-                                        <IoReceiptOutline size={13} /> Download Receipt
-                                    </motion.button>
+                                <div className="pt-16">
+                                    {profile?.profileImage && !isDefaultAvatar ? (
+                                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleImageDelete}
+                                            className="flex items-center gap-1.5 px-4 py-2 border border-red-200 bg-[#FFF5F5] hover:bg-[#FFEBEB] text-[#E53E3E] rounded-full text-xs font-bold transition-all shadow-sm"
+                                        >
+                                            <IoTrash size={14} /> Remove Photo
+                                        </motion.button>
+                                    ) : (
+                                        <label htmlFor="image-upload" className="flex items-center gap-1.5 px-4 py-2 border border-orange-200 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer">
+                                            <IoCloudUpload size={14} /> Upload Photo
+                                        </label>
+                                    )}
                                 </div>
                             </div>
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${statusConfig.bg} border ${statusConfig.border}`}>
-                                <span className={`w-2 h-2 rounded-full ${statusConfig.dot} animate-pulse`} />
-                                <span className={`text-xs font-bold ${statusConfig.text}`}>{statusConfig.label}</span>
+
+                            {/* Name, Email and Actions */}
+                            <div className="text-left">
+                                <h1 className="text-3xl font-extrabold tracking-tight text-[#E28743] uppercase mb-1 leading-tight font-sans">
+                                    {profile?.name}
+                                </h1>
+                                <div className="flex items-center gap-2 text-gray-400 mb-6">
+                                    <IoMail size={16} />
+                                    <span className="text-sm font-medium text-gray-500">{profile?.email}</span>
+                                </div>
+
+                                <div className="flex flex-col gap-3.5">
+                                    {/* Download Admission Form */}
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => setShowAdmissionModal(true)}
+                                        className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#4F46E5] hover:bg-[#4338CA] text-white rounded-2xl text-sm font-bold transition-all shadow-sm"
+                                    >
+                                        <IoDocumentTextOutline size={18} /> Download Admission Form
+                                    </motion.button>
+
+                                    {/* Download Receipt */}
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => { fetchFirstFee(); setShowReceiptModal(true); }}
+                                        className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#D3524A] hover:bg-[#C0392B] text-white rounded-2xl text-sm font-bold transition-all shadow-sm"
+                                    >
+                                        <IoReceiptOutline size={18} /> Download Receipt
+                                    </motion.button>
+
+                                    {/* Dynamic Active/Pending/Inactive Badge */}
+                                    <div className={`w-full flex items-center justify-center gap-2.5 py-3.5 ${
+                                        memberStatus === 'active' ? 'bg-[#EAFBF1] border-[#D5F5E3] text-[#27AE60]' :
+                                        memberStatus === 'pending' ? 'bg-amber-50 border-amber-200 text-amber-600' :
+                                        'bg-red-50 border-red-200 text-red-500'
+                                    } border rounded-2xl text-sm font-bold shadow-sm`}>
+                                        <span className={`w-2.5 h-2.5 rounded-full ${
+                                            memberStatus === 'active' ? 'bg-[#2ECC71]' :
+                                            memberStatus === 'pending' ? 'bg-amber-400' :
+                                            'bg-red-400'
+                                        }`} />
+                                        {statusConfig.label}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </motion.div>
+                    </motion.div>
+                </div>
+
+                {/* ── Avatar Selection Grid ── */}
+                {isDefaultAvatar && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.08 }}
+                        className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 relative overflow-hidden"
+                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                    >
+                        <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #F97316, #FBBF24, transparent)' }} />
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-500 animate-pulse">
+                                <IoPerson size={13} />
+                            </div>
+                            <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Choose Your Study Avatar</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-4">
+                            Select one of the premium study-themed face avatars below. If you upload your own profile photo, this list will be hidden.
+                        </p>
+                        <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
+                            {getStudyAvatars().map((avatarPath, index) => {
+                                const isSelected = profile?.profileImage === avatarPath;
+                                const avatarUrl = `${BASE_URL}${avatarPath}`;
+                                return (
+                                    <motion.button
+                                        key={avatarPath}
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => handleAvatarChange(avatarPath)}
+                                        className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all p-1 flex items-center justify-center ${
+                                            isSelected
+                                                ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-500/20 shadow-md shadow-orange-500/10'
+                                                : 'border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50/20'
+                                        }`}
+                                        title={`Study Avatar ${index + 1}`}
+                                    >
+                                        <img
+                                            src={avatarUrl}
+                                            alt={`Avatar ${index + 1}`}
+                                            className="w-full h-full object-contain rounded-lg"
+                                            crossOrigin="anonymous"
+                                        />
+                                        {isSelected && (
+                                            <div className="absolute bottom-1 right-1 bg-orange-500 text-white rounded-full p-0.5 shadow-sm flex items-center justify-center w-4 h-4 z-10">
+                                                <IoCheckmarkCircleOutline size={12} className="text-white" />
+                                            </div>
+                                        )}
+                                    </motion.button>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* ── Main Grid ── */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
@@ -426,8 +589,12 @@ const Profile = () => {
                                     <div style={{ position:'absolute', top:'34px', left:'12px', right:'12px', bottom:'28px', display:'flex', alignItems:'center', gap:'10px' }}>
                                         {/* Left: avatar + info */}
                                         <div style={{ flex:1, minWidth:0 }}>
-                                            <div style={{ width:'36px', height:'36px', borderRadius:'8px', background:'linear-gradient(135deg,#F97316,#FBBF24)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'6px', border:'2px solid rgba(255,255,255,0.2)' }}>
-                                                <IoPerson size={18} style={{ color:'#fff' }} />
+                                            <div style={{ width:'36px', height:'36px', borderRadius:'8px', background:'linear-gradient(135deg,#F97316,#FBBF24)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'6px', border:'2px solid rgba(255,255,255,0.2)', overflow:'hidden' }}>
+                                                {imgSrc ? (
+                                                    <img src={imgSrc} alt={profile?.name} className="w-full h-full object-cover" crossOrigin="anonymous" />
+                                                ) : (
+                                                    <IoPerson size={18} style={{ color:'#fff' }} />
+                                                )}
                                             </div>
                                             <p style={{ fontSize:'9px', fontWeight:900, color:'#ffffff', letterSpacing:'0.04em', margin:'0 0 2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{profile?.name}</p>
                                             <p style={{ fontSize:'6px', color:'rgba(255,255,255,0.45)', margin:'0 0 3px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{profile?.email}</p>
@@ -576,6 +743,12 @@ const Profile = () => {
                                 </div>
                             </div>
                         </div>
+                        <InfoRow 
+                            icon={IoMaleFemale} 
+                            label="Gender" 
+                            value={profile?.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : 'Not specified'} 
+                            color="text-pink-500" 
+                        />
                         <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
                         <InfoRow icon={IoCalendar}  label="Member Since"
                             value={profile?.createdAt
@@ -585,6 +758,122 @@ const Profile = () => {
                         />
                     </motion.div>
                 </div>
+
+                {/* ── Activity Stats & Achievements ── */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                    className="rounded-2xl overflow-hidden bg-white border border-gray-200 mb-5"
+                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                >
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                            <IoTime size={13} className="text-orange-500" />
+                        </div>
+                        <p className="font-bold text-sm" style={{ color: '#111827' }}>Activity &amp; Achievements</p>
+                    </div>
+
+                    <div className="p-5">
+                        {loadingStreak ? (
+                            <div className="flex items-center justify-center py-8 gap-3">
+                                <div className="w-5 h-5 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                                <span className="text-sm text-gray-400">Loading activity...</span>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Stat Cards */}
+                                <div className="grid grid-cols-3 gap-3 mb-5">
+                                    {[
+                                        { label: 'Current Streak', value: `${streakStats?.currentStreak ?? 0}`, unit: 'days', color: '#F97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)' },
+                                        { label: 'Longest Streak', value: `${streakStats?.longestStreak ?? 0}`, unit: 'days', color: '#6366F1', bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.2)' },
+                                        { label: 'Focus Time', value: `${Math.round((streakStats?.totalFocusTime ?? 0) / 60)}`, unit: 'hrs', color: '#10B981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' },
+                                    ].map(({ label, value, unit, color, bg, border }) => (
+                                        <div key={label} className="rounded-xl p-3 text-center" style={{ background: bg, border: `1px solid ${border}` }}>
+                                            <p className="text-xl font-black" style={{ color }}>{value}<span className="text-xs font-semibold ml-0.5 opacity-70">{unit}</span></p>
+                                            <p className="text-[10px] font-semibold mt-0.5 text-gray-500 leading-tight">{label}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* 30-Day Heatmap */}
+                                <div className="mb-5">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">30-Day Activity</p>
+                                    <div className="flex gap-1 flex-wrap">
+                                        {(() => {
+                                            const today = new Date();
+                                            const days = Array.from({ length: 30 }, (_, i) => {
+                                                const d = new Date(today);
+                                                d.setDate(today.getDate() - (29 - i));
+                                                return d.toISOString().slice(0, 10);
+                                            });
+                                            const logMap = {};
+                                            (streakStats?.activityLog || []).forEach(entry => {
+                                                const k = new Date(entry.date).toISOString().slice(0, 10);
+                                                logMap[k] = (logMap[k] || 0) + (entry.count || 1);
+                                            });
+                                            return days.map(dateStr => {
+                                                const count = logMap[dateStr] || 0;
+                                                const opacity = count === 0 ? 0 : count < 3 ? 0.4 : count < 6 ? 0.7 : 1;
+                                                return (
+                                                    <div
+                                                        key={dateStr}
+                                                        title={`${dateStr}: ${count} activities`}
+                                                        className="rounded"
+                                                        style={{
+                                                            width: 18, height: 18, flexShrink: 0,
+                                                            background: count === 0 ? '#E5E7EB' : `rgba(249,115,22,${opacity})`,
+                                                            border: count > 0 ? '1px solid rgba(249,115,22,0.3)' : '1px solid #D1D5DB',
+                                                        }}
+                                                    />
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                    <div className="flex items-center gap-1.5 mt-2">
+                                        <span className="text-[10px] text-gray-400">Less</span>
+                                        {[0, 0.35, 0.6, 0.85, 1].map((o, i) => (
+                                            <div key={i} className="w-3 h-3 rounded-sm" style={{ background: i === 0 ? '#E5E7EB' : `rgba(249,115,22,${o})` }} />
+                                        ))}
+                                        <span className="text-[10px] text-gray-400">More</span>
+                                    </div>
+                                </div>
+
+                                {/* Achievements */}
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Unlocked Achievements</p>
+                                    {(streakStats?.achievements || []).length === 0 ? (
+                                        <div className="flex items-center gap-3 py-3 px-4 rounded-xl bg-gray-50 border border-gray-200">
+                                            <IoShieldCheckmark size={18} className="text-gray-300 shrink-0" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-600">No achievements yet</p>
+                                                <p className="text-xs text-gray-400">Keep a 5-day streak to earn your first badge.</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-2">
+                                            {(streakStats?.achievements || []).map((ach, i) => {
+                                                const meta = {
+                                                    'streak_5':  { title: '5-Day Streak Explorer',  color: '#10B981', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)' },
+                                                    'streak_10': { title: '10-Day Streak Warrior',   color: '#F59E0B', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.25)' },
+                                                    'streak_15': { title: '15-Day Streak Master',    color: '#6366F1', bg: 'rgba(99,102,241,0.08)',   border: 'rgba(99,102,241,0.25)' },
+                                                    'streak_30': { title: '30-Day Streak Legend',    color: '#F97316', bg: 'rgba(249,115,22,0.08)',   border: 'rgba(249,115,22,0.25)' },
+                                                }[ach.id] || { title: ach.id, color: '#6B7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)' };
+                                                return (
+                                                    <div key={i} className="flex items-center gap-3 py-2.5 px-4 rounded-xl" style={{ background: meta.bg, border: `1px solid ${meta.border}` }}>
+                                                        <IoShieldCheckmark size={18} style={{ color: meta.color, flexShrink: 0 }} />
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-bold" style={{ color: meta.color }}>{meta.title}</p>
+                                                            <p className="text-[11px] text-gray-500">Unlocked {ach.unlockedAt ? new Date(ach.unlockedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</p>
+                                                        </div>
+                                                        <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: meta.color, color: '#fff' }}>EARNED</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </motion.div>
 
                 {/* ── Change Requests ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}

@@ -99,7 +99,6 @@ const MotivationBanner = () => {
                                 </motion.div>
                             )}
                         </div>
-
                     </div>
                 </motion.div>
             )}
