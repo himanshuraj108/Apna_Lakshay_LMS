@@ -186,7 +186,7 @@ exports.checkEmailAvailability = async (req, res) => {
 // @route   POST /api/public/register
 exports.registerStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address } = req.body;
+        const { name, email, mobile, address, gender = 'male' } = req.body;
 
         // Validation
         if (!name || !email || !mobile || !address) {
@@ -224,12 +224,17 @@ exports.registerStudent = async (req, res) => {
             plainPassword = generatePassword();
         }
 
+        // Default avatar is handled deterministically by User.js pre-save hook based on _id
+        let profileImage = undefined;
+
         // Create student user
         const student = await User.create({
             name,
             email,
             mobile,
             address,
+            gender,
+            profileImage,
             password: plainPassword,
             role: 'student',
             isActive: true, // Auto-activate so they appear in Pending Allocation

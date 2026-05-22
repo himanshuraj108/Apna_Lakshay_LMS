@@ -188,18 +188,29 @@ exports.getStudentChatHistory = async (req, res) => {
 // GET /api/admin/chat-history (list all students with session counts)
 exports.getStudentsWithChatHistory = async (req, res) => {
     try {
+        const { showInactive } = req.query;
         const counts = await DoubtSession.aggregate([
             { $group: { _id: '$student', sessionCount: { $sum: 1 }, lastActive: { $max: '$lastActive' } } },
             { $sort: { lastActive: -1 } },
         ]);
         const studentIds = counts.map(c => c._id);
-        const students = await User.find({ _id: { $in: studentIds } }).select('name studentId email').lean();
+        
+        const userQuery = { _id: { $in: studentIds } };
+        if (showInactive !== 'true') {
+            userQuery.isActive = true;
+        }
+
+        const students = await User.find(userQuery).select('name studentId email isActive').lean();
         const sMap = {}; students.forEach(s => { sMap[s._id.toString()] = s; });
-        const result = counts.map(c => ({
-            ...sMap[c._id.toString()],
-            sessionCount: c.sessionCount,
-            lastActive: c.lastActive,
-        })).filter(x => x.name);
+        const result = counts.map(c => {
+            const studentInfo = sMap[c._id.toString()];
+            if (!studentInfo) return null;
+            return {
+                ...studentInfo,
+                sessionCount: c.sessionCount,
+                lastActive: c.lastActive,
+            };
+        }).filter(x => x && x.name);
         res.json({ success: true, students: result });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
