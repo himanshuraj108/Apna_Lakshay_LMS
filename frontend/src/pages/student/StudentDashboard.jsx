@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { DashboardSkeleton } from '../../components/ui/SkeletonLoader';
 import IDCard from '../../components/dashboard/IDCard';
 import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
@@ -16,7 +17,8 @@ import {
     IoLocation, IoLogInOutline, IoLogOutOutline, IoTimerOutline, IoInformationCircleOutline, IoSyncOutline, IoSwapHorizontalOutline,
     IoLogOutOutline as IoLogoutIcon, IoChevronForward, IoGridOutline, IoMapOutline,
     IoMenuOutline, IoCloseOutline, IoKeypadOutline,
-    IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline
+    IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline,
+    IoLanguageOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -579,6 +581,7 @@ const StudentDashboard = () => {
     const [pinError, setPinError]                     = useState('');
     const [directMarkLoading, setDirectMarkLoading]   = useState(false);
     const { logout, user } = useAuth();
+    const { t, language, setLanguage } = useLanguage();
     const isActive = user?.isActive;
     const hasSeat = dashboardData?.seat || (dashboardData?.tempAssignments?.length > 0);
     const navigate = useNavigate();
@@ -958,7 +961,22 @@ const StudentDashboard = () => {
                     </div>
 
                     {/* Nav right */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        {/* Premium Language Toggler Pill */}
+                        <div className="flex items-center gap-1 bg-gray-100/80 p-0.5 rounded-xl border border-gray-200/50 backdrop-blur-sm shadow-sm select-none">
+                            <button
+                                onClick={() => setLanguage('en')}
+                                className={`px-2 py-0.5 text-[10px] sm:text-xs font-black rounded-lg transition-all ${language === 'en' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                            >
+                                EN
+                            </button>
+                            <button
+                                onClick={() => setLanguage('hi')}
+                                className={`px-2 py-0.5 text-[10px] sm:text-xs font-black rounded-lg transition-all ${language === 'hi' ? 'bg-white text-orange-500 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                            >
+                                हिं
+                            </button>
+                        </div>
                         <Link to="/student/notifications" className="relative p-2.5 rounded-xl hover:bg-gray-100 transition-all" style={{ color: '#6B7280' }}>
                             <IoNotificationsOutline size={20} />
                             {dashboardData?.unreadNotifications > 0 && (
@@ -1011,8 +1029,8 @@ const StudentDashboard = () => {
                     <div className="flex items-center gap-3">
                         <span className="text-[11px] hidden sm:block" style={{ color: '#9CA3AF' }}>{today}</span>
                         {isActive
-                            ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-2 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />Active</span>
-                            : <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 border border-red-200 text-red-500 px-2 py-0.5 rounded-full font-semibold">Inactive</span>}
+                            ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-2 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{t("Active")}</span>
+                            : <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 border border-red-200 text-red-500 px-2 py-0.5 rounded-full font-semibold">{t("Inactive")}</span>}
                     </div>
                 </motion.div>
 
@@ -1032,9 +1050,9 @@ const StudentDashboard = () => {
                             {/* Urgent nudge banner */}
                             <div className="px-4 pt-4 pb-0 flex flex-wrap items-center gap-2">
                                 <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 border border-orange-200 text-orange-600 animate-pulse">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />Today's Task
+                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />{t("Today's Task")}
                                 </span>
-                                <span className="text-[9px] font-semibold text-gray-400">Complete before midnight to keep your streak!</span>
+                                <span className="text-[9px] font-semibold text-gray-400">{t("Complete before midnight")}</span>
                             </div>
                             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
@@ -1042,20 +1060,20 @@ const StudentDashboard = () => {
                                         <IoSparklesOutline size={15} className="text-white" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }} />
                                     </div>
                                     <div className="min-w-0">
-                                        <h2 className="font-black text-xs sm:text-sm text-gray-900 truncate">Daily Challenge</h2>
-                                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-semibold truncate">5 target-focused questions • Up to +70 XP</p>
+                                        <h2 className="font-black text-xs sm:text-sm text-gray-900 truncate">{t("Daily Challenge")}</h2>
+                                        <p className="text-[9px] sm:text-[10px] text-gray-400 font-semibold truncate">{t("questions")} • Up to +70 {t("XP")}</p>
                                     </div>
                                 </div>
                                 <span className="text-[9px] sm:text-[10px] font-black px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600 flex-shrink-0">
-                                    {user?.examTarget && user.examTarget !== 'generic' ? EXAM_TARGET_NAMES[user.examTarget] : 'Select Target'}
+                                    {user?.examTarget && user.examTarget !== 'generic' ? (EXAM_TARGET_NAMES[user.examTarget] || t(user.examTarget)) : t('Select Target')}
                                 </span>
                             </div>
                             <div className="px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:items-center sm:gap-6">
-                                    {['+50 XP', '+20 Bonus', 'Streak'].map((label, i) => (
+                                    {[`+50 ${t("XP")}`, `+20 ${t("Bonus")}`, t("Streak")].map((label, i) => (
                                         <div key={i} className="flex flex-col items-center text-center">
                                             <span className="text-xs font-black text-gray-800 whitespace-nowrap">{label}</span>
-                                            <span className="text-[9px] text-gray-400 whitespace-nowrap">{i === 0 ? 'base reward' : i === 1 ? 'if 5/5' : 'kept alive'}</span>
+                                            <span className="text-[9px] text-gray-400 whitespace-nowrap">{i === 0 ? t('base reward') : i === 1 ? t('if 5/5') : t('kept alive')}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -1074,7 +1092,7 @@ const StudentDashboard = () => {
                                     style={{ background: 'linear-gradient(135deg, #F97316, #FBBF24)' }}
                                 >
                                     <IoFlashOutline size={15} className="animate-bounce" />
-                                    Start Challenge
+                                    {t("Start Challenge")}
                                 </button>
                             </div>
                         </div>
@@ -1577,14 +1595,14 @@ const StudentDashboard = () => {
                                 <div className="w-7 h-7 rounded-lg bg-cyan-50 flex items-center justify-center">
                                     <IoLibraryOutline size={14} className="text-cyan-500" />
                                 </div>
-                                <h2 className="font-bold text-sm" style={{ color: '#111827' }}>Learning</h2>
+                                <h2 className="font-bold text-sm" style={{ color: '#111827' }}>{t("Learning")}</h2>
                             </div>
                             <div className="p-4 flex flex-col gap-3">
                                 {(() => {
                                     const BASE_L = [
-                                        { id: 'books',     icon: IoBookOutline,        label: 'Books',        desc: 'Curated study books',  accentColor: '#3b82f6', accentBg: 'rgba(59,130,246,0.08)',  to: '/student/books',     locked: false },
-                                        { id: 'notes',     icon: IoDocumentTextOutline, label: 'Notes',       desc: 'Browse & download',    accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.08)',  to: '/student/notes',     locked: false },
-                                        { id: 'mock-test', icon: IoSparklesOutline,    label: 'AI Mock Test', desc: 'Practice tests',        accentColor: '#f59e0b', accentBg: 'rgba(245,158,11,0.08)', to: '/student/mock-test', locked: false },
+                                        { id: 'books',     icon: IoBookOutline,        label: t('Books'),        desc: t('Curated study books'),  accentColor: '#3b82f6', accentBg: 'rgba(59,130,246,0.08)',  to: '/student/books',     locked: false },
+                                        { id: 'notes',     icon: IoDocumentTextOutline, label: t('Notes'),       desc: t('Browse & download'),    accentColor: '#8b5cf6', accentBg: 'rgba(139,92,246,0.08)',  to: '/student/notes',     locked: false },
+                                        { id: 'mock-test', icon: IoSparklesOutline,    label: t('AI Mock Test'), desc: t('Practice tests'),        accentColor: '#f59e0b', accentBg: 'rgba(245,158,11,0.08)', to: '/student/mock-test', locked: false },
                                     ];
                                     const cfg = cardConfig?.learning;
                                     if (!cfg) return BASE_L;

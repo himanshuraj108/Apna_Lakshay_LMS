@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
 import ScrollToTop from './components/ScrollToTop';
 import App from './App';
 import './index.css';
@@ -20,7 +21,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <ScrollToTop />
             <AuthProvider>
                 <ThemeProvider>
-                    <App />
+                    <LanguageProvider>
+                        <App />
+                    </LanguageProvider>
                 </ThemeProvider>
             </AuthProvider>
         </BrowserRouter>

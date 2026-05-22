@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+    <defs>
+        <linearGradient id="m_grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#3B82F6" />
+            <stop offset="100%" stop-color="#1D4ED8" />
+        </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="50" fill="url(#m_grad1)" />
+    <circle cx="50" cy="48" r="22" fill="#FFE4E6" />
+    <path d="M28 44 C28 24, 72 24, 72 44 C66 40, 34 40, 28 44 Z" fill="#1E293B" />
+    <circle cx="42" cy="48" r="7" fill="none" stroke="#1E293B" stroke-width="2.5" />
+    <circle cx="58" cy="48" r="7" fill="none" stroke="#1E293B" stroke-width="2.5" />
+    <line x1="49" y1="48" x2="51" y2="48" stroke="#1E293B" stroke-width="2.5" />
+    <path d="M46 59 Q50 63 54 59" fill="none" stroke="#1E293B" stroke-width="2" stroke-linecap="round" />
+    <rect x="25" y="42" width="16" height="4" transform="rotate(-30 25 42)" fill="#F59E0B" rx="1" />
+    <polygon points="39,34 43,36 39,38" fill="#EF4444" transform="rotate(-30 25 42)" />
+    <path d="M35 70 C35 70, 38 88, 50 88 C62 88, 65 70, 65 70 Z" fill="#FFFFFF" />
+    <path d="M50 78 L43 70 H57 Z" fill="#3B82F6" />
+</svg>

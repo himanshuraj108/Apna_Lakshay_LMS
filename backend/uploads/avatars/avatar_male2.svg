@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+    <defs>
+        <linearGradient id="m_grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FF512F" />
+            <stop offset="100%" stop-color="#DD2476" />
+        </linearGradient>
+    </defs>
+    <circle cx="50" cy="50" r="50" fill="url(#m_grad2)" />
+    <circle cx="50" cy="52" r="20" fill="#FDE047" />
+    <circle cx="50" cy="54" r="18" fill="#FFEDD5" />
+    <path d="M32 54 C32 40, 68 40, 68 54 Z" fill="#78350F" />
+    <rect x="36" y="50" width="10" height="6" rx="2" fill="none" stroke="#78350F" stroke-width="2" />
+    <rect x="54" y="50" width="10" height="6" rx="2" fill="none" stroke="#78350F" stroke-width="2" />
+    <line x1="46" y1="53" x2="54" y2="53" stroke="#78350F" stroke-width="2" />
+    <circle cx="41" cy="53" r="1" fill="#78350F" />
+    <circle cx="59" cy="53" r="1" fill="#78350F" />
+    <path d="M47 62 Q50 65 53 62" fill="none" stroke="#78350F" stroke-width="2" stroke-linecap="round" />
+    <polygon points="50,30 74,38 50,46 26,38" fill="#1E293B" />
+    <rect x="47" y="38" width="6" height="8" fill="#1E293B" />
+    <path d="M70 39 L74 46 L74 52" fill="none" stroke="#F59E0B" stroke-width="1.5" />
+    <circle cx="74" cy="53" r="2" fill="#F59E0B" />
+</svg>
