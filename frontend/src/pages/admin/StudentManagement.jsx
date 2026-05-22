@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
-import api from '../../utils/api';
+import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 import { IoArrowBack, IoAdd, IoTrash, IoPencil, IoBedOutline, IoIdCard, IoDownload, IoKey, IoRefresh, IoPeopleOutline, IoDownloadOutline, IoSwapHorizontal, IoWarning, IoGitBranch, IoClose, IoCheckmark, IoSearchOutline } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
@@ -42,6 +42,7 @@ const StudentManagement = () => {
         email: '',
         mobile: '',
         address: '',
+        gender: 'male',
         password: '',
         confirmPassword: '',
         systemMode: mode,
@@ -92,9 +93,6 @@ const StudentManagement = () => {
     const [bulkFeeAmount, setBulkFeeAmount] = useState('');
     const [bulkFeeOperation, setBulkFeeOperation] = useState('increase');
     const [bulkFeeLoading, setBulkFeeLoading] = useState(false);
-
-    // Show / hide inactive students (default: hidden)
-    const [showInactive, setShowInactive] = useState(false);
     const [idCardSearchSeat, setIdCardSearchSeat] = useState('');
 
     // Settings gear dropdown
@@ -301,6 +299,7 @@ const StudentManagement = () => {
                     email: formData.email,
                     mobile: formData.mobile,
                     address: formData.address,
+                    gender: formData.gender,
                     joinedAt: formData.joinedAt,
                     password: formData.password,
                     negotiatedPrice: formData.negotiatedPrice !== '' ? formData.negotiatedPrice : undefined,
@@ -408,6 +407,7 @@ const StudentManagement = () => {
             email: '',
             mobile: '',
             address: '',
+            gender: 'male',
             password: password,
             joinedAt: new Date().toISOString().split('T')[0] // Default to today
         });
@@ -464,6 +464,7 @@ const StudentManagement = () => {
             email: student.email,
             mobile: student.mobile || '',
             address: student.address || '',
+            gender: student.gender || 'male',
             joinedAt: student.createdAt ? new Date(student.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             shift: shiftId,
             negotiatedPrice: negotiatedPrice,
@@ -680,7 +681,6 @@ const StudentManagement = () => {
         let tabTitle = 'All Students';
         switch (activeTab) {
             case 'active': tabTitle = 'Active Students'; break;
-            case 'inactive': tabTitle = 'Inactive Students'; break;
             case 'pending': tabTitle = 'Pending Seat Assignment'; break;
             case 'admin': tabTitle = 'Admin Registered Students'; break;
             case 'self': tabTitle = 'Self Registered Students'; break;
@@ -1064,24 +1064,22 @@ const StudentManagement = () => {
     };
 
     // Filter students based on active tab
+    // Note: backend returns both active and inactive students
     const getFilteredStudents = () => {
         switch (activeTab) {
-            case 'active':
-                return students.filter(student => student.isActive);
             case 'inactive':
-                return students.filter(student => !student.isActive);
+                return students.filter(student => student.isActive === false);
+            case 'active':
+                return students.filter(student => student.isActive !== false);
             case 'admin':
-                return students.filter(student => (student.registrationSource === 'admin' || !student.registrationSource) && student.isActive);
+                return students.filter(student => student.isActive !== false && (student.registrationSource === 'admin' || !student.registrationSource));
             case 'self':
-                return students.filter(student => student.registrationSource === 'self' && student.isActive);
+                return students.filter(student => student.isActive !== false && student.registrationSource === 'self');
             case 'pending':
-                return students.filter(student =>
-                    !getStudentSeat(student._id) &&
-                    student.isActive
-                );
+                return students.filter(student => student.isActive !== false && !getStudentSeat(student._id));
             case 'all':
             default:
-                return showInactive ? students : students.filter(s => s.isActive);
+                return students.filter(student => student.isActive !== false);
         }
     };
 
@@ -1210,13 +1208,14 @@ const StudentManagement = () => {
                         {(() => {
                             const tabs = [];
                             if (!isSubAdmin || user?.permissions?.includes('students')) {
+                                const activeCount = students.filter(s => s.isActive !== false).length;
                                 tabs.push(
-                                    { id: 'all', label: `All (${students.length})` },
-                                    { id: 'admin', label: `Admin Reg. (${students.filter(s => ((s.registrationSource === 'admin' || !s.registrationSource) && s.isActive)).length})` },
-                                    { id: 'self', label: `Self Reg. (${students.filter(s => s.registrationSource === 'self' && s.isActive).length})` },
-                                    { id: 'active', label: `Active (${students.filter(s => s.isActive).length})` },
-                                    { id: 'pending', label: `Pending (${students.filter(s => !getStudentSeat(s._id) && s.isActive).length})` },
-                                    { id: 'inactive', label: `Inactive (${students.filter(s => !s.isActive).length})` }
+                                    { id: 'all', label: `All (${activeCount})` },
+                                    { id: 'admin', label: `Admin Reg. (${students.filter(s => s.isActive !== false && (s.registrationSource === 'admin' || !s.registrationSource)).length})` },
+                                    { id: 'self', label: `Self Reg. (${students.filter(s => s.isActive !== false && s.registrationSource === 'self').length})` },
+                                    { id: 'active', label: `Active (${activeCount})` },
+                                    { id: 'inactive', label: `Inactive (${students.filter(s => s.isActive === false).length})` },
+                                    { id: 'pending', label: `Pending (${students.filter(s => s.isActive !== false && !getStudentSeat(s._id)).length})` }
                                 );
                             }
                             if (!isSubAdmin || user?.permissions?.includes('id_cards') || user?.permissions?.includes('students')) {
@@ -1245,29 +1244,7 @@ const StudentManagement = () => {
                             <option value="non-ac" className="bg-gray-50">Non-AC Rooms Only</option>
                         </select>
 
-                        {/* Show Inactive toggle */}
-                        {activeTab === 'all' && (
-                            <button
-                                onClick={() => setShowInactive(p => !p)}
-                                className="ml-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-all"
-                                style={{
-                                    background: showInactive ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
-                                    borderColor: showInactive ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.1)',
-                                    color: showInactive ? '#f87171' : '#6b7280',
-                                }}
-                            >
-                                <span
-                                    className="relative inline-flex w-8 h-4 rounded-full transition-colors duration-200 shrink-0"
-                                    style={{ background: showInactive ? '#ef4444' : 'rgba(255,255,255,0.12)' }}
-                                >
-                                    <span
-                                        className="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200"
-                                        style={{ transform: showInactive ? 'translateX(16px)' : 'translateX(0)' }}
-                                    />
-                                </span>
-                                Show Inactive
-                            </button>
-                        )}
+
 
                         {activeTab === 'history' && (
                             <motion.button whileHover={{ scale: 1.03 }} onClick={handleClearArchives}
@@ -1391,7 +1368,23 @@ const StudentManagement = () => {
                                                     <tr><td colSpan="5" className="text-center p-8 text-gray-600 text-sm">No deleted students found.</td></tr>
                                                 ) : archivedStudents.map(student => (
                                                     <tr key={student._id} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
-                                                        <td className="px-5 py-3.5 font-medium text-sm text-gray-900">{student.name}</td>
+                                                        <td className="px-5 py-3.5 font-medium text-sm text-gray-900">
+                                                             <div className="flex items-center gap-3">
+                                                                 <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-[11px] text-indigo-650 shrink-0 uppercase overflow-hidden">
+                                                                     <img 
+                                                                         src={(() => {
+                                                                             const img = (!student.profileImage || student.profileImage === '/uploads/avatars/avatar1.svg')
+                                                                                 ? getDeterministicAvatar(student._id, student.gender)
+                                                                                 : student.profileImage;
+                                                                             return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                                                         })()} 
+                                                                         alt={student.name} 
+                                                                         className="w-full h-full object-cover" 
+                                                                     />
+                                                                 </div>
+                                                                 <span className="truncate">{student.name}</span>
+                                                             </div>
+                                                        </td>
                                                         <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
                                                         <td className="px-5 py-3.5 text-xs text-gray-500">{new Date(student.joinedAt).toLocaleDateString()}</td>
                                                         <td className="px-5 py-3.5 text-xs text-red-400">{new Date(student.deletedAt).toLocaleDateString()}</td>
@@ -1449,7 +1442,23 @@ const StudentManagement = () => {
                                                             />
                                                         </td>
                                                         <td className="px-5 py-3.5 text-xs font-bold text-gray-600 w-10 tabular-nums">{idx + 1}</td>
-                                                        <td className="px-5 py-3.5 font-semibold text-sm text-gray-900">{student.name}</td>
+                                                        <td className="px-5 py-3.5 font-semibold text-sm text-gray-900">
+                                                             <div className="flex items-center gap-3">
+                                                                 <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-[11px] text-indigo-650 shrink-0 uppercase overflow-hidden">
+                                                                     <img 
+                                                                         src={(() => {
+                                                                             const img = (!student.profileImage || student.profileImage === '/uploads/avatars/avatar1.svg')
+                                                                                 ? getDeterministicAvatar(student._id, student.gender)
+                                                                                 : student.profileImage;
+                                                                             return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                                                         })()} 
+                                                                         alt={student.name} 
+                                                                         className="w-full h-full object-cover" 
+                                                                     />
+                                                                 </div>
+                                                                 <span className="truncate">{student.name}</span>
+                                                             </div>
+                                                        </td>
                                                         <td className="px-5 py-3.5 text-sm text-gray-600">{student.email}</td>
                                                         <td className="px-5 py-3.5 text-sm">
                                                             {(() => {
@@ -1871,6 +1880,18 @@ const StudentManagement = () => {
                                     pattern="[0-9]{10}"
                                     required
                                 />
+                            </div>
+                            <div>
+                                <label className={LABEL}>Gender Preference</label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                    className={INPUT + ' cursor-pointer capitalize'}
+                                >
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
                             </div>
                             <div>
                                 <label className={LABEL}>Address</label>

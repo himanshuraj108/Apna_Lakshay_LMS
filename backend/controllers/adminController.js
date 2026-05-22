@@ -495,7 +495,7 @@ exports.getDashboard = async (req, res) => {
 // Get all students
 exports.getStudents = async (req, res) => {
     try {
-        // Simplified query - no mode filtering, just get all students
+        // Return both active and inactive students (filtered on frontend)
         const query = { role: 'student' };
 
         const students = await User.find(query)
@@ -631,8 +631,8 @@ exports.getStudent = async (req, res) => {
                 })
                 .lean();
         } else {
-            // Try searching by last 8 characters
-            const allStudents = await User.find({ role: 'student' })
+            // Try searching by last 8 characters (active students only)
+            const allStudents = await User.find({ role: 'student', isActive: true })
                 .populate('createdBy', 'name')
                 .populate({
                     path: 'seat',
@@ -767,7 +767,10 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt } = req.body;
+        const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt, gender = 'male' } = req.body;
+
+        // Default avatar is handled deterministically by User.js pre-save hook based on _id
+        let profileImage = undefined;
 
         // Use provided password or default to mobile number
         let password = req.body.password;
@@ -780,6 +783,8 @@ exports.createStudent = async (req, res) => {
             email: email || undefined, // Use undefined for missing email to respect sparse unique index
             mobile,
             address,
+            gender,
+            profileImage,
             password,
             systemMode,
             role: 'student',
@@ -914,7 +919,7 @@ exports.bulkUpdateStudentFees = async (req, res) => {
 
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, isActive, studentId, joinedAt, password } = req.body;
+        const { name, email, mobile, address, isActive, studentId, joinedAt, password, gender } = req.body;
 
         const updateData = { 
             name, 
@@ -922,7 +927,8 @@ exports.updateStudent = async (req, res) => {
             mobile, 
             address, 
             isActive, 
-            studentId 
+            studentId,
+            gender
         };
 
         // Handle password update if provided
@@ -970,10 +976,10 @@ exports.updateStudent = async (req, res) => {
             });
         }
 
+        // No gender-to-avatar auto-healing is needed as avatars are stable and deterministic by student _id
+
         // Apply updates
         Object.assign(student, updateData);
-
-        // Ensure password is hashed by setting it on the document if provided
         if (password && password.trim() !== '') {
             student.password = password;
         }
@@ -4298,7 +4304,7 @@ exports.getStudentEngagementActivities = async (req, res) => {
         const { search = '', page = 1, limit = 20, sortBy = 'xp' } = req.query;
 
         // Build query for students
-        const userQuery = { role: 'student', isDisabled: { $ne: true } };
+        const userQuery = { role: 'student', isActive: true, isDisabled: { $ne: true } };
         if (search) {
             userQuery.name = { $regex: search, $options: 'i' };
         }
@@ -4393,9 +4399,12 @@ exports.getStudentEngagementDetails = async (req, res) => {
         const DailyQuizAttempt = require('../models/DailyQuizAttempt');
         const MockTestAttempt = require('../models/MockTestAttempt');
 
-        const student = await User.findById(studentId).select('name studentId email mobile profileImage examTarget');
+        const student = await User.findById(studentId).select('name studentId email mobile profileImage examTarget isActive isDisabled');
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        if (!student.isActive || student.isDisabled) {
+            return res.status(403).json({ success: false, message: 'This student account is inactive or disabled.' });
         }
 
         // Fetch StudyStreak/Activity logs

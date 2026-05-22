@@ -4,7 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { IoCellular } from 'react-icons/io5';
 import { FaWind, FaBan } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
-import { BASE_URL } from '../../utils/api';
+import { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 
 // Seat chip colors for split-seat multi-assignments
 const SEAT_COLORS = [
@@ -93,9 +93,14 @@ const StudentIdCard = ({ student }) => {
                 <div className="flex flex-col items-center">
                     {/* Photo Area */}
                     <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg -mt-16 bg-gray-100 flex items-center justify-center overflow-hidden z-10 relative">
-                        {student.profileImage ? (
+                        {(student.profileImage || id) ? (
                             <img
-                                src={student.profileImage.startsWith('http') ? student.profileImage : `${BASE_URL}${student.profileImage}`}
+                                src={(() => {
+                                    const img = (!student.profileImage || student.profileImage === '/uploads/avatars/avatar1.svg')
+                                        ? getDeterministicAvatar(id, student.gender)
+                                        : student.profileImage;
+                                    return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                })()}
                                 alt={student.name}
                                 crossOrigin="anonymous"
                                 className="w-full h-full object-cover"
@@ -185,6 +190,19 @@ const StudentIdCard = ({ student }) => {
                                     </p>
                                 </div>
                             )}
+                        </div>
+
+                        <div className="text-left">
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Gender</p>
+                            <p className="font-bold text-gray-700 text-xs capitalize">
+                                {student.gender || 'male'}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Mobile</p>
+                            <p className="font-mono font-bold text-gray-700 text-xs">
+                                {student.mobile || '----------'}
+                            </p>
                         </div>
 
                         {/* Address Row */}

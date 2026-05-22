@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../../utils/api';
+import api, { BASE_URL } from '../../utils/api';
 import { motion } from 'framer-motion';
 import { IoCheckmarkCircle, IoCloseCircle, IoAlertCircle, IoArrowBack } from 'react-icons/io5';
 
@@ -84,7 +84,7 @@ const VerifyStudent = () => {
                     <div className="flex items-center gap-4 mb-5">
                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white/15 bg-gray-50 shrink-0">
                             {student?.profileImage ? (
-                                <img src={student.profileImage} alt={student.name} className="w-full h-full object-cover" />
+                                <img src={student.profileImage.startsWith('http') ? student.profileImage : `${BASE_URL}${student.profileImage}`} alt={student.name} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-2xl font-black text-gray-600">
                                     {student?.name?.charAt(0)}
