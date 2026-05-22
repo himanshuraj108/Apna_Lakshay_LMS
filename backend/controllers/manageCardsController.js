@@ -81,8 +81,12 @@ const updateAiCreditConfig = async (req, res) => {
 // ─── GET students with AI credits ────────────────────────────────────────────
 const getStudentsWithAiCredits = async (req, res) => {
     try {
-        const students = await User.find({ role: 'student' })
-            .select('name studentId email doubtCredits seat')
+        const query = { role: 'student' };
+        if (req.query.showInactive !== 'true') {
+            query.isActive = true;
+        }
+        const students = await User.find(query)
+            .select('name studentId email doubtCredits seat isActive')
             .populate('seat', 'seatNumber negotiatedPrice')
             .lean();
 
@@ -94,6 +98,7 @@ const getStudentsWithAiCredits = async (req, res) => {
             name: s.name,
             studentId: s.studentId,
             email: s.email,
+            isActive: s.isActive !== false,
             doubtCredits: s.doubtCredits ?? 10,
             creditMode: s.creditMode || 'auto',
             negotiatedFee: s.seat?.negotiatedPrice || 0,
@@ -128,7 +133,7 @@ const applyFormulaToAll = async (req, res) => {
         const setting = await SystemSetting.findOne({ key: 'aiCreditConfig' });
         const { divisor = 10, defaultCredits = 10 } = setting?.value || {};
 
-        const students = await User.find({ role: 'student' }).populate('seat', 'negotiatedPrice');
+        const students = await User.find({ role: 'student', isActive: true }).populate('seat', 'negotiatedPrice');
         let updated = 0;
         for (const s of students) {
             // Skip manual-mode students — admin set their credits explicitly
@@ -148,8 +153,12 @@ const applyFormulaToAll = async (req, res) => {
 // ─── GET students with Mock Test Credits ─────────────────────────────────────
 const getMockTestCreditStudents = async (req, res) => {
     try {
-        const students = await User.find({ role: 'student' })
-            .select('name studentId email mockTestCredits mockTestCreditsResetDate seat')
+        const query = { role: 'student' };
+        if (req.query.showInactive !== 'true') {
+            query.isActive = true;
+        }
+        const students = await User.find(query)
+            .select('name studentId email mockTestCredits mockTestCreditsResetDate seat isActive')
             .populate('seat', 'seatNumber')
             .lean();
 
@@ -158,6 +167,7 @@ const getMockTestCreditStudents = async (req, res) => {
             name: s.name,
             studentId: s.studentId,
             email: s.email,
+            isActive: s.isActive !== false,
             mockTestCredits: s.mockTestCredits ?? 2,
             seatNumber: s.seat?.seatNumber || '—',
             lastReset: s.mockTestCreditsResetDate || null,
@@ -203,7 +213,7 @@ const resetAllMockTestCredits = async (req, res) => {
             timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
         });
         const result = await User.updateMany(
-            { role: 'student' },
+            { role: 'student', isActive: true },
             { $set: { mockTestCredits: value, mockTestCreditsResetDate: today } }
         );
         res.json({ success: true, message: `Reset ${result.modifiedCount} students to ${value} mock test credits` });

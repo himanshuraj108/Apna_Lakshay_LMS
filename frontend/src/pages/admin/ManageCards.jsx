@@ -67,8 +67,9 @@ const ManageCards = () => {
     const [editingCredit, setEditing]   = useState(null);
     const [editingMockCredit, setEditingMock] = useState(null);
     const [bulkMockValue, setBulkMockValue] = useState(2);
+    const [showInactive, setShowInactive] = useState(false);
 
-    useEffect(() => { loadAll(); }, []);
+    useEffect(() => { loadAll(); }, [showInactive]);
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
@@ -81,8 +82,8 @@ const ManageCards = () => {
             const [cfg, cred, sts, mockSts] = await Promise.all([
                 api.get('/admin/card-config'),
                 api.get('/admin/ai-credit-config'),
-                api.get('/admin/ai-credits/students'),
-                api.get('/admin/mock-test-credits/students'),
+                api.get(`/admin/ai-credits/students?showInactive=${showInactive}`),
+                api.get(`/admin/mock-test-credits/students?showInactive=${showInactive}`),
             ]);
             setQA(cfg.data.quickActions);
             setLearning(cfg.data.learning);
@@ -299,7 +300,13 @@ const ManageCards = () => {
                                 <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2">
                                     <IoPersonOutline size={14} className="text-gray-500" /> Per-Student Credits
                                 </h3>
-                                <span className="text-xs text-gray-500">{students.length} students</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-semibold text-gray-700">Show Inactive</span>
+                                        <Toggle checked={showInactive} onChange={setShowInactive} />
+                                    </div>
+                                    <span className="text-xs text-gray-500">{students.length} students</span>
+                                </div>
                             </div>
                             <div className="relative mb-3">
                                 <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -314,7 +321,14 @@ const ManageCards = () => {
                                         <div key={s._id}
                                             className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                                <p className="text-gray-900 text-xs font-semibold truncate flex items-center gap-1.5">
+                                                    {s.name}
+                                                    {s.isActive === false && (
+                                                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-red-100 text-red-600">
+                                                            INACTIVE
+                                                        </span>
+                                                    )}
+                                                </p>
                                                 <p className="text-gray-500 text-[10px]">{s.studentId} · Fee &#8377;{s.negotiatedFee || 'N/A'} · Suggested: {s.suggestedCredits}</p>
                                             </div>
 
@@ -396,7 +410,13 @@ const ManageCards = () => {
                                 <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2">
                                     <IoPersonOutline size={14} className="text-gray-500" /> Per-Student Credits
                                 </h3>
-                                <span className="text-xs text-gray-500">{mockStudents.length} students</span>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-semibold text-gray-700">Show Inactive</span>
+                                        <Toggle checked={showInactive} onChange={setShowInactive} />
+                                    </div>
+                                    <span className="text-xs text-gray-500">{mockStudents.length} students</span>
+                                </div>
                             </div>
                             <div className="relative mb-3">
                                 <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -409,7 +429,14 @@ const ManageCards = () => {
                                     <div key={s._id}
                                         className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm">
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                            <p className="text-gray-900 text-xs font-semibold truncate flex items-center gap-1.5">
+                                                {s.name}
+                                                {s.isActive === false && (
+                                                    <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-red-100 text-red-600">
+                                                        INACTIVE
+                                                    </span>
+                                                )}
+                                            </p>
                                             <p className="text-gray-500 text-[10px]">{s.studentId} · Seat {s.seatNumber} · Last reset: {s.lastReset || 'Never'}</p>
                                         </div>
 
