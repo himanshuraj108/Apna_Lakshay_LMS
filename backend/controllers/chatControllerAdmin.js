@@ -190,9 +190,14 @@ exports.sendMessageAdmin = async (req, res) => {
 // @route   GET /api/chat/admin/users
 exports.getAllChatUsersAdmin = async (req, res) => {
     try {
-        const { filter } = req.query; // 'active_chat_only'
+        const { filter, showInactive } = req.query; // 'active_chat_only'
 
-        let students = await User.find({ role: 'student' })
+        const query = { role: 'student' };
+        if (showInactive !== 'true') {
+            query.isActive = true;
+        }
+
+        let students = await User.find(query)
             .select('name studentId email profileImage isChatBlocked seat isActive address registrationSource shift seatAssignedAt createdAt')
             .populate({
                 path: 'seat',

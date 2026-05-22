@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { IoSearch, IoBan, IoCheckmarkCircle } from 'react-icons/io5';
-import api from '../../utils/api';
+import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 import Card from '../ui/Card';
 import Modal from '../ui/Modal';
 import StudentIdCard from './StudentIdCard';
@@ -12,10 +12,11 @@ const StudentChatList = () => {
     const [search, setSearch] = useState('');
     const [showIdCard, setShowIdCard] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [showInactive, setShowInactive] = useState(false);
 
     useEffect(() => {
         fetchStudents();
-    }, []);
+    }, [showInactive]);
 
     const fetchStudents = async () => {
         setLoading(true);
@@ -38,7 +39,7 @@ const StudentChatList = () => {
             // Fetch students using the chat endpoint which returns { success: true, students: [...] }
             // Note: Use /chat/students
             // Fetch all students (including blocked) for admin management
-            const response = await api.get('/chat/admin/users');
+            const response = await api.get(`/chat/admin/users?showInactive=${showInactive}`);
             if (response.data.success) {
                 // The current /chat/students endpoint does NOT return `isChatBlocked`.
                 // We must update the backend logic to include this field.
@@ -73,16 +74,37 @@ const StudentChatList = () => {
 
     return (
         <div>
-            {/* ... Search Input ... */}
-            <div className="mb-6 relative">
-                <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-                <input
-                    type="text"
-                    placeholder="Search students..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full bg-gray-50 text-gray-900 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
-                />
+            {/* Search and Toggle Row */}
+            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="relative flex-1 w-full">
+                    <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                    <input
+                        type="text"
+                        placeholder="Search students..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full bg-gray-50 text-gray-900 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+                    />
+                </div>
+                
+                {/* Show Inactive Toggle */}
+                <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-semibold text-gray-700 select-none">
+                        Show Inactive
+                    </span>
+                    <button
+                        onClick={() => setShowInactive(!showInactive)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            showInactive ? 'bg-indigo-600' : 'bg-gray-200'
+                        }`}
+                    >
+                        <span
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                showInactive ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                        />
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -95,21 +117,27 @@ const StudentChatList = () => {
                                 setShowIdCard(true);
                             }}
                         >
-                            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold overflow-hidden">
-                                {student.profileImage ? (
-                                    <img
-                                        src={student.profileImage.startsWith('http')
-                                            ? student.profileImage
-                                            : `http://localhost:5000${student.profileImage}`}
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    student.name[0]
-                                )}
+                            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold overflow-hidden shrink-0">
+                                <img
+                                    src={(() => {
+                                        const img = (!student.profileImage || student.profileImage === '/uploads/avatars/avatar1.svg')
+                                            ? getDeterministicAvatar(student._id, student.gender)
+                                            : student.profileImage;
+                                        return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                    })()}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
                             <div>
-                                <h3 className="font-bold text-gray-900 group-hover:text-blue-400 transition-colors">{student.name}</h3>
+                                <h3 className="font-bold text-gray-900 group-hover:text-blue-400 transition-colors flex items-center gap-1.5 flex-wrap">
+                                    {student.name}
+                                    {student.isActive === false && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">
+                                            Inactive
+                                        </span>
+                                    )}
+                                </h3>
                                 <p className="text-xs text-gray-600">{student.studentId || 'No ID'}</p>
                             </div>
                         </div>

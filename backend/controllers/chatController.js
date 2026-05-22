@@ -173,6 +173,7 @@ exports.getActiveStudents = async (req, res) => {
         const students = await User.find({
             role: 'student',
             isActive: true,
+            isDisabled: { $ne: true },
             isChatBlocked: false
         })
             .select('name profileImage')

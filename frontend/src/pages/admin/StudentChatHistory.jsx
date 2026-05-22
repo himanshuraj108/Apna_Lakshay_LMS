@@ -6,7 +6,7 @@ import {
     IoSearchOutline, IoTimeOutline, IoSparkles, IoTrashOutline,
     IoWarningOutline, IoChevronDown, IoClose, IoAlertCircle
 } from 'react-icons/io5';
-import api from '../../utils/api';
+import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 
 const LANG_LABEL = { en: 'English', hi: 'हिंदी', hinglish: 'Hinglish' };
 
@@ -69,11 +69,21 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => (
     </motion.div>
 );
 
+const Toggle = ({ checked, onChange }) => (
+    <button onClick={() => onChange(!checked)}
+        className="relative inline-flex items-center h-5 w-9 rounded-full transition-all flex-shrink-0"
+        style={{ background: checked ? '#6366f1' : '#e5e7eb' }}>
+        <span className="absolute left-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
+            style={{ transform: checked ? 'translateX(16px)' : 'translateX(0)' }} />
+    </button>
+);
+
 // ─── Main ──────────────────────────────────────────────────────────────────────
 const StudentChatHistory = ({ embedded = false }) => {
     const [students, setStudents] = useState([]);
     const [loading, setLoading]   = useState(true);
     const [search, setSearch]     = useState('');
+    const [showInactive, setShowInactive] = useState(false);
     const [selected, setSelected] = useState(null);
     const [sessions, setSessions] = useState([]);
     const [loadingSess, setLS]    = useState(false);
@@ -84,11 +94,20 @@ const StudentChatHistory = ({ embedded = false }) => {
     const bottomRef = useRef(null);
 
     useEffect(() => {
-        api.get('/admin/chat-history')
-            .then(r => setStudents(r.data.students || []))
+        setLoading(true);
+        api.get(`/admin/chat-history?showInactive=${showInactive}`)
+            .then(r => {
+                const fetched = r.data.students || [];
+                setStudents(fetched);
+                if (selected && !fetched.some(s => s._id === selected._id)) {
+                    setSelected(null);
+                    setSessions([]);
+                    setActiveSession(null);
+                }
+            })
             .catch(() => {})
             .finally(() => setLoading(false));
-    }, []);
+    }, [showInactive]);
 
     useEffect(() => {
         if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -196,12 +215,17 @@ const StudentChatHistory = ({ embedded = false }) => {
                     <span className="text-gray-900 font-bold text-sm flex-1 truncate">Chat History</span>
                 </div>
                 {/* Search */}
-                <div className="px-2 pt-2 pb-1">
+                <div className="px-2 pt-2 pb-1 space-y-2">
                     <div className="relative">
                         <IoSearchOutline size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input value={search} onChange={e => setSearch(e.target.value)}
                             placeholder="Search students…"
                             className="w-full bg-gray-50 border border-gray-200 text-gray-900 text-xs rounded-lg pl-7 pr-2 py-2 focus:outline-none focus:border-indigo-400 placeholder-gray-400" />
+                    </div>
+                    {/* Show Inactive Toggle */}
+                    <div className="flex items-center justify-between px-1 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+                        <span className="text-[10px] font-semibold text-gray-600 select-none">Show Inactive</span>
+                        <Toggle checked={showInactive} onChange={setShowInactive} />
                     </div>
                 </div>
                 {/* Student list */}
@@ -216,11 +240,27 @@ const StudentChatHistory = ({ embedded = false }) => {
                                     : 'hover:bg-gray-50 border border-transparent'
                             }`}>
                             <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">
-                                    {s.name?.[0]?.toUpperCase()}
+                                <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center text-white text-[10px] font-black overflow-hidden flex-shrink-0">
+                                    <img
+                                        src={(() => {
+                                            const img = (!s.profileImage || s.profileImage === '/uploads/avatars/avatar1.svg')
+                                                ? getDeterministicAvatar(s._id, s.gender)
+                                                : s.profileImage;
+                                            return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                        })()}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                    />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-gray-900 text-xs font-semibold truncate">{s.name}</p>
+                                    <p className="text-gray-900 text-xs font-semibold truncate flex items-center gap-1.5">
+                                        <span className="truncate">{s.name}</span>
+                                        {s.isActive === false && (
+                                            <span className="text-[8px] font-extrabold px-1 py-0.2 rounded bg-red-100 text-red-600 flex-shrink-0 uppercase">
+                                                Inactive
+                                            </span>
+                                        )}
+                                    </p>
                                     <p className="text-gray-500 text-[10px]">{s.sessionCount} session{s.sessionCount !== 1 ? 's' : ''}</p>
                                 </div>
                             </div>
@@ -243,11 +283,27 @@ const StudentChatHistory = ({ embedded = false }) => {
                     <>
                         {/* Student header */}
                         <div className="px-3 h-14 border-b border-gray-200 flex items-center gap-2 flex-shrink-0">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">
-                                {selected.name?.[0]?.toUpperCase()}
+                            <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center text-white text-[10px] font-black overflow-hidden flex-shrink-0">
+                                <img
+                                    src={(() => {
+                                        const img = (!selected.profileImage || selected.profileImage === '/uploads/avatars/avatar1.svg')
+                                            ? getDeterministicAvatar(selected._id, selected.gender)
+                                            : selected.profileImage;
+                                        return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                    })()}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-gray-900 text-xs font-bold truncate">{selected.name}</p>
+                                <p className="text-gray-900 text-xs font-bold truncate flex items-center gap-1.5">
+                                    <span className="truncate">{selected.name}</span>
+                                    {selected.isActive === false && (
+                                        <span className="text-[8px] font-extrabold px-1 py-0.2 rounded bg-red-100 text-red-600 flex-shrink-0 uppercase">
+                                            Inactive
+                                        </span>
+                                    )}
+                                </p>
                                 <p className="text-gray-500 text-[10px]">{sessions.length} sessions</p>
                             </div>
                             {sessions.length > 0 && (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose, IoTrash, IoPersonRemove, IoCreate, IoExit, IoPeopleOutline } from 'react-icons/io5';
+import { BASE_URL } from '../utils/api';
 
 const GroupSettingsModal = ({ isOpen, onClose, group, currentUserId, onRemoveMember, onInviteMember, onRenameGroup, onDeleteGroup, onLeaveGroup, onGetAvailableStudents, allStudents, currentUser, sentInvitations }) => {
     const [isRenaming, setIsRenaming] = useState(false);
@@ -98,7 +99,7 @@ const GroupSettingsModal = ({ isOpen, onClose, group, currentUserId, onRemoveMem
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
                                                     {member.profileImage ? (
-                                                        <img src={member.profileImage.startsWith('http') ? member.profileImage : `http://localhost:5000${member.profileImage}`} alt={member.name} className="w-full h-full object-cover" />
+                                                        <img src={member.profileImage.startsWith('http') ? member.profileImage : `${BASE_URL}${member.profileImage}`} alt={member.name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <div className="w-full h-full bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold">
                                                             {member.name?.charAt(0).toUpperCase()}
