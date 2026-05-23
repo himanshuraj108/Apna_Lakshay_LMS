@@ -375,5 +375,5 @@ npm run dev
 
 ## Engineering Core
 
-* **Lead Architect:** [Himanshu Raj](https://github.com/himanshuraj108)
+* **Lead Architect:** [Himanshu Raj]
 * **Enterprise License:** Proprietary -- All Rights Reserved. Used in live production daily.
