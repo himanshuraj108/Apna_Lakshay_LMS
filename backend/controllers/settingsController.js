@@ -11,7 +11,8 @@ exports.getSettings = async (req, res) => {
                 shiftMode: 'default',
                 systemStatus: 'active',
                 locationAttendance: true,
-                onlinePaymentEnabled: true
+                onlinePaymentEnabled: true,
+                showWhatsAppGroup: true
             });
         }
 
@@ -33,7 +34,7 @@ exports.getSettings = async (req, res) => {
 // @route   PUT /api/admin/settings
 exports.updateSettings = async (req, res) => {
     try {
-        const { shiftMode, systemStatus, activeModes, locationAttendance, onlinePaymentEnabled, pinAttendanceEnabled, attendancePin, timeRestrictionEnabled, loginAttendanceEnabled } = req.body;
+        const { shiftMode, systemStatus, activeModes, locationAttendance, onlinePaymentEnabled, pinAttendanceEnabled, attendancePin, timeRestrictionEnabled, loginAttendanceEnabled, showWhatsAppGroup } = req.body;
 
         let settings = await Settings.findOne();
 
@@ -47,6 +48,7 @@ exports.updateSettings = async (req, res) => {
         if (attendancePin !== undefined) updateFields.attendancePin = String(attendancePin).trim();
         if (timeRestrictionEnabled !== undefined) updateFields.timeRestrictionEnabled = !!timeRestrictionEnabled;
         if (loginAttendanceEnabled !== undefined) updateFields.loginAttendanceEnabled = !!loginAttendanceEnabled;
+        if (showWhatsAppGroup !== undefined) updateFields.showWhatsAppGroup = !!showWhatsAppGroup;
 
         // Strict boolean coercion for locationAttendance
         if (locationAttendance !== undefined) {
@@ -63,6 +65,7 @@ exports.updateSettings = async (req, res) => {
                 systemStatus: systemStatus || 'active',
                 locationAttendance: locationAttendance !== undefined ? locationAttendance : true,
                 onlinePaymentEnabled: onlinePaymentEnabled !== undefined ? !!onlinePaymentEnabled : true,
+                showWhatsAppGroup: showWhatsAppGroup !== undefined ? !!showWhatsAppGroup : true,
                 updatedBy: req.user._id
             });
         } else {
@@ -92,7 +95,7 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup');
 
 
         if (!settings) {
@@ -100,7 +103,8 @@ exports.getPublicSettings = async (req, res) => {
                 shiftMode: 'default',
                 systemStatus: 'active',
                 locationAttendance: true,
-                onlinePaymentEnabled: true
+                onlinePaymentEnabled: true,
+                showWhatsAppGroup: true
             };
         }
 
