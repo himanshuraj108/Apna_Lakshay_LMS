@@ -23,6 +23,10 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    showWhatsAppGroup: {
+        type: Boolean,
+        default: true
+    },
     pinAttendanceEnabled: {
         type: Boolean,
         default: false
