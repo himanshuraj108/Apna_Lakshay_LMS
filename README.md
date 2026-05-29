@@ -376,4 +376,4 @@ npm run dev
 ## Engineering Core
 
 * **Lead Architect:** [Himanshu Raj]
-* **Enterprise License:** Proprietary -- All Rights Reserved. Used in live production daily.
+* **Enterprise License:** Proprietary -- All Rights Reserved 2026. Used in live production daily.
