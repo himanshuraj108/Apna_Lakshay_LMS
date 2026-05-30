@@ -9,10 +9,12 @@ import {
     IoNotificationsOutline, IoLogOut, IoScanOutline, IoTimeOutline, IoKey,
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
     IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline,
-    IoGridOutline, IoSparklesOutline, IoSearchOutline, IoKeypadOutline, IoSettingsOutline, IoQrCodeOutline
+    IoGridOutline, IoSparklesOutline, IoSearchOutline, IoKeypadOutline, IoSettingsOutline, IoQrCodeOutline, IoRefreshOutline,
+    IoTrophy, IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
+
 
 /* ── shared bg ─────────────────────────────────────── */
 const BG_STYLE = `
@@ -37,6 +39,7 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
 
     useEffect(() => { fetchSettings(); }, []);
+
     useEffect(() => { fetchDashboardStats(activeTab); }, [activeTab]);
 
     const fetchSettings = async () => {
@@ -133,8 +136,9 @@ const AdminDashboard = () => {
         { title: 'Discussion Management', path: '/admin/chat',               icon: IoChatbubblesOutline,      color: 'from-violet-500 to-fuchsia-500', desc: 'Monitor chat rooms & students' },
         { title: 'Kiosk Mode',            path: '/admin/kiosk',              icon: IoScanOutline,             color: 'from-purple-500 to-pink-500',    desc: 'QR kiosk for entry scanning' },
         { title: 'Vacant Seats',          path: '/admin/vacant-seats',       icon: IoSearchOutline,           color: 'from-emerald-500 to-teal-500',   desc: 'View all vacant seat-shift slots' },
-        { title: 'Engagement & Activity Logs', path: '/admin/activities',   icon: IoSparklesOutline,         color: 'from-orange-500 to-amber-500',   desc: 'Streaks, XP, mock tests & target choices', isNew: true },
+        { title: 'Engagement & Activity Logs', path: '/admin/activities',   icon: IoSparklesOutline,         color: 'from-orange-500 to-amber-500',   desc: 'Streaks, XP, mock tests & target choices' },
         { title: 'Manage Cards',          path: '/admin/manage-cards',       icon: IoGridOutline,             color: 'from-yellow-400 to-orange-500',  desc: 'Dashboard cards · AI credits · Reorder' },
+        { title: 'AI Study Suite Activity', path: '/admin/ai-activity',       icon: IoSparklesOutline,         color: 'from-indigo-500 to-purple-500',  desc: 'Track student AI study plans, notes, tests & scores' },
     ];
 
     const STAT_CARDS = [
@@ -356,9 +360,12 @@ const AdminDashboard = () => {
                 )}
 
                 {/* Shift Manager */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
-                    <ShiftManager allowDelete={false} />
-                </motion.div>
+                <div className="mb-8">
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                        <ShiftManager allowDelete={false} />
+                    </motion.div>
+                </div>
+
 
                 {/* Navigation Grid */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
@@ -397,6 +404,8 @@ const AdminDashboard = () => {
                     </div>
                 </motion.div>
             </div>
+
+
         </div>
     );
 };
