@@ -4430,15 +4430,60 @@ exports.getStudentEngagementDetails = async (req, res) => {
         const mockTestAttempts = await MockTestAttempt.find({ user: studentId })
             .sort({ startedAt: -1 });
 
+        // Fetch AI Activity Logs
+        const AIActivityLog = require('../models/AIActivityLog');
+        const aiActivities = await AIActivityLog.find({ student: studentId })
+            .sort({ createdAt: -1 })
+            .lean();
+
         res.json({
             success: true,
             student,
             streak,
             quizAttempts,
-            mockTestAttempts
+            mockTestAttempts,
+            aiActivities
         });
     } catch (error) {
         console.error('Get student engagement details error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Get latest AI activity logs of all students
+// @route   GET /api/admin/ai-activity
+exports.getAIActivityLogs = async (req, res) => {
+    try {
+        const AIActivityLog = require('../models/AIActivityLog');
+        const { search, tool } = req.query;
+
+        let query = {};
+        if (tool) {
+            query.toolName = tool;
+        }
+        if (search) {
+            query.$or = [
+                { studentName: { $regex: search, $options: 'i' } },
+                { details: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const logs = await AIActivityLog.find(query)
+            .populate({
+                path: 'student',
+                select: 'name studentId seat profileImage',
+                populate: { path: 'seat', select: 'number room' }
+            })
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .lean();
+
+        res.status(200).json({
+            success: true,
+            logs
+        });
+    } catch (error) {
+        console.error('Get AI activity logs error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

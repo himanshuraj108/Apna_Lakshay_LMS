@@ -60,7 +60,8 @@ const {
     getStudentMockTests,
     swapSeats,
     getStudentEngagementActivities,
-    getStudentEngagementDetails
+    getStudentEngagementDetails,
+    getAIActivityLogs
 } = require('../controllers/adminController');
 
 // Settings come from settingsController
@@ -95,6 +96,7 @@ router.use(protect, adminOnly);
 
 // Action History
 router.get('/action-history', getActionHistory);
+router.get('/ai-activity', getAIActivityLogs);
 router.delete('/action-history/clear', clearActionHistory);
 router.delete('/action-history/:id', deleteActionLog);
 router.get('/password-activity', getPasswordActivity);

@@ -38,6 +38,7 @@ const { protect, checkMaintenanceMode, authorizeActive } = require('../middlewar
 
 const { getCardConfig } = require('../controllers/manageCardsController');
 const { getStreakStats, getLeaderboard, getDailyQuiz, submitDailyQuiz } = require('../controllers/engagementController');
+const { generateStudyPlan, analyzeTest, summarizeNotes, quizFromArticle, suggestTasks, getReadinessScore, getAIHistory } = require('../controllers/aiAutomationController');
 
 // All routes are protected and maintenance-checked
 router.use(protect, checkMaintenanceMode);
@@ -81,6 +82,15 @@ router.get('/engagement/streak-stats', getStreakStats);
 router.get('/engagement/leaderboard', getLeaderboard);
 router.get('/engagement/daily-quiz', getDailyQuiz);
 router.post('/engagement/daily-quiz/submit', submitDailyQuiz);
+
+// AI Automation Features
+router.post('/ai/generate-study-plan', generateStudyPlan);
+router.post('/ai/analyze-test', analyzeTest);
+router.post('/ai/summarize-notes', summarizeNotes);
+router.post('/ai/quiz-from-article', quizFromArticle);
+router.post('/ai/suggest-tasks', suggestTasks);
+router.get('/ai/readiness-score', getReadinessScore);
+router.get('/ai/history', getAIHistory);
 
 // My Seat
 router.get('/seat', getMySeat);
