@@ -27,6 +27,10 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    showAITools: {
+        type: Boolean,
+        default: true
+    },
     pinAttendanceEnabled: {
         type: Boolean,
         default: false

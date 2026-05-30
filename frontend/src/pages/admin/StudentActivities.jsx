@@ -7,8 +7,212 @@ import {
     IoTimeOutline, IoTrophyOutline, IoTrophy, IoPulseOutline, IoChevronBackOutline,
     IoChevronForwardOutline, IoBookOutline, IoPersonOutline, IoRibbonOutline,
     IoCalendarOutline, IoChevronDownOutline, IoChevronUpOutline, IoCloseOutline,
-    IoStatsChartOutline, IoAlertCircleOutline, IoCheckmarkCircleOutline, IoShieldOutline
+    IoStatsChartOutline, IoAlertCircleOutline, IoCheckmarkCircleOutline, IoShieldOutline, IoSparklesOutline
 } from 'react-icons/io5';
+
+const renderPayloadDetails = (toolName, payload) => {
+    if (!payload) return <p className="text-gray-400 font-medium italic">No data payload saved.</p>;
+    
+    switch (toolName) {
+        case 'Study Planner':
+            return (
+                <div className="space-y-3">
+                    <div className="bg-indigo-50/30 border border-indigo-100/50 rounded-xl p-3.5">
+                        <p className="font-extrabold text-indigo-750 mb-1">Study Summary</p>
+                        <p className="text-gray-700 leading-relaxed font-semibold">{payload.summary}</p>
+                    </div>
+                    {payload.weeklyPlans?.map((w, wIdx) => (
+                        <div key={wIdx} className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2">
+                            <h5 className="font-black text-gray-850 text-xs">Week {w.week}: {w.focus}</h5>
+                            <div className="divide-y divide-gray-100">
+                                {w.days?.map((d, dIdx) => (
+                                    <div key={dIdx} className="py-2 first:pt-0 last:pb-0 flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="font-extrabold text-gray-800 text-xs">{d.day} — <span className="text-indigo-650 font-bold">{d.subject}</span></p>
+                                            <p className="text-gray-500 text-[10px] mt-0.5 leading-relaxed">{d.topics}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 border text-gray-600">
+                                                {d.hours} hrs
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    {payload.tips?.length > 0 && (
+                        <div className="bg-amber-50/30 border border-amber-100/50 rounded-xl p-3.5 space-y-1.5">
+                            <p className="font-extrabold text-amber-700 text-xs uppercase tracking-wider">Plan Tips</p>
+                            <ul className="list-disc pl-4 space-y-1 text-gray-705 leading-relaxed font-semibold">
+                                {payload.tips.map((t, idx) => <li key={idx}>{t}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            );
+        case 'Test Analyzer':
+            return (
+                <div className="space-y-3">
+                    <div className="bg-orange-50/30 border border-orange-100/50 rounded-xl p-3.5">
+                        <p className="font-extrabold text-orange-750 mb-1">Performance Summary</p>
+                        <p className="text-gray-700 leading-relaxed font-semibold">{payload.summary}</p>
+                    </div>
+                    {payload.weakAreas?.length > 0 && (
+                        <div className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2">
+                            <h5 className="font-black text-red-600 text-xs uppercase tracking-wider">Identified Weak Areas</h5>
+                            <div className="divide-y divide-gray-100">
+                                {payload.weakAreas.map((w, idx) => (
+                                    <div key={idx} className="py-2 first:pt-0 last:pb-0">
+                                        <p className="font-bold text-gray-800">{w.topic}</p>
+                                        <p className="text-gray-500 text-[10px] mt-0.5 leading-relaxed"><span className="font-bold text-gray-600">Issue:</span> {w.reason}</p>
+                                        <p className="text-[10px] text-emerald-600 font-bold mt-0.5"><span className="uppercase text-[9px] tracking-wider font-extrabold">Action:</span> {w.action}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {payload.strongAreas?.length > 0 && (
+                        <div className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-1.5">
+                            <h5 className="font-black text-green-600 text-xs uppercase tracking-wider">Strong Areas</h5>
+                            <div className="flex flex-wrap gap-1.5">
+                                {payload.strongAreas.map((a, idx) => (
+                                    <span key={idx} className="px-2 py-0.5 rounded-lg bg-green-50 border border-green-150 text-green-700 text-[10px] font-bold">
+                                        {a}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {payload.revisionPlan?.length > 0 && (
+                        <div className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2">
+                            <h5 className="font-black text-indigo-650 text-xs uppercase tracking-wider">AI Revision Plan</h5>
+                            <div className="divide-y divide-gray-100">
+                                {payload.revisionPlan.map((r, idx) => (
+                                    <div key={idx} className="py-2 first:pt-0 last:pb-0 flex justify-between items-start gap-4">
+                                        <div>
+                                            <p className="font-bold text-gray-800">{r.subject}</p>
+                                            <p className="text-gray-500 text-[10px] mt-0.5 leading-relaxed">{r.suggestion}</p>
+                                        </div>
+                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+                                            r.priority === 'high' ? 'bg-red-50 text-red-600 border border-red-155' :
+                                            r.priority === 'medium' ? 'bg-amber-50 text-amber-600 border border-amber-155' :
+                                            'bg-green-50 text-green-600 border border-green-155'
+                                        }`}>
+                                            {r.priority}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        case 'Notes Summarizer':
+            return (
+                <div className="space-y-3">
+                    <div className="bg-purple-50/30 border border-purple-100/50 rounded-xl p-3.5">
+                        <p className="font-extrabold text-purple-750 mb-1">Executive Summary</p>
+                        <p className="text-gray-700 leading-relaxed font-semibold">{payload.summary}</p>
+                    </div>
+                    {payload.keyPoints?.length > 0 && (
+                        <div className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2">
+                            <h5 className="font-black text-gray-800 text-xs uppercase tracking-wider">Key Takeaways</h5>
+                            <ul className="list-disc pl-4 space-y-1.5 text-gray-700 font-semibold leading-relaxed">
+                                {payload.keyPoints.map((p, idx) => <li key={idx}>{p}</li>)}
+                            </ul>
+                        </div>
+                    )}
+                    {payload.importantFacts?.length > 0 && (
+                        <div className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2">
+                            <h5 className="font-black text-purple-650 text-xs uppercase tracking-wider">Important Facts & Relevance</h5>
+                            <div className="divide-y divide-gray-100">
+                                {payload.importantFacts.map((f, idx) => (
+                                    <div key={idx} className="py-2 first:pt-0 last:pb-0">
+                                        <p className="font-bold text-gray-800">{f.fact}</p>
+                                        <p className="text-gray-500 text-[10px] mt-0.5 leading-relaxed"><span className="font-bold text-gray-600">Why it's important:</span> {f.importance}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        case 'News Quiz':
+            return (
+                <div className="space-y-3">
+                    <h5 className="font-black text-gray-800 text-xs uppercase tracking-wider">Generated Current Affairs Questions</h5>
+                    {payload.questions?.map((q, idx) => (
+                        <div key={idx} className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2">
+                            <p className="font-bold text-gray-800">Q{idx + 1}: {q.question}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                {q.options?.map((opt, optIdx) => {
+                                    const letter = optIdx === 0 ? 'A' : optIdx === 1 ? 'B' : optIdx === 2 ? 'C' : 'D';
+                                    const isCorrect = q.answer?.toUpperCase().includes(letter);
+                                    return (
+                                        <div key={optIdx} className={`px-3 py-2 rounded-lg border text-[11px] ${
+                                            isCorrect ? 'bg-green-50 border-green-200 text-green-800 font-bold' : 'bg-gray-50/50 border-gray-200 text-gray-700'
+                                        }`}>
+                                            {opt}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-[10px] text-gray-505 italic mt-1.5"><span className="font-bold text-gray-700 not-italic uppercase text-[9px] tracking-wider block">Explanation:</span> {q.explanation}</p>
+                        </div>
+                    ))}
+                </div>
+            );
+        case 'Task Suggestions':
+            return (
+                <div className="space-y-3">
+                    <div className="bg-amber-50/30 border border-amber-100/50 rounded-xl p-3.5">
+                        <p className="font-extrabold text-amber-700 mb-1">Motivation Tip</p>
+                        <p className="text-gray-700 leading-relaxed font-semibold italic">"{payload.motivationTip}"</p>
+                    </div>
+                    {payload.suggestions?.map((s, idx) => (
+                        <div key={idx} className="border border-gray-150 rounded-xl bg-white p-3.5 flex justify-between items-start gap-4">
+                            <div>
+                                <p className="font-extrabold text-gray-800 text-xs">{s.title}</p>
+                                <p className="text-[10px] text-gray-400 font-medium mt-0.5">Subject: {s.subject} • Reason: {s.reason}</p>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 border text-gray-600 shrink-0">
+                                {s.estimatedMinutes} mins
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            );
+        case 'Readiness Score':
+            return (
+                <div className="space-y-3">
+                    <div className="flex items-center gap-4 bg-emerald-50/30 border border-emerald-100/50 rounded-xl p-3.5">
+                        <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-transparent flex items-center justify-center font-black text-lg text-emerald-600 bg-white shrink-0">
+                            {payload.score}%
+                        </div>
+                        <div>
+                            <p className="font-extrabold text-emerald-800 text-sm">Readiness Level: {payload.level}</p>
+                            <p className="text-gray-650 leading-relaxed font-medium mt-0.5 italic">"{payload.insight}"</p>
+                        </div>
+                    </div>
+                    <div className="border border-gray-150 rounded-xl bg-white p-3.5 space-y-2.5">
+                        <h5 className="font-black text-gray-800 text-xs uppercase tracking-wider">Breakdown Metric Points</h5>
+                        <div className="grid grid-cols-2 gap-3.5">
+                            {payload.breakdown?.map((b, idx) => (
+                                <div key={idx} className="bg-gray-50 border border-gray-200 p-2.5 rounded-xl text-center">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase block tracking-wider mb-1">{b.label}</span>
+                                    <span className="text-base font-black text-gray-800">{b.score} <span className="text-[10px] text-gray-400 font-medium">/{b.max}</span></span>
+                                    <span className="text-[9px] text-gray-500 font-bold block truncate mt-1">{b.detail}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        default:
+            return <pre className="bg-gray-900 text-gray-100 p-3 rounded-xl overflow-x-auto text-[10px] leading-relaxed">{JSON.stringify(payload, null, 2)}</pre>;
+    }
+};
 
 const PAGE_BG = { background: '#F8FAFC' };
 
@@ -36,8 +240,9 @@ const StudentActivities = () => {
     const [studentDetails, setStudentDetails] = useState(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [detailsError, setDetailsError] = useState(null);
-    const [detailsTab, setDetailsTab] = useState('tests'); // 'tests' or 'activity'
+    const [detailsTab, setDetailsTab] = useState('tests'); // 'tests', 'activity' or 'ai-suite'
     const [expandedQuizAttempt, setExpandedQuizAttempt] = useState(null);
+    const [expandedAiLog, setExpandedAiLog] = useState(null);
 
     // Fetch activities list
     useEffect(() => {
@@ -749,7 +954,7 @@ const StudentActivities = () => {
                                     onClick={() => setDetailsTab('tests')}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                                         detailsTab === 'tests'
-                                            ? 'bg-white text-orange-600 shadow-sm border border-gray-200'
+                                            ? 'bg-white text-orange-650 shadow-sm border border-gray-200'
                                             : 'text-gray-500 hover:text-gray-800'
                                     }`}
                                 >
@@ -760,12 +965,23 @@ const StudentActivities = () => {
                                     onClick={() => setDetailsTab('activity')}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
                                         detailsTab === 'activity'
-                                            ? 'bg-white text-orange-600 shadow-sm border border-gray-200'
+                                            ? 'bg-white text-orange-650 shadow-sm border border-gray-200'
                                             : 'text-gray-500 hover:text-gray-800'
                                     }`}
                                 >
                                     <IoStatsChartOutline size={14} />
                                     Daily Activity & Streaks
+                                </button>
+                                <button
+                                    onClick={() => setDetailsTab('ai-suite')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                                        detailsTab === 'ai-suite'
+                                            ? 'bg-white text-orange-650 shadow-sm border border-gray-200'
+                                            : 'text-gray-500 hover:text-gray-800'
+                                    }`}
+                                >
+                                    <IoSparklesOutline size={14} />
+                                    AI Suite Logs
                                 </button>
                             </div>
 
@@ -993,6 +1209,70 @@ const StudentActivities = () => {
                                                                             <p className="text-[10px] text-gray-400 font-medium leading-relaxed mt-0.5">{meta.desc}</p>
                                                                             <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1.5">Unlocked: {formatDate(ach.unlockedAt)}</p>
                                                                         </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* TAB 3: AI STUDY SUITE LOGS */}
+                                        {detailsTab === 'ai-suite' && (
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                                                        <IoSparklesOutline className="text-orange-550" size={15} />
+                                                        AI Study Suite Activity Logs ({studentDetails.aiActivities?.length || 0})
+                                                    </h4>
+
+                                                    {studentDetails.aiActivities?.length === 0 ? (
+                                                        <p className="text-xs font-semibold text-gray-400 bg-gray-50 p-4 border border-dashed border-gray-200 rounded-xl text-center">
+                                                            No AI activities recorded for this student.
+                                                        </p>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {studentDetails.aiActivities.map((log) => {
+                                                                const isExpanded = expandedAiLog === log._id;
+                                                                
+                                                                // Dynamic Badge Color
+                                                                let badgeStyle = "bg-gray-105 text-gray-600 border-gray-200";
+                                                                if (log.toolName === 'Study Planner') badgeStyle = "bg-indigo-50 border-indigo-100 text-indigo-650";
+                                                                else if (log.toolName === 'Test Analyzer') badgeStyle = "bg-orange-50 border-orange-100 text-orange-650";
+                                                                else if (log.toolName === 'Notes Summarizer') badgeStyle = "bg-purple-50 border-purple-100 text-purple-650";
+                                                                else if (log.toolName === 'News Quiz') badgeStyle = "bg-blue-50 border-blue-100 text-blue-650";
+                                                                else if (log.toolName === 'Task Suggestions') badgeStyle = "bg-amber-50 border-amber-100 text-amber-650";
+                                                                else if (log.toolName === 'Readiness Score') badgeStyle = "bg-emerald-50 border-emerald-100 text-emerald-650";
+
+                                                                return (
+                                                                    <div key={log._id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                                                        <div 
+                                                                            onClick={() => setExpandedAiLog(isExpanded ? null : log._id)}
+                                                                            className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50/50 transition-colors"
+                                                                        >
+                                                                            <div className="min-w-0 pr-4 flex-1">
+                                                                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                                                                    <span className={`px-2.5 py-0.5 rounded-full border text-[10px] font-black uppercase tracking-wider ${badgeStyle}`}>
+                                                                                        {log.toolName}
+                                                                                    </span>
+                                                                                    <span className="text-[10px] text-gray-400 font-bold">
+                                                                                        {new Date(log.createdAt).toLocaleString()}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <p className="text-sm font-extrabold text-gray-800 truncate">{log.details}</p>
+                                                                            </div>
+                                                                            <div className="shrink-0 text-gray-400">
+                                                                                {isExpanded ? <IoChevronUpOutline size={16} /> : <IoChevronDownOutline size={16} />}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Collapsible Log Payload rendering */}
+                                                                        {isExpanded && log.payload && (
+                                                                            <div className="px-4 pb-4 border-t border-gray-100 bg-gray-55/10 pt-4 space-y-4 text-xs">
+                                                                                {renderPayloadDetails(log.toolName, log.payload)}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 );
                                                             })}
