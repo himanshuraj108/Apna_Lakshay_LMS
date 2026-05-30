@@ -576,6 +576,7 @@ const StudentDashboard = () => {
     const [pinEnabled, setPinEnabled]                 = useState(false);
     const [manualMarkEnabled, setManualMarkEnabled]   = useState(false); // true when admin allows manual (with or without PIN)
     const [showWhatsAppGroup, setShowWhatsAppGroup]   = useState(true);
+    const [showAITools, setShowAITools]               = useState(true);
     const [showPinModal, setShowPinModal]             = useState(false);
     const [pinValue, setPinValue]                     = useState('');
     const [pinLoading, setPinLoading]                 = useState(false);
@@ -669,6 +670,7 @@ const StudentDashboard = () => {
                 setPinEnabled(!!s.pinAttendanceEnabled);
                 setManualMarkEnabled(true);
                 setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
+                setShowAITools(s.showAITools !== false);
             }
         } catch (_) {}
     };
@@ -1311,6 +1313,73 @@ const StudentDashboard = () => {
                         </div>
                     </Link>
                 </motion.div>
+
+
+                {/* -- AI TOOLS SECTION ----------------------------------------------------------------- */}
+                {showAITools && (
+                    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.45 }} className="mb-5">
+                        <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                            <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50 overflow-hidden">
+                                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.12)' }}>
+                                    <IoSparklesOutline size={11} className="text-indigo-500" />
+                                </div>
+                                <span className="text-xs font-extrabold text-gray-800 tracking-wide">AI Study Suite</span>
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider text-white animate-pulse" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)' }}>New</span>
+
+                                {/* Continuous marquee ticker */}
+                                <div className="ml-auto overflow-hidden relative w-36 sm:w-80 h-5 flex items-center bg-red-50/50 rounded-lg px-2 border border-red-100/50">
+                                    <style>{`
+                                        @keyframes marqueeTicker {
+                                            0% { transform: translate3d(0, 0, 0); }
+                                            100% { transform: translate3d(-50%, 0, 0); }
+                                        }
+                                        .animate-ticker {
+                                            display: inline-block;
+                                            white-space: nowrap;
+                                            animation: marqueeTicker 20s linear infinite;
+                                        }
+                                    `}</style>
+                                    <div className="animate-ticker text-[8px] font-black uppercase tracking-wider text-red-600 flex gap-4">
+                                        <span>🔥 NEW study suite is live! Try AI Study Planner • Analyze Mock Tests • Summarize Notes • Task Suggestions • Readiness Score • &nbsp; &nbsp; 🔥 NEW study suite is live! Try AI Study Planner • Analyze Mock Tests • Summarize Notes • Task Suggestions • Readiness Score</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 grid grid-cols-3 gap-3">
+                                {[
+                                    { id: 'ai-study-plan', label: 'Study Plan',       desc: 'AI weekly schedule',  accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',  icon: IoBookOutline,         link: '/student/ai/study-planner'        },
+                                    { id: 'ai-test',       label: 'Test Analyzer',    desc: 'Weak area insights',  accentColor: '#ea580c', accentBg: 'rgba(234,88,12,0.1)',   icon: IoSparklesOutline,     link: '/student/ai/test-analyzer'        },
+                                    { id: 'ai-notes',      label: 'Note Summarizer',  desc: 'Paste and summarize', accentColor: '#7c3aed', accentBg: 'rgba(124,58,237,0.1)',  icon: IoDocumentTextOutline, link: '/student/ai/note-summarizer'      },
+                                    { id: 'ai-ca-quiz',    label: 'News Quiz',        desc: 'Quiz from articles',  accentColor: '#0ea5e9', accentBg: 'rgba(14,165,233,0.1)',  icon: IoGridOutline,         link: '/student/ai/current-affairs-quiz' },
+                                    { id: 'ai-tasks',      label: 'Task Suggestions', desc: 'Smart daily tasks',   accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',  icon: IoFlashOutline,        link: '/student/ai/task-suggestions'     },
+                                    { id: 'ai-readiness',  label: 'Readiness Score',  desc: 'Your exam readiness', accentColor: '#16a34a', accentBg: 'rgba(22,163,74,0.1)',   icon: IoCalendarOutline,     link: '/student/ai/readiness-score'      },
+                                ].map((item, i) => (
+                                    <Link key={item.id} to={item.link} className="block">
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.18 + i * 0.06, type: 'spring', stiffness: 120 }}
+                                            whileHover={{ y: -3 }}
+                                            className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group"
+                                            style={{ background: `linear-gradient(145deg, ${item.accentBg}, rgba(255,255,255,0.02))`, border: '1px solid #F3F4F6', padding: '14px 14px 16px', minHeight: '110px', transition: 'border-color 0.2s, box-shadow 0.2s' }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = `${item.accentColor}40`; e.currentTarget.style.boxShadow = `0 8px 32px -8px ${item.accentColor}30`; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#F3F4F6'; e.currentTarget.style.boxShadow = 'none'; }}
+                                        >
+                                            <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl opacity-70 group-hover:opacity-100 transition-opacity" style={{ background: `linear-gradient(90deg, ${item.accentColor}, transparent)` }} />
+                                            <item.icon size={56} className="absolute -bottom-2 -right-2 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ color: item.accentColor }} />
+                                            <div className="relative w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105 duration-200" style={{ background: `${item.accentColor}18` }}>
+                                                <item.icon size={18} style={{ color: item.accentColor }} />
+                                            </div>
+                                            <div className="mt-auto pt-2">
+                                                <p className="text-[13px] font-bold leading-snug" style={{ color: '#111827' }}>{item.label}</p>
+                                                <p className="text-[10px] mt-0.5 font-medium" style={{ color: `${item.accentColor}99` }}>{item.desc}</p>
+                                            </div>
+                                        </motion.div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
 
                 {/* â”€â”€ TWO-COLUMN LAYOUT (actions + learning) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
