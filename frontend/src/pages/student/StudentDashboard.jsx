@@ -552,12 +552,21 @@ const AttendanceResultCard = ({ result, onClose }) => {
     );
 };
 
+/* ══════════════════════════════════════════════════════════════════════
+   MODULE-LEVEL CACHE  (survives navigate-away / back, clears on refresh)
+   ══════════════════════════════════════════════════════════════════════ */
+const CACHE_TTL = 3 * 60 * 1000; // 3 minutes in ms
+const _cache = {};
+const isFresh = (key) => _cache[key] && (Date.now() - _cache[key].ts < CACHE_TTL);
+const setCache = (key, data) => { _cache[key] = { data, ts: Date.now() }; };
+const bustCache = (...keys) => { keys.forEach(k => { delete _cache[k]; }); };
+
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN DASHBOARD
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const StudentDashboard = () => {
-    const [dashboardData, setDashboardData]           = useState(null);
-    const [loading, setLoading]                       = useState(true);
+    const [dashboardData, setDashboardData]           = useState(() => isFresh('dashboard') ? _cache.dashboard.data : null);
+    const [loading, setLoading]                       = useState(() => !isFresh('dashboard'));
     const [showIDCard, setShowIDCard]                 = useState(false);
     const [showFeeReminder, setShowFeeReminder]       = useState(false);
     const [showScanner, setShowScanner]               = useState(false);
@@ -606,20 +615,47 @@ const StudentDashboard = () => {
 
     const SETTINGS_KEY = 'lms_location_required';
     const getLocationRequired = () => { try { const c = localStorage.getItem(SETTINGS_KEY); if (c !== null) return c === 'true'; } catch (_) { } return true; };
-    const loadSettingsCache = async () => { try { const res = await api.get('/public/settings'); if (res.data.success) localStorage.setItem(SETTINGS_KEY, String(res.data.settings.locationAttendance !== false)); } catch (_) { } };
+    const loadSettingsCache = async () => {
+        if (isFresh('settings')) return; // already cached by fetchPinStatus
+        try {
+            const res = await api.get('/public/settings');
+            if (res.data.success) {
+                localStorage.setItem(SETTINGS_KEY, String(res.data.settings.locationAttendance !== false));
+                setCache('settings', res.data.settings);
+            }
+        } catch (_) { }
+    };
 
     const fetchCardConfig = async () => {
+        if (isFresh('cardConfig')) {
+            setCardConfig(_cache.cardConfig.data);
+            return;
+        }
         try {
             const res = await api.get('/student/card-config');
             setCardConfig(res.data);
+            setCache('cardConfig', res.data);
         } catch { /* use defaults if fails */ }
     };
 
     const fetchEngagementData = async () => {
+        if (isFresh('engagement')) {
+            const d = _cache.engagement.data;
+            setStreakStats(d.streakStats);
+            setDailyQuiz(d.dailyQuiz);
+            setDailyQuizAttempted(d.dailyQuizAttempted);
+            setDailyQuizAttempt(d.dailyQuizAttempt);
+            return;
+        }
+
+        let streakStats = null;
+        let dailyQuiz = null, dailyQuizAttempted = false, dailyQuizAttempt = null;
+
         try {
             const statsRes = await api.get('/student/engagement/streak-stats');
             if (statsRes.data.success) {
-                setStreakStats(statsRes.data.stats);
+                streakStats = statsRes.data.stats;
+                setStreakStats(streakStats);
             }
         } catch (e) {
             console.error('Error fetching streak stats:', e);
@@ -628,13 +664,18 @@ const StudentDashboard = () => {
         try {
             const quizRes = await api.get('/student/engagement/daily-quiz');
             if (quizRes.data.success) {
-                setDailyQuiz(quizRes.data.quiz);
-                setDailyQuizAttempted(quizRes.data.attempted);
-                setDailyQuizAttempt(quizRes.data.attempt);
+                dailyQuiz = quizRes.data.quiz;
+                dailyQuizAttempted = quizRes.data.attempted;
+                dailyQuizAttempt = quizRes.data.attempt;
+                setDailyQuiz(dailyQuiz);
+                setDailyQuizAttempted(dailyQuizAttempted);
+                setDailyQuizAttempt(dailyQuizAttempt);
             }
         } catch (e) {
             console.error('Error fetching daily quiz:', e);
         }
+
+        setCache('engagement', { streakStats, dailyQuiz, dailyQuizAttempted, dailyQuizAttempt });
     };
 
     const fetchLeaderboard = async (sortByValue) => {
@@ -651,18 +692,28 @@ const StudentDashboard = () => {
         }
     };
 
-    useEffect(() => { 
-        fetchDashboardData(); 
-        loadSettingsCache(); 
-        fetchCardConfig(); 
-        fetchPinStatus(); 
-        fetchPendingFeedback(); 
+    useEffect(() => {
+        // Only show loading skeleton if the main dashboard data isn't cached yet
+        if (!isFresh('dashboard')) setLoading(true);
+        fetchDashboardData();
+        loadSettingsCache();
+        fetchCardConfig();
+        fetchPinStatus();
+        fetchPendingFeedback();
         fetchEngagementData();
     }, []);
     
     useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
 
     const fetchPinStatus = async () => {
+        if (isFresh('settings')) {
+            const s = _cache.settings.data;
+            setPinEnabled(!!s.pinAttendanceEnabled);
+            setManualMarkEnabled(true);
+            setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
+            setShowAITools(s.showAITools !== false);
+            return;
+        }
         try {
             const res = await api.get('/public/settings');
             const s = res.data?.settings;
@@ -671,15 +722,23 @@ const StudentDashboard = () => {
                 setManualMarkEnabled(true);
                 setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
                 setShowAITools(s.showAITools !== false);
+                setCache('settings', s);
+                // also update the location localStorage key
+                localStorage.setItem(SETTINGS_KEY, String(s.locationAttendance !== false));
             }
         } catch (_) {}
     };
 
     const fetchPendingFeedback = async () => {
+        if (isFresh('feedback')) {
+            setPendingFeedback(_cache.feedback.data);
+            return;
+        }
         try {
             const { data } = await api.get('/student/request/pending-feedback');
             if (data?.success && data.request) {
                 setPendingFeedback(data.request);
+                setCache('feedback', data.request);
             }
         } catch (error) {
             console.error('Error fetching pending feedback:', error);
@@ -687,9 +746,15 @@ const StudentDashboard = () => {
     };
 
     const fetchDashboardData = async () => {
+        if (isFresh('dashboard')) {
+            setDashboardData(_cache.dashboard.data);
+            setLoading(false);
+            return;
+        }
         try { 
             const res = await api.get('/student/dashboard'); 
-            setDashboardData(res.data.data); 
+            setDashboardData(res.data.data);
+            setCache('dashboard', res.data.data);
             fetchEngagementData();
         } catch (e) { 
             console.error(e); 
@@ -735,7 +800,7 @@ const StudentDashboard = () => {
                 const isNew = res.data.type !== 'already_marked';
                 if (isNew) playSuccessBeep();
                 setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
-                fetchDashboardData();
+                if (isNew) { bustCache('dashboard'); fetchDashboardData(); }
             }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
@@ -749,7 +814,7 @@ const StudentDashboard = () => {
                 const isNew = res.data.type !== 'already_marked';
                 if (isNew) playSuccessBeep();
                 setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
-                fetchDashboardData();
+                if (isNew) { bustCache('dashboard'); fetchDashboardData(); }
             }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
@@ -770,7 +835,7 @@ const StudentDashboard = () => {
                     attendance: res.data.attendance,
                     message: res.data.message
                 });
-                if (isNew) fetchDashboardData();       // refresh only if something changed
+                if (isNew) { bustCache('dashboard'); fetchDashboardData(); } // refresh only if something changed
             }
         } catch (e) {
             setPinError(e.response?.data?.message || 'PIN incorrect or attendance failed.');
@@ -787,7 +852,7 @@ const StudentDashboard = () => {
                 // Success → close modal, show result card
                 setShowPinModal(false);
                 setAttendanceResult({ type: res.data.type, attendance: res.data.attendance, message: res.data.message });
-                if (isNew) fetchDashboardData();
+                if (isNew) { bustCache('dashboard'); fetchDashboardData(); }
             }
         } catch (e) {
             // Show error INSIDE the modal (not as a toast behind the backdrop)
