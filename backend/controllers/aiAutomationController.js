@@ -1,5 +1,7 @@
 const { callGroq, extractJSON } = require('./mockTestController');
+const { updateStreakAndXP } = require('./engagementController');
 const User = require('../models/User');
+const StudyStreak = require('../models/StudyStreak');
 const MockTestAttempt = require('../models/MockTestAttempt');
 const Attendance = require('../models/Attendance');
 const AIActivityLog = require('../models/AIActivityLog');
@@ -15,6 +17,8 @@ const logAIActivity = async (req, toolName, details, payload = null) => {
             details,
             payload
         });
+        // Award +5 XP for every AI tool usage (once logged)
+        await updateStreakAndXP(req.user.id, 5, 'ai_tool');
     } catch (e) {
         console.error('Failed to log AI activity:', e.message);
     }
@@ -358,8 +362,11 @@ exports.getReadinessScore = async (req, res) => {
         let mockAvg = 0;
         let mockCount = 0;
         try {
-            const recentTests = await MockTestAttempt.find({ user: studentId, status: 'completed' })
-                .sort({ completedAt: -1 })
+            const recentTests = await MockTestAttempt.find({
+                user: studentId,
+                percentage: { $exists: true, $gt: 0 }  // any attempt that was actually scored
+            })
+                .sort({ completedAt: -1, updatedAt: -1 })
                 .limit(5)
                 .select('percentage')
                 .lean();
@@ -369,23 +376,33 @@ exports.getReadinessScore = async (req, res) => {
             }
         } catch (e) { console.error('Error fetching mock tests for readiness score:', e); }
 
-        const streak = student?.streak || 0;
-        const doubtCreditsUsed = 10 - (student?.doubtCredits ?? 10);
+        // Fetch streak from StudyStreak model (NOT from User.streak which doesn't exist)
+        const studyStreak = await StudyStreak.findOne({ user: studentId }).lean();
+        const streak = studyStreak?.currentStreak || 0;
+
+        // Fetch AI engagement — count of AI tool sessions used today
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const aiSessionsToday = await AIActivityLog.countDocuments({
+            student: studentId,
+            createdAt: { $gte: todayStart }
+        });
+
         const examTarget = student?.examTarget || 'General';
 
         // Calculate weighted readiness score
-        const streakScore = Math.min(streak * 3, 25);         // Max 25 pts (streak ≥ 9 days)
-        const attScore = Math.round(attPct * 0.25);            // Max 25 pts (100% attendance)
-        const mockScore = Math.round(mockAvg * 0.3);           // Max 30 pts (100% mock avg)
-        const engagementScore = Math.min(doubtCreditsUsed * 2, 20); // Max 20 pts
+        const streakScore      = Math.min(streak * 3, 25);              // Max 25 pts (streak ≥ 9 days)
+        const attScore         = Math.round(attPct * 0.25);             // Max 25 pts (100% attendance)
+        const mockScore        = Math.round(mockAvg * 0.3);             // Max 30 pts (100% mock avg)
+        const engagementScore  = Math.min(aiSessionsToday * 5, 20);     // Max 20 pts (4+ AI sessions)
 
         const totalScore = Math.min(100, streakScore + attScore + mockScore + engagementScore);
 
         const breakdown = [
-            { label: 'Study Streak', score: streakScore, max: 25, detail: `${streak} day streak` },
-            { label: 'Attendance', score: attScore, max: 25, detail: `${attPct}% in last 30 days` },
-            { label: 'Mock Tests', score: mockScore, max: 30, detail: mockCount > 0 ? `Avg ${mockAvg}% in ${mockCount} tests` : 'No tests taken' },
-            { label: 'AI Engagement', score: engagementScore, max: 20, detail: `${doubtCreditsUsed} AI sessions today` },
+            { label: 'Study Streak',   score: streakScore,     max: 25, detail: `${streak} day streak` },
+            { label: 'Attendance',     score: attScore,         max: 25, detail: `${attPct}% in last 30 days` },
+            { label: 'Mock Tests',     score: mockScore,        max: 30, detail: mockCount > 0 ? `Avg ${mockAvg}% in ${mockCount} tests` : 'No tests taken' },
+            { label: 'AI Engagement',  score: engagementScore,  max: 20, detail: `${aiSessionsToday} AI sessions today` },
         ];
 
         const level = totalScore >= 80 ? 'Excellent' : totalScore >= 60 ? 'Good' : totalScore >= 40 ? 'Average' : 'Needs Work';
