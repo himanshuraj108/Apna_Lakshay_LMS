@@ -347,6 +347,160 @@ npm run dev
 
 ---
 
+## AI Automation Suite — 7 Intelligent Features (Groq + Gemini)
+
+All AI features are powered by the **Groq API (Llama 3.1 8B)** with **Google Gemini** as an automatic fallback. Every AI interaction is logged to a dedicated `AIActivityLog` MongoDB collection for full auditability and history retrieval per student.
+
+```
+POST /api/student/ai/generate-study-plan     → AI Study Plan Generator
+POST /api/student/ai/analyze-test            → Mock Test Performance Analyzer
+POST /api/student/ai/summarize-notes         → AI Notes Summarizer
+POST /api/student/ai/quiz-from-article       → Current Affairs Quiz Generator
+POST /api/student/ai/suggest-tasks           → Smart Task Suggestion Engine
+GET  /api/student/ai/readiness-score         → Exam Readiness Score Calculator
+GET  /api/student/ai/history                 → AI Activity History Retrieval
+```
+
+---
+
+### Feature 1 — AI Study Plan Generator
+Generates a personalized, week-by-week study schedule based on the student's exam target, exam date, daily study hours, and self-reported weak subjects.
+
+- Calculates days and weeks remaining dynamically
+- Generates up to 4 weeks of daily plans (6 days/week, Sunday as rest)
+- Each day entry includes subject, specific topics, hours, and priority level (`high | medium | low`)
+- Outputs a summary, weekly plans array, and exam-specific study tips
+- If exam is 30+ days away, explicitly labels the plan as a "kickstart/foundational phase"
+
+```json
+{
+  "summary": "Initial 4-week kickstart phase for UPSC CSE preparation",
+  "daysLeft": 180,
+  "weeklyPlans": [{ "week": 1, "focus": "...", "days": [...] }],
+  "tips": ["tip1", "tip2", "tip3"]
+}
+```
+
+---
+
+### Feature 2 — Mock Test Performance Analyzer
+Evaluates a student's mock test result section-by-section and generates a comprehensive, personalized performance report.
+
+- Accepts total score, max score, percentage, section-wise scores, and a sample of wrong questions
+- Identifies weak areas with reasons and specific corrective actions
+- Lists strong areas for confidence reinforcement
+- Outputs a subject-wise revision plan with priority levels
+- Provides a "next steps" paragraph covering the student's immediate 3-day action plan
+- Assigns an overall rating: `Excellent | Good | Average | Needs Improvement`
+
+```json
+{
+  "overallRating": "Good",
+  "weakAreas": [{ "topic": "...", "reason": "...", "action": "..." }],
+  "revisionPlan": [{ "subject": "...", "priority": "high", "suggestion": "..." }],
+  "nextSteps": "..."
+}
+```
+
+---
+
+### Feature 3 — AI Notes Summarizer
+Transforms raw study text (up to 4000 characters) into structured, exam-ready material.
+
+- Extracts 5 key bullet points from the content
+- Identifies important facts with exam-relevance explanations
+- Writes a 3–4 sentence concise summary
+- Auto-generates 3 MCQ practice questions with options, correct answers, and explanations
+- Tags which competitive exams (UPSC, SSC, Banking, RRB) the content is relevant to
+
+```json
+{
+  "keyPoints": ["...", "..."],
+  "importantFacts": [{ "fact": "...", "importance": "..." }],
+  "practiceQuestions": [{ "question": "...", "options": [...], "answer": "A", "explanation": "..." }],
+  "examRelevance": "UPSC, SSC CGL"
+}
+```
+
+---
+
+### Feature 4 — Current Affairs Quiz Generator
+Reads a news article title and auto-generates 3 MCQ questions tailored for Indian competitive exams.
+
+- Accepts article title, source, and category as input
+- Produces exam-pattern MCQs with four options each
+- Each question includes the correct answer letter and a brief explanation
+- Designed for SSC, UPSC, Banking, and RRB exam preparation
+
+---
+
+### Feature 5 — Smart Task Suggestion Engine
+Reads the student's real database profile (exam target, study streak) and recommends 3 specific, actionable study tasks for the current day.
+
+- Fetches live student data from MongoDB (`examTarget`, `streak`)
+- Considers pending tasks already in the student's planner
+- Each suggestion includes task title, subject, estimated minutes, priority, and a reason
+- Generates a personalized motivation tip based on the student's current streak count
+
+```json
+{
+  "suggestions": [{ "title": "...", "subject": "...", "estimatedMinutes": 45, "priority": "high", "reason": "..." }],
+  "motivationTip": "Your 12-day streak shows real commitment — keep it going!"
+}
+```
+
+---
+
+### Feature 6 — Exam Readiness Score Calculator
+Computes a weighted 0–100 readiness score using four real data signals pulled live from MongoDB, then generates a personalized AI insight.
+
+| Signal | Weight | Source |
+|---|---|---|
+| Study Streak | 25 pts max | `User.streak` (3 pts/day, capped at 9 days) |
+| Attendance | 25 pts max | `Attendance` collection (last 30 days %) |
+| Mock Test Avg | 30 pts max | `MockTestAttempt` collection (last 5 tests) |
+| AI Engagement | 20 pts max | `AIActivityLog` (doubt sessions used today) |
+
+- Assigns a level: `Excellent (≥80) | Good (≥60) | Average (≥40) | Needs Work`
+- Calls Groq LLM to generate a single personalized motivating insight sentence
+- Returns a full breakdown with per-category scores and detail strings
+
+```json
+{
+  "score": 72,
+  "level": "Good",
+  "insight": "Your consistent attendance shows dedication — now push your mock scores higher!",
+  "breakdown": [{ "label": "Study Streak", "score": 21, "max": 25, "detail": "7 day streak" }]
+}
+```
+
+---
+
+### Feature 7 — AI Activity History Retrieval
+Fetches the last 20 AI interactions for a specific tool per student from the `AIActivityLog` collection.
+
+- Filterable by `toolName` (Study Planner, Test Analyzer, Notes Summarizer, etc.)
+- Returns full payload history sorted by most recent
+- Enables students to revisit previously generated plans, analyses, and suggestions
+
+---
+
+### AI Pipeline Architecture — Multi-Key Round-Robin with Gemini Fallback
+
+```
+Request → Groq Key 1
+       → Groq Key 2 (on 429 / rate limit)
+       → Groq Key 3 (on 429 / rate limit)
+       → Google Gemini Flash (full Groq stack exhausted)
+       → Error response (all providers failed)
+```
+
+- All AI calls use structured JSON-mode prompts — no markdown, raw JSON only
+- Regex-based JSON extraction handles edge-case LLM outputs
+- All interactions logged to `AIActivityLog` with student ID, tool name, details, and full payload
+
+---
+
 ## Complete Architecture Changelog
 
 ### v3.0.0 -- Leaderboard Resiliency, Persistent Auth Contexts & Zoomable QR Cards (May 2026)
