@@ -2046,7 +2046,10 @@ const StudentDashboard = () => {
                                                         // Refresh engagement stats & parent dashboard
                                                         fetchDashboardData();
                                                         fetchEngagementData();
+                                                        // Auto-switch to review/solution view from question 0
+                                                        setQuizAnswers(res.data.attempt?.answers || quizAnswers);
                                                         setCurrentQuizQuestionIndex(0);
+                                                        // Keep modal open so student sees solutions immediately
                                                     }
                                                 } catch (e) {
                                                     setQuizError(e.response?.data?.message || 'Submission failed. Please try again.');
