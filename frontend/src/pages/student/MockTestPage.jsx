@@ -1242,6 +1242,31 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
             </div>
 
             <div className="max-w-6xl mx-auto px-4 py-6">
+
+                {/* ── AI Analyzer Nudge Banner ── */}
+                <Link to="/student/ai/test-analyzer">
+                    <div
+                        className="mb-6 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 cursor-pointer group transition-all duration-200 hover:shadow-lg"
+                        style={{ background: 'linear-gradient(135deg, #312e81 0%, #4f46e5 50%, #7c3aed 100%)', border: '1px solid rgba(139,92,246,0.3)' }}
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                                <IoSparklesOutline size={22} className="text-white" />
+                            </div>
+                            <div>
+                                <p className="text-white font-black text-sm">Analyze your performance with AI ✨</p>
+                                <p className="text-indigo-200 text-xs font-medium mt-0.5">Get section-wise weak areas, a 3-day revision plan &amp; personalised tips →</p>
+                            </div>
+                        </div>
+                        <div
+                            className="flex-shrink-0 px-4 py-2 rounded-xl font-extrabold text-xs text-indigo-900 group-hover:scale-105 transition-transform"
+                            style={{ background: 'white' }}
+                        >
+                            Analyze Now →
+                        </div>
+                    </div>
+                </Link>
+
                 {/* Top KPI Cards */}
                 <div className="result-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)', gap: '24px', marginBottom: '24px' }}>
 
