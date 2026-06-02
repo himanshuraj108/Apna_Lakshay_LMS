@@ -613,6 +613,7 @@ const StudentDashboard = () => {
     const [quizSubmitting, setQuizSubmitting]         = useState(false);
     const [quizError, setQuizError]                   = useState('');
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+    const [aiInsight, setAiInsight]                   = useState(null); // { score, level, insight }
 
     const SETTINGS_KEY = 'lms_location_required';
     const getLocationRequired = () => { try { const c = localStorage.getItem(SETTINGS_KEY); if (c !== null) return c === 'true'; } catch (_) { } return true; };
@@ -646,11 +647,13 @@ const StudentDashboard = () => {
             setDailyQuiz(d.dailyQuiz);
             setDailyQuizAttempted(d.dailyQuizAttempted);
             setDailyQuizAttempt(d.dailyQuizAttempt);
+            setAiInsight(d.aiInsight || null);
             return;
         }
 
         let streakStats = null;
         let dailyQuiz = null, dailyQuizAttempted = false, dailyQuizAttempt = null;
+        let aiInsight = null;
 
         try {
             const statsRes = await api.get('/student/engagement/streak-stats');
@@ -676,7 +679,16 @@ const StudentDashboard = () => {
             console.error('Error fetching daily quiz:', e);
         }
 
-        setCache('engagement', { streakStats, dailyQuiz, dailyQuizAttempted, dailyQuizAttempt });
+        // Fetch AI Insight of the Day (readiness score) — non-critical, silent fail
+        try {
+            const insightRes = await api.get('/student/ai/readiness-score');
+            if (insightRes.data.success) {
+                aiInsight = { score: insightRes.data.score, level: insightRes.data.level, insight: insightRes.data.insight };
+                setAiInsight(aiInsight);
+            }
+        } catch (_) { /* non-critical */ }
+
+        setCache('engagement', { streakStats, dailyQuiz, dailyQuizAttempted, dailyQuizAttempt, aiInsight });
     };
 
     const fetchLeaderboard = async (sortByValue) => {
@@ -1380,6 +1392,35 @@ const StudentDashboard = () => {
                     </Link>
                 </motion.div>
 
+
+                {/* -- AI INSIGHT OF THE DAY ---------------------------------------------------------- */}
+                {showAITools && aiInsight && (
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.4 }} className="mb-4">
+                        <Link to="/student/ai/readiness-score">
+                            <div
+                                className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 cursor-pointer group hover:shadow-md transition-all duration-200"
+                                style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%)', border: '1px solid rgba(99,102,241,0.25)' }}
+                            >
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex flex-col items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform border border-white/10">
+                                        <span className="text-lg font-black text-white leading-none">{aiInsight.score}</span>
+                                        <span className="text-[8px] font-bold text-indigo-300 uppercase tracking-wide">/ 100</span>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="text-white font-black text-sm">AI Insight of the Day</span>
+                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider" style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.4)' }}>{aiInsight.level}</span>
+                                        </div>
+                                        <p className="text-indigo-200 text-xs font-medium leading-snug line-clamp-1">{aiInsight.insight}</p>
+                                    </div>
+                                </div>
+                                <div className="flex-shrink-0 px-3.5 py-2 rounded-xl font-extrabold text-xs bg-white/10 text-white border border-white/15 group-hover:bg-white/20 transition-colors whitespace-nowrap">
+                                    Full Score →
+                                </div>
+                            </div>
+                        </Link>
+                    </motion.div>
+                )}
 
                 {/* -- AI TOOLS SECTION ----------------------------------------------------------------- */}
                 {showAITools && (
