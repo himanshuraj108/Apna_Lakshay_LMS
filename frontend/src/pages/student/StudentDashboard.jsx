@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -606,6 +606,7 @@ const StudentDashboard = () => {
     const [dailyQuiz, setDailyQuiz]                   = useState(null);
     const [dailyQuizAttempted, setDailyQuizAttempted] = useState(false);
     const [dailyQuizAttempt, setDailyQuizAttempt]     = useState(null);
+    const quizCompletedRef                            = useRef(null);
     const [showQuizModal, setShowQuizModal]           = useState(false);
     const [quizAnswers, setQuizAnswers]               = useState([null, null, null, null, null]);
     const [currentQuizQuestionIndex, setCurrentQuizQuestionIndex] = useState(0);
@@ -1707,6 +1708,7 @@ const StudentDashboard = () => {
                     <AnimatePresence mode="wait">
                         {dailyQuizAttempted && dailyQuiz && (
                             <motion.div
+                                ref={quizCompletedRef}
                                 key="challenge-completed"
                                 initial={{ opacity: 0, y: 16, scale: 0.98 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -2043,13 +2045,16 @@ const StudentDashboard = () => {
                                                         playSuccessBeep();
                                                         setDailyQuizAttempted(true);
                                                         setDailyQuizAttempt(res.data.attempt);
-                                                        // Refresh engagement stats & parent dashboard
-                                                        fetchDashboardData();
-                                                        fetchEngagementData();
-                                                        // Auto-switch to review/solution view from question 0
                                                         setQuizAnswers(res.data.attempt?.answers || quizAnswers);
                                                         setCurrentQuizQuestionIndex(0);
-                                                        // Keep modal open so student sees solutions immediately
+                                                        // Refresh dashboard data
+                                                        fetchDashboardData();
+                                                        fetchEngagementData();
+                                                        // Close modal then scroll to the completed quiz card
+                                                        setShowQuizModal(false);
+                                                        setTimeout(() => {
+                                                            quizCompletedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                        }, 350);
                                                     }
                                                 } catch (e) {
                                                     setQuizError(e.response?.data?.message || 'Submission failed. Please try again.');
