@@ -608,6 +608,8 @@ const StudentDashboard = () => {
     const [dailyQuizAttempt, setDailyQuizAttempt]     = useState(null);
     const quizCompletedRef                            = useRef(null);
     const [showQuizModal, setShowQuizModal]           = useState(false);
+    const [showReferralModal, setShowReferralModal]   = useState(false);
+    const [modalLang, setModalLang]                   = useState('en');
     const [quizAnswers, setQuizAnswers]               = useState([null, null, null, null, null]);
     const [currentQuizQuestionIndex, setCurrentQuizQuestionIndex] = useState(0);
     const [quizSubmitting, setQuizSubmitting]         = useState(false);
@@ -1079,6 +1081,83 @@ const StudentDashboard = () => {
                   PAGE BODY
                ───────────────────────────────────────────────────────────── */}
             <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32">
+
+                {/* -- COMING SOON UPDATES NOTICE -- */}
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45 }}
+                    className="mb-5 overflow-hidden rounded-2xl border flex items-center justify-between p-2 sm:p-2.5 bg-gradient-to-r from-orange-50/70 via-white to-pink-50/50 border-orange-200 shadow-sm"
+                >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {/* Compact Badge */}
+                        <span className="flex items-center gap-1.5 shrink-0 text-[10px] font-black px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white uppercase tracking-wider shadow-sm">
+                            <IoGiftOutline size={11} className="animate-bounce" />
+                            {language === 'hi' ? 'अपडेट' : 'Update'}
+                        </span>
+                        
+                        {/* Compact Ticker (Marquee) */}
+                        <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0 bg-orange-500/5 rounded-lg px-2 border border-orange-100/50">
+                            <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-orange-50/0 to-transparent z-10 pointer-events-none" />
+                            <div className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-orange-50/0 to-transparent z-10 pointer-events-none" />
+                            
+                            <style>{`
+                                @keyframes refMiniTicker {
+                                    0% { transform: translate3d(0, 0, 0); }
+                                    100% { transform: translate3d(-50%, 0, 0); }
+                                }
+                                .animate-ref-mini-ticker {
+                                    display: inline-flex;
+                                    white-space: nowrap;
+                                    animation: refMiniTicker 24s linear infinite;
+                                }
+                                .animate-ref-mini-ticker:hover {
+                                    animation-play-state: paused;
+                                }
+                                @keyframes buttonPulse {
+                                    0% {
+                                        transform: scale(1);
+                                        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5);
+                                    }
+                                    70% {
+                                        transform: scale(1.05);
+                                        box-shadow: 0 0 0 7px rgba(236, 72, 153, 0);
+                                    }
+                                    100% {
+                                        transform: scale(1);
+                                        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+                                    }
+                                }
+                                .animate-view-pulse {
+                                    animation: buttonPulse 1.8s infinite ease-in-out;
+                                }
+                            `}</style>
+                            <div className="animate-ref-mini-ticker text-[11px] sm:text-xs font-black text-orange-600 select-none cursor-pointer flex gap-12 whitespace-nowrap">
+                                <span>
+                                    {language === 'hi'
+                                        ? '» रेफरल सिस्टम जल्द आ रहा है! अपने दोस्तों को आमंत्रित करें और फीस में भारी छूट, फ्री कॉइन्स और AI क्रेडिट्स पाएं! विवरण देखने के लिए क्लिक करें »'
+                                        : '» Referral System Coming Soon! Invite friends and get fee discounts, free coins & AI credits! Click to view details »'
+                                    }
+                                </span>
+                                <span>
+                                    {language === 'hi'
+                                        ? '» रेफरल सिस्टम जल्द आ रहा है! अपने दोस्तों को आमंत्रित करें और फीस में भारी छूट, फ्री कॉइन्स और AI क्रेडिट्स पाएं! विवरण देखने के लिए क्लिक करें »'
+                                        : '» Referral System Coming Soon! Invite friends and get fee discounts, free coins & AI credits! Click to view details »'
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Action Button */}
+                    <button
+                        onClick={() => setShowReferralModal(true)}
+                        className="ml-3 px-3 py-1 text-[10px] sm:text-xs font-black rounded-xl text-white hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shrink-0 bg-gradient-to-r from-orange-500 to-pink-500 animate-view-pulse"
+                    >
+                        {language === 'hi' ? 'देखें' : 'View'}
+                        <IoArrowForward size={11} />
+                    </button>
+                </motion.div>
 
                 {/* -- HERO GREETING BAR ------------------------------------------ */}
                 <motion.div
@@ -2128,6 +2207,169 @@ const StudentDashboard = () => {
                                         Close Review
                                     </button>
                                 )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Referral System Info Modal */}
+            <AnimatePresence>
+                {showReferralModal && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+                            className="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            {/* Glowing Accent Line top */}
+                            <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 via-pink-500 to-indigo-500" />
+
+                            {/* Header */}
+                            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-b from-orange-50/40 to-transparent">
+                                <style>{`
+                                    @keyframes modalGradientShift {
+                                        0% { background-position: 0% 50%; }
+                                        50% { background-position: 100% 50%; }
+                                        100% { background-position: 0% 50%; }
+                                    }
+                                    .animated-coming-soon {
+                                        background: linear-gradient(135deg, #F97316, #EC4899, #8B5CF6, #3B82F6);
+                                        background-size: 300% 300%;
+                                        -webkit-background-clip: text;
+                                        -webkit-text-fill-color: transparent;
+                                        animation: modalGradientShift 4s ease infinite;
+                                        text-shadow: 0 0 10px rgba(236, 72, 153, 0.1);
+                                    }
+                                `}</style>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg shadow-orange-500/20 text-white shrink-0">
+                                        <IoGiftOutline size={20} className="animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-gray-900 font-black text-base sm:text-lg flex flex-wrap items-center gap-1.5">
+                                            <span>{modalLang === 'hi' ? 'रेफरल सिस्टम' : 'Referral System'}</span>
+                                            <span className="animated-coming-soon text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-lg border border-orange-500/20 bg-orange-500/5 tracking-wider uppercase shrink-0">
+                                                {modalLang === 'hi' ? 'जल्द आ रहा है' : 'Coming Soon'}
+                                            </span>
+                                        </h3>
+                                        <p className="text-[10px] text-pink-600 font-extrabold uppercase tracking-widest mt-0.5">
+                                            {modalLang === 'hi' ? 'विशेष छात्र पुरस्कार' : 'Exclusive Student Rewards'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                    {/* Language Selector Dropdown inside Modal */}
+                                    <div className="relative">
+                                        <select
+                                            value={modalLang}
+                                            onChange={(e) => setModalLang(e.target.value)}
+                                            className="bg-white border border-gray-200 rounded-xl pl-3 pr-8 py-1.5 text-xs font-black text-gray-700 focus:outline-none focus:border-orange-400 cursor-pointer shadow-sm appearance-none"
+                                            style={{ minWidth: '95px' }}
+                                        >
+                                            <option value="en">English</option>
+                                            <option value="hi">हिंदी</option>
+                                        </select>
+                                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-orange-500 flex items-center">
+                                            <IoLanguageOutline size={13} />
+                                        </div>
+                                    </div>
+                                    
+                                    <button
+                                        onClick={() => setShowReferralModal(false)}
+                                        className="p-1 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                                    >
+                                        <IoCloseOutline size={24} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+                                <p className="text-xs text-gray-500 leading-relaxed font-semibold">
+                                    {modalLang === 'hi'
+                                        ? 'अपना लक्ष्य में जल्द ही एक नया रेफरल और रिवार्ड्स सिस्टम लाया जा रहा है। अपने सहपाठियों को आमंत्रित करके आप दोनों विशेष लाभ पा सकेंगे। यहाँ कुछ मुख्य विशेषताएं दी गई हैं:'
+                                        : 'We are bringing a comprehensive Referral & Rewards System to Apna Lakshay soon. Share the platform with your peers and unlock benefits for both of you. Here is a sneak peek:'}
+                                </p>
+
+                                {/* Benefit 1: Fee Discount */}
+                                <div className="p-4 rounded-2xl border border-orange-100 bg-orange-50/30 flex gap-3.5">
+                                    <div className="w-9 h-9 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 shrink-0">
+                                        <IoCashOutline size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-extrabold text-sm text-gray-900">
+                                            {modalLang === 'hi' ? 'मासिक फीस में भारी छूट' : 'Monthly Fee Discounts'}
+                                        </h4>
+                                        <p className="text-xs text-gray-600 mt-1 leading-normal">
+                                            {modalLang === 'hi'
+                                                ? 'जब आपके रेफरल से कोई छात्र प्रवेश लेगा, तो आपको और उसे एडमिन द्वारा निर्धारित प्रतिशत और महीनों के लिए फीस में छूट मिलेगी।'
+                                                : 'When someone joins using your referral, you get a discount on your monthly subscription fee for the duration set by the administrator.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Benefit 2: Coin Economy */}
+                                <div className="p-4 rounded-2xl border border-pink-100 bg-pink-50/20 flex gap-3.5">
+                                    <div className="w-9 h-9 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-600 shrink-0">
+                                        <IoSparklesOutline size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-extrabold text-sm text-gray-900">
+                                            {modalLang === 'hi' ? 'लक्ष्य कॉइन्स (Lakshay Coins)' : 'Lakshay Study Coins'}
+                                        </h4>
+                                        <p className="text-xs text-gray-600 mt-1 leading-normal">
+                                            {modalLang === 'hi'
+                                                ? 'हर सफल रेफरल, दैनिक क्विज़, निरंतर उपस्थिति और अच्छे स्कोर पर लक्ष्य कॉइन्स कमाएं। इन कॉइन्स का उपयोग अपनी फीस छूट या मॉक टेस्ट के लिए करें!'
+                                                : 'Earn Lakshay Coins for successful referrals, daily quiz streaks, regular attendance, and mock tests. Redeem them for fee discounts and features.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Benefit 3: AI Credits */}
+                                <div className="p-4 rounded-2xl border border-indigo-100 bg-indigo-50/20 flex gap-3.5">
+                                    <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 shrink-0">
+                                        <IoFlashOutline size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-extrabold text-sm text-gray-900">
+                                            {modalLang === 'hi' ? 'फ्री AI क्रेडिट्स' : 'Free AI Credits'}
+                                        </h4>
+                                        <p className="text-xs text-gray-600 mt-1 leading-normal">
+                                            {modalLang === 'hi'
+                                                ? 'अपने कॉइन्स का उपयोग करके AI स्टडी प्लानर, नोट समराइज़र और डाउट सोल्विंग टूल्स के लिए अतिरिक्त क्रेडिट्स प्राप्त करें।'
+                                                : 'Unlock extra credits for our AI Study Suite. Use AI features like personalized study planners, summarizers, and doubt-solving engines.'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Coin Transactions Tracker */}
+                                <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex gap-3.5">
+                                    <div className="w-9 h-9 rounded-xl bg-slate-600/10 flex items-center justify-center text-slate-700 shrink-0">
+                                        <IoTimerOutline size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-extrabold text-sm text-gray-900">
+                                            {modalLang === 'hi' ? 'रियल-टाइम एक्टिविटी लेजर' : 'Real-time Wallet Ledger'}
+                                        </h4>
+                                        <p className="text-xs text-gray-600 mt-1 leading-normal">
+                                            {modalLang === 'hi'
+                                                ? 'अपने रेफरल इतिहास और कॉइन ट्रांजेक्शन को एक पारदर्शी बैंक पासबुक शैली के लेजर में आसानी से ट्रैक करें।'
+                                                : 'Track every coin earned or spent in a transparent, passbook-style ledger directly from your dashboard.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                                <button
+                                    onClick={() => setShowReferralModal(false)}
+                                    className="px-5 py-2.5 rounded-xl font-extrabold text-sm text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
+                                >
+                                    {modalLang === 'hi' ? 'ठीक है, समझ गया' : 'Got it!'}
+                                </button>
                             </div>
                         </motion.div>
                     </div>
