@@ -10,7 +10,7 @@ import api from '../../utils/api';
 import StudentChatHistory from './StudentChatHistory';
 
 
-const TABS = ['Quick Actions', 'Learning', 'Doubt Credits', 'Mock Test Credits', 'AI Chat History'];
+const TABS = ['Quick Actions', 'Learning', 'AI Study Suite', 'Doubt Credits', 'Mock Test Credits', 'AI Chat History'];
 
 const Toggle = ({ checked, onChange }) => (
     <button onClick={() => onChange(!checked)}
@@ -56,6 +56,7 @@ const ManageCards = () => {
     const [activeTab, setTab]           = useState('Quick Actions');
     const [quickActions, setQA]         = useState([]);
     const [learning, setLearning]       = useState([]);
+    const [aiStudySuite, setAiStudySuite] = useState([]);
     const [aiConfig, setAiConfig]       = useState({ divisor: 10, defaultCredits: 10 });
     const [students, setStudents]       = useState([]);
     const [mockStudents, setMockStudents] = useState([]);
@@ -87,6 +88,7 @@ const ManageCards = () => {
             ]);
             setQA(cfg.data.quickActions);
             setLearning(cfg.data.learning);
+            setAiStudySuite(cfg.data.aiStudySuite || []);
             setAiConfig(cred.data.config);
             setStudents(sts.data.students);
             setMockStudents(mockSts.data.students);
@@ -250,6 +252,25 @@ const ManageCards = () => {
                         <button onClick={() => saveSection('learning', learning)} disabled={saving}
                             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
                             <IoSave size={15} /> {saving ? 'Saving…' : 'Save Learning Section'}
+                        </button>
+                    </div>
+                )}
+
+                {/* ── AI Study Suite ──────────────────────────────── */}
+                {activeTab === 'AI Study Suite' && (
+                    <div>
+                        <p className="text-xs text-gray-500 mb-4">Control which AI Study Suite tools are visible, their order, and whether they show a NEW tag.</p>
+                        <div className="space-y-2 mb-6">
+                            {aiStudySuite.map((card, i) => (
+                                <CardRow key={card.id} card={card} index={i} total={aiStudySuite.length}
+                                    onMove={(idx, dir) => moveCard(aiStudySuite, setAiStudySuite, idx, dir)}
+                                    onToggle={(idx, v) => toggleCard(aiStudySuite, setAiStudySuite, idx, v)}
+                                    onToggleNew={(idx) => toggleNew(aiStudySuite, setAiStudySuite, idx)} />
+                            ))}
+                        </div>
+                        <button onClick={() => saveSection('aiStudySuite', aiStudySuite)} disabled={saving}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
+                            <IoSave size={15} /> {saving ? 'Saving…' : 'Save AI Study Suite'}
                         </button>
                     </div>
                 )}
