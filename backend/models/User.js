@@ -76,7 +76,13 @@ const userSchema = new mongoose.Schema({
     },
     examTarget: {
         type: String,
-        enum: ['ssc_cgl', 'ssc_chsl', 'ssc_gd', 'ssc_mts', 'ssc_cpo', 'upsc_cse', 'upsc_cds', 'ibps_po', 'ibps_clerk', 'sbi_po', 'sbi_clerk', 'rrb_ntpc', 'jee_main', 'neet_ug', 'generic'],
+        enum: [
+            'ssc_cgl', 'ssc_chsl', 'ssc_gd', 'ssc_mts', 'ssc_cpo', 
+            'upsc_cse', 'upsc_cds', 
+            'ibps_po', 'ibps_clerk', 'sbi_po', 'sbi_clerk', 
+            'rrb_ntpc', 'jee_main', 'neet_ug', 'generic',
+            'class_6', 'class_7', 'class_8', 'class_9', 'class_10', 'class_11', 'class_12'
+        ],
         default: 'generic'
     },
     mockTestCreditsResetDate: {
@@ -148,6 +154,33 @@ const userSchema = new mongoose.Schema({
     lastActive: {
         type: Date,
         default: null
+    },
+    // ── Referral & Coin Wallet ──────────────────────────────────────────
+    referralCode: {
+        type: String,
+        unique: true,
+        sparse: true   // auto-generated on first use
+    },
+    referredBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    coinBalance: {
+        type: Number,
+        default: 0
+    },
+    coinExpiresAt: {
+        type: Date,
+        default: null
+    },
+    totalCoinsEarned: {
+        type: Number,
+        default: 0
+    },
+    totalCoinsSpent: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true
