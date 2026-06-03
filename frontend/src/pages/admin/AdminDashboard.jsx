@@ -10,7 +10,7 @@ import {
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
     IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline,
     IoGridOutline, IoSparklesOutline, IoSearchOutline, IoKeypadOutline, IoSettingsOutline, IoQrCodeOutline, IoRefreshOutline,
-    IoTrophy, IoCheckmarkCircleOutline
+    IoTrophy, IoCheckmarkCircleOutline, IoWalletOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
@@ -110,6 +110,15 @@ const AdminDashboard = () => {
         } catch (e) { await fetchSettings(); }
     };
 
+    const handleToggleReferral = async () => {
+        try {
+            const current = settings?.referral?.enabled ?? false;
+            const res = await api.put('/admin/settings', { referral: { enabled: !current } });
+            if (res.data.settings) setSettings(res.data.settings);
+            else await fetchSettings();
+        } catch (e) { await fetchSettings(); }
+    };
+
     const fetchDashboardStats = async (mode = 'default') => {
         setLoading(true);
         try {
@@ -139,6 +148,7 @@ const AdminDashboard = () => {
         { title: 'Engagement & Activity Logs', path: '/admin/activities',   icon: IoSparklesOutline,         color: 'from-orange-500 to-amber-500',   desc: 'Streaks, XP, mock tests & target choices' },
         { title: 'Manage Cards',          path: '/admin/manage-cards',       icon: IoGridOutline,             color: 'from-yellow-400 to-orange-500',  desc: 'Dashboard cards · AI credits · Reorder' },
         { title: 'AI Study Suite Activity', path: '/admin/ai-activity',       icon: IoSparklesOutline,         color: 'from-indigo-500 to-purple-500',  desc: 'Track student AI study plans, notes, tests & scores' },
+        { title: 'Referral & Wallet',        path: '/admin/referral-wallet',   icon: IoWalletOutline,           color: 'from-violet-500 to-indigo-600',  desc: 'Manage referrals, coin wallets & student rewards' },
     ];
 
     const STAT_CARDS = [
@@ -315,6 +325,23 @@ const AdminDashboard = () => {
                                                     <button onClick={handleToggleLoginAttendance}
                                                         className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.loginAttendanceEnabled ? 'bg-green-500' : 'bg-gray-100'}`}>
                                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.loginAttendanceEnabled ? 'translate-x-5' : ''}`} />
+                                                    </button>
+                                                </div>
+
+                                                {/* Row 6 — Referral System */}
+                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-1.5 rounded-lg ${settings?.referral?.enabled ? 'bg-violet-500/15' : 'bg-gray-500/15'}`}>
+                                                            <IoWalletOutline size={15} className={settings?.referral?.enabled ? 'text-violet-500' : 'text-gray-500'} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-gray-900">Referral System</p>
+                                                            <p className="text-xs text-gray-600">{settings?.referral?.enabled ? 'Students can share & earn via referrals' : 'Referral tab hidden from students'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={handleToggleReferral}
+                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.referral?.enabled ? 'bg-violet-500' : 'bg-gray-100'}`}>
+                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.referral?.enabled ? 'translate-x-5' : ''}`} />
                                                     </button>
                                                 </div>
                                             </div>
