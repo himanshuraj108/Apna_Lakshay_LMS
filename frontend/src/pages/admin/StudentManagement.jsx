@@ -1950,6 +1950,19 @@ const StudentManagement = () => {
                                 />
                                 <p className="text-xs text-gray-600 mt-1">Override the join date (used for attendance & fee cycle calculations).</p>
                             </div>
+                            {!editMode && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Referral Code <span className="text-gray-400 font-normal">(Optional)</span></label>
+                                    <input type="text"
+                                        value={formData.referralCode || ''}
+                                        onChange={e => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
+                                        className={INPUT}
+                                        placeholder="e.g. ABC123"
+                                        maxLength={12}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">If the student was referred by someone, enter their referral code to award coins.</p>
+                                </div>
+                            )}
                             {editMode && formData.seatId && (
                                 <div className="space-y-4">
                                     <div>
