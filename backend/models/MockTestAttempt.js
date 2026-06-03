@@ -52,14 +52,22 @@ const mockTestAttemptSchema = new mongoose.Schema({
         id: Number,
         question: String,
         options: [String],
-        correct: Number,
+        correct: mongoose.Schema.Types.Mixed, // Number index for MCQs, Boolean for subjective grading
         explanation: String,
         sectionId: String,
         sectionName: String,
+        modelAnswer: { type: String, default: '' },
+        keywords: [String],
         
         // Student Response
         selected: Number,
-        status: String // 'answered', 'not_visited', 'not_answered', 'marked', 'answered_marked'
+        studentAnswer: { type: String, default: '' },
+        studentAnswerImage: { type: String, default: '' },
+        status: String, // 'answered', 'not_visited', 'not_answered', 'marked', 'answered_marked'
+        
+        // AI Evaluation Feedback
+        evalScore: { type: Number, default: 0 },
+        feedback: { type: String, default: '' }
     }]
 }, { timestamps: true });
 
