@@ -10,6 +10,7 @@ import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 
 const EXAM_OPTIONS = [
+    'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12',
     'SSC CGL', 'SSC CHSL', 'SSC GD', 'SSC MTS', 'SSC CPO',
     'UPSC CSE', 'UPSC CDS', 'IBPS PO', 'IBPS Clerk',
     'SBI PO', 'SBI Clerk', 'RRB NTPC', 'RRB Group D',
@@ -299,6 +300,41 @@ const AIStudyPlanner = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Long-Term Roadmap */}
+                            {plan.roadmap && plan.roadmap.length > 0 && (
+                                <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+                                    <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                                        <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                            <IoCalendarOutline className="text-indigo-500" />
+                                            Long-Term Preparation Roadmap
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-0.5">Your study timeline divided into targeted phases</p>
+                                    </div>
+                                    <div className="p-5 space-y-4">
+                                        {plan.roadmap.map((phase, idx) => (
+                                            <div key={idx} className="flex gap-4 relative">
+                                                {idx < plan.roadmap.length - 1 && (
+                                                    <div className="absolute left-[15px] top-8 bottom-[-16px] w-[2px]" style={{ backgroundColor: '#e2e8f0' }}></div>
+                                                )}
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 z-10 transition-all ${phase.status === 'active' ? 'bg-indigo-500 text-white shadow-[0_4px_10px_rgba(99,102,241,0.4)]' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {phase.phase || (idx + 1)}
+                                                </div>
+                                                <div className="flex-1 min-w-0 pb-2">
+                                                    <div className="flex justify-between items-start flex-wrap gap-1">
+                                                        <p className={`text-sm font-bold ${phase.status === 'active' ? 'text-indigo-600' : 'text-gray-800'}`}>{phase.title}</p>
+                                                        <span className="text-[10px] font-black text-gray-500 bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-150 shrink-0">{phase.duration}</span>
+                                                    </div>
+                                                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{phase.focus}</p>
+                                                    {phase.status === 'active' && (
+                                                        <span className="inline-block text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 mt-2">Active Phase (Detailed Daily Schedule below)</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Week Tabs */}
                             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
