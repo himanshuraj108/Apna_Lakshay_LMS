@@ -35,7 +35,12 @@ exports.getSettings = async (req, res) => {
 // @route   PUT /api/admin/settings
 exports.updateSettings = async (req, res) => {
     try {
-        const { shiftMode, systemStatus, activeModes, locationAttendance, onlinePaymentEnabled, pinAttendanceEnabled, attendancePin, timeRestrictionEnabled, loginAttendanceEnabled, showWhatsAppGroup, showAITools } = req.body;
+        const {
+            shiftMode, systemStatus, activeModes, locationAttendance,
+            onlinePaymentEnabled, pinAttendanceEnabled, attendancePin,
+            timeRestrictionEnabled, loginAttendanceEnabled,
+            showWhatsAppGroup, showAITools, referral
+        } = req.body;
 
         let settings = await Settings.findOne();
 
@@ -52,11 +57,19 @@ exports.updateSettings = async (req, res) => {
         if (showWhatsAppGroup !== undefined) updateFields.showWhatsAppGroup = !!showWhatsAppGroup;
         if (showAITools !== undefined) updateFields.showAITools = !!showAITools;
 
+        // Referral sub-document — use dot notation to avoid overwriting other sub-fields
+        if (referral !== undefined && typeof referral === 'object') {
+            Object.entries(referral).forEach(([k, v]) => {
+                updateFields[`referral.${k}`] = v;
+            });
+        }
+
         // Strict boolean coercion for locationAttendance
         if (locationAttendance !== undefined) {
             const coerced = locationAttendance === 'true' ? true : (locationAttendance === 'false' ? false : !!locationAttendance);
             updateFields.locationAttendance = coerced;
         }
+
 
         updateFields.updatedBy = req.user._id;
 
@@ -98,7 +111,7 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup showAITools');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup showAITools referral rewards');
 
 
         if (!settings) {
@@ -108,7 +121,9 @@ exports.getPublicSettings = async (req, res) => {
                 locationAttendance: true,
                 onlinePaymentEnabled: true,
                 showWhatsAppGroup: true,
-                showAITools: true
+                showAITools: true,
+                referral: { enabled: false },
+                rewards: { enabled: true }
             };
         }
 
