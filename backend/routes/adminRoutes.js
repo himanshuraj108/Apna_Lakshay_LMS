@@ -67,6 +67,15 @@ const {
 // Settings come from settingsController
 const { getSettings, updateSettings } = require('../controllers/settingsController');
 
+// System Updates
+const {
+    getUpdates,
+    createUpdate,
+    updateUpdate,
+    deleteUpdate,
+    toggleUpdateActive
+} = require('../controllers/systemUpdateController');
+
 // Holiday controller
 const { declareHoliday, getHolidays, deleteHoliday } = require('../controllers/holidayController');
 
@@ -187,6 +196,13 @@ router.get('/vacant-seats', getVacantSeats);
 // Notifications
 router.post('/notifications', sendNotification);
 
+// System Updates
+router.get('/updates', getUpdates);
+router.post('/updates', createUpdate);
+router.put('/updates/:id', updateUpdate);
+router.delete('/updates/:id', deleteUpdate);
+router.put('/updates/:id/toggle', toggleUpdateActive);
+
 // Requests
 router.get('/requests', getRequests);
 router.put('/requests/:id', handleRequest);
@@ -254,4 +270,25 @@ router.post('/verify-subadmin-pin', verifySubAdminPin); // accessible by subadmi
 router.get('/engagement/activities', superAdminOnly, getStudentEngagementActivities);
 router.get('/students/:id/engagement-details', superAdminOnly, getStudentEngagementDetails);
 
+// ── Referral Management ────────────────────────────────────────────────
+const { getAllReferrals, approveReferral, rejectReferral } = require('../controllers/referralController');
+router.get('/referrals', getAllReferrals);
+router.put('/referrals/:id/approve', approveReferral);
+router.put('/referrals/:id/reject', rejectReferral);
+
+// ── Wallet Management ──────────────────────────────────────────────────
+const {
+    getAllWallets, getStudentLedger, adminCreditCoins, adminDebitCoins,
+    adminExpireWallet, adminResetWallet, exportWalletCSV
+} = require('../controllers/walletController');
+
+router.get('/wallet/export', exportWalletCSV);         // must be before :studentId
+router.get('/wallet', getAllWallets);
+router.get('/wallet/:studentId', getStudentLedger);
+router.post('/wallet/:studentId/credit', adminCreditCoins);
+router.post('/wallet/:studentId/debit', adminDebitCoins);
+router.post('/wallet/:studentId/expire', adminExpireWallet);
+router.post('/wallet/:studentId/reset', adminResetWallet);
+
 module.exports = router;
+
