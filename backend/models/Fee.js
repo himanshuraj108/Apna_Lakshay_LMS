@@ -53,6 +53,19 @@ const feeSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         default: null
+    },
+    // ── Coin Discount ──────────────────────────────────────────────────
+    coinDiscount: {
+        type: Number,
+        default: 0    // number of coins redeemed
+    },
+    coinDiscountAmt: {
+        type: Number,
+        default: 0    // rupee value of the discount applied
+    },
+    originalAmount: {
+        type: Number,
+        default: null // stores original amount before discount
     }
 }, {
     timestamps: true
