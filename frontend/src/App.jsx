@@ -112,6 +112,7 @@ const SubAdminManagement = lazy(() => import('./pages/admin/SubAdminManagement')
 const SubAdminDashboard = lazy(() => import('./pages/admin/SubAdminDashboard'));
 const StudentActivities = lazy(() => import('./pages/admin/StudentActivities'));
 const AIActivityLogs = lazy(() => import('./pages/admin/AIActivityLogs'));
+const AdminReferralWallet = lazy(() => import('./pages/admin/AdminReferralWallet'));
 
 
 // Student Pages - Lazy Loaded
@@ -137,6 +138,7 @@ const AINoteSummarizer = lazy(() => import('./pages/student/AINoteSummarizer'));
 const AICurrentAffairsQuiz = lazy(() => import('./pages/student/AICurrentAffairsQuiz'));
 const AITaskSuggestions = lazy(() => import('./pages/student/AITaskSuggestions'));
 const AIReadinessScore = lazy(() => import('./pages/student/AIReadinessScore'));
+const WalletPage = lazy(() => import('./pages/student/WalletPage'));
 
 function App() {
     const { user, loading, systemStatus } = useAuth();
@@ -218,6 +220,7 @@ function App() {
                 <Route path="/admin/sub-admins" element={<ProtectedRoute superAdminOnly><SubAdminManagement /></ProtectedRoute>} />
                 <Route path="/admin/activities" element={<ProtectedRoute superAdminOnly><StudentActivities /></ProtectedRoute>} />
                 <Route path="/admin/ai-activity" element={<ProtectedRoute superAdminOnly><AIActivityLogs /></ProtectedRoute>} />
+                <Route path="/admin/referral-wallet" element={<ProtectedRoute superAdminOnly><AdminReferralWallet /></ProtectedRoute>} />
 
 
                 {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
@@ -255,6 +258,7 @@ function App() {
                 <Route path="/student/ai/current-affairs-quiz" element={<ProtectedRoute><AICurrentAffairsQuiz /></ProtectedRoute>} />
                 <Route path="/student/ai/task-suggestions" element={<ProtectedRoute><AITaskSuggestions /></ProtectedRoute>} />
                 <Route path="/student/ai/readiness-score" element={<ProtectedRoute><AIReadinessScore /></ProtectedRoute>} />
+                <Route path="/student/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" />} />
