@@ -18,7 +18,7 @@ import {
     IoLogOutOutline as IoLogoutIcon, IoChevronForward, IoGridOutline, IoMapOutline,
     IoMenuOutline, IoCloseOutline, IoKeypadOutline,
     IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline,
-    IoLanguageOutline
+    IoLanguageOutline, IoWallet
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -45,6 +45,13 @@ const EXAM_TARGET_NAMES = {
     'rrb_ntpc': 'RRB NTPC',
     'jee_main': 'JEE Main',
     'neet_ug': 'NEET UG',
+    'class_6': 'Class 6',
+    'class_7': 'Class 7',
+    'class_8': 'Class 8',
+    'class_9': 'Class 9',
+    'class_10': 'Class 10',
+    'class_11': 'Class 11',
+    'class_12': 'Class 12',
     'generic': 'General Aptitude & Knowledge'
 };
 
@@ -586,6 +593,7 @@ const StudentDashboard = () => {
     const [manualMarkEnabled, setManualMarkEnabled]   = useState(false); // true when admin allows manual (with or without PIN)
     const [showWhatsAppGroup, setShowWhatsAppGroup]   = useState(true);
     const [showAITools, setShowAITools]               = useState(true);
+    const [referralEnabled, setReferralEnabled]       = useState(true);
     const [showPinModal, setShowPinModal]             = useState(false);
     const [pinValue, setPinValue]                     = useState('');
     const [pinLoading, setPinLoading]                 = useState(false);
@@ -600,6 +608,7 @@ const StudentDashboard = () => {
     // Engagement & Gamification States
     const [activeLeftTab, setActiveLeftTab]           = useState('actions');
     const [streakStats, setStreakStats]               = useState(null);
+    const [coinBalance, setCoinBalance]               = useState(null);
     const [isCardFlipped, setIsCardFlipped]           = useState(false);
     const [leaderboard, setLeaderboard]               = useState([]);
     const [leaderboardSortBy, setLeaderboardSortBy]   = useState('xp');
@@ -609,6 +618,8 @@ const StudentDashboard = () => {
     const quizCompletedRef                            = useRef(null);
     const [showQuizModal, setShowQuizModal]           = useState(false);
     const [showReferralModal, setShowReferralModal]   = useState(false);
+    const [activeUpdate, setActiveUpdate]             = useState(null);
+    const [showUpdateModal, setShowUpdateModal]       = useState(false);
     const [modalLang, setModalLang]                   = useState('en');
     const [quizAnswers, setQuizAnswers]               = useState([null, null, null, null, null]);
     const [currentQuizQuestionIndex, setCurrentQuizQuestionIndex] = useState(0);
@@ -691,6 +702,13 @@ const StudentDashboard = () => {
         } catch (_) { /* non-critical */ }
 
         setCache('engagement', { streakStats, dailyQuiz, dailyQuizAttempted, dailyQuizAttempt, aiInsight });
+
+        // Fetch wallet balance for the coin chip (non-critical)
+        try {
+            const walletRes = await api.get('/student/wallet');
+            if (walletRes.data.success) setCoinBalance(walletRes.data.wallet.coinBalance);
+        } catch (_) { /* silent */ }
+
     };
 
     const fetchLeaderboard = async (sortByValue) => {
@@ -707,6 +725,17 @@ const StudentDashboard = () => {
         }
     };
 
+    const fetchActiveUpdate = async () => {
+        try {
+            const res = await api.get('/student/updates/latest');
+            if (res.data.success) {
+                setActiveUpdate(res.data.update);
+            }
+        } catch (e) {
+            console.error('Error fetching latest active update:', e);
+        }
+    };
+
     useEffect(() => {
         // Only show loading skeleton if the main dashboard data isn't cached yet
         if (!isFresh('dashboard')) setLoading(true);
@@ -716,6 +745,7 @@ const StudentDashboard = () => {
         fetchPinStatus();
         fetchPendingFeedback();
         fetchEngagementData();
+        fetchActiveUpdate();
     }, []);
     
     useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
@@ -727,6 +757,7 @@ const StudentDashboard = () => {
             setManualMarkEnabled(true);
             setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
             setShowAITools(s.showAITools !== false);
+            setReferralEnabled(!!s.referral?.enabled);
             return;
         }
         try {
@@ -737,6 +768,7 @@ const StudentDashboard = () => {
                 setManualMarkEnabled(true);
                 setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
                 setShowAITools(s.showAITools !== false);
+                setReferralEnabled(!!s.referral?.enabled);
                 setCache('settings', s);
                 // also update the location localStorage key
                 localStorage.setItem(SETTINGS_KEY, String(s.locationAttendance !== false));
@@ -1082,82 +1114,81 @@ const StudentDashboard = () => {
                ───────────────────────────────────────────────────────────── */}
             <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32">
 
-                {/* -- COMING SOON UPDATES NOTICE -- */}
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.45 }}
-                    className="mb-5 overflow-hidden rounded-2xl border flex items-center justify-between p-2 sm:p-2.5 bg-gradient-to-r from-orange-50/70 via-white to-pink-50/50 border-orange-200 shadow-sm"
-                >
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {/* Compact Badge */}
-                        <span className="flex items-center gap-1.5 shrink-0 text-[10px] font-black px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white uppercase tracking-wider shadow-sm">
-                            <IoGiftOutline size={11} className="animate-bounce" />
-                            {language === 'hi' ? 'अपडेट' : 'Update'}
-                        </span>
-                        
-                        {/* Compact Ticker (Marquee) */}
-                        <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0 bg-orange-500/5 rounded-lg px-2 border border-orange-100/50">
-                            <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-orange-50/0 to-transparent z-10 pointer-events-none" />
-                            <div className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-orange-50/0 to-transparent z-10 pointer-events-none" />
+                {/* -- DYNAMIC DASHBOARD UPDATE TICKER -- */}
+                {activeUpdate && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.45 }}
+                        className="mb-5 overflow-hidden rounded-2xl border flex items-center justify-between p-2 sm:p-2.5 bg-gradient-to-r from-orange-50/70 via-white to-pink-50/50 border-orange-200 shadow-sm"
+                    >
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            {/* Compact Badge */}
+                            <span className="flex items-center gap-1.5 shrink-0 text-[10px] font-black px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white uppercase tracking-wider shadow-sm">
+                                <IoGiftOutline size={11} className="animate-bounce" />
+                                {language === 'hi' ? 'अपडेट' : 'Update'}
+                            </span>
                             
-                            <style>{`
-                                @keyframes refMiniTicker {
-                                    0% { transform: translate3d(0, 0, 0); }
-                                    100% { transform: translate3d(-50%, 0, 0); }
-                                }
-                                .animate-ref-mini-ticker {
-                                    display: inline-flex;
-                                    white-space: nowrap;
-                                    animation: refMiniTicker 24s linear infinite;
-                                }
-                                .animate-ref-mini-ticker:hover {
-                                    animation-play-state: paused;
-                                }
-                                @keyframes buttonPulse {
-                                    0% {
-                                        transform: scale(1);
-                                        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5);
+                            {/* Compact Ticker (Marquee) */}
+                            <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0 bg-orange-500/5 rounded-lg px-2 border border-orange-100/50">
+                                <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-orange-50/0 to-transparent z-10 pointer-events-none" />
+                                <div className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-orange-50/0 to-transparent z-10 pointer-events-none" />
+                                
+                                <style>{`
+                                    @keyframes refMiniTicker {
+                                        0% { transform: translate3d(0, 0, 0); }
+                                        100% { transform: translate3d(-50%, 0, 0); }
                                     }
-                                    70% {
-                                        transform: scale(1.05);
-                                        box-shadow: 0 0 0 7px rgba(236, 72, 153, 0);
+                                    .animate-ref-mini-ticker {
+                                        display: inline-flex;
+                                        white-space: nowrap;
+                                        animation: refMiniTicker 24s linear infinite;
                                     }
-                                    100% {
-                                        transform: scale(1);
-                                        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+                                    .animate-ref-mini-ticker:hover {
+                                        animation-play-state: paused;
                                     }
-                                }
-                                .animate-view-pulse {
-                                    animation: buttonPulse 1.8s infinite ease-in-out;
-                                }
-                            `}</style>
-                            <div className="animate-ref-mini-ticker text-[11px] sm:text-xs font-black text-orange-600 select-none cursor-pointer flex gap-12 whitespace-nowrap">
-                                <span>
-                                    {language === 'hi'
-                                        ? '» रेफरल सिस्टम जल्द आ रहा है! अपने दोस्तों को आमंत्रित करें और फीस में भारी छूट, फ्री कॉइन्स और AI क्रेडिट्स पाएं! विवरण देखने के लिए क्लिक करें »'
-                                        : '» Referral System Coming Soon! Invite friends and get fee discounts, free coins & AI credits! Click to view details »'
+                                    @keyframes buttonPulse {
+                                        0% {
+                                            transform: scale(1);
+                                            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5);
+                                        }
+                                        70% {
+                                            transform: scale(1.05);
+                                            box-shadow: 0 0 0 7px rgba(236, 72, 153, 0);
+                                        }
+                                        100% {
+                                            transform: scale(1);
+                                            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+                                        }
                                     }
-                                </span>
-                                <span>
-                                    {language === 'hi'
-                                        ? '» रेफरल सिस्टम जल्द आ रहा है! अपने दोस्तों को आमंत्रित करें और फीस में भारी छूट, फ्री कॉइन्स और AI क्रेडिट्स पाएं! विवरण देखने के लिए क्लिक करें »'
-                                        : '» Referral System Coming Soon! Invite friends and get fee discounts, free coins & AI credits! Click to view details »'
+                                    .animate-view-pulse {
+                                        animation: buttonPulse 1.8s infinite ease-in-out;
                                     }
-                                </span>
+                                `}</style>
+                                <div className="animate-ref-mini-ticker text-[11px] sm:text-xs font-black text-orange-600 select-none cursor-pointer flex gap-12 whitespace-nowrap">
+                                    <span>
+                                        {language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}
+                                    </span>
+                                    <span>
+                                        {language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    {/* Action Button */}
-                    <button
-                        onClick={() => setShowReferralModal(true)}
-                        className="ml-3 px-3 py-1 text-[10px] sm:text-xs font-black rounded-xl text-white hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shrink-0 bg-gradient-to-r from-orange-500 to-pink-500 animate-view-pulse"
-                    >
-                        {language === 'hi' ? 'देखें' : 'View'}
-                        <IoArrowForward size={11} />
-                    </button>
-                </motion.div>
+                        
+                        {/* Action Button */}
+                        <button
+                            onClick={() => {
+                                setModalLang(language);
+                                setShowUpdateModal(true);
+                            }}
+                            className="ml-3 px-3 py-1 text-[10px] sm:text-xs font-black rounded-xl text-white hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shrink-0 bg-gradient-to-r from-orange-500 to-pink-500 animate-view-pulse"
+                        >
+                            {language === 'hi' ? 'देखें' : 'View'}
+                            <IoArrowForward size={11} />
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* -- HERO GREETING BAR ------------------------------------------ */}
                 <motion.div
@@ -1184,14 +1215,24 @@ const StudentDashboard = () => {
                             {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#FFF7ED]" />}
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm" style={{ color: '#111827' }}>{user?.name?.split(" ")[0]} 👋</span>
+                            <span className="font-bold text-sm" style={{ color: '#111827' }}>Hi, {user?.name?.split(" ")[0]}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <span className="text-[11px] hidden sm:block" style={{ color: '#9CA3AF' }}>{today}</span>
                         {isActive
                             ? <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-2 py-0.5 rounded-full font-semibold"><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{t("Active")}</span>
                             : <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 border border-red-200 text-red-500 px-2 py-0.5 rounded-full font-semibold">{t("Inactive")}</span>}
+                        {/* Wallet Coin Chip */}
+                        {referralEnabled && (
+                            <Link to="/student/wallet">
+                                <motion.span whileHover={{ scale: 1.07 }} whileTap={{ scale: 0.93 }}
+                                    className="inline-flex items-center gap-1 text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full font-bold cursor-pointer hover:bg-indigo-100 transition-colors">
+                                    <IoWallet size={11} />
+                                    Wallet
+                                </motion.span>
+                            </Link>
+                        )}
                     </div>
                 </motion.div>
 
@@ -1502,6 +1543,7 @@ const StudentDashboard = () => {
                 )}
 
                 {/* -- AI TOOLS SECTION ----------------------------------------------------------------- */}
+                {/* -- AI TOOLS SECTION ----------------------------------------------------------------- */}
                 {showAITools && (
                     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.45 }} className="mb-5">
                         <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
@@ -1510,35 +1552,24 @@ const StudentDashboard = () => {
                                     <IoSparklesOutline size={11} className="text-indigo-500" />
                                 </div>
                                 <span className="text-xs font-extrabold text-gray-800 tracking-wide">AI Study Suite</span>
-                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider text-white animate-pulse" style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)', boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)' }}>New</span>
-
-                                {/* Continuous marquee ticker */}
-                                <div className="ml-auto overflow-hidden relative w-36 sm:w-80 h-5 flex items-center bg-red-50/50 rounded-lg px-2 border border-red-100/50">
-                                    <style>{`
-                                        @keyframes marqueeTicker {
-                                            0% { transform: translate3d(0, 0, 0); }
-                                            100% { transform: translate3d(-50%, 0, 0); }
-                                        }
-                                        .animate-ticker {
-                                            display: inline-block;
-                                            white-space: nowrap;
-                                            animation: marqueeTicker 20s linear infinite;
-                                        }
-                                    `}</style>
-                                    <div className="animate-ticker text-[8px] font-black uppercase tracking-wider text-red-600 flex gap-4">
-                                        <span>🔥 NEW study suite is live! Try AI Study Planner • Analyze Mock Tests • Summarize Notes • Task Suggestions • Readiness Score • &nbsp; &nbsp; 🔥 NEW study suite is live! Try AI Study Planner • Analyze Mock Tests • Summarize Notes • Task Suggestions • Readiness Score</span>
-                                    </div>
-                                </div>
                             </div>
                             <div className="p-4 grid grid-cols-3 gap-3">
-                                {[
-                                    { id: 'ai-study-plan', label: 'Study Plan',       desc: 'AI weekly schedule',  accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',  icon: IoBookOutline,         link: '/student/ai/study-planner'        },
-                                    { id: 'ai-test',       label: 'Test Analyzer',    desc: 'Weak area insights',  accentColor: '#ea580c', accentBg: 'rgba(234,88,12,0.1)',   icon: IoSparklesOutline,     link: '/student/ai/test-analyzer'        },
-                                    { id: 'ai-notes',      label: 'Note Summarizer',  desc: 'Paste and summarize', accentColor: '#7c3aed', accentBg: 'rgba(124,58,237,0.1)',  icon: IoDocumentTextOutline, link: '/student/ai/note-summarizer'      },
-                                    { id: 'ai-ca-quiz',    label: 'News Quiz',        desc: 'Quiz from articles',  accentColor: '#0ea5e9', accentBg: 'rgba(14,165,233,0.1)',  icon: IoGridOutline,         link: '/student/ai/current-affairs-quiz' },
-                                    { id: 'ai-tasks',      label: 'Task Suggestions', desc: 'Smart daily tasks',   accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',  icon: IoFlashOutline,        link: '/student/ai/task-suggestions'     },
-                                    { id: 'ai-readiness',  label: 'Readiness Score',  desc: 'Your exam readiness', accentColor: '#16a34a', accentBg: 'rgba(22,163,74,0.1)',   icon: IoCalendarOutline,     link: '/student/ai/readiness-score'      },
-                                ].map((item, i) => (
+                                {(() => {
+                                    const BASE_AI = [
+                                        { id: 'ai-study-plan', label: 'Study Plan',       desc: 'AI weekly schedule',  accentColor: '#6366f1', accentBg: 'rgba(99,102,241,0.1)',  icon: IoBookOutline,         link: '/student/ai/study-planner'        },
+                                        { id: 'ai-test',       label: 'Test Analyzer',    desc: 'Weak area insights',  accentColor: '#ea580c', accentBg: 'rgba(234,88,12,0.1)',   icon: IoSparklesOutline,     link: '/student/ai/test-analyzer'        },
+                                        { id: 'ai-notes',      label: 'Note Summarizer',  desc: 'Paste and summarize', accentColor: '#7c3aed', accentBg: 'rgba(124,58,237,0.1)',  icon: IoDocumentTextOutline, link: '/student/ai/note-summarizer'      },
+                                        { id: 'ai-ca-quiz',    label: 'News Quiz',        desc: 'Quiz from articles',  accentColor: '#0ea5e9', accentBg: 'rgba(14,165,233,0.1)',  icon: IoGridOutline,         link: '/student/ai/current-affairs-quiz' },
+                                        { id: 'ai-tasks',      label: 'Task Suggestions', desc: 'Smart daily tasks',   accentColor: '#f97316', accentBg: 'rgba(249,115,22,0.1)',  icon: IoFlashOutline,        link: '/student/ai/task-suggestions'     },
+                                        { id: 'ai-readiness',  label: 'Readiness Score',  desc: 'Your exam readiness', accentColor: '#16a34a', accentBg: 'rgba(22,163,74,0.1)',   icon: IoCalendarOutline,     link: '/student/ai/readiness-score'      },
+                                    ];
+                                    const cfg = cardConfig?.aiStudySuite;
+                                    if (!cfg) return BASE_AI;
+                                    return BASE_AI
+                                        .map(c => { const cf = cfg.find(x => x.id === c.id); return cf ? { ...c, _order: cf.order ?? 99, _visible: cf.visible !== false, _isNew: !!cf.isNew } : { ...c, _order: 99, _visible: true, _isNew: false }; })
+                                        .filter(c => c._visible)
+                                        .sort((a,b) => (a._order ?? 99) - (b._order ?? 99));
+                                })().map((item, i) => (
                                     <Link key={item.id} to={item.link} className="block">
                                         <motion.div
                                             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -1551,6 +1582,14 @@ const StudentDashboard = () => {
                                         >
                                             <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl opacity-70 group-hover:opacity-100 transition-opacity" style={{ background: `linear-gradient(90deg, ${item.accentColor}, transparent)` }} />
                                             <item.icon size={56} className="absolute -bottom-2 -right-2 opacity-[0.06] group-hover:opacity-[0.1] transition-opacity" style={{ color: item.accentColor }} />
+                                            
+                                            {/* Badges */}
+                                            {item._isNew && (
+                                                <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                                                    <span className="text-[7px] font-black px-1 py-0.2 rounded bg-amber-500 text-white leading-none">NEW</span>
+                                                </div>
+                                            )}
+
                                             <div className="relative w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-105 duration-200" style={{ background: `${item.accentColor}18` }}>
                                                 <item.icon size={18} style={{ color: item.accentColor }} />
                                             </div>
@@ -2366,6 +2405,76 @@ const StudentDashboard = () => {
                             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
                                 <button
                                     onClick={() => setShowReferralModal(false)}
+                                    className="px-5 py-2.5 rounded-xl font-extrabold text-sm text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
+                                >
+                                    {modalLang === 'hi' ? 'ठीक है, समझ गया' : 'Got it!'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Dynamic System Update Details Modal */}
+            <AnimatePresence>
+                {showUpdateModal && activeUpdate && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+                            className="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            {/* Glowing Accent Line top */}
+                            <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 to-pink-500 animate-pulse" />
+
+                            {/* Header */}
+                            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-b from-orange-50/40 to-transparent">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg shadow-orange-500/20 text-white shrink-0">
+                                        <IoGiftOutline size={20} className="animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-gray-900 font-black text-base sm:text-lg">
+                                            {modalLang === 'hi' ? activeUpdate.titleHi : activeUpdate.titleEn}
+                                        </h3>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {/* Language selector inside modal */}
+                                    <div className="relative shrink-0 select-none">
+                                        <select
+                                            value={modalLang}
+                                            onChange={(e) => setModalLang(e.target.value)}
+                                            className="appearance-none pl-6 pr-3 py-1 rounded-xl text-[10px] font-black text-orange-600 bg-orange-50 border border-orange-200 outline-none cursor-pointer focus:ring-1 focus:ring-orange-500/35"
+                                        >
+                                            <option value="en">ENG</option>
+                                            <option value="hi">हिंदी</option>
+                                        </select>
+                                        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-orange-500 flex items-center">
+                                            <IoLanguageOutline size={12} />
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowUpdateModal(false)}
+                                        className="p-1 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                                    >
+                                        <IoCloseOutline size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 overflow-y-auto flex-1 bg-white">
+                                <div className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">
+                                    {modalLang === 'hi' ? activeUpdate.contentHi : activeUpdate.contentEn}
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                                <button
+                                    onClick={() => setShowUpdateModal(false)}
                                     className="px-5 py-2.5 rounded-xl font-extrabold text-sm text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
                                 >
                                     {modalLang === 'hi' ? 'ठीक है, समझ गया' : 'Got it!'}
