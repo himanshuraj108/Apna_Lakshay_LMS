@@ -45,7 +45,7 @@ exports.generateStudyPlan = async (req, res) => {
         const messages = [
             {
                 role: 'system',
-                content: `You are an expert study planner for Indian competitive exams. Generate a practical, week-wise study plan in JSON format only. No markdown, no extra text — only valid JSON.`
+                content: `You are an expert study planner for Indian competitive and school exams. Generate a practical, phase-wise long-term roadmap and detailed week-wise study plan in JSON format only. No markdown, no extra text — only valid JSON.`
             },
             {
                 role: 'user',
@@ -57,8 +57,17 @@ Weak subjects: ${weakSubjects.length > 0 ? weakSubjects.join(', ') : 'None speci
 
 Return ONLY a JSON object with this exact structure:
 {
-  "summary": "One sentence overview of the plan. If the exam is more than 30 days away, explicitly describe this as the initial 4-week kickstart/foundational phase of their long-term preparation (e.g. 'Initial 4-week kickstart phase for long-term NEET UG preparation').",
+  "summary": "One sentence overview of the plan.",
   "daysLeft": ${daysLeft},
+  "roadmap": [
+    {
+      "phase": 1,
+      "title": "Phase Name (e.g. Foundation / Syllabus Completion / Intense Practice / Final Revision)",
+      "duration": "Weeks X-Y",
+      "focus": "High level description of goals for this phase",
+      "status": "active|upcoming"
+    }
+  ],
   "weeklyPlans": [
     {
       "week": 1,
@@ -77,7 +86,8 @@ Return ONLY a JSON object with this exact structure:
   "tips": ["tip1", "tip2", "tip3"]
 }
 
-Generate ${Math.min(weeksLeft, 4)} weeks maximum. Each week should have 6 days (Sunday as rest). Keep it practical for ${examTarget} exam preparation.`
+For the "roadmap", divide the entire ${weeksLeft} weeks into 3-5 logical phases spanning all the way to the exam.
+For "weeklyPlans", generate detailed daily plans for the first 4 weeks (or all ${weeksLeft} weeks if total weeks are less than 4). Each week should have 6 days (Sunday as rest). Keep topics realistic and aligned with the ${examTarget} syllabus.`
             }
         ];
 
