@@ -21,19 +21,30 @@ const DEFAULT_LEARNING = [
     { id: 'mock-test',      label: 'AI Mock Test',   visible: true, isNew: true,  order: 2 },
 ];
 
+const DEFAULT_AI_STUDY_SUITE = [
+    { id: 'ai-study-plan',  label: 'Study Plan',       visible: true, isNew: false, order: 0 },
+    { id: 'ai-test',        label: 'Test Analyzer',    visible: true, isNew: false, order: 1 },
+    { id: 'ai-notes',       label: 'Note Summarizer',  visible: true, isNew: false, order: 2 },
+    { id: 'ai-ca-quiz',     label: 'News Quiz',        visible: true, isNew: false, order: 3 },
+    { id: 'ai-tasks',       label: 'Task Suggestions', visible: true, isNew: false, order: 4 },
+    { id: 'ai-readiness',   label: 'Readiness Score',  visible: true, isNew: false, order: 5 },
+];
+
 const DEFAULT_AI_CREDIT_CONFIG = { divisor: 10, defaultCredits: 10 };
 
 // ─── GET card config ─────────────────────────────────────────────────────────
 const getCardConfig = async (req, res) => {
     try {
-        const [qaSetting, learnSetting] = await Promise.all([
+        const [qaSetting, learnSetting, aiSuiteSetting] = await Promise.all([
             SystemSetting.findOne({ key: 'cardConfig_quickActions' }),
             SystemSetting.findOne({ key: 'cardConfig_learning' }),
+            SystemSetting.findOne({ key: 'cardConfig_aiStudySuite' }),
         ]);
         res.json({
             success: true,
             quickActions: qaSetting?.value || DEFAULT_QUICK_ACTIONS,
             learning:     learnSetting?.value || DEFAULT_LEARNING,
+            aiStudySuite: aiSuiteSetting?.value || DEFAULT_AI_STUDY_SUITE,
         });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -43,9 +54,20 @@ const getCardConfig = async (req, res) => {
 // ─── PUT card config ─────────────────────────────────────────────────────────
 const updateCardConfig = async (req, res) => {
     try {
-        const { section, cards } = req.body; // section: 'quickActions' | 'learning'
+        const { section, cards } = req.body; // section: 'quickActions' | 'learning' | 'aiStudySuite'
         if (!section || !Array.isArray(cards)) return res.status(400).json({ success: false, message: 'Invalid payload' });
-        const key = section === 'quickActions' ? 'cardConfig_quickActions' : 'cardConfig_learning';
+        
+        let key;
+        if (section === 'quickActions') {
+            key = 'cardConfig_quickActions';
+        } else if (section === 'learning') {
+            key = 'cardConfig_learning';
+        } else if (section === 'aiStudySuite') {
+            key = 'cardConfig_aiStudySuite';
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid section' });
+        }
+        
         await SystemSetting.findOneAndUpdate({ key }, { key, value: cards }, { upsert: true, new: true });
         res.json({ success: true, message: 'Card config updated' });
     } catch (err) {
