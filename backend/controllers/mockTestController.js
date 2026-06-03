@@ -1,6 +1,227 @@
 const https = require('https');
 const User = require('../models/User');
 const MockTestAttempt = require('../models/MockTestAttempt');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configure multer storage for mock test handwritten answers with Cloudinary or disk storage fallback
+const getMockTestUploadMiddleware = () => {
+    const isCloudinaryConfigured = process.env.CLOUDINARY_API_KEY && 
+        process.env.CLOUDINARY_API_KEY !== 'your_api_key_here' && 
+        process.env.CLOUDINARY_CLOUD_NAME && 
+        process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloud_name_here';
+
+    if (isCloudinaryConfigured) {
+        try {
+            const { storage } = require('../config/cloudinary');
+            return multer({
+                storage: storage,
+                limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+                fileFilter: (req, file, cb) => {
+                    const filetypes = /jpeg|jpg|png|gif/;
+                    const extname = filetypes.test(file.originalname.split('.').pop().toLowerCase());
+                    const mimetype = filetypes.test(file.mimetype);
+                    if (mimetype && extname) {
+                        cb(null, true);
+                    } else {
+                        cb(new Error('Only images (JPEG, PNG, GIF) are allowed for handwritten answers'));
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('[MockTestUpload] Cloudinary initialization failed, using disk fallback:', e);
+        }
+    }
+
+    // Disk Storage Fallback
+    const uploadDir = path.join(__dirname, '../uploads/answers');
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, uploadDir);
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const ext = path.extname(file.originalname);
+            cb(null, 'answer-' + uniqueSuffix + ext);
+        }
+    });
+
+    return multer({
+        storage: storage,
+        limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+        fileFilter: (req, file, cb) => {
+            const filetypes = /jpeg|jpg|png|gif/;
+            const extname = filetypes.test(file.originalname.split('.').pop().toLowerCase());
+            const mimetype = filetypes.test(file.mimetype);
+            if (mimetype && extname) {
+                cb(null, true);
+            } else {
+                cb(new Error('Only images (JPEG, PNG, GIF) are allowed for handwritten answers'));
+            }
+        }
+    });
+};
+
+const mockTestUpload = getMockTestUploadMiddleware().single('file');
+
+// @desc    Upload handwritten mock test answer image
+// @route   POST /api/student/mock-test/upload-answer
+const uploadAnswerImage = (req, res) => {
+    mockTestUpload(req, res, function (err) {
+        if (err) {
+            console.error('Answer Image Upload Error:', err);
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const fileUrl = req.file.path ? req.file.path : `/uploads/answers/${req.file.filename}`;
+        
+        res.status(200).json({
+            success: true,
+            fileUrl,
+            message: 'Answer image uploaded successfully'
+        });
+    });
+};
+
+// @desc    Upload handwritten mock test answer image and transcribe it using Groq Vision
+// @route   POST /api/student/mock-test/upload-and-transcribe
+const uploadAndTranscribeAnswer = (req, res) => {
+    mockTestUpload(req, res, async function (err) {
+        if (err) {
+            console.error('Answer Image Upload Error:', err);
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded'
+            });
+        }
+
+        const fileUrl = req.file.path ? req.file.path : `/uploads/answers/${req.file.filename}`;
+        
+        console.log(`[OCR] Uploaded image to ${fileUrl}, starting transcription...`);
+        
+        try {
+            const keys = getGroqKeys();
+            const apiKey = keys[0] || process.env.GROQ_API_KEY;
+            
+            const transcription = await analyzeHandwriting(fileUrl, apiKey);
+            console.log(`[OCR] Transcription complete: "${transcription}"`);
+            
+            res.status(200).json({
+                success: true,
+                fileUrl,
+                transcription: transcription !== 'Illegible handwriting or blank image.' ? transcription : '',
+                message: 'Answer image uploaded and transcribed successfully'
+            });
+        } catch (ocrError) {
+            console.error('[OCR Error] Handwriting transcription failed:', ocrError.message);
+            res.status(200).json({
+                success: true,
+                fileUrl,
+                transcription: '',
+                error: 'OCR model offline or failed to transcribe handwriting.'
+            });
+        }
+    });
+};
+
+// OCR Handwriting analysis using Groq Vision API
+const analyzeHandwriting = async (imageUrl, apiKey) => {
+    let imagePayloadUrl = imageUrl;
+
+    if (imageUrl.startsWith('/uploads/')) {
+        try {
+            const localPath = path.join(__dirname, '..', imageUrl);
+            if (fs.existsSync(localPath)) {
+                const imageBuffer = fs.readFileSync(localPath);
+                const base64Image = imageBuffer.toString('base64');
+                const ext = path.extname(localPath).toLowerCase().replace('.', '');
+                const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+                imagePayloadUrl = `data:${mimeType};base64,${base64Image}`;
+                console.log(`[OCR] Converted local file ${localPath} to Base64 payload.`);
+            }
+        } catch (e) {
+            console.error('[OCR] Failed to read local file for Base64 conversion:', e);
+        }
+    }
+
+    const body = JSON.stringify({
+        model: 'llama-3.2-11b-vision-preview',
+        messages: [
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'text',
+                        text: 'Transcribe the handwritten text from this image exactly as written. Return ONLY the transcribed text. Do not add any introductory or concluding text, notes, or commentary. If the handwriting is illegible or the image does not contain text, respond with "Illegible handwriting or blank image."'
+                    },
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: imagePayloadUrl
+                        }
+                    }
+                ]
+            }
+        ],
+        temperature: 0.1,
+        max_tokens: 1000
+    });
+
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: GROQ_HOST,
+            path: GROQ_PATH,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Length': Buffer.byteLength(body),
+            },
+            timeout: 25000,
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => (data += chunk));
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed.error) {
+                        return reject(new Error(parsed.error.message || JSON.stringify(parsed.error)));
+                    }
+                    const text = parsed?.choices?.[0]?.message?.content || '';
+                    resolve(text.trim());
+                } catch { reject(new Error('Invalid Groq vision response')); }
+            });
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.destroy(); reject(new Error('Vision request timeout')); });
+        req.write(body);
+        req.end();
+    });
+};
 
 // Groq OpenAI-compatible API
 const GROQ_HOST = 'api.groq.com';
@@ -130,6 +351,111 @@ const EXAM_PATTERNS = {
             { id: 'math', name: 'Mathematics', weight: 30, topics: 'Number System, Decimals, Fractions, LCM, HCF, Ratio, %' },
             { id: 'reasoning', name: 'General Intelligence', weight: 30, topics: 'Analogies, Completion of Number/Alphabetical Series, Coding' },
             { id: 'ga', name: 'General Awareness', weight: 40, topics: 'Current Events, Games & Sports, Indian Literature, Monuments' }
+        ]
+    },
+    'class_6': {
+        name: 'Class 6 Term Exam',
+        type: 'CBSE / ICSE School Curriculum',
+        desc: 'Class 6 academic review test covering mathematics, science, social science, and english.',
+        duration: 60,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Fractions, Decimals, Algebra, Geometry, Integers, Ratio & Proportion' },
+            { id: 'science', name: 'Science', weight: 25, topics: 'Food, Components of Food, Sorting Materials, Separation of Substances, Getting to know Plants, Light, Electricity' },
+            { id: 'social_science', name: 'Social Science', weight: 25, topics: 'What/Where/How, Ancient Kingdoms, Earth in Solar System, Globe & Maps, Key elements of Government' },
+            { id: 'english', name: 'English', weight: 25, topics: 'Reading Comprehension, Nouns, Pronouns, Verbs, Tenses, Sentence construction, Synonyms & Antonyms' }
+        ]
+    },
+    'class_7': {
+        name: 'Class 7 Term Exam',
+        type: 'CBSE / ICSE School Curriculum',
+        desc: 'Class 7 academic review test covering mathematics, science, social science, and english.',
+        duration: 60,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Integers, Fractions & Decimals, Simple Equations, Lines & Angles, Triangles, Comparing Quantities' },
+            { id: 'science', name: 'Science', weight: 25, topics: 'Nutrition in Plants & Animals, Heat, Acids, Bases & Salts, Physical & Chemical Changes, Respiration, Motion & Time' },
+            { id: 'social_science', name: 'Social Science', weight: 25, topics: 'Medieval History, Environment, Inside our Earth, Air & Water, State Government, Gender Equality' },
+            { id: 'english', name: 'English', weight: 25, topics: 'Comprehension, Adjectives, Adverbs, Prepositions, Conjunctions, Active/Passive Voice, Vocabulary' }
+        ]
+    },
+    'class_8': {
+        name: 'Class 8 Term Exam',
+        type: 'CBSE / ICSE School Curriculum',
+        desc: 'Class 8 academic review test covering mathematics, science, social science, and english.',
+        duration: 60,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Rational Numbers, Linear Equations, Understanding Quadrilaterals, Square & Cube Roots, Mensuration, Exponents' },
+            { id: 'science', name: 'Science', weight: 25, topics: 'Crop Production, Microorganisms, Coal & Petroleum, Combustion, Cell Structure, Force & Pressure, Sound' },
+            { id: 'social_science', name: 'Social Science', weight: 25, topics: 'Colonisation, Revolt of 1857, Land & Soil Resources, Indian Constitution, Judiciary, Parliamentary System' },
+            { id: 'english', name: 'English', weight: 25, topics: 'Comprehension, Direct & Indirect Speech, Modals, Determiners, Clauses, Subject-Verb Agreement, Vocabulary' }
+        ]
+    },
+    'class_9': {
+        name: 'Class 9 Term Exam',
+        type: 'CBSE / ICSE School Curriculum',
+        desc: 'Class 9 academic review test covering mathematics, science, social science, and english.',
+        duration: 90,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Number Systems, Polynomials, Coordinate Geometry, Linear Equations in Two Variables, Triangles, Quadrilaterals' },
+            { id: 'science', name: 'Science', weight: 25, topics: 'Matter in Our Surroundings, Is Matter Pure, Atoms & Molecules, Cell Structure, Tissues, Motion, Force, Gravitation' },
+            { id: 'social_science', name: 'Social Science', weight: 25, topics: 'French Revolution, Nazism, Physical Features of India, Climate, Drainage, Constitutional Design, Electoral Politics' },
+            { id: 'english', name: 'English', weight: 25, topics: 'Reading Comprehension, Integrated Grammar, Modals, Passive Voice, Reporting, Editing/Omission, Creative Writing' }
+        ]
+    },
+    'class_10': {
+        name: 'Class 10 Board Prep Exam',
+        type: 'CBSE / ICSE School Board Prep',
+        desc: 'Class 10 board preparation exam covering mathematics, science, social science, and english.',
+        duration: 90,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Real Numbers, Polynomials, Linear Equations, Quadratic Equations, Trigonometry, Coordinate Geometry, Circles' },
+            { id: 'science', name: 'Science', weight: 25, topics: 'Chemical Reactions, Metals & Non-metals, Carbon Compounds, Life Processes, Control & Coordination, Light, Electricity' },
+            { id: 'social_science', name: 'Social Science', weight: 25, topics: 'Nationalism in Europe & India, Resources, Agriculture, Federalism, Sectors of Economy, Money & Credit' },
+            { id: 'english', name: 'English', weight: 25, topics: 'Analytical Paragraph, Letter Writing, Tenses, Subject-Verb Concord, Determiners, Reported Speech, Comprehension' }
+        ]
+    },
+    'class_11': {
+        name: 'Class 11 Term Exam',
+        type: 'CBSE / ICSE School Curriculum',
+        desc: 'Class 11 Science Stream term exam covering physics, chemistry, mathematics, and biology.',
+        duration: 90,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'physics', name: 'Physics', weight: 25, topics: 'Units & Measurements, Kinematics, Laws of Motion, Work, Energy & Power, Gravitation, Thermodynamics, Oscillations & Waves' },
+            { id: 'chemistry', name: 'Chemistry', weight: 25, topics: 'Basic Concepts, Structure of Atom, Periodicity, Chemical Bonding, Thermodynamics, Equilibrium, Hydrocarbons' },
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Sets & Functions, Algebra, Coordinate Geometry, Calculus, Mathematical Reasoning, Limits & Derivatives' },
+            { id: 'biology', name: 'Biology', weight: 25, topics: 'Diversity of Living Organisms, Structural Organisation in Plants & Animals, Cell Structure & Function, Plant & Human Physiology' }
+        ]
+    },
+    'class_12': {
+        name: 'Class 12 Board Prep Exam',
+        type: 'CBSE / ICSE School Board Prep',
+        desc: 'Class 12 board preparation exam covering physics, chemistry, mathematics, and biology.',
+        duration: 90,
+        positive: 1,
+        negative: 0,
+        totalQuestions: 40,
+        sections: [
+            { id: 'physics', name: 'Physics', weight: 25, topics: 'Electrostatics, Current Electricity, Magnetic Effects, Electromagnetic Induction, Optics, Dual Nature of Matter, Atoms & Nuclei' },
+            { id: 'chemistry', name: 'Chemistry', weight: 25, topics: 'Solutions, Electrochemistry, Chemical Kinetics, d & f Block Elements, Coordination Compounds, Haloalkanes, Alcohols, Organic Chemistry' },
+            { id: 'maths', name: 'Mathematics', weight: 25, topics: 'Relations & Functions, Inverse Trigonometry, Matrices, Determinants, Continuity & Differentiability, Vectors, 3D Geometry' },
+            { id: 'biology', name: 'Biology', weight: 25, topics: 'Reproduction, Genetics & Evolution, Biology & Human Welfare, Biotechnology & its Applications, Ecology & Environment' }
         ]
     },
     'generic': {
@@ -377,12 +703,12 @@ const generateTest = async (req, res) => {
         /**
          * Build a focused prompt for a single chunk of `count` questions.
          */
-        const buildPrompt = (s, count, chunkIndex, totalChunks) => {
+        const buildPrompt = (s, count, chunkIndex, totalChunks, specificMode = mode) => {
             const uniqueHint = totalChunks > 1
                 ? ` (Set ${chunkIndex + 1}/${totalChunks} — all ${count} questions MUST be completely different topics/concepts from other sets)`
                 : '';
 
-            if (mode === 'mcq') {
+            if (specificMode === 'mcq') {
                 return `Generate exactly ${count} unique ${difficulty}-difficulty MCQ questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array — no markdown fences, no extra text.\nEach element must have:\n  "question": string (no newlines)\n  "options": array of exactly 4 strings (no newlines)\n  "correct": integer 0-3 (0=A 1=B 2=C 3=D)\n  "explanation": string (one sentence, no newlines)\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
             }
             return `Generate exactly ${count} unique ${difficulty}-difficulty short-answer questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array — no markdown fences, no extra text.\nEach element must have:\n  "question": string\n  "hint": string\n  "modelAnswer": string\n  "keywords": array of 3-5 key terms\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
@@ -391,7 +717,7 @@ const generateTest = async (req, res) => {
         /**
          * Fetch and validate one chunk — returns a clean array or [] on failure.
          */
-        const fetchChunk = async (s, count, chunkIndex, totalChunks) => {
+        const fetchChunk = async (s, count, chunkIndex, totalChunks, specificMode = mode) => {
             const messages = [
                 {
                     role: 'system',
@@ -399,7 +725,7 @@ const generateTest = async (req, res) => {
                 },
                 {
                     role: 'user',
-                    content: buildPrompt(s, count, chunkIndex, totalChunks)
+                    content: buildPrompt(s, count, chunkIndex, totalChunks, specificMode)
                 }
             ];
 
@@ -414,7 +740,7 @@ const generateTest = async (req, res) => {
                     : Object.values(parsed).find(v => Array.isArray(v)) || []);
 
             // Validate required fields per mode — drop malformed entries
-            if (mode === 'mcq') {
+            if (specificMode === 'mcq') {
                 qs = qs.filter(q =>
                     q &&
                     typeof q.question === 'string' && q.question.trim().length > 0 &&
@@ -443,9 +769,20 @@ const generateTest = async (req, res) => {
         let flatQuestions = [];
         let globalQIndex = 1;
 
-        const sectionResults = await Promise.allSettled(
-            targetSections.map(s => fetchChunk(s, CHUNK_SIZE, 0, 1))
-        );
+        let sectionResults;
+        if (mode === 'mixed') {
+            sectionResults = await Promise.allSettled(
+                targetSections.map(async (s) => {
+                    const mcqs = await fetchChunk(s, 3, 0, 1, 'mcq');
+                    const subjectives = await fetchChunk(s, 2, 0, 1, 'subjective');
+                    return [...mcqs, ...subjectives];
+                })
+            );
+        } else {
+            sectionResults = await Promise.allSettled(
+                targetSections.map(s => fetchChunk(s, CHUNK_SIZE, 0, 1, mode))
+            );
+        }
 
         targetSections.forEach((s, si) => {
             const result = sectionResults[si];
@@ -536,24 +873,24 @@ const generateMoreQuestions = async (req, res) => {
         let globalQIndex = alreadyCount + 1;
 
         // Build a focused prompt for a single chunk
-        const buildPrompt = (s, count, chunkIndex, totalChunks) => {
+        const buildPrompt = (s, count, chunkIndex, totalChunks, specificMode = mode) => {
             const uniqueHint = `(Set ${chunkIndex + 1}/${totalChunks} — generate completely DIFFERENT questions from previously asked ones in this session)`;
-            if (mode === 'mcq') {
+            if (specificMode === 'mcq') {
                 return `Generate exactly ${count} unique ${difficulty}-difficulty MCQ questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}\n${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array — no markdown fences, no extra text.\nEach element must have:\n  "question": string (no newlines)\n  "options": array of exactly 4 strings (no newlines)\n  "correct": integer 0-3\n  "explanation": string (one sentence)\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
             }
             return `Generate exactly ${count} unique ${difficulty}-difficulty short-answer questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}\n${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array.\nEach element must have:\n  "question": string\n  "hint": string\n  "modelAnswer": string\n  "keywords": array of 3-5 key terms\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
         };
 
-        const fetchChunk = async (s, count, chunkIndex, totalChunks) => {
+        const fetchChunk = async (s, count, chunkIndex, totalChunks, specificMode = mode) => {
             const messages = [
                 { role: 'system', content: 'You are an expert exam coach for Indian competitive exams. Always respond with ONLY a valid JSON array and nothing else.' },
-                { role: 'user', content: buildPrompt(s, count, chunkIndex, totalChunks) }
+                { role: 'user', content: buildPrompt(s, count, chunkIndex, totalChunks, specificMode) }
             ];
             const raw = await callGroq(messages);
             const parsed = extractJSON(raw);
             let qs = Array.isArray(parsed) ? parsed
                 : (Array.isArray(parsed[s.id]) ? parsed[s.id] : Object.values(parsed).find(v => Array.isArray(v)) || []);
-            if (mode === 'mcq') {
+            if (specificMode === 'mcq') {
                 qs = qs.filter(q => q && typeof q.question === 'string' && q.question.trim().length > 0 && Array.isArray(q.options) && q.options.length === 4 && typeof q.correct === 'number' && q.correct >= 0 && q.correct <= 3);
             } else {
                 qs = qs.filter(q => q && typeof q.question === 'string' && q.question.trim().length > 0 && typeof q.modelAnswer === 'string' && q.modelAnswer.trim().length > 0);
@@ -568,9 +905,20 @@ const generateMoreQuestions = async (req, res) => {
         const alreadyTexts = new Set(attempt.testData.map(q => q.question.trim().toLowerCase().slice(0, 80)));
 
         // ALL sections fire concurrently — each gets exactly CHUNK_SIZE (5) new unique questions
-        const moreSectionResults = await Promise.allSettled(
-            targetSections.map(s => fetchChunk(s, CHUNK_SIZE, 0, 1))
-        );
+        let moreSectionResults;
+        if (mode === 'mixed') {
+            moreSectionResults = await Promise.allSettled(
+                targetSections.map(async (s) => {
+                    const mcqs = await fetchChunk(s, 3, 0, 1, 'mcq');
+                    const subjectives = await fetchChunk(s, 2, 0, 1, 'subjective');
+                    return [...mcqs, ...subjectives];
+                })
+            );
+        } else {
+            moreSectionResults = await Promise.allSettled(
+                targetSections.map(s => fetchChunk(s, CHUNK_SIZE, 0, 1, mode))
+            );
+        }
 
         targetSections.forEach((s, si) => {
             const result = moreSectionResults[si];
@@ -651,6 +999,32 @@ const evaluateTest = async (req, res) => {
     }
 };
 
+const evaluateSubjectiveAnswers = async (answers, lang = 'en') => {
+    if (!answers || !answers.length) return [];
+    
+    const langNote = lang === 'hi' ? 'Respond entirely in Hindi.' : 'Respond in English.';
+    const formatted = answers.map((a, i) =>
+        `Q${i + 1}: ${a.question}\nModel Answer: ${a.modelAnswer}\nKey Terms: ${(a.keywords || []).join(', ')}\nStudent Answer: ${a.studentAnswer || '(blank)'}`
+    ).join('\n\n---\n\n');
+
+    const messages = [
+        {
+            role: 'system',
+            content: `You are a strict evaluator for school and competitive exams. ${langNote} Evaluate each student answer and return ONLY a JSON array. Each object: { "id": number, "score": 0-5 integer, "feedback": 1 sentence, "correct": boolean }`,
+        },
+        { role: 'user', content: `Evaluate these ${answers.length} answers:\n\n${formatted}` },
+    ];
+
+    try {
+        const raw = await callGroq(messages);
+        const parsed = extractJSON(raw);
+        return Array.isArray(parsed) ? parsed : (parsed.evaluation || Object.values(parsed).find(v => Array.isArray(v)) || []);
+    } catch (e) {
+        console.error('AI evaluation failed, returning default 0 scores:', e);
+        return answers.map((a) => ({ id: a.id, score: 0, feedback: 'Evaluation failed due to server error.', correct: false }));
+    }
+};
+
 // ─── POST /api/student/mock-test/submit/:attemptId ───────────────────
 const submitTest = async (req, res) => {
     try {
@@ -661,10 +1035,8 @@ const submitTest = async (req, res) => {
         if (!attempt) return res.status(404).json({ success: false, message: 'Test attempt not found' });
         if (attempt.status === 'completed') return res.status(400).json({ success: false, message: 'Test already submitted' });
 
-        // Evaluate MCQs and calculate score
-        let score = 0;
-        let totalMax = 0;
-        
+        const lang = attempt.examConfig?.lang || 'en';
+
         // Use pattern info
         let positiveMarks = 1;
         let negativeMarks = 0;
@@ -675,7 +1047,15 @@ const submitTest = async (req, res) => {
             negativeMarks = p.negative;
         }
 
-        results.forEach(r => {
+        // Separate MCQ results vs Subjective results
+        const mcqQuestions = results.filter(r => r.options && r.options.length > 0);
+        const subjectiveQuestions = results.filter(r => !r.options || r.options.length === 0);
+
+        let score = 0;
+        let totalMax = 0;
+
+        // Evaluate MCQs
+        mcqQuestions.forEach(r => {
             totalMax += positiveMarks;
             if (r.selected !== null && r.selected !== undefined) {
                 if (r.selected === r.correct) {
@@ -686,13 +1066,33 @@ const submitTest = async (req, res) => {
             }
         });
 
-        // Ensure score doesn't go below 0 (optional, but standard for some)
-        // Leaving it precise (even negative) as some real exams allow negative totals.
+        // Evaluate Subjective answers via AI
+        if (subjectiveQuestions.length > 0) {
+            const evaluations = await evaluateSubjectiveAnswers(subjectiveQuestions, lang);
+            
+            results.forEach(r => {
+                if (!r.options || r.options.length === 0) {
+                    const evalInfo = evaluations.find(e => e.id === r.id);
+                    if (evalInfo) {
+                        r.evalScore = evalInfo.score || 0;
+                        r.feedback = evalInfo.feedback || '';
+                        r.correct = evalInfo.correct || false;
+                    } else {
+                        r.evalScore = 0;
+                        r.feedback = 'Not evaluated';
+                        r.correct = false;
+                    }
+                    totalMax += positiveMarks;
+                    score += (r.evalScore / 5) * positiveMarks;
+                }
+            });
+        }
+        
         const percentage = Math.max(0, Math.round((score / totalMax) * 100));
 
         attempt.status = 'completed';
         attempt.completedAt = new Date();
-        attempt.score = score;
+        attempt.score = Number(score.toFixed(2));
         attempt.maxScore = totalMax;
         attempt.percentage = percentage;
         attempt.timeTaken = maxTime - timeLeft;
@@ -752,5 +1152,5 @@ const getCredits = async (req, res) => {
     }
 };
 
-module.exports = { getExamPattern, generateTest, generateMoreQuestions, evaluateTest, submitTest, getMyMockTests, getCredits, callGroq, extractJSON };
+module.exports = { getExamPattern, generateTest, generateMoreQuestions, evaluateTest, submitTest, getMyMockTests, getCredits, callGroq, extractJSON, uploadAnswerImage, uploadAndTranscribeAnswer };
 
