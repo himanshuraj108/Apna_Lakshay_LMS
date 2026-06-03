@@ -32,7 +32,7 @@ const { getCurrentAffairs } = require('../controllers/currentAffairsController')
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
 const { getNotes } = require('../controllers/notesController');
-const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests, getCredits, generateMoreQuestions } = require('../controllers/mockTestController');
+const { generateTest, evaluateTest, getExamPattern, submitTest, getMyMockTests, getCredits, generateMoreQuestions, uploadAnswerImage, uploadAndTranscribeAnswer } = require('../controllers/mockTestController');
 const { protect, checkMaintenanceMode, authorizeActive } = require('../middleware/auth');
 
 
@@ -75,6 +75,8 @@ router.post('/mock-test/generate', generateTest);
 router.post('/mock-test/generate-more/:attemptId', generateMoreQuestions);
 router.post('/mock-test/evaluate', evaluateTest);
 router.post('/mock-test/submit/:attemptId', submitTest);
+router.post('/mock-test/upload-answer', uploadAnswerImage);
+router.post('/mock-test/upload-and-transcribe', uploadAndTranscribeAnswer);
 router.get('/mock-test/history', getMyMockTests);
 
 // Engagement (Streak, Leaderboard, Daily Quiz)
@@ -127,4 +129,20 @@ router.put('/password', changePassword);
 router.post('/profile/image', uploadProfileImage);
 router.delete('/profile/image', deleteProfileImage);
 
+// System Updates
+const { getLatestActiveUpdate } = require('../controllers/systemUpdateController');
+router.get('/updates/latest', getLatestActiveUpdate);
+
+// ── Referral & Wallet ──────────────────────────────────────
+const { getMyReferralCode, validateCode } = require('../controllers/referralController');
+const { getMyWallet, getMyTransactions, redeemCoins } = require('../controllers/walletController');
+
+router.get('/referral/my-code', getMyReferralCode);
+router.get('/referral/validate/:code', validateCode);
+
+router.get('/wallet', getMyWallet);
+router.get('/wallet/transactions', getMyTransactions);
+router.post('/wallet/redeem', redeemCoins);
+
 module.exports = router;
+
