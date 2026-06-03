@@ -767,7 +767,7 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt, gender = 'male' } = req.body;
+        const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt, gender = 'male', referralCode } = req.body;
 
         // Default avatar is handled deterministically by User.js pre-save hook based on _id
         let profileImage = undefined;
@@ -803,6 +803,30 @@ exports.createStudent = async (req, res) => {
         if (joinedAt) student.createdAt = new Date(joinedAt); // Force override Mongoose default
         await student.save();
 
+        // ── Process referral if a code was provided ───────────────────────
+        if (referralCode && referralCode.trim()) {
+            try {
+                const { processReferralOnAdmission } = require('./referralController');
+                const Settings = require('../models/Settings');
+                const settings = await Settings.findOne().lean();
+                await processReferralOnAdmission({
+                    refereeId: student._id,
+                    referralCode: referralCode.trim(),
+                    settings
+                });
+                // Mark student's referredBy
+                const referrerUser = require('../models/User');
+                const referrer = await referrerUser.findOne({ referralCode: referralCode.toUpperCase().trim() });
+                if (referrer) {
+                    student.referredBy = referrer._id;
+                    await student.save({ validateBeforeSave: false });
+                }
+            } catch (refErr) {
+                console.error('Referral processing error (non-blocking):', refErr.message);
+                // Non-blocking – student still created
+            }
+        }
+
         // Send credentials email
         try {
             await emailService.sendCredentialsEmail(name, email, password);
@@ -835,6 +859,7 @@ exports.createStudent = async (req, res) => {
 
 // Update student
 // Bulk update student fees via a flat amount offset
+
 exports.bulkUpdateStudentFees = async (req, res) => {
     try {
         const { studentIds, amount, operation } = req.body;
