@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoTrophyOutline, IoRefreshOutline, IoBookOutline, IoTimeOutline, IoInformationCircleOutline, IoPersonOutline, IoScan, IoAlertCircleOutline, IoArrowForwardOutline, IoSparklesOutline } from 'react-icons/io5';
-import api from '../../utils/api';
+import { IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoTrophyOutline, IoRefreshOutline, IoBookOutline, IoTimeOutline, IoInformationCircleOutline, IoPersonOutline, IoScan, IoAlertCircleOutline, IoArrowForwardOutline, IoSparklesOutline, IoDocumentTextOutline, IoTrashOutline, IoCameraOutline, IoImageOutline } from 'react-icons/io5';
+import api, { BASE_URL } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 
 // ─── Global Mobile CSS ───────────────────────────────────────────────
@@ -81,6 +81,18 @@ const EXAM_GROUPS = [
         exams: [
             { code: 'jee_main', name: 'JEE Main' },
             { code: 'neet_ug', name: 'NEET UG' },
+        ],
+    },
+    {
+        id: 'school', name: 'School Classes', color: '#0ea5e9', bg: '#f0f9ff',
+        exams: [
+            { code: 'class_6', name: 'Class 6' },
+            { code: 'class_7', name: 'Class 7' },
+            { code: 'class_8', name: 'Class 8' },
+            { code: 'class_9', name: 'Class 9' },
+            { code: 'class_10', name: 'Class 10' },
+            { code: 'class_11', name: 'Class 11' },
+            { code: 'class_12', name: 'Class 12' },
         ],
     },
     {
@@ -415,6 +427,7 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
     const [pattern, setPattern] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sectionId, setSectionId] = useState('all'); // 'all' or specific ID
+    const [mode, setMode] = useState('mcq'); // 'mcq' | 'subjective' | 'mixed'
     const [lang, setLang] = useState('en');
     const [genLoading, setGenLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -507,6 +520,16 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                             </select>
                         </div>
 
+                        <div style={{ marginBottom: '20px' }}>
+                            <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Question Style</label>
+                            <select value={mode} onChange={(e) => setMode(e.target.value)}
+                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '14px', fontWeight: '600', color: '#1e293b', outline: 'none' }}>
+                                <option value="mcq">Objective (MCQs Only)</option>
+                                <option value="subjective">Subjective (Descriptive/Short Answer)</option>
+                                <option value="mixed">Mixed (MCQs + Descriptive)</option>
+                            </select>
+                        </div>
+
                         <div style={{ marginBottom: '24px' }}>
                             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Simulation Engine Profile</label>
                             <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-[13px] text-orange-800 leading-relaxed shadow-sm">
@@ -525,9 +548,9 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                             onClick={async () => {
                                 setGenLoading(true); setError(null);
                                 try {
-                                    const cfg = { sectionId, lang };
-                                    // Generate ONLY the selected language
-                                    const res = await api.post('/student/mock-test/generate', { examCode, mode: 'mcq', ...cfg, lang });
+                                    const cfg = { sectionId, lang, mode };
+                                    // Generate selected mode & language
+                                    const res = await api.post('/student/mock-test/generate', { examCode, ...cfg });
 
                                     // Directly use newCredits returned by the server
                                     if (res.data.newCredits !== undefined) {
@@ -579,6 +602,50 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
     const [questions, setQuestions] = useState(initialQuestions); // mutable — grows as more are loaded
     const [current, setCurrent] = useState(0);
     const [answers, setAnswers] = useState({});
+    const [answerImages, setAnswerImages] = useState({});
+    
+    const cameraInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+    const [uploadingIndex, setUploadingIndex] = useState(null);
+    const [uploadError, setUploadError] = useState(null);
+    const [lightboxImage, setLightboxImage] = useState(null);
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploadError(null);
+        setUploadingIndex(current);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await api.post('/student/mock-test/upload-and-transcribe', formData);
+            if (res.data.success && res.data.fileUrl) {
+                setAnswerImages(p => ({ ...p, [current]: res.data.fileUrl }));
+                if (res.data.transcription) {
+                    setAnswers(p => ({ ...p, [current]: res.data.transcription }));
+                } else if (res.data.error) {
+                    setUploadError(`Uploaded, but OCR failed: ${res.data.error}`);
+                } else {
+                    setUploadError('Uploaded, but no text could be transcribed.');
+                }
+                // Update status immediately if they haven't typed anything
+                setStatuses(p => ({ ...p, [current]: 'answered' }));
+            } else {
+                setUploadError('Failed to upload image. Please try again.');
+            }
+        } catch (err) {
+            console.error('File upload error:', err);
+            setUploadError(err.response?.data?.message || 'Failed to upload answer sheet.');
+        } finally {
+            setUploadingIndex(null);
+            if (cameraInputRef.current) cameraInputRef.current.value = '';
+            if (galleryInputRef.current) galleryInputRef.current.value = '';
+        }
+    };
+
     const [statuses, setStatuses] = useState(() => Object.fromEntries(initialQuestions.map((_, i) => [i, 'not_visited'])));
     const [showPalette, setShowPalette] = useState(false); // mobile palette toggle
     const [loadingMore, setLoadingMore] = useState(false);
@@ -727,13 +794,25 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
             newQs.forEach((_, i) => { newStatuses[prevLength + i] = 'not_visited'; });
             setQuestions(prev => [...prev, ...newQs]);
             setStatuses(prev => ({ ...prev, ...newStatuses }));
-            // Move student to the very first newly generated question
-            setCurrent(prevLength);
+            // Keep student on their current question; do not auto-navigate
         } catch (e) {
             setMoreError(e.response?.data?.message || 'Failed to generate more questions. Please try again.');
         } finally {
             setLoadingMore(false);
         }
+    };
+
+    const checkIfAnswered = (idx) => {
+        const qItem = questions[idx];
+        if (!qItem) return false;
+        const ans = answers[idx];
+        const img = answerImages[idx];
+        if (qItem.options && qItem.options.length > 0) {
+            return ans !== undefined;
+        }
+        const textAnswered = typeof ans === 'string' && ans.trim().length > 0;
+        const imageAnswered = typeof img === 'string' && img.trim().length > 0;
+        return textAnswered || imageAnswered;
     };
 
     const goTo = (idx) => {
@@ -742,17 +821,18 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
     };
 
     const saveAndNext = () => {
-        if (answers[current] !== undefined) setStatuses(p => ({ ...p, [current]: 'answered' }));
+        if (checkIfAnswered(current)) setStatuses(p => ({ ...p, [current]: 'answered' }));
         if (current < questions.length - 1) goTo(current + 1);
     };
 
     const markAndNext = () => {
-        setStatuses(p => ({ ...p, [current]: answers[current] !== undefined ? 'answered_marked' : 'marked' }));
+        setStatuses(p => ({ ...p, [current]: checkIfAnswered(current) ? 'answered_marked' : 'marked' }));
         if (current < questions.length - 1) goTo(current + 1);
     };
 
     const clearResponse = () => {
         setAnswers(p => { const n = { ...p }; delete n[current]; return n; });
+        setAnswerImages(p => { const n = { ...p }; delete n[current]; return n; });
         setStatuses(p => ({ ...p, [current]: 'not_answered' }));
     };
 
@@ -770,12 +850,15 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
 
         const results = questions.map((qt, i) => {
             const trans = translatedQuestions[i];
+            const isMcq = qt.options && qt.options.length > 0;
             return {
                 ...qt,
                 questionTranslated: trans?.question,
                 optionsTranslated: trans?.options,
                 explanationTranslated: trans?.explanation,
-                selected: answers[i] ?? null,
+                selected: isMcq ? (answers[i] ?? null) : null,
+                studentAnswer: !isMcq ? (answers[i] || '') : '',
+                studentAnswerImage: !isMcq ? (answerImages[i] || '') : '',
                 status: statuses[i],
             };
         });
@@ -783,7 +866,17 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
         const payload = { results, timeLeft: sessionTime * 60 - timeLeft, maxTime: sessionTime * 60, isCheating: isCheating === true };
         
         try {
-            await api.post(`/student/mock-test/submit/${attemptId}`, payload);
+            const res = await api.post(`/student/mock-test/submit/${attemptId}`, payload);
+            if (res.data.success && res.data.attempt) {
+                const finishedPayload = {
+                    results: res.data.attempt.testData,
+                    timeLeft: res.data.attempt.timeTaken,
+                    maxTime: sessionTime * 60,
+                    isCheating: res.data.attempt.isCheating
+                };
+                onFinish(finishedPayload);
+                return;
+            }
         } catch (e) {
             console.error('Submit API error', e);
         }
@@ -860,23 +953,189 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
 
                     <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
                         <p style={{ color: '#0f172a', fontSize: '16px', lineHeight: '1.8', marginBottom: '32px', fontWeight: '500' }}>{q.question}</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {(q.options || []).map((opt, i) => (
-                                <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', cursor: 'pointer', padding: '14px 16px', borderRadius: '8px', border: answers[current] === i ? '2px solid #2563eb' : '1px solid #e2e8f0', background: answers[current] === i ? '#eff6ff' : 'white', transition: 'all 0.15s' }}>
-                                    <input type="radio" name={`q${current}`} checked={answers[current] === i} onChange={() => setAnswers(p => ({ ...p, [current]: i }))}
-                                        style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: '#2563eb' }} />
-                                    <span style={{ fontSize: '14px', color: '#1e293b', lineHeight: '1.6' }}>
-                                        <b style={{ color: '#2563eb', marginRight: '8px' }}>{['A', 'B', 'C', 'D'][i]}</b> {opt}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
+                        {q.options && q.options.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {q.options.map((opt, i) => (
+                                    <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', cursor: 'pointer', padding: '14px 16px', borderRadius: '8px', border: answers[current] === i ? '2px solid #2563eb' : '1px solid #e2e8f0', background: answers[current] === i ? '#eff6ff' : 'white', transition: 'all 0.15s' }}>
+                                        <input type="radio" name={`q${current}`} checked={answers[current] === i} onChange={() => setAnswers(p => ({ ...p, [current]: i }))}
+                                            style={{ marginTop: '4px', width: '16px', height: '16px', accentColor: '#2563eb' }} />
+                                        <span style={{ fontSize: '14px', color: '#1e293b', lineHeight: '1.6' }}>
+                                            <b style={{ color: '#2563eb', marginRight: '8px' }}>{['A', 'B', 'C', 'D'][i]}</b> {opt}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Your Descriptive Answer:</label>
+                                <textarea
+                                    value={answers[current] || ''}
+                                    onChange={(e) => setAnswers(p => ({ ...p, [current]: e.target.value }))}
+                                    placeholder="Type your descriptive answer here... Make sure to cover key details and relevant concepts."
+                                    spellCheck={false}
+                                    style={{
+                                        width: '100%',
+                                        minHeight: '180px',
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        border: '1px solid #cbd5e1',
+                                        fontSize: '14.5px',
+                                        lineHeight: '1.6',
+                                        outline: 'none',
+                                        transition: 'all 0.2s',
+                                        resize: 'vertical',
+                                        color: '#0f172a',
+                                        fontWeight: 'bold',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                                    onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
+                                />
+
+                                {/* Handwritten Sheet Upload Section */}
+                                <div style={{
+                                    marginTop: '8px',
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    border: '1.5px dashed #cbd5e1',
+                                    background: '#f8fafc',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '12px'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <IoDocumentTextOutline size={18} style={{ color: '#475569' }} />
+                                            Handwritten Sheet Upload (Optional)
+                                        </div>
+                                        {answerImages[current] && (
+                                            <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <IoCheckmarkCircle size={14} style={{ color: '#15803d' }} /> Uploaded
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {answerImages[current] ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'white', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                                            <div style={{ width: '60px', height: '60px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #cbd5e1', cursor: 'pointer' }}
+                                                 onClick={() => setLightboxImage(answerImages[current].startsWith('http') ? answerImages[current] : `${BASE_URL}${answerImages[current]}`)}>
+                                                <img 
+                                                    src={answerImages[current].startsWith('http') ? answerImages[current] : `${BASE_URL}${answerImages[current]}`} 
+                                                    alt="Answer sheet preview" 
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                />
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    Uploaded Sheet
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                    Click thumbnail to view full resolution
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => setAnswerImages(p => { const n = { ...p }; delete n[current]; return n; })}
+                                                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fee2e2', borderRadius: '8px', padding: '6px 12px', fontSize: '11.5px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s' }}
+                                            >
+                                                <IoTrashOutline size={14} /> Remove
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                            <button 
+                                                onClick={() => cameraInputRef.current && cameraInputRef.current.click()}
+                                                disabled={uploadingIndex !== null}
+                                                style={{
+                                                    flex: 1,
+                                                    minWidth: '140px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                    padding: '12px',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid #cbd5e1',
+                                                    background: 'white',
+                                                    color: '#334155',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <IoCameraOutline size={16} /> Take Photo
+                                            </button>
+                                            <button 
+                                                onClick={() => galleryInputRef.current && galleryInputRef.current.click()}
+                                                disabled={uploadingIndex !== null}
+                                                style={{
+                                                    flex: 1,
+                                                    minWidth: '140px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                    padding: '12px',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid #cbd5e1',
+                                                    background: 'white',
+                                                    color: '#334155',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <IoImageOutline size={16} /> From Gallery
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {uploadingIndex === current && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#2563eb', fontWeight: '600' }}>
+                                            <IoRefreshOutline size={16} className="animate-spin" />
+                                            Uploading sheet...
+                                        </div>
+                                    )}
+
+                                    {uploadError && (
+                                        <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <IoAlertCircleOutline size={16} /> {uploadError}
+                                        </div>
+                                    )}
+
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        capture="environment" 
+                                        ref={cameraInputRef} 
+                                        onChange={handleImageUpload} 
+                                        style={{ display: 'none' }} 
+                                    />
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        ref={galleryInputRef} 
+                                        onChange={handleImageUpload} 
+                                        style={{ display: 'none' }} 
+                                    />
+                                </div>
+                                {q.hint && (
+                                    <div style={{ display: 'flex', gap: '10px', padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', color: '#1e40af', fontSize: '13px' }}>
+                                        <IoInformationCircleOutline size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                                        <div><strong>Hint:</strong> {q.hint}</div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="q-action-bar p-4 border-t border-gray-200 flex gap-3 flex-wrap bg-gray-50">
                         <button onClick={saveAndNext} className="bg-green-600 hover:bg-green-700 text-white border border-green-600 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">SAVE & NEXT</button>
                         <button onClick={clearResponse} className="bg-white hover:bg-gray-100 text-gray-600 border border-gray-300 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">CLEAR RESPONSE</button>
-                        <button onClick={() => { setStatuses(p => ({ ...p, [current]: answers[current] !== undefined ? 'answered_marked' : 'marked' })); }} className="bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">SAVE & MARK FOR REVIEW</button>
+                        <button onClick={() => { setStatuses(p => ({ ...p, [current]: checkIfAnswered(current) ? 'answered_marked' : 'marked' })); }} className="bg-orange-500 hover:bg-orange-600 text-white border border-orange-500 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">SAVE & MARK FOR REVIEW</button>
                         <button onClick={markAndNext} className="bg-purple-600 hover:bg-purple-700 text-white border border-purple-600 rounded-lg px-5 py-2.5 font-bold text-xs whitespace-nowrap shadow-sm transition-all">MARK FOR REVIEW & NEXT</button>
                     </div>
 
@@ -1152,6 +1411,44 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
 
             {/* Instructions Modal */}
             <InstructionsModal isOpen={showInfo} onClose={() => setShowInfo(false)} />
+
+            {/* Lightbox Overlay Modal */}
+            {lightboxImage && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: '24px'
+                }} onClick={() => setLightboxImage(null)}>
+                    <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+                        <button 
+                            onClick={() => setLightboxImage(null)}
+                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <div style={{ maxWidth: '90%', maxHeight: '85%', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                        <img 
+                            src={lightboxImage} 
+                            alt="Enlarged handwritten response" 
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} 
+                        />
+                        <div style={{ color: 'white', fontSize: '12px', textAlign: 'center', marginTop: '12px', fontWeight: '600', opacity: 0.8 }}>
+                            Handwritten answer sheet preview
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
@@ -1168,31 +1465,58 @@ const DashboardCSS = `
 const ResultDashboard = ({ data, pattern, onRetry }) => {
     const { results, timeLeft, maxTime, isCheating } = data;
     const [expandedQ, setExpandedQ] = useState(null);
+    const [lightboxImage, setLightboxImage] = useState(null);
 
     // Global Stats
-    const correct = results.filter(r => r.selected === r.correct).length;
-    const wrong = results.filter(r => r.selected !== null && r.selected !== undefined && r.selected !== r.correct).length;
-    const skipped = results.length - correct - wrong;
-
+    let correct = 0;
+    let wrong = 0;
+    let skipped = 0;
     let totalScore = 0;
 
     // Section-wise Analysis
     const sectionsObj = {};
     results.forEach(r => {
         if (!sectionsObj[r.sectionId]) {
-            sectionsObj[r.sectionId] = { name: r.sectionName, correct: 0, wrong: 0, skipped: 0, total: 0 };
+            sectionsObj[r.sectionId] = { name: r.sectionName, correct: 0, wrong: 0, skipped: 0, total: 0, score: 0 };
         }
         sectionsObj[r.sectionId].total++;
-        if (r.selected === r.correct) sectionsObj[r.sectionId].correct++;
-        else if (r.selected !== null && r.selected !== undefined) sectionsObj[r.sectionId].wrong++;
-        else sectionsObj[r.sectionId].skipped++;
+
+        const isMcq = r.options && r.options.length > 0;
+        let isCorrect = false;
+        let isWrong = false;
+        let isSkipped = false;
+        let qScore = 0;
+
+        if (isMcq) {
+            isCorrect = r.selected === r.correct;
+            isWrong = r.selected !== null && r.selected !== undefined && r.selected !== r.correct;
+            isSkipped = !isCorrect && !isWrong;
+            qScore = isCorrect ? pattern.positive : (isWrong ? -pattern.negative : 0);
+        } else {
+            isCorrect = r.correct === true;
+            isWrong = r.correct === false && r.studentAnswer && r.studentAnswer.trim().length > 0;
+            isSkipped = !isCorrect && !isWrong;
+            qScore = ((r.evalScore || 0) / 5) * pattern.positive;
+        }
+
+        if (isCorrect) {
+            correct++;
+            sectionsObj[r.sectionId].correct++;
+        } else if (isWrong) {
+            wrong++;
+            sectionsObj[r.sectionId].wrong++;
+        } else {
+            skipped++;
+            sectionsObj[r.sectionId].skipped++;
+        }
+
+        sectionsObj[r.sectionId].score += qScore;
     });
 
     const sectionStats = Object.values(sectionsObj).map(sec => {
-        const secScore = sec.correct * pattern.positive - sec.wrong * pattern.negative;
         const maxSecScore = sec.total * pattern.positive;
-        totalScore += secScore;
-        return { ...sec, score: secScore, maxScore: maxSecScore, pct: Math.round((Math.max(0, secScore) / maxSecScore) * 100) || 0 };
+        totalScore += sec.score;
+        return { ...sec, score: sec.score, maxScore: maxSecScore, pct: Math.round((Math.max(0, sec.score) / maxSecScore) * 100) || 0 };
     });
 
     const globalMaxScore = results.length * pattern.positive;
@@ -1336,13 +1660,14 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {results.map((r, i) => {
-                            const isCorrect = r.selected === r.correct;
-                            const isSkipped = r.selected === null || r.selected === undefined;
+                            const isMcq = r.options && r.options.length > 0;
+                            const isCorrect = isMcq ? (r.selected === r.correct) : (r.correct === true);
+                            const isSkipped = isMcq ? (r.selected === null || r.selected === undefined) : (!r.studentAnswer || r.studentAnswer.trim().length === 0);
 
                             return (
                                 <div key={i} style={{ background: expandedQ === i ? '#f8fafc' : 'white', border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', transition: 'all 0.2s' }}>
                                     <button onClick={() => setExpandedQ(expandedQ === i ? null : i)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: '16px', color: '#1e293b' }}>
-                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isSkipped ? '#f1f5f9' : isCorrect ? '#dcfce7' : '#fee2e2', color: isSkipped ? '#64748b' : isCorrect ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isSkipped ? '#f1f5f9' : isCorrect ? '#dcfce7' : '#fee2e2', color: isSkipped ? '#64748b' : isCorrect ? '#16a34a' : '#dc2626', display: 'flex', alignItems: 'center', justifycontent: 'center', flexShrink: 0, marginTop: '2px' }}>
                                             {isSkipped ? '—' : isCorrect ? <IoCheckmarkCircle size={18} /> : <IoCloseCircle size={18} />}
                                         </div>
                                         <div style={{ flex: 1 }}>
@@ -1353,28 +1678,56 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
 
                                     {expandedQ === i && (
                                         <div style={{ padding: '0 20px 20px 64px' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                                                {(r.options || []).map((opt, j) => {
-                                                    const isSelected = j === r.selected;
-                                                    const isActualCorrect = j === r.correct;
+                                            {isMcq ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                                                    {(r.options || []).map((opt, j) => {
+                                                        const isSelected = j === r.selected;
+                                                        const isActualCorrect = j === r.correct;
 
-                                                    let bg = '#f8fafc';
-                                                    let brd = '#e2e8f0';
-                                                    let txt = '#64748b';
+                                                        let bg = '#f8fafc';
+                                                        let brd = '#e2e8f0';
+                                                        let txt = '#64748b';
 
-                                                    if (isActualCorrect) { bg = '#dcfce7'; brd = '#86efac'; txt = '#16a34a'; }
-                                                    else if (isSelected) { bg = '#fee2e2'; brd = '#fca5a5'; txt = '#dc2626'; }
+                                                        if (isActualCorrect) { bg = '#dcfce7'; brd = '#86efac'; txt = '#16a34a'; }
+                                                        else if (isSelected) { bg = '#fee2e2'; brd = '#fca5a5'; txt = '#dc2626'; }
 
-                                                    return (
-                                                        <div key={j} style={{ padding: '10px 14px', borderRadius: '8px', border: `1px solid ${brd}`, background: bg, color: txt, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <span><b style={{ opacity: 0.7, marginRight: '8px' }}>{['A', 'B', 'C', 'D'][j]}.</b> {opt}</span>
-                                                            {isActualCorrect && <span style={{ fontSize: '10px', background: '#bbf7d0', padding: '2px 8px', borderRadius: '4px', color: '#16a34a', fontWeight: '600' }}>✓ Correct Option</span>}
-                                                            {isSelected && !isActualCorrect && <span style={{ fontSize: '10px', background: '#fecaca', padding: '2px 8px', borderRadius: '4px', color: '#dc2626', fontWeight: '600' }}>✗ Your Choice</span>}
+                                                        return (
+                                                            <div key={j} style={{ padding: '10px 14px', borderRadius: '8px', border: `1px solid ${brd}`, background: bg, color: txt, fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span><b style={{ opacity: 0.7, marginRight: '8px' }}>{['A', 'B', 'C', 'D'][j]}.</b> {opt}</span>
+                                                                {isActualCorrect && <span style={{ fontSize: '10px', background: '#bbf7d0', padding: '2px 8px', borderRadius: '4px', color: '#16a34a', fontWeight: '600' }}>✓ Correct Option</span>}
+                                                                {isSelected && !isActualCorrect && <span style={{ fontSize: '10px', background: '#fecaca', padding: '2px 8px', borderRadius: '4px', color: '#dc2626', fontWeight: '600' }}>✗ Your Choice</span>}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                                                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 14px', fontSize: '13px' }}>
+                                                        <b style={{ color: '#475569', display: 'block', marginBottom: '4px' }}>Your Answer:</b>
+                                                        {r.studentAnswerImage && (
+                                                            <div style={{ marginBottom: '12px' }}>
+                                                                <b style={{ color: '#64748b', fontSize: '11px', display: 'block', marginBottom: '4px' }}>Uploaded Handwritten Answer Sheet:</b>
+                                                                <div onClick={() => setLightboxImage(r.studentAnswerImage.startsWith('http') ? r.studentAnswerImage : `${BASE_URL}${r.studentAnswerImage}`)} style={{ display: 'inline-block', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', maxWidth: '200px', cursor: 'pointer' }}>
+                                                                    <img src={r.studentAnswerImage.startsWith('http') ? r.studentAnswerImage : `${BASE_URL}${r.studentAnswerImage}`} alt="Handwritten Answer Sheet" style={{ width: '100%', display: 'block' }} />
+                                                                </div>
+                                                                <span style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginTop: '2px' }}>Click to view full image</span>
+                                                            </div>
+                                                        )}
+                                                        <span style={{ color: '#0f172a', whiteSpace: 'pre-wrap' }}>{r.studentAnswer || '(No answer provided)'}</span>
+                                                    </div>
+                                                    <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '12px 14px', fontSize: '13px' }}>
+                                                        <b style={{ color: '#065f46', display: 'block', marginBottom: '4px' }}>Model Answer:</b>
+                                                        <span style={{ color: '#047857' }}>{r.modelAnswer}</span>
+                                                    </div>
+                                                    {r.feedback && (
+                                                        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px 14px', fontSize: '13px' }}>
+                                                            <b style={{ color: '#1e40af', display: 'block', marginBottom: '4px' }}>AI Feedback &amp; Score ({r.evalScore !== undefined ? `${r.evalScore}/5` : 'N/A'}):</b>
+                                                            <span style={{ color: '#1e3a8a' }}>{r.feedback}</span>
                                                         </div>
-                                                    )
-                                                })}
-                                            </div>
-                                            {r.explanation && (
+                                                    )}
+                                                </div>
+                                            )}
+                                            {r.explanation && isMcq && (
                                                 <div style={{ background: '#fff7ed', borderLeft: '3px solid #f97316', padding: '12px 16px', borderRadius: '0 8px 8px 0' }}>
                                                     <b style={{ color: '#ea580c', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Solution / Explanation:</b>
                                                     <span style={{ fontSize: '13px', color: '#334155', lineHeight: '1.6' }}>{r.explanation}</span>
@@ -1389,6 +1742,43 @@ const ResultDashboard = ({ data, pattern, onRetry }) => {
                 </div>
 
             </div>
+            {/* Lightbox Overlay Modal */}
+            {lightboxImage && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(15, 23, 42, 0.9)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 99999,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    padding: '24px'
+                }} onClick={() => setLightboxImage(null)}>
+                    <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+                        <button 
+                            onClick={() => setLightboxImage(null)}
+                            style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <div style={{ maxWidth: '90%', maxHeight: '85%', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                        <img 
+                            src={lightboxImage} 
+                            alt="Enlarged handwritten response" 
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.2)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }} 
+                        />
+                        <div style={{ color: 'white', fontSize: '12px', textAlign: 'center', marginTop: '12px', fontWeight: '600', opacity: 0.8 }}>
+                            Handwritten answer sheet preview
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
