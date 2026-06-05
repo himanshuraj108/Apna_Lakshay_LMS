@@ -571,6 +571,39 @@ const bustCache = (...keys) => { keys.forEach(k => { delete _cache[k]; }); };
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN DASHBOARD
    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+const getScoreColor = (score) => {
+    const s = parseFloat(score);
+    if (isNaN(s)) return { text: 'text-white', bg: 'bg-white/10', border: 'border-white/10', badgeBg: 'rgba(255,255,255,0.1)', badgeText: 'text-white', badgeBorder: 'border-white/20' };
+    if (s >= 75) {
+        return {
+            text: 'text-emerald-400',
+            bg: 'bg-emerald-500/10',
+            border: 'border-emerald-500/20',
+            badgeBg: 'rgba(16,185,129,0.2)',
+            badgeText: 'text-emerald-300',
+            badgeBorder: 'border-emerald-500/35'
+        };
+    } else if (s >= 50) {
+        return {
+            text: 'text-amber-400',
+            bg: 'bg-amber-500/10',
+            border: 'border-amber-500/20',
+            badgeBg: 'rgba(245,158,11,0.2)',
+            badgeText: 'text-amber-300',
+            badgeBorder: 'border-amber-500/35'
+        };
+    } else {
+        return {
+            text: 'text-rose-400',
+            bg: 'bg-rose-500/10',
+            border: 'border-rose-500/20',
+            badgeBg: 'rgba(239,68,68,0.2)',
+            badgeText: 'text-rose-300',
+            badgeBorder: 'border-rose-500/35'
+        };
+    }
+};
+
 const StudentDashboard = () => {
     const [dashboardData, setDashboardData]           = useState(() => isFresh('dashboard') ? _cache.dashboard.data : null);
     const [loading, setLoading]                       = useState(() => !isFresh('dashboard'));
@@ -1514,33 +1547,36 @@ const StudentDashboard = () => {
 
 
                 {/* -- AI INSIGHT OF THE DAY ---------------------------------------------------------- */}
-                {showAITools && aiInsight && (
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.4 }} className="mb-4">
-                        <Link to="/student/ai/readiness-score">
-                            <div
-                                className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 cursor-pointer group hover:shadow-md transition-all duration-200"
-                                style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%)', border: '1px solid rgba(99,102,241,0.25)' }}
-                            >
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-12 h-12 rounded-2xl bg-white/10 flex flex-col items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform border border-white/10">
-                                        <span className="text-lg font-black text-white leading-none">{aiInsight.score}</span>
-                                        <span className="text-[8px] font-bold text-indigo-300 uppercase tracking-wide">/ 100</span>
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-white font-black text-sm">AI Insight of the Day</span>
-                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider" style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.4)' }}>{aiInsight.level}</span>
+                {showAITools && aiInsight && (() => {
+                    const scoreColors = getScoreColor(aiInsight.score);
+                    return (
+                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.4 }} className="mb-4">
+                            <Link to="/student/ai/readiness-score">
+                                <div
+                                    className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 cursor-pointer group hover:shadow-md transition-all duration-200"
+                                    style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%)', border: '1px solid rgba(99,102,241,0.25)' }}
+                                >
+                                    <div className="flex items-center gap-3.5">
+                                        <div className={`w-12 h-12 rounded-2xl ${scoreColors.bg} flex flex-col items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform border ${scoreColors.border}`}>
+                                            <span className={`text-lg font-black ${scoreColors.text} leading-none`}>{aiInsight.score}</span>
+                                            <span className="text-[8px] font-bold text-white/50 uppercase tracking-wide">/ 100</span>
                                         </div>
-                                        <p className="text-indigo-200 text-xs font-medium leading-snug line-clamp-1">{aiInsight.insight}</p>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="text-white font-black text-sm">AI Insight of the Day</span>
+                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${scoreColors.badgeBg} ${scoreColors.badgeText} border ${scoreColors.badgeBorder}`}>{aiInsight.level}</span>
+                                            </div>
+                                            <p className="text-indigo-200 text-xs font-medium leading-snug line-clamp-1">{aiInsight.insight}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex-shrink-0 px-3.5 py-2 rounded-xl font-extrabold text-xs bg-white/10 text-white border border-white/15 group-hover:bg-white/20 transition-colors whitespace-nowrap">
+                                        Full Score →
                                     </div>
                                 </div>
-                                <div className="flex-shrink-0 px-3.5 py-2 rounded-xl font-extrabold text-xs bg-white/10 text-white border border-white/15 group-hover:bg-white/20 transition-colors whitespace-nowrap">
-                                    Full Score →
-                                </div>
-                            </div>
-                        </Link>
-                    </motion.div>
-                )}
+                            </Link>
+                        </motion.div>
+                    );
+                })()}
 
                 {/* -- AI TOOLS SECTION ----------------------------------------------------------------- */}
                 {/* -- AI TOOLS SECTION ----------------------------------------------------------------- */}
