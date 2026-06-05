@@ -98,6 +98,8 @@ const uploadAnswerImage = (req, res) => {
     });
 };
 
+let currentGroqKeyIndex = 0;
+
 // @desc    Upload handwritten mock test answer image and transcribe it using Groq Vision
 // @route   POST /api/student/mock-test/upload-and-transcribe
 const uploadAndTranscribeAnswer = (req, res) => {
@@ -123,9 +125,35 @@ const uploadAndTranscribeAnswer = (req, res) => {
         
         try {
             const keys = getGroqKeys();
-            const apiKey = keys[0] || process.env.GROQ_API_KEY;
+            if (keys.length === 0) {
+                throw new Error('No Groq API keys configured on server. Please add GROQ_API_KEY to environment variables.');
+            }
             
-            const transcription = await analyzeHandwriting(fileUrl, apiKey);
+            let transcription = '';
+            let lastError = null;
+            let success = false;
+            
+            // Loop through all keys for rate-limiting resiliency
+            for (let ki = 0; ki < keys.length; ki++) {
+                const keyIndex = (currentGroqKeyIndex + ki) % keys.length;
+                const apiKey = keys[keyIndex];
+                
+                try {
+                    transcription = await analyzeHandwriting(fileUrl, apiKey);
+                    currentGroqKeyIndex = keyIndex;
+                    success = true;
+                    console.log(`[OCR] Success with key[${keyIndex}]`);
+                    break;
+                } catch (ocrError) {
+                    lastError = ocrError;
+                    console.warn(`[OCR] key[${keyIndex}] failed: ${ocrError.message}`);
+                }
+            }
+            
+            if (!success) {
+                throw lastError || new Error('All Groq keys failed to transcribe image.');
+            }
+            
             console.log(`[OCR] Transcription complete: "${transcription}"`);
             
             res.status(200).json({
@@ -150,9 +178,20 @@ const uploadAndTranscribeAnswer = (req, res) => {
 const analyzeHandwriting = async (imageUrl, apiKey) => {
     let imagePayloadUrl = imageUrl;
 
-    if (imageUrl.startsWith('/uploads/')) {
+    // Check if the imageUrl is a local file (doesn't start with http/https)
+    if (imageUrl && !imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
         try {
-            const localPath = path.join(__dirname, '..', imageUrl);
+            let localPath = imageUrl;
+            // If the path starts with '/uploads/' or 'uploads/', resolve relative to backend root
+            const isUploadRelative = /^[/\\]?uploads[/\\]/.test(imageUrl);
+            
+            if (isUploadRelative) {
+                const cleanPath = imageUrl.replace(/^[/\\]+/, ''); // strip leading slash
+                localPath = path.join(__dirname, '..', cleanPath);
+            } else if (!path.isAbsolute(imageUrl)) {
+                localPath = path.join(__dirname, '..', imageUrl);
+            }
+            
             if (fs.existsSync(localPath)) {
                 const imageBuffer = fs.readFileSync(localPath);
                 const base64Image = imageBuffer.toString('base64');
@@ -160,6 +199,8 @@ const analyzeHandwriting = async (imageUrl, apiKey) => {
                 const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
                 imagePayloadUrl = `data:${mimeType};base64,${base64Image}`;
                 console.log(`[OCR] Converted local file ${localPath} to Base64 payload.`);
+            } else {
+                console.error(`[OCR] Local file does not exist: ${localPath}`);
             }
         } catch (e) {
             console.error('[OCR] Failed to read local file for Base64 conversion:', e);
@@ -498,8 +539,6 @@ const getGroqKeys = () => {
     keys.push(...FALLBACK_GROQ_KEYS);
     return [...new Set(keys)];
 };
-
-let currentGroqKeyIndex = 0;
 
 const callGroqSingle = (messages, apiKey, model) => {
     return new Promise((resolve, reject) => {
