@@ -16,6 +16,7 @@ const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
 const MockTestAttempt = require('../models/MockTestAttempt');
 const TempSeatAssignment = require('../models/TempSeatAssignment');
+const { getClient } = require('../utils/redis');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -1826,6 +1827,12 @@ exports.assignSeat = async (req, res) => {
             // Log action
             await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, `Assigned to ${student.name}`);
 
+            try {
+                const redis = getClient();
+                await redis.del('seats:vacant');
+                await redis.del('seats:public');
+            } catch (err) {}
+
             res.status(200).json({
                 success: true,
                 message: 'Seat assigned successfully'
@@ -2395,6 +2402,18 @@ exports.bulkCheckOut = async (req, res) => {
 // ─── GET /api/admin/vacant-seats ─────────────────────────────────────────────
 exports.getVacantSeats = async (req, res) => {
     try {
+        const cacheKey = 'seats:vacant';
+        const redis = getClient();
+
+        try {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return res.json({ ...JSON.parse(cached), fromCache: true });
+            }
+        } catch (cacheErr) {
+            console.error('Redis get vacant seats failed:', cacheErr.message);
+        }
+
         const Shift = require('../models/Shift');
 
         // ── 1. Load all active shifts from DB (times come from here — nothing hardcoded)
@@ -2510,12 +2529,20 @@ exports.getVacantSeats = async (req, res) => {
         const totalPossible = totalSeats * shifts.length;
         const vacancyRate   = totalPossible > 0 ? Math.round((vacantSlots.length / totalPossible) * 100) : 0;
 
-        res.json({
+        const responseData = {
             success: true,
             stats: { totalSeats, occupiedSeats, vacantSlots: vacantSlots.length, vacancyRate },
             shiftSummary: Object.values(shiftMap),
             vacantSlots,
-        });
+        };
+
+        try {
+            await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 30);
+        } catch (cacheErr) {
+            console.error('Redis set vacant seats failed:', cacheErr.message);
+        }
+
+        res.json(responseData);
     } catch (err) {
         console.error('getVacantSeats error:', err.message);
         res.status(500).json({ success: false, message: err.message });
@@ -4310,6 +4337,12 @@ exports.swapSeats = async (req, res) => {
             `${seat1.number} ↔ ${seat2.number}`,
             `Swapped seats of ${student1.name} (→ Seat ${seat2.number}) and ${student2.name} (→ Seat ${seat1.number})`
         );
+
+        try {
+            const redis = getClient();
+            await redis.del('seats:vacant');
+            await redis.del('seats:public');
+        } catch (err) {}
 
         res.status(200).json({
             success: true,

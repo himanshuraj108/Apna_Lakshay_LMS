@@ -2,6 +2,7 @@ const Floor = require('../models/Floor');
 const Room = require('../models/Room');
 const Seat = require('../models/Seat');
 const Settings = require('../models/Settings');
+const { getClient } = require('../utils/redis');
 
 // @desc    Get all seats with availability (public view)
 // @route   GET /api/public/seats
@@ -21,6 +22,18 @@ exports.getSeats = async (req, res) => {
                     message: 'System is under maintenance'
                 });
             }
+        }
+
+        const cacheKey = 'seats:public';
+        const redis = getClient();
+
+        try {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return res.json({ ...JSON.parse(cached), fromCache: true });
+            }
+        } catch (cacheErr) {
+            console.error('Redis get public seats failed:', cacheErr.message);
         }
 
         const floors = await Floor.find()
@@ -121,10 +134,18 @@ exports.getSeats = async (req, res) => {
             }))
         }));
 
-        res.status(200).json({
+        const responseData = {
             success: true,
             floors: formattedFloors
-        });
+        };
+
+        try {
+            await redis.set(cacheKey, JSON.stringify(responseData), 'EX', 30);
+        } catch (cacheErr) {
+            console.error('Redis set public seats failed:', cacheErr.message);
+        }
+
+        res.status(200).json(responseData);
     } catch (error) {
         res.status(500).json({
             success: false,

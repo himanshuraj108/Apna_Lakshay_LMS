@@ -5,6 +5,7 @@ const DailyQuizAttempt = require('../models/DailyQuizAttempt');
 const Notification = require('../models/Notification');
 const PomodoroSession = require('../models/PomodoroSession');
 const { callGroq, extractJSON } = require('./mockTestController');
+const { getClient } = require('../utils/redis');
 
 // Helper to get India Standard Time (UTC+5:30) date string (YYYY-MM-DD)
 const getISTDateString = (date = new Date()) => {
@@ -97,6 +98,16 @@ const updateStreakAndXP = async (userId, xpAmount = 0, activityType = 'other') =
             }
         }
 
+        // Invalidate leaderboard caches when XP/Streaks are updated
+        try {
+            const redis = getClient();
+            await redis.del('leaderboard:xp');
+            await redis.del('leaderboard:streak');
+            await redis.del('leaderboard:focus');
+        } catch (err) {
+            console.error('Failed to clear leaderboard cache:', err.message);
+        }
+
         await stats.save();
         return stats;
     } catch (error) {
@@ -155,6 +166,18 @@ const getStreakStats = async (req, res) => {
 const getLeaderboard = async (req, res) => {
     try {
         const { sortBy = 'xp' } = req.query;
+        const cacheKey = `leaderboard:${sortBy}`;
+        const redis = getClient();
+
+        // Try to fetch from Redis cache first
+        try {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                return res.json({ success: true, leaderboard: JSON.parse(cached), fromCache: true });
+            }
+        } catch (cacheErr) {
+            console.error('Redis get leaderboard failed:', cacheErr.message);
+        }
 
         // Fetch all active students who are not disabled
         const students = await User.find({ role: 'student', isActive: true, isDisabled: { $ne: true } })
@@ -198,6 +221,13 @@ const getLeaderboard = async (req, res) => {
         cleanLeaderboard.forEach((item, index) => {
             item.rank = index + 1;
         });
+
+        // Cache in Redis for 60 seconds
+        try {
+            await redis.set(cacheKey, JSON.stringify(cleanLeaderboard), 'EX', 60);
+        } catch (cacheErr) {
+            console.error('Redis set leaderboard failed:', cacheErr.message);
+        }
 
         res.json({ success: true, leaderboard: cleanLeaderboard });
     } catch (error) {
