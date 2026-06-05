@@ -1976,7 +1976,7 @@ exports.getSeatViewAttendance = async (req, res) => {
         // 2. Attendance records for this date — sort ascending so latest record wins in the map
         const records = await Attendance.find({
             date: { $gte: attendanceDate, $lt: nextDay }
-        }).sort({ _id: 1 }).select('student status markedBy selfMarked').lean();
+        }).sort({ _id: 1 }).select('student status markedBy selfMarked entryTime exitTime distanceMeters').lean();
 
         const recordMap = {};
         records.forEach(r => { recordMap[r.student.toString()] = r; });
@@ -2021,6 +2021,9 @@ exports.getSeatViewAttendance = async (req, res) => {
                     status,          // 'present' | 'absent' | 'holiday'
                     selfMarked,      // true = student marked themselves
                     markedBy,        // who marked (string id or null)
+                    entryTime: rec ? (rec.entryTime || '') : '',
+                    exitTime: rec ? (rec.exitTime || '') : '',
+                    distanceMeters: rec ? rec.distanceMeters : null,
                     hasSeat: !!s.seat,
                 };
             })

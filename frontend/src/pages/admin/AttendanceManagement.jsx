@@ -46,7 +46,7 @@ const AttendanceManagement = () => {
     const autoSavingRef = useRef(false);
 
     useEffect(() => { fetchStudents(); fetchHolidays(); }, []);
-    useEffect(() => { if (students.length > 0) loadAttendance(); }, [selectedDate, students]);
+    useEffect(() => { if (students.length > 0) loadAttendance(); }, [selectedDate, students, viewTab]);
     useEffect(() => { fetchSeatView(); }, [selectedDate]);
 
     // ── Live polling: auto-refresh seat view every 20s for today's date ──────
@@ -161,7 +161,7 @@ const AttendanceManagement = () => {
             const active = res.data.students.filter(s => s.isActive);
             setStudents(active);
             const init = {};
-            active.forEach(s => { init[s._id] = { status: 'present', entryTime: '', exitTime: '', notes: '' }; });
+            active.forEach(s => { init[s._id] = { status: 'absent', entryTime: '', exitTime: '', notes: '' }; });
             setAttendance(init);
         } catch (e) { setError('Failed to load students'); }
         finally { setLoading(false); }
@@ -170,18 +170,14 @@ const AttendanceManagement = () => {
     const loadAttendance = async () => {
         try {
             const res = await api.get(`/admin/attendance/${selectedDate}`);
+            const map = {};
+            students.forEach(s => { map[s._id] = { status: 'absent', entryTime: '', exitTime: '', notes: '' }; });
             if (res.data.attendance.length > 0) {
-                const map = {};
-                students.forEach(s => { map[s._id] = { status: 'absent', entryTime: '', exitTime: '', notes: '' }; });
                 res.data.attendance.forEach(r => {
                     if (map[r.student._id]) map[r.student._id] = { status: r.status, entryTime: r.entryTime || '', exitTime: r.exitTime || '', notes: r.notes || '' };
                 });
-                setAttendance(map);
-            } else {
-                const init = {};
-                students.forEach(s => { init[s._id] = { status: 'absent', entryTime: '', exitTime: '', notes: '' }; });
-                setAttendance(init);
             }
+            setAttendance(map);
         } catch (e) { console.log('No attendance for this date'); }
     };
 
@@ -308,28 +304,32 @@ const AttendanceManagement = () => {
         doc.setFontSize(10);
         const totalSelected = presentCount + absentCount;
         const currentPercentage = totalSelected > 0 ? ((presentCount / totalSelected) * 100).toFixed(1) : 0;
-        doc.text(`Total Present: ${presentCount}   |   Total Absent: ${absentCount}   |   Overall Attendance: ${currentPercentage}%`, 14, 22);
+        
+        const text1 = `Total Present: ${presentCount}   |   Total Absent: ${absentCount}   |   Overall Attendance: `;
+        const text2 = `${currentPercentage}%`;
+        
+        doc.setTextColor(0, 0, 0); // Black
+        doc.text(text1, 14, 22);
+        
+        const width1 = doc.getTextWidth(text1);
+        
+        const pct = parseFloat(currentPercentage);
+        if (pct >= 75) {
+            doc.setTextColor(34, 197, 94); // Green
+        } else if (pct >= 50) {
+            doc.setTextColor(245, 158, 11); // Amber
+        } else {
+            doc.setTextColor(239, 68, 68); // Red
+        }
+        doc.text(text2, 14 + width1, 22);
+        doc.setTextColor(0, 0, 0); // Reset to black
 
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
             startY: 28,
             styles: { fontSize: 8 },
-            headStyles: { fillColor: [63, 81, 181] },
-            didParseCell: (data) => {
-                if (data.section === 'body' && data.column.index === 4) {
-                    if (data.cell.raw === 'P') {
-                        data.cell.styles.textColor = [34, 197, 94]; // Green-500
-                        data.cell.styles.fontStyle = 'bold';
-                    } else if (data.cell.raw === 'H') {
-                        data.cell.styles.textColor = [245, 158, 11]; // Amber-500
-                        data.cell.styles.fontStyle = 'bold';
-                    } else if (data.cell.raw === 'A') {
-                        data.cell.styles.textColor = [239, 68, 68]; // Red-500
-                        data.cell.styles.fontStyle = 'bold';
-                    }
-                }
-            }
+            headStyles: { fillColor: [63, 81, 181] }
         });
 
         doc.save(`Attendance_Report_${selectedDate}.pdf`);
@@ -376,12 +376,20 @@ const AttendanceManagement = () => {
                 headStyles: { fillColor: [63, 81, 181], halign: 'center' },
                 columnStyles: { 0: { halign: 'center' }, 1: { minCellWidth: 20 } },
                 didParseCell: (data) => {
-                    if (data.section === 'body') {
-                        if (data.column.index >= 2 && data.column.index < 2 + daysInMonth) {
-                            if (data.cell.raw === 'P') { data.cell.styles.textColor = [34, 197, 94]; data.cell.styles.fontStyle = 'bold'; }
-                            if (data.cell.raw === 'P') { data.cell.styles.textColor = [34, 197, 94]; data.cell.styles.fontStyle = 'bold'; }
-                            if (data.cell.raw === 'H') { data.cell.styles.textColor = [245, 158, 11]; data.cell.styles.fontStyle = 'bold'; }
-                            if (data.cell.raw === 'A') { data.cell.styles.textColor = [239, 68, 68]; data.cell.styles.fontStyle = 'bold'; }
+                    if (data.section === 'body' && data.column.index === tableColumn.length - 1) {
+                        const rawVal = data.cell.raw;
+                        const pct = parseInt(rawVal);
+                        if (!isNaN(pct)) {
+                            if (pct >= 75) {
+                                data.cell.styles.textColor = [34, 197, 94];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (pct >= 50) {
+                                data.cell.styles.textColor = [245, 158, 11];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else {
+                                data.cell.styles.textColor = [239, 68, 68];
+                                data.cell.styles.fontStyle = 'bold';
+                            }
                         }
                     }
                 }
@@ -432,7 +440,25 @@ const AttendanceManagement = () => {
                 body: tableRows,
                 startY: 20,
                 styles: { fontSize: 9 },
-                headStyles: { fillColor: [63, 81, 181] }
+                headStyles: { fillColor: [63, 81, 181] },
+                didParseCell: (data) => {
+                    if (data.section === 'body' && data.column.index === tableColumn.length - 1) {
+                        const rawVal = data.cell.raw;
+                        const pct = parseInt(rawVal);
+                        if (!isNaN(pct)) {
+                            if (pct >= 75) {
+                                data.cell.styles.textColor = [34, 197, 94];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (pct >= 50) {
+                                data.cell.styles.textColor = [245, 158, 11];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else {
+                                data.cell.styles.textColor = [239, 68, 68];
+                                data.cell.styles.fontStyle = 'bold';
+                            }
+                        }
+                    }
+                }
             });
 
             doc.save(`Yearly_Attendance_${year}.pdf`);
@@ -658,6 +684,12 @@ const AttendanceManagement = () => {
                                                     <p className={`font-bold text-base leading-tight truncate ${isLocked ? 'text-gray-600' : 'text-gray-900'}`}>{displayName}</p>
                                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                         <span className="text-xs text-gray-400 font-medium">{student.shiftName}</span>
+                                                        {isPresent && (student.entryTime || student.exitTime) && (
+                                                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                                                                <IoTimeOutline size={11} />
+                                                                In: {student.entryTime || '--'} | Out: {student.exitTime || '--'}
+                                                            </span>
+                                                        )}
                                                         {isLocked && (
                                                             <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
                                                                 <IoLockClosed size={9} /> Self-marked
@@ -787,11 +819,17 @@ const AttendanceManagement = () => {
                                         <div className="flex-1">
                                             <h3 className="font-bold text-gray-900">{student.name}</h3>
                                             <p className="text-xs text-gray-500 mt-0.5">{student.email}</p>
-                                            <div className="flex gap-2 mt-2">
+                                            <div className="flex gap-2 mt-2 flex-wrap">
                                                 {student.seat ? (
                                                     <span className="text-[10px] bg-blue-50 border border-blue-200 text-blue-600 px-2 py-0.5 rounded-full font-semibold">Seat: {student.seat.number}</span>
                                                 ) : (
                                                     <span className="text-[10px] bg-yellow-50 border border-yellow-200 text-yellow-600 px-2 py-0.5 rounded-full font-semibold animate-pulse">Pending Allocation</span>
+                                                )}
+                                                {isPresent && (data.entryTime || data.exitTime) && (
+                                                    <span className="text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                                        <IoTimeOutline size={10} />
+                                                        In: {data.entryTime || '--'} | Out: {data.exitTime || '--'}
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
