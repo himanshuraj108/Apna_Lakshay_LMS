@@ -200,6 +200,20 @@ This codebase solves critical enterprise-level challenges through resilient arch
   );
   ```
 
+### 5. High-Performance Redis Caching Layer with Mock Fallback
+* **Problem**: High-traffic read operations on public seating grids, seat vacancies, and leaderboards cause heavy MongoDB read loads and slow down response times.
+* **Solution**: Integrated a Redis caching layer using the `ioredis` library. Keys are strategically set with short time-to-live (TTL) limits and cleared upon database mutations to maintain consistency.
+  * **Leaderboards**: Cached (`leaderboard:xp`, `leaderboard:streak`, `leaderboard:focus`) for 60 seconds. Evicted automatically whenever XP/streak/focus hours values change.
+  * **Vacant Seats**: Cached (`seats:vacant`) for 30 seconds. Evicted on seat allocation and seat swap events.
+  * **Public Grid**: Cached (`seats:public`) for 30 seconds. Evicted on seat allocation and seat swap events.
+* **Resiliency Pipeline**: If Redis is offline or fails to connect after 3 attempts, the app outputs a warning and seamlessly falls back to an in-memory `mockClient` Map store, preventing server crashes and ensuring flawless offline development.
+
+### 6. Dynamic PDF Report Coloring & Inactive Student Filters
+* **Problem**: PDF exports had basic, non-intuitive layouts, and inactive students contaminated historical monthly/yearly attendance records.
+* **Solution**: Restructured the Daily, Monthly, and Yearly attendance registers:
+  * **Report Filtering**: Modified the aggregation pipeline to check the student's `isActive` state, dynamically excluding disabled/inactive members from monthly and yearly calculations to guarantee clean, current reporting.
+  * **Visual Styling Rules**: Applied strict HSL color styling on cells in the PDF templates: `P` (Present) cells render in light green, `A` (Absent) cells render in light red, and `H` (Holiday) in light amber/orange, providing immediate visual scannability.
+
 ---
 
 ## Technology Stack
@@ -211,6 +225,7 @@ This codebase solves critical enterprise-level challenges through resilient arch
 | **Animations** | Framer Motion | Smooth dashboard transitions, modular micro-animations |
 | **Backend** | Node.js, Express.js | Structured controller-route MVC architecture |
 | **Database** | MongoDB (Mongoose ODM) | Document storage, deep subdocument embedding for seats |
+| **Caching** | Redis (ioredis client) | High-performance cache layer for leaderboard and seats with mock fallback |
 | **Real-time** | Socket.IO | High-concurrency bidirectional event loops for online status |
 | **Security** | JWT (JSON Web Tokens) & bcrypt | Cryptographic session tokens, salt-hashed authorization |
 | **Payments** | Razorpay Gateways | Direct webhook integration, secure online invoice settlements |
@@ -296,7 +311,21 @@ LIBRARY_RADIUS_M=
 # Payment Integrations
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
+
+# Redis Configuration (Required for Caching, falls back to Mock store if omitted)
+REDIS_URL=
+REDIS_HOST=
+REDIS_PORT=
 ```
+
+### 2.1. Redis Caching & Upstash Configuration
+
+To enable caching for leaderboards and seat availability in production, configure a Redis instance (e.g., Upstash Redis).
+
+* **Secure TLS/SSL Protocol**: Upstash Redis requires secure SSL connections. When configuring `REDIS_URL` in `backend/.env`, you must prefix the connection URI with `rediss://` (double `s`) instead of `redis://` to enforce secure socket connection via `ioredis`.
+  * **Incorrect**: `redis://default:xxx@xxx.upstash.io:6379`
+  * **Correct**: `rediss://default:xxx@xxx.upstash.io:6379` (enforces TLS)
+* **Development Auto-Fallback**: If neither `REDIS_URL` nor `REDIS_HOST` is configured in your local environment, or if the connection fails, the system automatically defaults to a built-in mock memory cache. You will see a warning message `⚠️ Redis connection failed. Falling back to Mock store.` in your console, but the application will start and run successfully.
 
 ### 3. Database Seeding & Launch
 
@@ -502,6 +531,11 @@ Request → Groq Key 1
 ---
 
 ## Complete Architecture Changelog
+
+### v4.0.0 -- Redis Caching Layer, Enhanced Attendance Reports & Dynamic Score Visuals (June 2026)
+* **High-Performance Redis Caching**: Integrated `ioredis` cache targeting leaderboards, public layouts, and vacancy counts. Added automatic cache eviction on database mutations and built an in-memory fallback store to ensure connection failures never crash the server.
+* **Smart PDF Reporting Rules**: Colored status cells within Daily/Monthly PDF registers (`P` as green, `A` as red, `H` as amber). Excluded inactive/disabled students from monthly and yearly attendance summaries.
+* **Student Dashboard Score Visuals**: Implemented dynamic percentage-based coloring on readiness score card indicators.
 
 ### v3.0.0 -- Leaderboard Resiliency, Persistent Auth Contexts & Zoomable QR Cards (May 2026)
 * **Inclusive Engagement Leaderboards**: Updated engagement queries to list all registered students, gracefully defaulting absent StudyStreak entries to basic stats (Level 1, 0 XP) rather than omitting students without database documents.
