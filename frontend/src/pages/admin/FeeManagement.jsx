@@ -30,6 +30,16 @@ const FeeManagement = () => {
     const [payType, setPayType] = useState('full');  // 'full' | 'partial'
     const [partialAmt, setPartialAmt] = useState('');
     const [payLoading, setPayLoading] = useState(false);
+    const [pdfModalOpen, setPdfModalOpen] = useState(false);
+    const [selectedColumns, setSelectedColumns] = useState({
+        name: true,
+        email: true,
+        cycle: true,
+        amount: true,
+        dueDate: true,
+        status: true,
+        paidDate: true
+    });
 
     useEffect(() => { fetchFees(); }, []);
 
@@ -152,14 +162,24 @@ const FeeManagement = () => {
         doc.text(`Filter Applied: ${filter.toUpperCase()}`, 14, 36);
         doc.text(`Total Records: ${filteredFees.length}`, 14, 42);
 
-        const tableColumn = ["Student Name", "Email", "Billing Cycle", "Amount", "Due Date", "Status", "Paid Date"];
+        // Map column selections to headers and indices
+        const cols = [];
+        if (selectedColumns.name) cols.push({ header: 'Student Name', index: 0 });
+        if (selectedColumns.email) cols.push({ header: 'Email', index: 1 });
+        if (selectedColumns.cycle) cols.push({ header: 'Billing Cycle', index: 2 });
+        if (selectedColumns.amount) cols.push({ header: 'Amount', index: 3 });
+        if (selectedColumns.dueDate) cols.push({ header: 'Due Date', index: 4 });
+        if (selectedColumns.status) cols.push({ header: 'Status', index: 5 });
+        if (selectedColumns.paidDate) cols.push({ header: 'Paid Date', index: 6 });
+
+        const tableColumn = cols.map(c => c.header);
         const tableRows = [];
 
         filteredFees.forEach(fee => {
             const cycleStart = new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
             const cycleEnd = new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
 
-            const feeData = [
+            const fullRow = [
                 fee.student?.name || 'Unknown',
                 fee.student?.email || 'N/A',
                 `${cycleStart} - ${cycleEnd}`,
@@ -169,7 +189,18 @@ const FeeManagement = () => {
                 fee.status === 'paid' && fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : '-'
             ];
 
-            tableRows.push(feeData);
+            const filteredRow = cols.map(c => fullRow[c.index]);
+            tableRows.push(filteredRow);
+        });
+
+        // Compute columnStyles dynamically
+        const columnStyles = {};
+        cols.forEach((col, visualIndex) => {
+            if (col.index === 3) { // Amount
+                columnStyles[visualIndex] = { halign: 'right', fontStyle: 'bold' };
+            } else if (col.index === 5) { // Status
+                columnStyles[visualIndex] = { halign: 'center', fontStyle: 'bold' };
+            }
         });
 
         autoTable(doc, {
@@ -180,10 +211,7 @@ const FeeManagement = () => {
             styles: { fontSize: 9, cellPadding: 3 },
             headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
             alternateRowStyles: { fillColor: [245, 245, 245] },
-            columnStyles: {
-                3: { halign: 'right', fontStyle: 'bold' },
-                5: { halign: 'center', fontStyle: 'bold' }
-            }
+            columnStyles
         });
 
         doc.save(`Fee_Report_${filter}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -243,15 +271,38 @@ const FeeManagement = () => {
 
                 {/* Summary Cards */}
                 {isSubAdmin ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-                        {loading ? (
-                            [...Array(4)].map((_, i) => <div key={i} className="h-44 bg-white border border-gray-100 rounded-2xl animate-pulse" />)
-                        ) : (() => {
+                    <>
+                        {/* Sub-Admin stats card */}
+                        {!loading && (() => {
                             const pendingFees = baseFees.filter(f => ['pending', 'partial', 'overdue'].includes(f.status));
-                            if (pendingFees.length === 0) {
-                                return <div className="col-span-full text-center py-12 text-gray-500 bg-white border border-gray-200 rounded-2xl shadow-sm font-semibold">No pending fees found 🎉</div>;
-                            }
-                            return pendingFees.map(fee => (
+                            const subAdminTotalPending = pendingFees.reduce((s, f) => s + (f.status === 'partial' ? f.outstanding : f.amount), 0);
+                            return (
+                                <div className="mb-6 max-w-sm">
+                                    <div className="relative bg-white border border-gray-200 rounded-2xl p-4 overflow-hidden shadow-sm">
+                                        <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-yellow-400 to-orange-500" />
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900">
+                                                <IoTimeOutline size={16} />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Total Pending Fee</p>
+                                                <p className="text-xl font-black text-gray-900">₹{subAdminTotalPending}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+                            {loading ? (
+                                [...Array(4)].map((_, i) => <div key={i} className="h-44 bg-white border border-gray-100 rounded-2xl animate-pulse" />)
+                            ) : (() => {
+                                const pendingFees = baseFees.filter(f => ['pending', 'partial', 'overdue'].includes(f.status));
+                                if (pendingFees.length === 0) {
+                                    return <div className="col-span-full text-center py-12 text-gray-500 bg-white border border-gray-200 rounded-2xl shadow-sm font-semibold">No pending fees found 🎉</div>;
+                                }
+                                return pendingFees.map(fee => (
                                 <motion.div 
                                     key={fee._id}
                                     initial={{ opacity: 0, y: 10 }}
@@ -300,6 +351,7 @@ const FeeManagement = () => {
                             ));
                         })()}
                     </div>
+                    </>
                 ) : (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -335,7 +387,7 @@ const FeeManagement = () => {
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={generateFeeTablePDF}
+                        onClick={() => setPdfModalOpen(true)}
                         disabled={filteredFees.length === 0}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -558,6 +610,101 @@ const FeeManagement = () => {
                                 >
                                     <IoCheckmarkCircle size={16} />
                                     {payLoading ? 'Processing...' : payType === 'full' ? 'Mark as Fully Paid' : payType === 'cancel' ? 'Cancel Payment' : 'Record Partial Payment'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── PDF Column Selection Modal ─────────────────────────── */}
+            <AnimatePresence>
+                {pdfModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+                        onClick={() => setPdfModalOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+                            className="bg-white border border-gray-200 rounded-3xl p-6 w-full max-w-md shadow-2xl relative"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg">
+                                        <IoDownloadOutline size={14} className="text-gray-900" />
+                                    </div>
+                                    <h2 className="text-base font-bold text-gray-900">Select PDF Columns</h2>
+                                </div>
+                                <button onClick={() => setPdfModalOpen(false)} className="text-gray-500 hover:text-gray-900 transition-colors">
+                                    <IoCloseCircle size={22} />
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                                Choose which columns to include in your generated PDF report. At least one column must be selected.
+                            </p>
+
+                            {/* Column Selection Checkboxes */}
+                            <div className="space-y-2 mb-6">
+                                {[
+                                    { id: 'name', label: 'Student Name' },
+                                    { id: 'email', label: 'Email Address' },
+                                    { id: 'cycle', label: 'Billing Cycle' },
+                                    { id: 'amount', label: 'Amount' },
+                                    { id: 'dueDate', label: 'Due Date' },
+                                    { id: 'status', label: 'Payment Status' },
+                                    { id: 'paidDate', label: 'Paid Date' }
+                                ].map(col => (
+                                    <label key={col.id} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200/50 hover:bg-gray-100/50 rounded-xl cursor-pointer transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedColumns[col.id]}
+                                            onChange={() => setSelectedColumns(prev => ({ ...prev, [col.id]: !prev[col.id] }))}
+                                            className="w-4 h-4 rounded text-blue-600 border-gray-300 focus:ring-blue-500 accent-blue-600"
+                                        />
+                                        <span className="text-xs font-bold text-gray-700">{col.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {/* Select All / Deselect All Controls */}
+                            <div className="flex justify-between items-center mb-6 px-1">
+                                <button
+                                    onClick={() => setSelectedColumns({ name: true, email: true, cycle: true, amount: true, dueDate: true, status: true, paidDate: true })}
+                                    className="text-[10px] font-bold text-blue-600 hover:underline"
+                                >
+                                    Select All
+                                </button>
+                                <button
+                                    onClick={() => setSelectedColumns({ name: false, email: false, cycle: false, amount: false, dueDate: false, status: false, paidDate: false })}
+                                    className="text-[10px] font-bold text-gray-500 hover:underline"
+                                >
+                                    Clear All
+                                </button>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 mt-2">
+                                <button
+                                    onClick={() => setPdfModalOpen(false)}
+                                    className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setPdfModalOpen(false);
+                                        generateFeeTablePDF();
+                                    }}
+                                    disabled={!Object.values(selectedColumns).some(Boolean)}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <IoDownloadOutline size={16} />
+                                    Generate PDF
                                 </button>
                             </div>
                         </motion.div>
