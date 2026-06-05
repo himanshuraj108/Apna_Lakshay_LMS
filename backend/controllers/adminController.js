@@ -2091,13 +2091,13 @@ exports.getMonthlyAttendance = async (req, res) => {
 
         const attendance = await Attendance.find({
             date: { $gte: startOfMonth, $lt: endOfMonth }
-        }).populate('student', 'name email mobile createdAt');
+        }).populate('student', 'name email mobile createdAt isActive');
 
         // Group by student
         const report = {};
 
         attendance.forEach(record => {
-            if (!record.student) return;
+            if (!record.student || !record.student.isActive) return;
             const sId = record.student._id.toString();
 
             if (!report[sId]) {
@@ -2137,13 +2137,13 @@ exports.getYearlyAttendance = async (req, res) => {
 
         const attendance = await Attendance.find({
             date: { $gte: startOfYear, $lt: endOfYear }
-        }).populate('student', 'name email mobile createdAt');
+        }).populate('student', 'name email mobile createdAt isActive');
 
         // Group by student
         const report = {};
 
         attendance.forEach(record => {
-            if (!record.student) return;
+            if (!record.student || !record.student.isActive) return;
             const sId = record.student._id.toString();
 
             if (!report[sId]) {

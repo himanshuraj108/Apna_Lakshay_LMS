@@ -329,7 +329,21 @@ const AttendanceManagement = () => {
             body: tableRows,
             startY: 28,
             styles: { fontSize: 8 },
-            headStyles: { fillColor: [63, 81, 181] }
+            headStyles: { fillColor: [63, 81, 181] },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 4) {
+                    if (data.cell.raw === 'P') {
+                        data.cell.styles.textColor = [34, 197, 94]; // Green-500
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'H') {
+                        data.cell.styles.textColor = [245, 158, 11]; // Amber-500
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'A') {
+                        data.cell.styles.textColor = [239, 68, 68]; // Red-500
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
         });
 
         doc.save(`Attendance_Report_${selectedDate}.pdf`);
@@ -376,18 +390,31 @@ const AttendanceManagement = () => {
                 headStyles: { fillColor: [63, 81, 181], halign: 'center' },
                 columnStyles: { 0: { halign: 'center' }, 1: { minCellWidth: 20 } },
                 didParseCell: (data) => {
-                    if (data.section === 'body' && data.column.index === tableColumn.length - 1) {
-                        const rawVal = data.cell.raw;
-                        const pct = parseInt(rawVal);
-                        if (!isNaN(pct)) {
-                            if (pct >= 75) {
+                    if (data.section === 'body') {
+                        if (data.column.index === tableColumn.length - 1) {
+                            const rawVal = data.cell.raw;
+                            const pct = parseInt(rawVal);
+                            if (!isNaN(pct)) {
+                                if (pct >= 75) {
+                                    data.cell.styles.textColor = [34, 197, 94];
+                                    data.cell.styles.fontStyle = 'bold';
+                                } else if (pct >= 50) {
+                                    data.cell.styles.textColor = [245, 158, 11];
+                                    data.cell.styles.fontStyle = 'bold';
+                                } else {
+                                    data.cell.styles.textColor = [239, 68, 68];
+                                    data.cell.styles.fontStyle = 'bold';
+                                }
+                            }
+                        } else if (data.column.index >= 2 && data.column.index < 2 + daysInMonth) {
+                            if (data.cell.raw === 'P') {
                                 data.cell.styles.textColor = [34, 197, 94];
                                 data.cell.styles.fontStyle = 'bold';
-                            } else if (pct >= 50) {
-                                data.cell.styles.textColor = [245, 158, 11];
-                                data.cell.styles.fontStyle = 'bold';
-                            } else {
+                            } else if (data.cell.raw === 'A') {
                                 data.cell.styles.textColor = [239, 68, 68];
+                                data.cell.styles.fontStyle = 'bold';
+                            } else if (data.cell.raw === 'H') {
+                                data.cell.styles.textColor = [245, 158, 11];
                                 data.cell.styles.fontStyle = 'bold';
                             }
                         }
