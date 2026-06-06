@@ -310,34 +310,21 @@ exports.getDashboard = async (req, res) => {
                 }).sort({ dueDate: -1 }).lean();
             }
 
-            // Calculate Reminder: Show reminder starting from 3 days before the billing cycle starts
-            if (currentFee && currentFee.status !== 'paid' && currentFee.dueDate) {
-                const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
-                const billingDay = joinedDate.getDate();
-                
-                // Cycle Start: The billingDay of the fee month/year
-                const cycleStart = new Date(currentFee.year, currentFee.month - 1, billingDay);
-                cycleStart.setHours(0, 0, 0, 0);
-
-                // Reminder starts 3 days before cycle start
-                const reminderDate = new Date(cycleStart);
-                reminderDate.setDate(reminderDate.getDate() - 3);
-
-                const todayStr = new Date();
-                todayStr.setHours(0, 0, 0, 0);
-
-                if (todayStr >= reminderDate) {
-                    const dueDate = new Date(currentFee.dueDate);
-                    feeReminder = {
-                        show: true,
-                        amount: currentFee.status === 'partial' ? (currentFee.outstanding ?? currentFee.amount) : currentFee.amount,
-                        dueDate: dueDate,
-                        status: currentFee.status,
-                        message: currentFee.status === 'partial'
-                            ? `Partial payment recorded. Outstanding fee of Rs.${currentFee.outstanding ?? currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}.`
-                            : `Your fee of Rs.${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
-                    };
-                }
+            // Always show a reminder if there is any unpaid fee (pending, overdue, or partial)
+            if (currentFee && currentFee.status !== 'paid') {
+                const dueDate = new Date(currentFee.dueDate);
+                const isOverdue = currentFee.status === 'overdue';
+                feeReminder = {
+                    show: true,
+                    amount: currentFee.status === 'partial' ? (currentFee.outstanding ?? currentFee.amount) : currentFee.amount,
+                    dueDate: dueDate,
+                    status: currentFee.status,
+                    message: currentFee.status === 'partial'
+                        ? `Partial payment recorded. Outstanding fee of ₹${currentFee.outstanding ?? currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}.`
+                        : isOverdue
+                        ? `⚠️ Your fee of ₹${currentFee.amount} is OVERDUE (was due on ${dueDate.toLocaleDateString('en-GB')}). Please pay immediately.`
+                        : `Your fee of ₹${currentFee.amount} is due on ${dueDate.toLocaleDateString('en-GB')}. Please pay to avoid late fees.`
+                };
             }
         }
 

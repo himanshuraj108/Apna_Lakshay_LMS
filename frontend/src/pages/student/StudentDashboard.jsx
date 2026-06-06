@@ -770,8 +770,9 @@ const StudentDashboard = () => {
     };
 
     useEffect(() => {
-        // Only show loading skeleton if the main dashboard data isn't cached yet
-        if (!isFresh('dashboard')) setLoading(true);
+        // Always bust dashboard cache on mount so fee reminder is always fresh
+        bustCache('dashboard');
+        setLoading(true);
         fetchDashboardData();
         loadSettingsCache();
         fetchCardConfig();
@@ -781,7 +782,11 @@ const StudentDashboard = () => {
         fetchActiveUpdate();
     }, []);
     
-    useEffect(() => { if (dashboardData?.feeReminder?.show) setShowFeeReminder(true); }, [dashboardData]);
+    useEffect(() => {
+        if (dashboardData?.feeReminder?.show) {
+            setShowFeeReminder(true);
+        }
+    }, [dashboardData?.feeReminder?.show, dashboardData?.feeReminder?.amount]);
 
     const fetchPinStatus = async () => {
         if (isFresh('settings')) {
@@ -1883,7 +1888,7 @@ const StudentDashboard = () => {
                                                                     ? `${item.value || 0} XP`
                                                                     : leaderboardSortBy === 'streak'
                                                                     ? `${item.value || 0} Days`
-                                                                    : `${(item.value || 0).toFixed(1)} hrs`}
+                                                                    : `${((item.value || 0) / 60).toFixed(1)} hrs`}
                                                             </span>
                                                             <div className="text-[9px] text-gray-400 font-semibold uppercase tracking-wider">
                                                                 Level {item.level || 1}
