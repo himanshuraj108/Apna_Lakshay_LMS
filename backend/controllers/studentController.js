@@ -292,6 +292,16 @@ exports.getDashboard = async (req, res) => {
                 status: { $in: ['pending', 'overdue', 'partial'] }
             }).sort({ dueDate: 1 }).lean();
 
+            // Self-heal: If today is past the dueDate and status is still 'pending', update it to 'overdue'
+            if (currentFee && currentFee.status === 'pending' && currentFee.dueDate && today > new Date(currentFee.dueDate)) {
+                try {
+                    await Fee.findByIdAndUpdate(currentFee._id, { status: 'overdue' });
+                    currentFee.status = 'overdue';
+                } catch (err) {
+                    console.error('Failed to update overdue fee status:', err.message);
+                }
+            }
+
             // 2. If all paid, fetch the most recent paid fee
             if (!currentFee) {
                 currentFee = await Fee.findOne({
@@ -300,15 +310,24 @@ exports.getDashboard = async (req, res) => {
                 }).sort({ dueDate: -1 }).lean();
             }
 
-            // Calculate Reminder
+            // Calculate Reminder: Show reminder starting from 3 days before the billing cycle starts
             if (currentFee && currentFee.status !== 'paid' && currentFee.dueDate) {
-                const dueDate = new Date(currentFee.dueDate);
+                const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
+                const billingDay = joinedDate.getDate();
                 
-                // Reminder starts 5 days before due date
-                const reminderDate = new Date(dueDate);
-                reminderDate.setDate(reminderDate.getDate() - 5);
+                // Cycle Start: The billingDay of the fee month/year
+                const cycleStart = new Date(currentFee.year, currentFee.month - 1, billingDay);
+                cycleStart.setHours(0, 0, 0, 0);
 
-                if (today >= reminderDate) {
+                // Reminder starts 3 days before cycle start
+                const reminderDate = new Date(cycleStart);
+                reminderDate.setDate(reminderDate.getDate() - 3);
+
+                const todayStr = new Date();
+                todayStr.setHours(0, 0, 0, 0);
+
+                if (todayStr >= reminderDate) {
+                    const dueDate = new Date(currentFee.dueDate);
                     feeReminder = {
                         show: true,
                         amount: currentFee.status === 'partial' ? (currentFee.outstanding ?? currentFee.amount) : currentFee.amount,
