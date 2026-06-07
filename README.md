@@ -1,4 +1,4 @@
-# Apna Lakshay -- Production-Grade Library Management System
+# Apna Lakshay Library -- Production-Grade Library Management System
 
 [![Production Ready](https://img.shields.io/badge/Status-Production--Ready-success.svg?style=flat-for-the-badge)](https://apnalakshay.com)
 [![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue.svg?style=flat-for-the-badge)](https://mongodb.com)
