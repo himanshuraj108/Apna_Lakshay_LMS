@@ -491,7 +491,7 @@ export default function Login() {
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                             <div>
                                 <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', marginBottom: 6 }}>
-                                    Welcome back
+                                    Welcome back 👋
                                 </h2>
                                 <p style={{ fontSize: 14, color: '#6B7280' }}>
                                     Login to access your library dashboard
