@@ -204,7 +204,7 @@ function InstructionModal({ onClose }) {
                                 {/* Step number badge */}
                                 <div style={{
                                     minWidth: 26, height: 26, borderRadius: 7,
-                                    background: '#3B82F6',
+                                    background: i === content.steps.length - 1 ? '#EF4444' : '#3B82F6',
                                     color: '#fff',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: 12, fontWeight: 800,
@@ -221,8 +221,8 @@ function InstructionModal({ onClose }) {
                     </div>
 
                     {/* Footer — contact admin */}
-                    <div style={{ margin: '0 24px 22px', padding: '12px 14px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                        <p style={{ fontSize: 12, color: '#475569', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+                    <div style={{ margin: '0 24px 22px', padding: '12px 14px', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <p style={{ fontSize: 12, color: '#166534', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
                             {content.contactLabel}
                         </p>
                         <Link
@@ -230,15 +230,15 @@ function InstructionModal({ onClose }) {
                             onClick={onClose}
                             style={{
                                 flexShrink: 0, fontSize: 12, fontWeight: 700,
-                                color: '#fff', background: '#3B82F6',
+                                color: '#fff', background: '#16A34A',
                                 border: 'none', borderRadius: 8,
                                 padding: '7px 14px', textDecoration: 'none',
                                 display: 'inline-flex', alignItems: 'center', gap: 5,
                                 transition: 'background 0.15s',
                                 whiteSpace: 'nowrap',
                             }}
-                            onMouseOver={e => e.currentTarget.style.background = '#2563EB'}
-                            onMouseOut={e => e.currentTarget.style.background = '#3B82F6'}
+                            onMouseOver={e => e.currentTarget.style.background = '#15803D'}
+                            onMouseOut={e => e.currentTarget.style.background = '#16A34A'}
                         >
                             {content.contactBtn}
                         </Link>
