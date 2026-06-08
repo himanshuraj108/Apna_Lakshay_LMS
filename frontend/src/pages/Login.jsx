@@ -51,11 +51,13 @@ const INSTRUCTIONS = {
                 body: 'Press the orange "Login" button. You will be redirected to your personalized student dashboard.',
             },
             {
-                num: '💡',
+                num: '?',
                 heading: 'Forgot Password?',
                 body: 'Click "Forgot password?" below the password field and follow the steps to reset it via your registered email.',
             },
         ],
+        contactLabel: 'Still having trouble? Contact the library admin.',
+        contactBtn: 'Contact Admin',
         langBtn: 'हिंदी में देखें',
     },
     hi: {
@@ -83,11 +85,13 @@ const INSTRUCTIONS = {
                 body: 'नारंगी "Login" बटन दबाएं। आप अपने स्टूडेंट डैशबोर्ड पर पहुंच जाएंगे।',
             },
             {
-                num: '💡',
+                num: '?',
                 heading: 'पासवर्ड भूल गए?',
                 body: '"Forgot password?" लिंक पर क्लिक करें और अपने पंजीकृत ईमेल से पासवर्ड रीसेट करें।',
             },
         ],
+        contactLabel: 'फिर भी समस्या हो? लाइब्रेरी एडमिन से संपर्क करें।',
+        contactBtn: 'एडमिन से संपर्क करें',
         langBtn: 'View in English',
     },
 };
@@ -183,7 +187,7 @@ function InstructionModal({ onClose }) {
                     </div>
 
                     {/* Steps */}
-                    <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {content.steps.map((step, i) => (
                             <motion.div
                                 key={`${lang}-${i}`}
@@ -192,38 +196,52 @@ function InstructionModal({ onClose }) {
                                 transition={{ delay: i * 0.05 }}
                                 style={{
                                     display: 'flex', gap: 14, alignItems: 'flex-start',
-                                    background: i === content.steps.length - 1 ? '#FFFBEB' : '#F8FAFF',
-                                    border: `1px solid ${i === content.steps.length - 1 ? '#FDE68A' : '#E0EAFF'}`,
-                                    borderRadius: 12, padding: '13px 14px',
+                                    background: i === content.steps.length - 1 ? '#F8FAFF' : '#F8FAFF',
+                                    border: '1px solid #E0EAFF',
+                                    borderRadius: 12, padding: '12px 14px',
                                 }}
                             >
                                 {/* Step number badge */}
                                 <div style={{
-                                    minWidth: 28, height: 28, borderRadius: 8,
-                                    background: i === content.steps.length - 1 ? '#FEF3C7' : '#3B82F6',
-                                    color: i === content.steps.length - 1 ? '#92400E' : '#fff',
+                                    minWidth: 26, height: 26, borderRadius: 7,
+                                    background: '#3B82F6',
+                                    color: '#fff',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: step.num.length > 1 ? 14 : 12, fontWeight: 800,
+                                    fontSize: 12, fontWeight: 800,
                                     flexShrink: 0,
                                 }}>
                                     {step.num}
                                 </div>
                                 <div>
-                                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1E3A5F', margin: '0 0 4px', lineHeight: 1.3 }}>{step.heading}</p>
+                                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1E3A5F', margin: '0 0 3px', lineHeight: 1.3 }}>{step.heading}</p>
                                     <p style={{ fontSize: 12.5, color: '#4B5563', margin: 0, lineHeight: 1.6 }}>{step.body}</p>
                                 </div>
                             </motion.div>
                         ))}
                     </div>
 
-                    {/* Footer note */}
-                    <div style={{ margin: '0 24px 20px', padding: '10px 14px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 15 }}>✅</span>
-                        <p style={{ fontSize: 12, color: '#166534', margin: 0, fontWeight: 600 }}>
-                            {lang === 'en'
-                                ? 'Still having trouble? Contact the library admin directly.'
-                                : 'फिर भी समस्या हो? लाइब्रेरी एडमिन से सीधे संपर्क करें।'}
+                    {/* Footer — contact admin */}
+                    <div style={{ margin: '0 24px 22px', padding: '12px 14px', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <p style={{ fontSize: 12, color: '#475569', margin: 0, fontWeight: 500, lineHeight: 1.5 }}>
+                            {content.contactLabel}
                         </p>
+                        <Link
+                            to="/contact"
+                            onClick={onClose}
+                            style={{
+                                flexShrink: 0, fontSize: 12, fontWeight: 700,
+                                color: '#fff', background: '#3B82F6',
+                                border: 'none', borderRadius: 8,
+                                padding: '7px 14px', textDecoration: 'none',
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                transition: 'background 0.15s',
+                                whiteSpace: 'nowrap',
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#2563EB'}
+                            onMouseOut={e => e.currentTarget.style.background = '#3B82F6'}
+                        >
+                            {content.contactBtn}
+                        </Link>
                     </div>
                 </motion.div>
             </motion.div>
@@ -473,7 +491,7 @@ export default function Login() {
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                             <div>
                                 <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', marginBottom: 6 }}>
-                                    Welcome back 👋
+                                    Welcome back
                                 </h2>
                                 <p style={{ fontSize: 14, color: '#6B7280' }}>
                                     Login to access your library dashboard
