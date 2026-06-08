@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import {
     IoMail, IoLockClosed, IoArrowForward,
     IoEye, IoEyeOff, IoCheckmarkCircle,
-    IoGridOutline, IoLocationOutline, IoLibraryOutline,
+    IoGridOutline, IoLocationOutline,
+    IoInformationCircleOutline, IoClose,
 } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
@@ -23,6 +24,74 @@ const FEATURES = [
     'Live discussion rooms & study collaboration',
 ];
 
+/* ─── Instructions content ─── */
+const INSTRUCTIONS = {
+    en: {
+        title: 'How to Login',
+        subtitle: 'Follow these steps to access your account',
+        steps: [
+            {
+                num: '1',
+                heading: 'Get Your Credentials from Admin',
+                body: 'Visit the library and ask the admin/staff to register you. They will create your account and provide you with your login Email/Mobile Number and Password.',
+            },
+            {
+                num: '2',
+                heading: 'Enter Your Email or Mobile',
+                body: 'In the "Email or Mobile Number" field, enter the email address or 10-digit mobile number provided by the admin.',
+            },
+            {
+                num: '3',
+                heading: 'Enter Your Password',
+                body: 'Enter the password given by the admin. By default, it is usually your registered mobile number. You can change it later from your profile.',
+            },
+            {
+                num: '4',
+                heading: 'Click Login',
+                body: 'Press the orange "Login" button. You will be redirected to your personalized student dashboard.',
+            },
+            {
+                num: '💡',
+                heading: 'Forgot Password?',
+                body: 'Click "Forgot password?" below the password field and follow the steps to reset it via your registered email.',
+            },
+        ],
+        langBtn: 'हिंदी में देखें',
+    },
+    hi: {
+        title: 'लॉगिन कैसे करें',
+        subtitle: 'अपने अकाउंट में प्रवेश करने के लिए इन चरणों का पालन करें',
+        steps: [
+            {
+                num: '1',
+                heading: 'एडमिन से क्रेडेंशियल प्राप्त करें',
+                body: 'लाइब्रेरी जाएं और एडमिन/स्टाफ से अपना रजिस्ट्रेशन कराएं। वे आपका अकाउंट बनाएंगे और आपको ईमेल/मोबाइल नंबर और पासवर्ड देंगे।',
+            },
+            {
+                num: '2',
+                heading: 'ईमेल या मोबाइल नंबर दर्ज करें',
+                body: '"Email or Mobile Number" वाले बॉक्स में एडमिन द्वारा दिया गया ईमेल पता या 10 अंकों का मोबाइल नंबर भरें।',
+            },
+            {
+                num: '3',
+                heading: 'पासवर्ड दर्ज करें',
+                body: 'एडमिन द्वारा दिया गया पासवर्ड भरें। डिफ़ॉल्ट रूप से यह आमतौर पर आपका पंजीकृत मोबाइल नंबर होता है। बाद में प्रोफ़ाइल से बदला जा सकता है।',
+            },
+            {
+                num: '4',
+                heading: 'Login बटन दबाएं',
+                body: 'नारंगी "Login" बटन दबाएं। आप अपने स्टूडेंट डैशबोर्ड पर पहुंच जाएंगे।',
+            },
+            {
+                num: '💡',
+                heading: 'पासवर्ड भूल गए?',
+                body: '"Forgot password?" लिंक पर क्लिक करें और अपने पंजीकृत ईमेल से पासवर्ड रीसेट करें।',
+            },
+        ],
+        langBtn: 'View in English',
+    },
+};
+
 /* ─── tiny reusable label+input wrapper ─── */
 const Field = ({ label, id, children }) => (
     <div className="space-y-1.5">
@@ -34,6 +103,134 @@ const Field = ({ label, id, children }) => (
     </div>
 );
 
+/* ─── Instruction Modal ─── */
+function InstructionModal({ onClose }) {
+    const [lang, setLang] = useState('en');
+    const content = INSTRUCTIONS[lang];
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '16px',
+                }}
+            >
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.93, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        background: '#fff',
+                        borderRadius: 20,
+                        width: '100%',
+                        maxWidth: 440,
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 24px 64px rgba(59,130,246,0.18), 0 4px 16px rgba(0,0,0,0.12)',
+                        position: 'relative',
+                        fontFamily: "'Inter','Segoe UI',sans-serif",
+                    }}
+                >
+                    {/* Top accent bar */}
+                    <div style={{ height: 4, background: 'linear-gradient(90deg,#3B82F6,#60A5FA,#93C5FD)', borderRadius: '20px 20px 0 0' }} />
+
+                    {/* Header */}
+                    <div style={{ padding: '20px 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <IoInformationCircleOutline size={20} style={{ color: '#3B82F6' }} />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#111827', margin: 0, lineHeight: 1.2 }}>{content.title}</h3>
+                                <p style={{ fontSize: 12, color: '#6B7280', margin: '3px 0 0', lineHeight: 1.4 }}>{content.subtitle}</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            style={{ background: '#F3F4F6', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280', flexShrink: 0, transition: 'background 0.15s' }}
+                            onMouseOver={e => e.currentTarget.style.background = '#E5E7EB'}
+                            onMouseOut={e => e.currentTarget.style.background = '#F3F4F6'}
+                        >
+                            <IoClose size={16} />
+                        </button>
+                    </div>
+
+                    {/* Language toggle */}
+                    <div style={{ padding: '12px 24px 0' }}>
+                        <button
+                            onClick={() => setLang(l => l === 'en' ? 'hi' : 'en')}
+                            style={{
+                                fontSize: 12, fontWeight: 700, color: '#3B82F6',
+                                background: '#EFF6FF', border: '1px solid #BFDBFE',
+                                borderRadius: 8, padding: '5px 12px', cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                fontFamily: 'inherit',
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.background = '#DBEAFE'; }}
+                            onMouseOut={e => { e.currentTarget.style.background = '#EFF6FF'; }}
+                        >
+                            {content.langBtn}
+                        </button>
+                    </div>
+
+                    {/* Steps */}
+                    <div style={{ padding: '16px 24px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {content.steps.map((step, i) => (
+                            <motion.div
+                                key={`${lang}-${i}`}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                style={{
+                                    display: 'flex', gap: 14, alignItems: 'flex-start',
+                                    background: i === content.steps.length - 1 ? '#FFFBEB' : '#F8FAFF',
+                                    border: `1px solid ${i === content.steps.length - 1 ? '#FDE68A' : '#E0EAFF'}`,
+                                    borderRadius: 12, padding: '13px 14px',
+                                }}
+                            >
+                                {/* Step number badge */}
+                                <div style={{
+                                    minWidth: 28, height: 28, borderRadius: 8,
+                                    background: i === content.steps.length - 1 ? '#FEF3C7' : '#3B82F6',
+                                    color: i === content.steps.length - 1 ? '#92400E' : '#fff',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: step.num.length > 1 ? 14 : 12, fontWeight: 800,
+                                    flexShrink: 0,
+                                }}>
+                                    {step.num}
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1E3A5F', margin: '0 0 4px', lineHeight: 1.3 }}>{step.heading}</p>
+                                    <p style={{ fontSize: 12.5, color: '#4B5563', margin: 0, lineHeight: 1.6 }}>{step.body}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Footer note */}
+                    <div style={{ margin: '0 24px 20px', padding: '10px 14px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 15 }}>✅</span>
+                        <p style={{ fontSize: 12, color: '#166534', margin: 0, fontWeight: 600 }}>
+                            {lang === 'en'
+                                ? 'Still having trouble? Contact the library admin directly.'
+                                : 'फिर भी समस्या हो? लाइब्रेरी एडमिन से सीधे संपर्क करें।'}
+                        </p>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
 export default function Login() {
     useMobileViewport();
 
@@ -44,6 +241,7 @@ export default function Login() {
     const [shake, setShake] = useState(false);
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState('');
+    const [showInstructions, setShowInstructions] = useState(false);
 
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -119,6 +317,8 @@ export default function Login() {
                 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
                 .do-shake{animation:shake 0.45s ease;}
                 input:-webkit-autofill{-webkit-box-shadow:0 0 0 50px #fff inset !important;-webkit-text-fill-color:#111827 !important;}
+                .info-btn:hover { background: #DBEAFE !important; transform: scale(1.08); }
+                .info-btn { transition: all 0.18s ease !important; }
             `}</style>
 
             {/* ══════════════════════════════════════════
@@ -240,8 +440,6 @@ export default function Login() {
                     style={{ position: 'absolute', bottom: -150, left: '50%', x: '-50%', width: 300, height: 300, background: 'radial-gradient(circle, #EF4444 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }}
                 />
 
-
-
                 {/* Mobile brand */}
                 <div className="lg:hidden" style={{ width: '100%', maxWidth: 380, marginBottom: 28 }}>
                     <div style={{ height: 3, background: 'linear-gradient(90deg,#F97316,#FB923C)', borderRadius: 99, marginBottom: 20 }} />
@@ -270,14 +468,45 @@ export default function Login() {
                     className={shake ? 'do-shake' : ''}
                     style={{ width: '100%', maxWidth: 380 }}>
 
-                    {/* Form header */}
+                    {/* Form header with Info icon */}
                     <div style={{ marginBottom: 28 }}>
-                        <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', marginBottom: 6 }}>
-                            Welcome back 👋
-                        </h2>
-                        <p style={{ fontSize: 14, color: '#6B7280' }}>
-                            Login to access your library dashboard
-                        </p>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                            <div>
+                                <h2 style={{ fontSize: 24, fontWeight: 800, color: '#111827', marginBottom: 6 }}>
+                                    Welcome back 👋
+                                </h2>
+                                <p style={{ fontSize: 14, color: '#6B7280' }}>
+                                    Login to access your library dashboard
+                                </p>
+                            </div>
+                            {/* Info button */}
+                            <motion.button
+                                type="button"
+                                whileHover={{ scale: 1.12 }}
+                                whileTap={{ scale: 0.94 }}
+                                onClick={() => setShowInstructions(true)}
+                                title="How to login?"
+                                style={{
+                                    background: '#EFF6FF',
+                                    border: '1.5px solid #93C5FD',
+                                    borderRadius: '50%',
+                                    width: 34,
+                                    height: 34,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                    marginTop: 2,
+                                    boxShadow: '0 2px 8px rgba(59,130,246,0.15)',
+                                    transition: 'all 0.18s ease',
+                                }}
+                                onMouseOver={e => { e.currentTarget.style.background = '#DBEAFE'; e.currentTarget.style.borderColor = '#3B82F6'; }}
+                                onMouseOut={e => { e.currentTarget.style.background = '#EFF6FF'; e.currentTarget.style.borderColor = '#93C5FD'; }}
+                            >
+                                <IoInformationCircleOutline size={20} style={{ color: '#3B82F6' }} />
+                            </motion.button>
+                        </div>
                     </div>
 
                     {/* Error */}
@@ -370,6 +599,9 @@ export default function Login() {
                     {/* Footer */}
                 </motion.div>
             </div>
+
+            {/* Instruction Modal */}
+            {showInstructions && <InstructionModal onClose={() => setShowInstructions(false)} />}
 
             <AttendanceFloatingBtn />
         </div>
