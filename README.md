@@ -532,30 +532,30 @@ Request → Groq Key 1
 
 ## Complete Architecture Changelog
 
-### v4.0.0 -- Redis Caching Layer, Enhanced Attendance Reports & Dynamic Score Visuals (June 2026)
+### v1.2.1 -- Redis Caching Layer, Enhanced Attendance Reports & Dynamic Score Visuals (June 2026)
 * **High-Performance Redis Caching**: Integrated `ioredis` cache targeting leaderboards, public layouts, and vacancy counts. Added automatic cache eviction on database mutations and built an in-memory fallback store to ensure connection failures never crash the server.
 * **Smart PDF Reporting Rules**: Colored status cells within Daily/Monthly PDF registers (`P` as green, `A` as red, `H` as amber). Excluded inactive/disabled students from monthly and yearly attendance summaries.
 * **Student Dashboard Score Visuals**: Implemented dynamic percentage-based coloring on readiness score card indicators.
 
-### v3.0.0 -- Leaderboard Resiliency, Persistent Auth Contexts & Zoomable QR Cards (May 2026)
+### v1.2.0 -- Leaderboard Resiliency, Persistent Auth Contexts & Zoomable QR Cards (May 2026)
 * **Inclusive Engagement Leaderboards**: Updated engagement queries to list all registered students, gracefully defaulting absent StudyStreak entries to basic stats (Level 1, 0 XP) rather than omitting students without database documents.
 * **Exam Target Hydration**: Integrated target persistence in the seat login controller and React authentication hooks. Resolves standard page reload hydration issues, securing state consistency.
 * **Multi-Prefix Barcode Parsing**: Enhanced scanner input parsing logic to seamlessly resolve both AL- and HL- student card prefixes on check-in.
 * **Double-Sided 3D Card Animations**: Rolled out absolute CSS 3D transform layers for profile student cards, featuring interactive flip states with rules content on the back.
 * **High-Contrast QR Modal**: Integrated full-view overlay zooms with SVG renderers for seamless scanner check-ins.
 
-### v2.5.0 -- Sub-Admin Permissions, Login Expiration & Seat Swap Enhancements (May 2026)
+### v1.5.0 -- Sub-Admin Permissions, Login Expiration & Seat Swap Enhancements (May 2026)
 * **Sub-Admin ID Access**: Added specific id-card privileges to sub-admin configurations.
 * **Ultra-Extended Sessions**: Extended JWT expiration parameters for secondary admin endpoints to 365 days, mitigating daily session timeouts.
 * **Atomic Seat Swap Controller**: Created transactional seat swap endpoints, ensuring all seat types, negotiated fee configurations, and shift dates transfer concurrently.
 * **Mobile ID Layout Polish**: Wrapped layout sections in ID components to prevent typography overflowing.
 
-### v2.4.0 -- Unified Settings & PIN Attendance (May 2026)
+### v1.4.0 -- Unified Settings & PIN Attendance (May 2026)
 * **FAB Pulse Contexts**: Refactored dashboard entry structures to display responsive, pulsing check-in actions.
 * **Offline PIN Fallback**: Configured keypads to allow local pin code authentication when GPS signal boundaries fail.
 * **Dynamic Global Toggles**: Unified settings into a clean dropdown control block on the admin panel.
 
-### v2.1.0 -- Partial Billing & Razorpay Sandbox (Apr 2026)
+### v1.1.0 -- Partial Billing & Razorpay Sandbox (Apr 2026)
 * **Dynamic Balances**: Integrated orange partial-payment statuses, tracking outstanding amounts per billing cycle.
 * **E-Mail Receipts**: Upgraded Nodemailer actions to automatically deliver responsive HTML receipts upon full or partial settlement.
 
