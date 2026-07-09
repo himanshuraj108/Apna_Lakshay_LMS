@@ -336,6 +336,8 @@ const StudentActivities = () => {
             'rrb_ntpc': 'RRB NTPC',
             'jee_main': 'JEE Main',
             'neet_ug': 'NEET UG',
+            'bpsc_pre': 'BPSC CCE Prelims',
+            'bpse_pre': 'BPSC CCE Prelims',
             'class_6': 'Class 6',
             'class_7': 'Class 7',
             'class_8': 'Class 8',
