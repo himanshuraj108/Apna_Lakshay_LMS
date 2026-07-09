@@ -96,6 +96,12 @@ const EXAM_GROUPS = [
         ],
     },
     {
+        id: 'state_psc', name: 'State PSC Exams', color: '#7c2d12', bg: '#fff7ed',
+        exams: [
+            { code: 'bpsc_pre', name: 'BPSC CCE Prelims (BPSE)' },
+        ],
+    },
+    {
         id: 'generic', name: 'Other Exams', color: '#b45309', bg: '#fffbeb',
         exams: [
             { code: 'generic', name: 'General Mock Test' },
@@ -122,29 +128,33 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
         en: {
             title: "Exam Instructions",
             disclaimer: "This mock exam is only for mock purposes. We do not risk or guarantee that these exact questions will come in the real exam.",
+            batchNotice: "How the Batch Question System works: Questions are loaded in batches of 5 per section. When you reach the last question of a section, the AI automatically generates the next 5 questions for that section in the background. When you reach the last question of the last section, 5 more questions are generated across ALL sections and you are redirected to your first unanswered question. The exam is NOT complete until you click Submit — do NOT leave or refresh the page thinking it is incomplete.",
             points: [
                 "The clock will be set at the server. The countdown timer in the top right corner will display the remaining time available for you to complete the examination.",
                 "The Question Palette displayed on the right side of screen will show the status of each question using color codes.",
                 "You can navigate between sections (if applicable) using the tabs provided above the question area.",
                 "Click on Save & Next to save your answer for the current question and then go to the next question.",
                 "Click on Mark for Review & Next to save your answer for the current question, mark it for review, and then go to the next question.",
+                "BATCH LOADING: Questions load in sets of 5 per section. Keep answering — more questions will appear automatically as you progress. Do NOT submit early thinking questions are finished.",
                 "CREDIT SYSTEM: You are allowed a maximum of 2 Mock Tests per day. Your credits will automatically reset to 2 every night at 12:00 AM IST."
             ],
-            checkbox_label: "I have read and understood all the instructions. I agree this is only for practice.",
+            checkbox_label: "I have read and understood all the instructions, including the batch loading system. I agree this is only for practice.",
             btn: requireCheckbox ? "Proceed to Exam" : "I Understand"
         },
         hi: {
             title: "परीक्षा निर्देश",
             disclaimer: "यह मॉक परीक्षा केवल अभ्यास के उद्देश्य से है। हम इस बात की कोई गारंटी नहीं देते कि असली परीक्षा में यही प्रश्न आएंगे।",
+            batchNotice: "बैच प्रश्न प्रणाली कैसे काम करती है: प्रश्न हर सेक्शन में 5-5 के बैच में लोड होते हैं। जब आप किसी सेक्शन के अंतिम प्रश्न पर पहुंचते हैं, तो AI पृष्ठभूमि में उस सेक्शन के अगले 5 प्रश्न स्वचालित रूप से तैयार करता है। जब आप अंतिम सेक्शन के अंतिम प्रश्न पर पहुंचते हैं, तो सभी सेक्शन में 5 और प्रश्न जोड़े जाते हैं और आपको पहले अनुत्तरित प्रश्न पर भेजा जाता है। परीक्षा तब तक पूरी नहीं होती जब तक आप Submit नहीं करते — यह सोचकर पेज न छोड़ें या रीफ्रेश न करें कि परीक्षा अधूरी है।",
             points: [
                 "सर्वर पर घड़ी सेट की जाएगी। स्क्रीन के ऊपरी दाएं कोने में उलटी गिनती टाइमर आपको परीक्षा पूरी करने के लिए शेष समय दिखाएगा।",
                 "स्क्रीन के दाईं ओर प्रदर्शित प्रश्न पैलेट रंग कोड का उपयोग करके प्रत्येक प्रश्न की स्थिति दिखाएगा।",
                 "आप प्रश्न क्षेत्र के ऊपर दिए गए टैब का उपयोग करके अनुभागों (यदि लागू हो) के बीच नेविगेट कर सकते हैं।",
                 "वर्तमान प्रश्न के लिए अपना उत्तर सहेजने के लिए 'सहेजें और अगला' पर क्लिक करें और फिर अगले प्रश्न पर जाएं।",
                 "वर्तमान प्रश्न के लिए अपना उत्तर सहेजने के लिए 'समीक्षा के लिए चिह्नित करें और अगला' पर क्लिक करें, इसे समीक्षा के लिए चिह्नित करें, और फिर अगले प्रश्न पर जाएं।",
+                "बैच लोडिंग: प्रश्न हर सेक्शन में 5-5 के सेट में लोड होते हैं। उत्तर देते रहें — जैसे-जैसे आप आगे बढ़ेंगे, अधिक प्रश्न स्वचालित रूप से आते रहेंगे। यह सोचकर जल्दी Submit न करें कि प्रश्न खत्म हो गए।",
                 "क्रेडिट सिस्टम: आपको प्रतिदिन अधिकतम 2 मॉक टेस्ट देने की अनुमति है। आपके क्रेडिट हर रात 12:00 बजे (IST) स्वतः 2 पर रीसेट हो जाएंगे।"
             ],
-            checkbox_label: "मैंने सभी निर्देश पढ़ और समझ लिए हैं। मैं सहमत हूँ कि यह केवल अभ्यास के लिए है।",
+            checkbox_label: "मैंने सभी निर्देश पढ़ और समझ लिए हैं, जिसमें बैच लोडिंग सिस्टम भी शामिल है। मैं सहमत हूँ कि यह केवल अभ्यास के लिए है।",
             btn: requireCheckbox ? "शुरू करें" : "मैं समझता हूँ"
         }
     };
@@ -200,6 +210,17 @@ const InstructionsModal = ({ isOpen, onClose, requireCheckbox = false, onAccept,
                                 <IoAlertCircleOutline size={24} style={{ flexShrink: 0, marginTop: '-2px' }} />
                                 {text.disclaimer}
                             </p>
+
+                            {/* Batch Loading Notice — only shown for general instructions, not credit modal */}
+                            {type === 'general' && text.batchNotice && (
+                                <div style={{ marginBottom: '16px', padding: '14px 16px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', borderLeft: '4px solid #f59e0b' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Batch Question System / बैच प्रश्न प्रणाली</div>
+                                    <p style={{ fontSize: '13px', color: '#78350f', lineHeight: '1.65', margin: 0, fontWeight: '500' }}>
+                                        {text.batchNotice}
+                                    </p>
+                                </div>
+                            )}
+
                             <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', lineHeight: '1.6' }}>
                                 {text.points.map((pt, idx) => (
                                     <li key={idx}>{pt}</li>
@@ -421,6 +442,15 @@ const ExamSelect = ({ onSelect, onViewHistory }) => {
     );
 };
 
+// Exams that only allow MCQ mode (mirrors backend MCQ_ONLY_EXAMS)
+const MCQ_ONLY_EXAM_CODES = new Set([
+    'bpsc_pre', 'bpse_pre',
+    'upsc_cse', 'upsc_cds',
+    'ssc_cgl', 'ssc_chsl', 'ssc_gd', 'ssc_mts', 'ssc_cpo',
+    'rrb_ntpc', 'rrb_gd',
+    'ibps_po', 'ibps_clerk', 'sbi_po', 'sbi_clerk',
+]);
+
 // ─── 2. Exam Info & Setup Screen ──────────────────────────────────────
 const ExamInfoPage = ({ examCode, onStart, onBack }) => {
     const { updateUser } = useAuth();
@@ -432,7 +462,10 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
     const [genLoading, setGenLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showInstructions, setShowInstructions] = useState(false);
-    const [pendingExamStart, setPendingExamStart] = useState(null); // Stores the fully generated payload until instructions are accepted
+    const [pendingExamStart, setPendingExamStart] = useState(null);
+
+    // Determine if this exam is MCQ-only purely from the exam code
+    const isMcqOnly = MCQ_ONLY_EXAM_CODES.has(examCode);
 
     useEffect(() => {
         api.get(`/student/mock-test/pattern/${examCode}`)
@@ -522,12 +555,18 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 
                         <div style={{ marginBottom: '20px' }}>
                             <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Question Style</label>
-                            <select value={mode} onChange={(e) => setMode(e.target.value)}
-                                style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '14px', fontWeight: '600', color: '#1e293b', outline: 'none' }}>
-                                <option value="mcq">Objective (MCQs Only)</option>
-                                <option value="subjective">Subjective (Descriptive/Short Answer)</option>
-                                <option value="mixed">Mixed (MCQs + Descriptive)</option>
-                            </select>
+                            {isMcqOnly ? (
+                                <div style={{ padding: '12px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', fontSize: '13px', color: '#1e40af', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    MCQ Only — {pattern.name} is an objective exam.
+                                </div>
+                            ) : (
+                                <select value={mode} onChange={(e) => setMode(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '14px', fontWeight: '600', color: '#1e293b', outline: 'none' }}>
+                                    <option value="mcq">Objective (MCQs Only)</option>
+                                    <option value="subjective">Subjective (Descriptive/Short Answer)</option>
+                                    <option value="mixed">Mixed (MCQs + Descriptive)</option>
+                                </select>
+                            )}
                         </div>
 
                         <div style={{ marginBottom: '24px' }}>
@@ -558,7 +597,13 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
                                     }
 
                                     // Pause for Mandatory Instructions Check
-                                    setPendingExamStart(() => () => onStart(pattern, cfg, res.data.questions, res.data.attemptId));
+                                    setPendingExamStart(() => () => onStart(
+                                        { ...pattern, isMcqOnly: res.data.isMcqOnly },
+                                        cfg,
+                                        res.data.questions,
+                                        res.data.attemptId,
+                                        res.data.sectionQuotas || {}
+                                    ));
                                 } catch (e) {
                                     // Re-sync credits from DB on ANY error (403 limit, AI failure, etc.)
                                     api.get('/student/mock-test/credits')
@@ -597,12 +642,16 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
 };
 
 // ─── 3. Test Session (NTA-Style with Section Tabs & Browser Translate) ──
-const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish }) => {
+const TestSession = ({ initialQuestions, pattern, config, attemptId, sectionQuotas = {}, onFinish }) => {
     const { user } = useAuth();
     const [questions, setQuestions] = useState(initialQuestions); // mutable — grows as more are loaded
     const [current, setCurrent] = useState(0);
     const [answers, setAnswers] = useState({});
     const [answerImages, setAnswerImages] = useState({});
+    // Per-section quota tracking (how many Qs each section should ultimately have)
+    const [quotas] = useState(sectionQuotas);
+    // Ref to prevent duplicate concurrent loads for the same section
+    const genInProgressRef = useRef(new Set());
     
     const cameraInputRef = useRef(null);
     const galleryInputRef = useRef(null);
@@ -766,23 +815,128 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
         if (q && q.sectionId !== activeTab) setActiveTab(q.sectionId);
     }, [current, q]);
 
-    // Mark Q0 as visited on mount (goTo is never called for the first question)
+    // Mark Q0 as visited on mount
     useEffect(() => {
         setStatuses(p => ({ ...p, 0: p[0] === 'not_visited' ? 'not_answered' : p[0] }));
     }, []);
 
-    // Auto-trigger generation when every current question has been visited at least once
+    // ─── Smart Progressive Section Loading ────────────────────────────
+    // When student reaches last question of current section → load 5 more for that section.
+    // When at last question of LAST section → load 5 for ALL sections, then jump to first unanswered.
     useEffect(() => {
-        if (loadingMore) return; // already generating
-        const total = questions.length;
-        if (total === 0) return;
-        const allVisited = Object.values(statuses).slice(0, total).every(s => s !== 'not_visited');
-        if (allVisited) {
-            handleLoadMore();
-        }
-    }, [statuses]); // eslint-disable-line react-hooks/exhaustive-deps
+        if (loadingMore || !q) return;
+        const isFull = config.sectionId === 'all';
+        if (!isFull) return; // Only for full mock test
 
-    // Generate next set of questions (called automatically when all current questions are visited)
+        const currentSectionId = q.sectionId;
+        const sectionQs = questions.filter(qt => qt.sectionId === currentSectionId);
+        const currentPosInSection = sectionQs.findIndex((_, idx) =>
+            questions.indexOf(sectionQs[idx]) === current
+        );
+        const isLastInSection = currentPosInSection === sectionQs.length - 1;
+
+        if (!isLastInSection) return;
+
+        // Check quota: don't generate if this section is already full
+        const sectionQuota = quotas[currentSectionId];
+        const alreadyInSection = sectionQs.length;
+        if (sectionQuota && alreadyInSection >= sectionQuota) return;
+
+        // Detect if this is the very last section
+        const allSectionIds = [...new Set(questions.map(qt => qt.sectionId))];
+        const isLastSection = allSectionIds[allSectionIds.length - 1] === currentSectionId;
+
+        if (isLastSection) {
+            // Last section last question: generate 5 for ALL sections that haven't hit quota
+            handleLoadMoreAllSections();
+        } else {
+            // Mid-exam: generate 5 more for current section only
+            handleLoadMoreSection(currentSectionId);
+        }
+    }, [current]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Generate 5 more questions for a specific section
+    const handleLoadMoreSection = async (targetSectionId) => {
+        if (genInProgressRef.current.has(targetSectionId)) return;
+        genInProgressRef.current.add(targetSectionId);
+        setLoadingMore(true);
+        setMoreError(null);
+        const prevLength = questions.length;
+        try {
+            const res = await api.post(`/student/mock-test/generate-more-section/${attemptId}`, { targetSectionId });
+            const newQs = res.data.questions || [];
+            if (newQs.length > 0) {
+                const newStatuses = {};
+                newQs.forEach((_, i) => { newStatuses[prevLength + i] = 'not_visited'; });
+                setQuestions(prev => [...prev, ...newQs]);
+                setStatuses(prev => ({ ...prev, ...newStatuses }));
+            }
+        } catch (e) {
+            setMoreError(e.response?.data?.message || 'Failed to load more questions.');
+        } finally {
+            setLoadingMore(false);
+            genInProgressRef.current.delete(targetSectionId);
+        }
+    };
+
+    // Generate 5 more for ALL sections that haven't hit quota, then jump to first unanswered
+    const handleLoadMoreAllSections = async () => {
+        if (genInProgressRef.current.has('__all__')) return;
+        genInProgressRef.current.add('__all__');
+        setLoadingMore(true);
+        setMoreError(null);
+
+        const allSectionIds = [...new Set(questions.map(qt => qt.sectionId))];
+        const sectionsNeedingMore = allSectionIds.filter(sid => {
+            const quota = quotas[sid];
+            if (!quota) return true; // no quota info — always load
+            return questions.filter(qt => qt.sectionId === sid).length < quota;
+        });
+
+        let totalAdded = 0;
+        let prevLength = questions.length;
+        const allNew = [];
+        const allNewStatuses = {};
+
+        for (const sid of sectionsNeedingMore) {
+            try {
+                const res = await api.post(`/student/mock-test/generate-more-section/${attemptId}`, { targetSectionId: sid });
+                const newQs = res.data.questions || [];
+                newQs.forEach((_, i) => { allNewStatuses[prevLength + totalAdded + i] = 'not_visited'; });
+                allNew.push(...newQs);
+                totalAdded += newQs.length;
+            } catch (e) {
+                console.warn(`[ProgressiveLoad] Failed to load more for section ${sid}:`, e.message);
+            }
+        }
+
+        if (allNew.length > 0) {
+            setQuestions(prev => {
+                const updated = [...prev, ...allNew];
+                // After state settles, jump to first unanswered question
+                setTimeout(() => {
+                    setStatuses(currentStatuses => {
+                        const firstUnanswered = Object.entries(currentStatuses).find(
+                            ([idxStr, s]) => (s === 'not_visited' || s === 'not_answered') && parseInt(idxStr) < updated.length
+                        );
+                        if (firstUnanswered) {
+                            const idx = parseInt(firstUnanswered[0]);
+                            setCurrent(idx);
+                            setStatuses(p => ({ ...p, [idx]: 'not_answered' }));
+                        }
+                        return currentStatuses;
+                    });
+                }, 200);
+                return updated;
+            });
+            setStatuses(prev => ({ ...prev, ...allNewStatuses }));
+        }
+
+        setLoadingMore(false);
+        genInProgressRef.current.delete('__all__');
+    };
+
+    // Legacy handleLoadMore kept for backward compatibility (non-BPSC exams)
     const handleLoadMore = async () => {
         setLoadingMore(true);
         setMoreError(null);
@@ -794,7 +948,6 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
             newQs.forEach((_, i) => { newStatuses[prevLength + i] = 'not_visited'; });
             setQuestions(prev => [...prev, ...newQs]);
             setStatuses(prev => ({ ...prev, ...newStatuses }));
-            // Keep student on their current question; do not auto-navigate
         } catch (e) {
             setMoreError(e.response?.data?.message || 'Failed to generate more questions. Please try again.');
         } finally {
@@ -1383,7 +1536,6 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                 )}
             </AnimatePresence>
 
-            {/* Loading More Overlay */}
             <AnimatePresence>
                 {loadingMore && (
                     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -1394,15 +1546,39 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, onFinish })
                                 <span style={{ width: '40px', height: '40px', border: '4px solid #f97316', borderTop: '4px solid transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite' }} />
                             </div>
                             <h2 style={{ color: '#0f172a', fontSize: '22px', fontWeight: '900', marginBottom: '12px' }}>
-                                {displayLang === 'hi' ? 'अगला सेट तैयार हो रहा है...' : 'Generating Next Set...'}
+                                {genInProgressRef.current.has('__all__')
+                                    ? 'Loading All Sections...'
+                                    : 'Loading Next Questions...'}
                             </h2>
-                            <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.6', marginBottom: '8px' }}>
-                                {displayLang === 'hi'
-                                    ? `आपने सभी उपलब्ध प्रश्न देख लिए हैं। कृपया प्रतीक्षा करें, हमारा AI आपके परीक्षा पैटर्न के आधार पर अगले ${sectionIdsPresent.length * 5} प्रश्न तैयार कर रहा है।`
-                                    : `You have visited all available questions. Please wait while our AI prepares the next ${sectionIdsPresent.length * 5} questions based on your exam pattern.`}
+                            <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.6', marginBottom: '12px' }}>
+                                {genInProgressRef.current.has('__all__')
+                                    ? `You've reached the last question! Generating 5 more questions across all sections and finding your first unanswered question...`
+                                    : `You've reached the last question in this section. Generating 5 more questions to continue...`}
                             </p>
-                            <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: 'bold' }}>
-                                {displayLang === 'hi' ? 'कृपया इस पेज को बंद या रीफ्रेश न करें।' : 'Do not close or refresh this page.'}
+                            {/* Show per-section quota progress */}
+                            {Object.keys(quotas).length > 0 && (
+                                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+                                    {sectionIdsPresent.map(sid => {
+                                        const quota = quotas[sid] || 0;
+                                        const done = questions.filter(qt => qt.sectionId === sid).length;
+                                        const pct = quota > 0 ? Math.min(100, Math.round((done / quota) * 100)) : 0;
+                                        const secName = questions.find(qt => qt.sectionId === sid)?.sectionName || sid;
+                                        return (
+                                            <div key={sid}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '3px' }}>
+                                                    <span style={{ fontWeight: '700' }}>{secName}</span>
+                                                    <span>{done}/{quota} Qs</span>
+                                                </div>
+                                                <div style={{ height: '5px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#22c55e' : '#f97316', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            <p style={{ color: '#ef4444', fontSize: '13px', fontWeight: 'bold', marginTop: '16px' }}>
+                                Do not close or refresh this page.
                             </p>
                         </motion.div>
                     </div>
@@ -1818,8 +1994,8 @@ const MockTestPage = () => {
         }
     };
 
-    const handleStartTest = (pattern, config, qs, attemptId) => {
-        setTestData({ pattern, config, qs, attemptId });
+    const handleStartTest = (pattern, config, qs, attemptId, sectionQuotas = {}) => {
+        setTestData({ pattern, config, qs, attemptId, sectionQuotas });
         setPhase('test');
     };
 
@@ -1842,7 +2018,7 @@ const MockTestPage = () => {
             {phase === 'info' && <motion.div key="p-info" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}><ExamInfoPage examCode={examCode} onStart={handleStartTest} onBack={() => setPhase('select')} /></motion.div>}
 
             {phase === 'test' && testData && <motion.div key="p-test" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-                <TestSession initialQuestions={testData.qs} pattern={testData.pattern} config={testData.config} attemptId={testData.attemptId} onFinish={handleFinishTest} />
+                <TestSession initialQuestions={testData.qs} pattern={testData.pattern} config={testData.config} attemptId={testData.attemptId} sectionQuotas={testData.sectionQuotas || {}} onFinish={handleFinishTest} />
             </motion.div>}
 
             {phase === 'result' && resultsData && <motion.div key="p-res" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
