@@ -33,6 +33,7 @@ const EXAM_TARGETS = [
     { value: 'rrb_ntpc', label: 'RRB NTPC' },
     { value: 'jee_main', label: 'JEE Main' },
     { value: 'neet_ug', label: 'NEET UG' },
+    { value: 'bpsc_pre', label: 'BPSC CCE Prelims (BPSE)' },
     { value: 'class_6', label: 'Class 6' },
     { value: 'class_7', label: 'Class 7' },
     { value: 'class_8', label: 'Class 8' },
