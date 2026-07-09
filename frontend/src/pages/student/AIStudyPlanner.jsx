@@ -14,7 +14,8 @@ const EXAM_OPTIONS = [
     'SSC CGL', 'SSC CHSL', 'SSC GD', 'SSC MTS', 'SSC CPO',
     'UPSC CSE', 'UPSC CDS', 'IBPS PO', 'IBPS Clerk',
     'SBI PO', 'SBI Clerk', 'RRB NTPC', 'RRB Group D',
-    'JEE Main', 'NEET UG'
+    'JEE Main', 'NEET UG',
+    'BPSC CCE Prelims (BPSE)'
 ];
 
 const SUBJECTS = [
