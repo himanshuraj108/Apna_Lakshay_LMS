@@ -81,7 +81,8 @@ const userSchema = new mongoose.Schema({
             'upsc_cse', 'upsc_cds', 
             'ibps_po', 'ibps_clerk', 'sbi_po', 'sbi_clerk', 
             'rrb_ntpc', 'jee_main', 'neet_ug', 'generic',
-            'class_6', 'class_7', 'class_8', 'class_9', 'class_10', 'class_11', 'class_12'
+            'class_6', 'class_7', 'class_8', 'class_9', 'class_10', 'class_11', 'class_12',
+            'bpsc_pre', 'bpse_pre'
         ],
         default: 'generic'
     },
