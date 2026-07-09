@@ -499,6 +499,24 @@ const EXAM_PATTERNS = {
             { id: 'biology', name: 'Biology', weight: 25, topics: 'Reproduction, Genetics & Evolution, Biology & Human Welfare, Biotechnology & its Applications, Ecology & Environment' }
         ]
     },
+    'bpsc_pre': {
+        name: 'BPSC CCE Prelims (BPSE)',
+        type: 'Bihar Public Service Commission - Combined Competitive Exam',
+        desc: 'BPSC 70th CCE Preliminary Examination. Single paper of General Studies covering History, Geography, Polity, Economy, Science and Bihar-specific GK.',
+        duration: 120,
+        positive: 1,
+        negative: 0.25,
+        totalQuestions: 150,
+        sections: [
+            { id: 'history', name: 'History (India & Bihar)', weight: 20, topics: 'Ancient, Medieval, Modern India, Indian National Movement, History of Bihar, Maurya & Gupta empires, Revolt of 1857 in Bihar' },
+            { id: 'geography', name: 'Geography (India & Bihar)', weight: 15, topics: 'Physical Geography of India & Bihar, Rivers, Climate, Natural Resources, Agriculture in Bihar, Industrial Map of Bihar' },
+            { id: 'polity', name: 'Indian Polity & Governance', weight: 15, topics: 'Constitution of India, Fundamental Rights & Duties, DPSP, Parliament, State Legislature, Local Governance, Panchayati Raj in Bihar' },
+            { id: 'economy', name: 'Economy & Bihar Development', weight: 15, topics: 'Indian Economy, Five Year Plans, Banking, Poverty, Bihar Economy, BSDM, BRLPS, PMAY in Bihar' },
+            { id: 'science', name: 'General Science & Technology', weight: 15, topics: 'Physics, Chemistry, Biology Basics, Inventions, Science in Daily Life, Space, Defence Technology, IT & Computers' },
+            { id: 'bihar_gk', name: 'Bihar Special GK', weight: 10, topics: 'Bihar Culture, Festivals, Art, Literature, Famous Personalities of Bihar, Sports, Government Schemes of Bihar, Nalanda, Vikramshila' },
+            { id: 'current_affairs', name: 'Current Affairs', weight: 10, topics: 'National & International Current Events, Awards, Sports, Bihar Current Affairs, Government Policies & Acts 2023-24' }
+        ]
+    },
     'generic': {
         name: 'General Mock Test',
         type: 'General Competitive Exam',
@@ -525,6 +543,35 @@ const EXAM_ALIASES = {
     'ssc_cpo': 'ssc_cgl',
     'upsc_cds': 'upsc_cse',
     'rrb_gd': 'rrb_ntpc',
+    'bpse_pre': 'bpsc_pre',  // BPSE is the Prelims stage of BPSC CCE
+};
+
+// Exams that are MCQ-ONLY by nature — mode is forced to 'mcq' regardless of UI selection
+const MCQ_ONLY_EXAMS = new Set([
+    'bpsc_pre', 'bpse_pre',
+    'upsc_cse', 'upsc_cds',
+    'ssc_cgl', 'ssc_chsl', 'ssc_gd', 'ssc_mts', 'ssc_cpo',
+    'rrb_ntpc', 'rrb_gd',
+    'ibps_po', 'ibps_clerk', 'sbi_po', 'sbi_clerk',
+]);
+
+// Compute per-section question quotas from pattern weights
+const computeSectionQuotas = (pattern) => {
+    const total = pattern.totalQuestions;
+    const sections = pattern.sections;
+    const quotas = {};
+    let assigned = 0;
+    sections.forEach((s, i) => {
+        if (i < sections.length - 1) {
+            const q = Math.floor(total * (s.weight / 100));
+            quotas[s.id] = q;
+            assigned += q;
+        } else {
+            // Last section gets the remainder to avoid rounding loss
+            quotas[s.id] = total - assigned;
+        }
+    });
+    return quotas;
 };
 
 // ─── Groq API Call ───────────────────────────────────────────────────
@@ -713,12 +760,18 @@ const generateTest = async (req, res) => {
 
         // NOTE: Credit is deducted ONLY after successful generation (see bottom of function).
 
-        const { examCode, sectionId, mode = 'mcq', lang = 'en' } = req.body;
+        const { examCode, sectionId, mode: requestedMode = 'mcq', lang = 'en' } = req.body;
 
         const patternKey = EXAM_PATTERNS[examCode] ? examCode : (EXAM_ALIASES[examCode] || 'generic');
         const pattern = EXAM_PATTERNS[patternKey];
 
+        // Force MCQ for exams that are MCQ-only by nature
+        const mode = MCQ_ONLY_EXAMS.has(patternKey) || MCQ_ONLY_EXAMS.has(examCode) ? 'mcq' : requestedMode;
+
         const difficulty = 'hard';
+
+        // Compute section quotas based on weight distribution
+        const sectionQuotas = computeSectionQuotas(pattern);
 
         let targetSections = pattern.sections;
         let totalCount = pattern.totalQuestions || 100;
@@ -803,43 +856,52 @@ const generateTest = async (req, res) => {
             return qs;
         };
 
-        // ── FIRST BATCH: exactly CHUNK_SIZE (5) questions per section, ALL sections fire concurrently
-        // e.g. SSC CGL (4 sections) → 4×5 = 20 Qs; JEE (3 sections) → 15 Qs; single section → 5 Qs
+        // ── FIRST BATCH: CHUNK_SIZE (5) questions per section, processed in batches of BATCH_PARALLEL
+        // Batching avoids Groq rate-limit errors when an exam has many sections (e.g. BPSC has 7).
+        // e.g. BPSC (7 sections) → batch1: sections 1-3, batch2: sections 4-6, batch3: section 7
+        const BATCH_PARALLEL = 3; // max concurrent Groq calls at a time
         let flatQuestions = [];
         let globalQIndex = 1;
 
-        let sectionResults;
-        if (mode === 'mixed') {
-            sectionResults = await Promise.allSettled(
-                targetSections.map(async (s) => {
-                    const mcqs = await fetchChunk(s, 3, 0, 1, 'mcq');
-                    const subjectives = await fetchChunk(s, 2, 0, 1, 'subjective');
-                    return [...mcqs, ...subjectives];
-                })
-            );
-        } else {
-            sectionResults = await Promise.allSettled(
-                targetSections.map(s => fetchChunk(s, CHUNK_SIZE, 0, 1, mode))
-            );
-        }
-
-        targetSections.forEach((s, si) => {
-            const result = sectionResults[si];
-            if (result.status === 'rejected') {
-                console.warn(`[MockTest:first] Section "${s.id}" failed: ${result.reason?.message}`);
-                return;
+        // Helper: run fetchChunk for a batch of sections concurrently, return results array
+        const fetchBatch = async (sections) => {
+            if (mode === 'mixed') {
+                return Promise.allSettled(
+                    sections.map(async (s) => {
+                        const mcqs = await fetchChunk(s, 3, 0, 1, 'mcq');
+                        const subjectives = await fetchChunk(s, 2, 0, 1, 'subjective');
+                        return [...mcqs, ...subjectives];
+                    })
+                );
             }
-            const seen = new Set();
-            const sqs = result.value.filter(q => {
-                const key = q.question.trim().toLowerCase().slice(0, 80);
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            }).slice(0, CHUNK_SIZE);
+            return Promise.allSettled(
+                sections.map(s => fetchChunk(s, CHUNK_SIZE, 0, 1, mode))
+            );
+        };
 
-            sqs.forEach(q => flatQuestions.push({ ...q, id: globalQIndex++, sectionId: s.id, sectionName: q.sectionName || s.name }));
-            console.log(`[MockTest:first] Section "${s.id}": ${sqs.length}/${CHUNK_SIZE} Qs`);
-        });
+        // Split targetSections into batches and process sequentially
+        for (let i = 0; i < targetSections.length; i += BATCH_PARALLEL) {
+            const batch = targetSections.slice(i, i + BATCH_PARALLEL);
+            const batchResults = await fetchBatch(batch);
+
+            batch.forEach((s, bi) => {
+                const result = batchResults[bi];
+                if (result.status === 'rejected') {
+                    console.warn(`[MockTest:first] Section "${s.id}" failed: ${result.reason?.message}`);
+                    return;
+                }
+                const seen = new Set();
+                const sqs = result.value.filter(q => {
+                    const key = q.question.trim().toLowerCase().slice(0, 80);
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                }).slice(0, CHUNK_SIZE);
+
+                sqs.forEach(q => flatQuestions.push({ ...q, id: globalQIndex++, sectionId: s.id, sectionName: q.sectionName || s.name }));
+                console.log(`[MockTest:first] Section "${s.id}": ${sqs.length}/${CHUNK_SIZE} Qs`);
+            });
+        }
 
         if (flatQuestions.length === 0) {
             return res.status(500).json({ success: false, message: 'AI failed to generate any questions. Please try again.' });
@@ -871,6 +933,8 @@ const generateTest = async (req, res) => {
             questions: flatQuestions,
             newCredits: user.mockTestCredits,
             hasMore: true, // always true — student can generate more on demand
+            sectionQuotas,       // per-section question targets
+            isMcqOnly: MCQ_ONLY_EXAMS.has(patternKey) || MCQ_ONLY_EXAMS.has(examCode),
             meta: { examCode, patternName: pattern.name, mode, difficulty, lang, total: flatQuestions.length }
         });
     } catch (err) {
@@ -994,6 +1058,126 @@ const generateMoreQuestions = async (req, res) => {
     } catch (err) {
         console.error('GenerateMore error:', err.message);
         res.status(500).json({ success: false, message: `Failed to generate more questions: ${err.message}` });
+    }
+};
+
+// ─── POST /api/student/mock-test/generate-more-section/:attemptId ─────
+// Generates exactly CHUNK_SIZE (5) new questions for ONE specific section.
+// Called by the frontend progressively as the student reaches the end of each section.
+const generateMoreForSection = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+        const attempt = await MockTestAttempt.findOne({ _id: req.params.attemptId, user: user._id });
+        if (!attempt) return res.status(404).json({ success: false, message: 'Attempt not found' });
+        if (attempt.status === 'completed') return res.status(400).json({ success: false, message: 'Test already submitted' });
+
+        const { targetSectionId } = req.body;
+        if (!targetSectionId) return res.status(400).json({ success: false, message: 'targetSectionId is required' });
+
+        const { examCode, mode = 'mcq', lang = 'en', difficulty = 'hard', patternKey } = attempt.examConfig || {};
+        if (!examCode) return res.status(400).json({ success: false, message: 'Exam config missing on attempt' });
+
+        const pk = patternKey || (EXAM_PATTERNS[examCode] ? examCode : (EXAM_ALIASES[examCode] || 'generic'));
+        const pattern = EXAM_PATTERNS[pk];
+        if (!pattern) return res.status(400).json({ success: false, message: 'Unknown exam code' });
+
+        // Always MCQ for MCQ-only exams
+        const effectiveMode = MCQ_ONLY_EXAMS.has(pk) || MCQ_ONLY_EXAMS.has(examCode) ? 'mcq' : mode;
+
+        const section = pattern.sections.find(s => s.id === targetSectionId);
+        if (!section) return res.status(400).json({ success: false, message: `Section "${targetSectionId}" not found in pattern` });
+
+        // Compute how many questions this section should have at most
+        const sectionQuotas = computeSectionQuotas(pattern);
+        const quota = sectionQuotas[targetSectionId] || 0;
+        const alreadyInSection = attempt.testData.filter(q => q.sectionId === targetSectionId).length;
+
+        if (alreadyInSection >= quota) {
+            return res.json({
+                success: true,
+                questions: [],
+                message: 'Section quota reached',
+                sectionId: targetSectionId,
+                quota,
+                alreadyInSection
+            });
+        }
+
+        const CHUNK_SIZE = 5;
+        const remaining = quota - alreadyInSection;
+        const count = Math.min(CHUNK_SIZE, remaining);
+
+        const langNote = lang === 'hi'
+            ? 'Write ALL questions, options, explanations in Hindi language (Devanagari script).'
+            : 'Write everything strictly in English.';
+
+        const alreadyTexts = new Set(
+            attempt.testData
+                .filter(q => q.sectionId === targetSectionId)
+                .map(q => q.question.trim().toLowerCase().slice(0, 80))
+        );
+
+        const buildPrompt = (s, cnt) => {
+            const uniqueHint = `(IMPORTANT: generate completely DIFFERENT questions from previously asked ones — topics already covered: ${[...alreadyTexts].slice(0, 5).join('; ')})`;
+            return `Generate exactly ${cnt} unique ${difficulty}-difficulty MCQ questions.\nExam: ${pattern.name}\nSection: ${s.name}\nTopics to draw from: ${s.topics}\n${uniqueHint}\n\n${langNote}\n\nRespond with ONLY a raw JSON array — no markdown fences, no extra text.\nEach element must have:\n  "question": string (no newlines)\n  "options": array of exactly 4 strings (no newlines)\n  "correct": integer 0-3 (0=A 1=B 2=C 3=D)\n  "explanation": string (one sentence, no newlines)\n  "sectionId": "${s.id}"\n  "sectionName": "${s.name}"`;
+        };
+
+        const messages = [
+            { role: 'system', content: 'You are an expert exam coach for Indian competitive exams. Always respond with ONLY a valid JSON array and nothing else.' },
+            { role: 'user', content: buildPrompt(section, count) }
+        ];
+
+        const raw = await callGroq(messages);
+        const parsed = extractJSON(raw);
+        let qs = Array.isArray(parsed) ? parsed
+            : (Array.isArray(parsed[section.id]) ? parsed[section.id] : Object.values(parsed).find(v => Array.isArray(v)) || []);
+
+        // Validate MCQ structure
+        qs = qs.filter(q =>
+            q && typeof q.question === 'string' && q.question.trim().length > 0 &&
+            Array.isArray(q.options) && q.options.length === 4 &&
+            typeof q.correct === 'number' && q.correct >= 0 && q.correct <= 3
+        );
+
+        // Deduplicate against existing
+        const seen = new Set();
+        qs = qs.filter(q => {
+            const key = q.question.trim().toLowerCase().slice(0, 80);
+            if (alreadyTexts.has(key) || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, count);
+
+        if (qs.length === 0) {
+            return res.status(500).json({ success: false, message: 'AI failed to generate section questions. Please try again.' });
+        }
+
+        const globalQIndex = attempt.testData.length + 1;
+        const newQuestions = qs.map((q, i) => ({
+            ...q,
+            id: globalQIndex + i,
+            sectionId: section.id,
+            sectionName: q.sectionName || section.name
+        }));
+
+        attempt.testData.push(...newQuestions);
+        await attempt.save();
+
+        console.log(`[MockTest:section] Section "${targetSectionId}": +${newQuestions.length} Qs (${alreadyInSection + newQuestions.length}/${quota})`);
+
+        res.json({
+            success: true,
+            questions: newQuestions,
+            sectionId: targetSectionId,
+            totalInSection: alreadyInSection + newQuestions.length,
+            quota,
+            totalSoFar: attempt.testData.length
+        });
+    } catch (err) {
+        console.error('GenerateMoreForSection error:', err.message);
+        res.status(500).json({ success: false, message: `Failed to generate section questions: ${err.message}` });
     }
 };
 
@@ -1191,7 +1375,7 @@ const getCredits = async (req, res) => {
     }
 };
 
-module.exports = { getExamPattern, generateTest, generateMoreQuestions, evaluateTest, submitTest, getMyMockTests, getCredits, callGroq, extractJSON, uploadAnswerImage, uploadAndTranscribeAnswer };
+module.exports = { getExamPattern, generateTest, generateMoreQuestions, generateMoreForSection, evaluateTest, submitTest, getMyMockTests, getCredits, callGroq, extractJSON, uploadAnswerImage, uploadAndTranscribeAnswer };
 
 
 // Contribution boost update 1
