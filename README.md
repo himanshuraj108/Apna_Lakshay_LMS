@@ -214,6 +214,18 @@ This codebase solves critical enterprise-level challenges through resilient arch
   * **Report Filtering**: Modified the aggregation pipeline to check the student's `isActive` state, dynamically excluding disabled/inactive members from monthly and yearly calculations to guarantee clean, current reporting.
   * **Visual Styling Rules**: Applied strict HSL color styling on cells in the PDF templates: `P` (Present) cells render in light green, `A` (Absent) cells render in light red, and `H` (Holiday) in light amber/orange, providing immediate visual scannability.
 
+### 7. BPSC CCE Prelims — Exam Pattern Engine & MCQ-Only Enforcement
+* **Problem**: BPSC (Bihar Public Service Commission) CCE Prelims is a purely objective exam, but the mock test UI allowed students to accidentally select Subjective or Mixed mode, generating wrong question formats.
+* **Solution**: Added a `MCQ_ONLY_EXAMS` Set on both frontend and backend. For any exam in this set (BPSC, UPSC, SSC, IBPS, RRB etc.), the mode selector is replaced with a locked info badge and the backend overrides any incoming `mode` to `mcq` regardless. Exam pattern for BPSC is precisely configured: 150 questions across 7 sections with weight-based quota distribution (History 20%, Geography 15%, Polity 15%, Economy 15%, Science 15%, Bihar GK 10%, Current Affairs 10%).
+
+### 8. Progressive Section-Aware Batch Question Loading
+* **Problem**: Generating all questions for a 150-question exam upfront would time out Groq API, consume excessive credits, and overwhelm the student UI on load.
+* **Solution**: Engineered a two-layer batching system:
+  * **Initial Load**: Sections are generated in parallel batches of 3 (not all at once) to avoid Groq rate-limit failures. Each section starts with 5 questions.
+  * **Progressive Loading**: As the student reaches the last question of any section, the frontend automatically calls `POST /mock-test/generate-more-section/:id` to fetch exactly 5 more questions for that section — staying within the section's weight-calculated quota.
+  * **Last Section Trigger**: When the student reaches the last question of the last section, 5 more are generated across ALL remaining sections, and the student is automatically redirected to their first unanswered question.
+  * **Quota Cap**: Each section has a hard quota computed from `Math.floor(totalQuestions × weight/100)`. Generation stops when the quota is reached, ensuring the total never exceeds the real exam count (e.g., exactly 150 for BPSC).
+
 ---
 
 ## Technology Stack
@@ -371,7 +383,7 @@ npm run dev
   * **QR Code Zoom Overlays**: Responsive barcode modal zoom optimized for high-speed scanner terminal decoding.
 * **Monthly Attendance Calendar & Rankings**: Visual present/absent color grids accompanied by inclusive leaderboard rankings, highlighting the student with custom themes.
 * **Interactive AI Doubt Assistant**: Conversational session engine pre-programmed with specific civil service and government examination syllabi.
-* **Mock Test Generator**: Instant adaptive tests with standard negative-marking mechanisms, saved progress records, and dynamic scorecard breakdowns.
+* **Mock Test Generator (AI-Powered NTA-Style Engine)**: Instant adaptive tests with standard negative-marking, section tabs, real-time question palette, anti-cheat fullscreen guard, saved progress records, and dynamic scorecard breakdowns. Supports **BPSC CCE Prelims, UPSC CSE, SSC CGL, IBPS PO, RRB NTPC, JEE, NEET** and more. Features a progressive **Batch Loading System** — questions load in sets of 5 per section as the student progresses, respecting exact exam-pattern quotas.
 * **Built-in Study Tools**: High-fidelity Pomodoro timers, collaborative study streak rewards, and editable checklist boards.
 
 ---
@@ -531,6 +543,16 @@ Request → Groq Key 1
 ---
 
 ## Complete Architecture Changelog
+
+### v1.6.0 -- BPSC Integration, MCQ-Only Enforcement & Progressive Batch Loading (July 2026)
+* **BPSC CCE Prelims Support**: Added full exam pattern for Bihar Public Service Commission CCE Prelims — 150 questions across 7 weighted sections (History, Geography, Polity, Economy, Science, Bihar GK, Current Affairs). Registered `bpsc_pre` in User model enum, exam selector UI, Profile, Dashboard, Admin panels, and AI Study Planner.
+* **MCQ-Only Exam Enforcement**: Introduced `MCQ_ONLY_EXAMS` constant (frontend + backend) covering BPSC, UPSC, SSC, IBPS, RRB series. For these exams, the mode selector is hidden and replaced with a locked info badge; backend overrides mode to `mcq` regardless of payload.
+* **Batched Parallel Section Generation**: Replaced single `Promise.allSettled` (all sections at once) with a `BATCH_PARALLEL=3` batched loop. Prevents Groq rate-limit failures for exams with many sections (e.g., BPSC with 7 sections).
+* **New API Endpoint — generate-more-section**: Added `POST /mock-test/generate-more-section/:attemptId` that generates exactly 5 questions for one specific section, respecting per-section quotas computed from exam weight distribution.
+* **Smart Progressive Frontend Loading**: TestSession now detects when the student is on the last question of a section and auto-fetches 5 more for that section. On last section last question — generates 5 for all remaining sections and redirects to first unanswered question.
+* **Section Quota Progress UI**: Loading overlay now shows per-section progress bars (done/quota) turning green when a section reaches its target count.
+* **Bilingual Batch System Instructions**: Added dedicated amber-highlighted "Batch Question System" instruction block in both English and Hindi to the pre-exam instructions modal, warning students not to leave or refresh the page mid-test.
+* **sectionQuotas API Response**: The `/generate` endpoint now returns `sectionQuotas` and `isMcqOnly` fields, allowing the frontend to track quotas without additional API calls.
 
 ### v1.2.1 -- Redis Caching Layer, Enhanced Attendance Reports & Dynamic Score Visuals (June 2026)
 * **High-Performance Redis Caching**: Integrated `ioredis` cache targeting leaderboards, public layouts, and vacancy counts. Added automatic cache eviction on database mutations and built an in-memory fallback store to ensure connection failures never crash the server.
