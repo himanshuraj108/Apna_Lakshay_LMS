@@ -4,6 +4,8 @@
 [![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue.svg?style=flat-for-the-badge)](https://mongodb.com)
 [![Deployment](https://img.shields.io/badge/Deployment-VPS%20%7C%20PM2-purple.svg?style=flat-for-the-badge)](https://pm2.keymetrics.io/)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg?style=flat-for-the-badge)](https://apnalakshay.com)
+[![Version](https://img.shields.io/badge/Version-1.6.0-orange.svg?style=flat-for-the-badge)](https://apnalakshay.com)
+[![Last Updated](https://img.shields.io/badge/Updated-July%202026-brightgreen.svg?style=flat-for-the-badge)](https://apnalakshay.com)
 
 **Live Production System:** [https://apnalakshay.com](https://apnalakshay.com)
 
