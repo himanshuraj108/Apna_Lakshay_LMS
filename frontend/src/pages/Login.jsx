@@ -455,9 +455,9 @@ export default function Login() {
                 RIGHT PANEL — login form
                ══════════════════════════════════════════ */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', background: '#fff', position: 'relative', overflow: 'hidden' }}>
-                {/* Visitor Counter — top right badge */}
+                {/* Visitor Counter — top left badge */}
                 {visitorCount !== null && (
-                    <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 10 }}>
+                    <div style={{ position: 'absolute', top: 14, left: 16, zIndex: 10 }}>
                         <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: 5,
                             background: '#F9FAFB', border: '1px solid #E5E7EB',
