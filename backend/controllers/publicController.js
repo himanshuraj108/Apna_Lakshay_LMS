@@ -2,6 +2,7 @@ const Floor = require('../models/Floor');
 const Room = require('../models/Room');
 const Seat = require('../models/Seat');
 const Settings = require('../models/Settings');
+const SystemSetting = require('../models/SystemSetting');
 const { getClient } = require('../utils/redis');
 
 // @desc    Get all seats with availability (public view)
@@ -387,5 +388,32 @@ exports.getOfficeAttendance = async (req, res) => {
             message: 'Server error',
             error: error.message
         });
+    }
+};
+
+// @desc    Get & increment visitor count (atomic)
+// @route   GET /api/public/visitor-count
+exports.getVisitorCount = async (req, res) => {
+    try {
+        // Atomically increment; if doc exists return incremented value
+        const result = await SystemSetting.findOneAndUpdate(
+            { key: 'visitor_count' },
+            { $inc: { value: 1 } },
+            { new: true, upsert: false }
+        );
+
+        if (!result) {
+            // First time — create with initial count 12729
+            const created = await SystemSetting.create({
+                key: 'visitor_count',
+                value: 12729
+            });
+            return res.status(200).json({ success: true, count: created.value });
+        }
+
+        res.status(200).json({ success: true, count: result.value });
+    } catch (error) {
+        console.error('Visitor count error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

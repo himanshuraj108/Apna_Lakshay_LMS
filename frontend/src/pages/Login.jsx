@@ -10,6 +10,7 @@ import {
 } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
+import api from '../utils/api';
 
 const STATS = [
     { value: '100+', label: 'Students' },
@@ -260,6 +261,7 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [focused, setFocused] = useState('');
     const [showInstructions, setShowInstructions] = useState(false);
+    const [visitorCount, setVisitorCount] = useState(null);
 
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -272,6 +274,25 @@ export default function Login() {
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
+
+    useEffect(() => {
+        const fetchCount = async () => {
+            try {
+                const alreadyCounted = sessionStorage.getItem('visitor_counted');
+                let count;
+                if (!alreadyCounted) {
+                    const res = await api.get('/public/visitor-count');
+                    count = res.data.count;
+                    sessionStorage.setItem('visitor_counted', 'true');
+                    sessionStorage.setItem('visitor_count_value', String(count));
+                } else {
+                    count = parseInt(sessionStorage.getItem('visitor_count_value') || '0', 10) || null;
+                }
+                if (count) setVisitorCount(count);
+            } catch { /* silent */ }
+        };
+        fetchCount();
+    }, []);
 
 
     const handleEmailChange = (e) => {
@@ -434,6 +455,21 @@ export default function Login() {
                 RIGHT PANEL — login form
                ══════════════════════════════════════════ */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', background: '#fff', position: 'relative', overflow: 'hidden' }}>
+                {/* Visitor Counter — top right badge */}
+                {visitorCount !== null && (
+                    <div style={{ position: 'absolute', top: 14, right: 16, zIndex: 10 }}>
+                        <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            background: '#F9FAFB', border: '1px solid #E5E7EB',
+                            borderRadius: 20, padding: '5px 12px',
+                            fontSize: 11.5, color: '#6B7280',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+                        }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+                            <strong style={{ color: '#374151' }}>{visitorCount.toLocaleString('en-IN')}</strong>&nbsp;visitors
+                        </span>
+                    </div>
+                )}
                 {/* Typing Interactive Animations */}
                 <motion.div
                     animate={{ width: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}
@@ -614,7 +650,6 @@ export default function Login() {
                         </motion.button>
                     </form>
 
-                    {/* Footer */}
                 </motion.div>
             </div>
 

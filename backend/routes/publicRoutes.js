@@ -21,4 +21,7 @@ router.get('/office/attendance/:date', publicController.getOfficeAttendance);
 // Public office/security vacant seats route
 router.get('/office/vacant-seats', getVacantSeats);
 
+// Public visitor counter (increments on each call)
+router.get('/visitor-count', publicController.getVisitorCount);
+
 module.exports = router;
