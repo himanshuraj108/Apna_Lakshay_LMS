@@ -347,6 +347,7 @@ const Profile = () => {
     );
 
     return (
+        <>
         <div className="relative min-h-screen overflow-x-hidden pb-16" style={{ background: '#F8FAFC', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
             <style>{`
                 @keyframes shimmerP{0%{background-position:200% center;}100%{background-position:-200% center;}}
@@ -1440,6 +1441,7 @@ const Profile = () => {
                 </motion.div>
             )}
         </AnimatePresence>
+        </>
     );
 };
 
