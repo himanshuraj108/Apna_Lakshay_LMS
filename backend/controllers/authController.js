@@ -840,3 +840,59 @@ exports.verifyOtpAndAutoLogin = async (req, res) => {
     }
 };
 
+// @desc    Login with app PIN (optional quick login)
+// @route   POST /api/auth/login-pin
+exports.loginWithPin = async (req, res) => {
+    try {
+        const { mobile, pin } = req.body;
+
+        if (!mobile || !pin) {
+            return res.status(400).json({ success: false, message: 'Mobile number and PIN are required' });
+        }
+
+        if (!/^\d{4,6}$/.test(String(pin))) {
+            return res.status(400).json({ success: false, message: 'Invalid PIN format' });
+        }
+
+        const user = await User.findOne({ mobile: String(mobile).trim() }).select('+appPin +password');
+
+        if (!user || !user.appPinEnabled || !user.appPin) {
+            return res.status(401).json({ success: false, message: 'PIN login is not enabled for this account' });
+        }
+
+        if (user.isDisabled) {
+            return res.status(403).json({ success: false, message: 'Account has been disabled. Contact admin.' });
+        }
+
+        const pinMatch = await user.comparePin(pin);
+        if (!pinMatch) {
+            return res.status(401).json({ success: false, message: 'Incorrect PIN' });
+        }
+
+        // Update login state
+        user.isLoggedIn = true;
+        user.lastLogin = new Date();
+        await user.save({ validateBeforeSave: false });
+
+        const token = user.generateToken();
+
+        res.status(200).json({
+            success: true,
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                role: user.role,
+                profileImage: user.profileImage,
+                isActive: user.isActive,
+                gender: user.gender,
+                appPinEnabled: user.appPinEnabled
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+

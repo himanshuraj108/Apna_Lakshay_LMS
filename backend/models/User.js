@@ -182,6 +182,16 @@ const userSchema = new mongoose.Schema({
     totalCoinsSpent: {
         type: Number,
         default: 0
+    },
+    // ── App PIN (optional, for quick app entry) ────────────────────────────────
+    appPin: {
+        type: String,
+        select: false,
+        default: null
+    },
+    appPinEnabled: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true
@@ -242,6 +252,12 @@ userSchema.pre('save', async function (next) {
 // Compare password
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Compare app PIN
+userSchema.methods.comparePin = async function (candidatePin) {
+    if (!this.appPin) return false;
+    return await bcrypt.compare(String(candidatePin), this.appPin);
 };
 
 // Generate JWT token

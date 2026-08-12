@@ -75,6 +75,15 @@ const Profile = () => {
     const [loadingStreak, setLoadingStreak] = useState(true);
     const [coverQuote, setCoverQuote] = useState({ content: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" });
 
+    // ── App PIN state ──
+    const [pinEnabled, setPinEnabled] = useState(false);
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [pinMode, setPinMode] = useState('set'); // 'set' | 'remove'
+    const [pinForm, setPinForm] = useState({ pin: '', confirmPin: '', currentPassword: '' });
+    const [pinLoading, setPinLoading] = useState(false);
+    const [pinError, setPinError] = useState('');
+    const [pinSuccess, setPinSuccess] = useState('');
+
 
     const getStudyAvatars = () => {
         const gender = (profile?.gender || 'male').toLowerCase();
@@ -95,7 +104,7 @@ const Profile = () => {
         fetchProfile();
         fetchFirstFee();
         fetchStreakStats();
-
+        fetchPinStatus();
         // Choose random motivation quote for card cover
         const quotes = [
             { content: "The expert in anything was once a beginner.", author: "Helen Hayes" },
@@ -157,6 +166,13 @@ const Profile = () => {
         } catch(e) { /* silent */ } finally {
             setLoadingStreak(false);
         }
+    };
+
+    const fetchPinStatus = async () => {
+        try {
+            const res = await api.get('/student/pin/status');
+            if (res.data.success) setPinEnabled(res.data.appPinEnabled);
+        } catch { /* silent */ }
     };
 
     const handleImageUpload = async (e) => {
@@ -965,7 +981,61 @@ const Profile = () => {
                         </div>
                         <p className="font-bold text-sm" style={{ color: '#111827' }}>Security Settings</p>
                     </div>
-                    <div className="p-4">
+                    <div className="p-4 flex flex-col gap-3">
+
+                        {/* ── App PIN row ── */}
+                        <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                                setPinMode(pinEnabled ? 'change' : 'set');
+                                setPinForm({ pin: '', confirmPin: '', currentPassword: '' });
+                                setPinError(''); setPinSuccess('');
+                                setShowPinModal(true);
+                            }}
+                            className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
+                            style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.14)', padding: '14px 16px' }}>
+                            <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#6366f1' }} />
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,0.09)' }}>
+                                <span style={{ fontSize: 16, lineHeight: 1 }}>🔢</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <p className="font-bold text-sm" style={{ color: '#111827' }}>App PIN</p>
+                                    {pinEnabled
+                                        ? <span style={{ fontSize: 10, fontWeight: 700, background: '#d1fae5', color: '#065f46', borderRadius: 6, padding: '2px 7px' }}>ENABLED</span>
+                                        : <span style={{ fontSize: 10, fontWeight: 700, background: '#f3f4f6', color: '#6b7280', borderRadius: 6, padding: '2px 7px' }}>OPTIONAL</span>
+                                    }
+                                </div>
+                                <p className="text-[12px] mt-0.5" style={{ color: '#818cf8' }}>
+                                    {pinEnabled ? 'Change or remove your quick-login PIN' : 'Set a 4–6 digit PIN for quick login'}
+                                </p>
+                            </div>
+                            <IoChevronForward size={16} style={{ color: '#9CA3AF' }} className="shrink-0" />
+                        </motion.div>
+
+                        {/* Remove PIN row (only shown if PIN is enabled) */}
+                        {pinEnabled && (
+                            <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                    setPinMode('remove');
+                                    setPinForm({ pin: '', confirmPin: '', currentPassword: '' });
+                                    setPinError(''); setPinSuccess('');
+                                    setShowPinModal(true);
+                                }}
+                                className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
+                                style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.1)', padding: '12px 16px' }}>
+                                <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#ef4444' }} />
+                                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.07)' }}>
+                                    <IoClose size={16} style={{ color: '#ef4444' }} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-sm" style={{ color: '#111827' }}>Remove PIN</p>
+                                    <p className="text-[12px] mt-0.5" style={{ color: '#f87171' }}>Disable quick PIN login</p>
+                                </div>
+                                <IoChevronForward size={16} style={{ color: '#9CA3AF' }} className="shrink-0" />
+                            </motion.div>
+                        )}
+
+                        {/* ── Change Password row ── */}
                         <motion.div whileHover={{ x: 3 }} whileTap={{ scale: 0.98 }}
                             onClick={() => { setRequestType('password'); setShowRequestModal(true); }}
                             className="relative flex items-center gap-4 rounded-xl overflow-hidden cursor-pointer"
@@ -980,6 +1050,7 @@ const Profile = () => {
                             </div>
                             <IoChevronForward size={16} style={{ color: '#9CA3AF' }} className="shrink-0" />
                         </motion.div>
+
                     </div>
                 </motion.div>
             </div>
@@ -1229,6 +1300,146 @@ const Profile = () => {
                 </div>
             )}
         </div >
+
+        {/* ──────── App PIN Modal ──────── */}
+        <AnimatePresence>
+            {showPinModal && (
+                <motion.div
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={() => setShowPinModal(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.93, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                        transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 400, padding: 0, overflow: 'hidden', boxShadow: '0 24px 64px rgba(99,102,241,0.18), 0 4px 16px rgba(0,0,0,0.1)', fontFamily: "'Inter','Segoe UI',sans-serif" }}
+                    >
+                        {/* Accent bar */}
+                        <div style={{ height: 4, background: pinMode === 'remove' ? 'linear-gradient(90deg,#ef4444,#f97316)' : 'linear-gradient(90deg,#6366f1,#818cf8)' }} />
+
+                        {/* Header */}
+                        <div style={{ padding: '18px 22px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#111827', margin: 0 }}>
+                                    {pinMode === 'remove' ? 'Remove App PIN' : pinMode === 'change' ? 'Change App PIN' : 'Set App PIN'}
+                                </h3>
+                                <p style={{ fontSize: 12, color: '#6B7280', marginTop: 4 }}>
+                                    {pinMode === 'remove'
+                                        ? 'Enter your password to disable PIN login'
+                                        : 'Enter a 4–6 digit PIN for quick app login'}
+                                </p>
+                            </div>
+                            <button onClick={() => setShowPinModal(false)} style={{ background: '#F3F4F6', border: 'none', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                                <IoClose size={16} style={{ color: '#6B7280' }} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div style={{ padding: '16px 22px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+                            {/* Current Password (always required as security gate) */}
+                            <div>
+                                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                                    Current Password <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <div style={{ position: 'relative' }}>
+                                    <IoLockClosed size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+                                    <input
+                                        type="password"
+                                        placeholder="Your login password"
+                                        value={pinForm.currentPassword}
+                                        onChange={e => setPinForm(f => ({ ...f, currentPassword: e.target.value }))}
+                                        style={{ width: '100%', padding: '10px 12px 10px 34px', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 13, color: '#111827', outline: 'none', boxSizing: 'border-box' }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* PIN input (hidden for remove mode) */}
+                            {pinMode !== 'remove' && (<>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                                        New PIN (4–6 digits) <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        inputMode="numeric"
+                                        placeholder="e.g. 1234"
+                                        maxLength={6}
+                                        value={pinForm.pin}
+                                        onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 6); setPinForm(f => ({ ...f, pin: v })); }}
+                                        style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 18, letterSpacing: '0.4em', color: '#111827', outline: 'none', boxSizing: 'border-box' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                                        Confirm PIN <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        inputMode="numeric"
+                                        placeholder="Repeat PIN"
+                                        maxLength={6}
+                                        value={pinForm.confirmPin}
+                                        onChange={e => { const v = e.target.value.replace(/\D/g, '').slice(0, 6); setPinForm(f => ({ ...f, confirmPin: v })); }}
+                                        style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 18, letterSpacing: '0.4em', color: '#111827', outline: 'none', boxSizing: 'border-box' }}
+                                    />
+                                </div>
+                            </>)}
+
+                            {/* Feedback */}
+                            {pinError && <p style={{ fontSize: 12, color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', margin: 0 }}>{pinError}</p>}
+                            {pinSuccess && <p style={{ fontSize: 12, color: '#065f46', background: '#d1fae5', border: '1px solid #6ee7b7', borderRadius: 8, padding: '8px 12px', margin: 0 }}>{pinSuccess}</p>}
+
+                            {/* Action buttons */}
+                            <div style={{ display: 'flex', gap: 10 }}>
+                                <button
+                                    onClick={() => setShowPinModal(false)}
+                                    style={{ flex: 1, padding: '11px', borderRadius: 10, border: '1.5px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                                >Cancel</button>
+                                <button
+                                    disabled={pinLoading}
+                                    onClick={async () => {
+                                        setPinError(''); setPinSuccess('');
+                                        if (!pinForm.currentPassword) { setPinError('Current password is required'); return; }
+                                        if (pinMode !== 'remove') {
+                                            if (!pinForm.pin || pinForm.pin.length < 4) { setPinError('PIN must be at least 4 digits'); return; }
+                                            if (pinForm.pin !== pinForm.confirmPin) { setPinError('PINs do not match'); return; }
+                                        }
+                                        setPinLoading(true);
+                                        try {
+                                            if (pinMode === 'remove') {
+                                                const res = await api.delete('/student/pin', { data: { currentPassword: pinForm.currentPassword } });
+                                                setPinEnabled(false);
+                                                setPinSuccess('PIN removed successfully!');
+                                            } else {
+                                                const res = await api.post('/student/pin/set', { pin: pinForm.pin, currentPassword: pinForm.currentPassword });
+                                                setPinEnabled(true);
+                                                setPinSuccess(pinMode === 'change' ? 'PIN changed successfully!' : 'PIN set! You can now use it to login.');
+                                            }
+                                            setPinForm({ pin: '', confirmPin: '', currentPassword: '' });
+                                            setTimeout(() => { setPinSuccess(''); setShowPinModal(false); }, 1800);
+                                        } catch (err) {
+                                            setPinError(err?.response?.data?.message || 'Something went wrong');
+                                        } finally {
+                                            setPinLoading(false);
+                                        }
+                                    }}
+                                    style={{
+                                        flex: 2, padding: '11px', borderRadius: 10, border: 'none',
+                                        background: pinLoading ? '#E5E7EB' : (pinMode === 'remove' ? '#EF4444' : '#6366f1'),
+                                        color: pinLoading ? '#9CA3AF' : '#fff',
+                                        fontSize: 13, fontWeight: 700, cursor: pinLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit'
+                                    }}
+                                >
+                                    {pinLoading ? 'Please wait…' : (pinMode === 'remove' ? 'Remove PIN' : pinMode === 'change' ? 'Change PIN' : 'Set PIN')}
+                                </button>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

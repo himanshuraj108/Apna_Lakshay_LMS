@@ -2267,3 +2267,69 @@ exports.submitFeedback = async (req, res) => {
         });
     }
 };
+
+// ─────────────────────────────────────────────────────────────
+// APP PIN MANAGEMENT
+// ─────────────────────────────────────────────────────────────
+const bcrypt = require('bcryptjs');
+
+// @desc    Set or update app PIN
+// @route   POST /api/student/pin/set
+exports.setPin = async (req, res) => {
+    try {
+        const { pin, currentPassword } = req.body;
+
+        if (!pin || !/^\d{4,6}$/.test(String(pin))) {
+            return res.status(400).json({ success: false, message: 'PIN must be 4 to 6 digits' });
+        }
+
+        // Require current password to enable/change PIN (security gate)
+        const user = await User.findById(req.user.id).select('+password +appPin');
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Incorrect current password' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.appPin = await bcrypt.hash(String(pin), salt);
+        user.appPinEnabled = true;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'App PIN set successfully', appPinEnabled: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Remove / disable app PIN
+// @route   DELETE /api/student/pin
+exports.removePin = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('+password');
+        const { currentPassword } = req.body;
+
+        const isMatch = await user.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: 'Incorrect current password' });
+        }
+
+        user.appPin = null;
+        user.appPinEnabled = false;
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'App PIN removed successfully', appPinEnabled: false });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Get PIN status (enabled or not)
+// @route   GET /api/student/pin/status
+exports.getPinStatus = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('appPinEnabled');
+        res.status(200).json({ success: true, appPinEnabled: user.appPinEnabled });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};

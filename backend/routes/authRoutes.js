@@ -11,12 +11,14 @@ const {
     markKioskAttendancePublic,
     sendOtpByPhone,
     verifyOtpAndAutoLogin,
-    verifySeatLogin
+    verifySeatLogin,
+    loginWithPin
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 // Public routes
 router.post('/login', login);
+router.post('/login-pin', loginWithPin);
 
 // Protected routes
 router.post('/logout', protect, logout);

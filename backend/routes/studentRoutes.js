@@ -25,7 +25,10 @@ const {
     createFeePaymentOrder,
     verifyFeePayment,
     getPendingFeedback,
-    submitFeedback
+    submitFeedback,
+    setPin,
+    removePin,
+    getPinStatus
 } = require('../controllers/studentController');
 const { askDoubt, syncDoubtSession } = require('../controllers/doubtController');
 const { getCurrentAffairs } = require('../controllers/currentAffairsController');
@@ -129,6 +132,11 @@ router.put('/profile', updateProfile);
 router.put('/password', changePassword);
 router.post('/profile/image', uploadProfileImage);
 router.delete('/profile/image', deleteProfileImage);
+
+// App PIN
+router.get('/pin/status', getPinStatus);
+router.post('/pin/set', setPin);
+router.delete('/pin', removePin);
 
 // System Updates
 const { getLatestActiveUpdate } = require('../controllers/systemUpdateController');
