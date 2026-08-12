@@ -28,7 +28,8 @@ const {
     submitFeedback,
     setPin,
     removePin,
-    getPinStatus
+    getPinStatus,
+    verifyPin
 } = require('../controllers/studentController');
 const { askDoubt, syncDoubtSession } = require('../controllers/doubtController');
 const { getCurrentAffairs } = require('../controllers/currentAffairsController');
@@ -137,6 +138,7 @@ router.delete('/profile/image', deleteProfileImage);
 router.get('/pin/status', getPinStatus);
 router.post('/pin/set', setPin);
 router.delete('/pin', removePin);
+router.post('/pin/verify', verifyPin);
 
 // System Updates
 const { getLatestActiveUpdate } = require('../controllers/systemUpdateController');

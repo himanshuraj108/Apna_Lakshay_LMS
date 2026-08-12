@@ -2333,3 +2333,25 @@ exports.getPinStatus = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Verify app PIN (for lock-screen unlock — no password needed)
+// @route   POST /api/student/pin/verify
+exports.verifyPin = async (req, res) => {
+    try {
+        const { pin } = req.body;
+        if (!pin || !/^\d{4,6}$/.test(String(pin))) {
+            return res.status(400).json({ success: false, message: 'Invalid PIN format' });
+        }
+        const user = await User.findById(req.user.id).select('+appPin appPinEnabled');
+        if (!user.appPinEnabled || !user.appPin) {
+            return res.status(400).json({ success: false, message: 'PIN not enabled' });
+        }
+        const match = await user.comparePin(pin);
+        if (!match) {
+            return res.status(401).json({ success: false, message: 'Incorrect PIN' });
+        }
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};

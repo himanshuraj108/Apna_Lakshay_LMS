@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import SubAdminPinGuard from './components/admin/SubAdminPinGuard';
 import { useSocket } from './hooks/useSocket';
 import PwaInstallBanner from './components/ui/PwaInstallBanner';
+import PinLockScreen from './components/ui/PinLockScreen';
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -189,82 +190,84 @@ function App() {
     }
 
     return (
-        <Suspense key={location.pathname} fallback={<PageLoader />}>
-            <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="/public-seats" element={<PublicSeatView />} />
-                <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : user.role === 'subadmin' ? '/sub-admin' : '/student'} /> : <Login />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/maintenance" element={<MaintenancePage />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
-                <Route path="/terms" element={<TermsOfService />} />
-                <Route path="/contact" element={<ContactAdmin />} />
-                <Route path="/pending-allocation" element={<AccessDeniedPending />} />
-                <Route path="/office/attendance" element={<SecurityAttendance />} />
-                <Route path="/office/vacant-seats" element={<PublicVacantSeats />} />
+        <PinLockScreen>
+            <Suspense key={location.pathname} fallback={<PageLoader />}>
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/public-seats" element={<PublicSeatView />} />
+                    <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : user.role === 'subadmin' ? '/sub-admin' : '/student'} /> : <Login />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/maintenance" element={<MaintenancePage />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/contact" element={<ContactAdmin />} />
+                    <Route path="/pending-allocation" element={<AccessDeniedPending />} />
+                    <Route path="/office/attendance" element={<SecurityAttendance />} />
+                    <Route path="/office/vacant-seats" element={<PublicVacantSeats />} />
 
-                {/* Admin Routes — Super Admin ONLY (sub-admins are redirected to /sub-admin) */}
-                <Route path="/admin" element={<ProtectedRoute superAdminOnly><AdminDashboard /></ProtectedRoute>} />
-                <Route path="/admin/floors" element={<ProtectedRoute superAdminOnly><FloorManagement /></ProtectedRoute>} />
-                <Route path="/admin/analytics" element={<ProtectedRoute superAdminOnly><AnalyticsDashboard /></ProtectedRoute>} />
-                <Route path="/admin/kiosk" element={<ProtectedRoute superAdminOnly><QrKiosk /></ProtectedRoute>} />
-                <Route path="/admin/shifts" element={<ProtectedRoute superAdminOnly><ShiftManagement /></ProtectedRoute>} />
-                <Route path="/admin/history" element={<ProtectedRoute superAdminOnly><ActionHistory /></ProtectedRoute>} />
-                <Route path="/admin/password-activity" element={<ProtectedRoute superAdminOnly><PasswordActivity /></ProtectedRoute>} />
-                <Route path="/admin/verify/:id" element={<ProtectedRoute superAdminOnly><VerifyStudent /></ProtectedRoute>} />
-                <Route path="/admin/chat" element={<ProtectedRoute superAdminOnly><ChatManagement /></ProtectedRoute>} />
-                <Route path="/admin/chat-history" element={<ProtectedRoute superAdminOnly><StudentChatHistory /></ProtectedRoute>} />
-                <Route path="/admin/manage-cards" element={<ProtectedRoute superAdminOnly><ManageCards /></ProtectedRoute>} />
-                <Route path="/admin/sub-admins" element={<ProtectedRoute superAdminOnly><SubAdminManagement /></ProtectedRoute>} />
-                <Route path="/admin/activities" element={<ProtectedRoute superAdminOnly><StudentActivities /></ProtectedRoute>} />
-                <Route path="/admin/ai-activity" element={<ProtectedRoute superAdminOnly><AIActivityLogs /></ProtectedRoute>} />
-                <Route path="/admin/referral-wallet" element={<ProtectedRoute superAdminOnly><AdminReferralWallet /></ProtectedRoute>} />
-
-
-                {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
-                <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentManagement /></ProtectedRoute>} />
-                <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><AttendanceManagement /></ProtectedRoute>} />
-                <Route path="/admin/fees" element={<ProtectedRoute adminOnly><FeeManagement /></ProtectedRoute>} />
-                <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><NotificationManagement /></ProtectedRoute>} />
-                <Route path="/admin/requests" element={<ProtectedRoute adminOnly><RequestManagement /></ProtectedRoute>} />
-                <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><VacantSeats /></ProtectedRoute>} />
-
-                {/* Sub-Admin Dashboard */}
-                <Route path="/sub-admin" element={<ProtectedRoute><SubAdminDashboard /></ProtectedRoute>} />
+                    {/* Admin Routes — Super Admin ONLY (sub-admins are redirected to /sub-admin) */}
+                    <Route path="/admin" element={<ProtectedRoute superAdminOnly><AdminDashboard /></ProtectedRoute>} />
+                    <Route path="/admin/floors" element={<ProtectedRoute superAdminOnly><FloorManagement /></ProtectedRoute>} />
+                    <Route path="/admin/analytics" element={<ProtectedRoute superAdminOnly><AnalyticsDashboard /></ProtectedRoute>} />
+                    <Route path="/admin/kiosk" element={<ProtectedRoute superAdminOnly><QrKiosk /></ProtectedRoute>} />
+                    <Route path="/admin/shifts" element={<ProtectedRoute superAdminOnly><ShiftManagement /></ProtectedRoute>} />
+                    <Route path="/admin/history" element={<ProtectedRoute superAdminOnly><ActionHistory /></ProtectedRoute>} />
+                    <Route path="/admin/password-activity" element={<ProtectedRoute superAdminOnly><PasswordActivity /></ProtectedRoute>} />
+                    <Route path="/admin/verify/:id" element={<ProtectedRoute superAdminOnly><VerifyStudent /></ProtectedRoute>} />
+                    <Route path="/admin/chat" element={<ProtectedRoute superAdminOnly><ChatManagement /></ProtectedRoute>} />
+                    <Route path="/admin/chat-history" element={<ProtectedRoute superAdminOnly><StudentChatHistory /></ProtectedRoute>} />
+                    <Route path="/admin/manage-cards" element={<ProtectedRoute superAdminOnly><ManageCards /></ProtectedRoute>} />
+                    <Route path="/admin/sub-admins" element={<ProtectedRoute superAdminOnly><SubAdminManagement /></ProtectedRoute>} />
+                    <Route path="/admin/activities" element={<ProtectedRoute superAdminOnly><StudentActivities /></ProtectedRoute>} />
+                    <Route path="/admin/ai-activity" element={<ProtectedRoute superAdminOnly><AIActivityLogs /></ProtectedRoute>} />
+                    <Route path="/admin/referral-wallet" element={<ProtectedRoute superAdminOnly><AdminReferralWallet /></ProtectedRoute>} />
 
 
-                {/* Student Routes */}
-                <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
-                <Route path="/student/view-seats" element={<ProtectedRoute><ViewSeats /></ProtectedRoute>} />
-                <Route path="/student/seat" element={<ProtectedRoute><MySeat /></ProtectedRoute>} />
-                <Route path="/student/attendance" element={<ProtectedRoute requireSeat><Attendance /></ProtectedRoute>} />
-                <Route path="/student/planner" element={<ProtectedRoute requireSeat><StudyPlanner /></ProtectedRoute>} />
-                <Route path="/student/fees" element={<ProtectedRoute><FeeStatus /></ProtectedRoute>} />
-                <Route path="/student/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                <Route path="/student/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/student/chat" element={<ProtectedRoute requireSeat><DiscussionRoom /></ProtectedRoute>} />
-                <Route path="/student/books" element={<ProtectedRoute><BooksPage /></ProtectedRoute>} />
-                <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
-                <Route path="/student/mock-test" element={<ProtectedRoute><MockTestPage /></ProtectedRoute>} />
-                <Route path="/student/report" element={<ProtectedRoute><MonthlyReport /></ProtectedRoute>} />
-                <Route path="/student/doubt" element={<ProtectedRoute requireSeat><DoubtBoard /></ProtectedRoute>} />
-                <Route path="/student/current-affairs" element={<ProtectedRoute><CurrentAffairs /></ProtectedRoute>} />
-                <Route path="/student/exam-alerts" element={<ProtectedRoute><ExamAlerts /></ProtectedRoute>} />
-                <Route path="/student/ai/study-planner" element={<ProtectedRoute><AIStudyPlanner /></ProtectedRoute>} />
-                <Route path="/student/ai/test-analyzer" element={<ProtectedRoute><AITestAnalyzer /></ProtectedRoute>} />
-                <Route path="/student/ai/note-summarizer" element={<ProtectedRoute><AINoteSummarizer /></ProtectedRoute>} />
-                <Route path="/student/ai/current-affairs-quiz" element={<ProtectedRoute><AICurrentAffairsQuiz /></ProtectedRoute>} />
-                <Route path="/student/ai/task-suggestions" element={<ProtectedRoute><AITaskSuggestions /></ProtectedRoute>} />
-                <Route path="/student/ai/readiness-score" element={<ProtectedRoute><AIReadinessScore /></ProtectedRoute>} />
-                <Route path="/student/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                    {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
+                    <Route path="/admin/students" element={<ProtectedRoute adminOnly><StudentManagement /></ProtectedRoute>} />
+                    <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><AttendanceManagement /></ProtectedRoute>} />
+                    <Route path="/admin/fees" element={<ProtectedRoute adminOnly><FeeManagement /></ProtectedRoute>} />
+                    <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><NotificationManagement /></ProtectedRoute>} />
+                    <Route path="/admin/requests" element={<ProtectedRoute adminOnly><RequestManagement /></ProtectedRoute>} />
+                    <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><VacantSeats /></ProtectedRoute>} />
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-            <PwaInstallBanner />
-        </Suspense>
+                    {/* Sub-Admin Dashboard */}
+                    <Route path="/sub-admin" element={<ProtectedRoute><SubAdminDashboard /></ProtectedRoute>} />
+
+
+                    {/* Student Routes */}
+                    <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
+                    <Route path="/student/view-seats" element={<ProtectedRoute><ViewSeats /></ProtectedRoute>} />
+                    <Route path="/student/seat" element={<ProtectedRoute><MySeat /></ProtectedRoute>} />
+                    <Route path="/student/attendance" element={<ProtectedRoute requireSeat><Attendance /></ProtectedRoute>} />
+                    <Route path="/student/planner" element={<ProtectedRoute requireSeat><StudyPlanner /></ProtectedRoute>} />
+                    <Route path="/student/fees" element={<ProtectedRoute><FeeStatus /></ProtectedRoute>} />
+                    <Route path="/student/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                    <Route path="/student/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                    <Route path="/student/chat" element={<ProtectedRoute requireSeat><DiscussionRoom /></ProtectedRoute>} />
+                    <Route path="/student/books" element={<ProtectedRoute><BooksPage /></ProtectedRoute>} />
+                    <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+                    <Route path="/student/mock-test" element={<ProtectedRoute><MockTestPage /></ProtectedRoute>} />
+                    <Route path="/student/report" element={<ProtectedRoute><MonthlyReport /></ProtectedRoute>} />
+                    <Route path="/student/doubt" element={<ProtectedRoute requireSeat><DoubtBoard /></ProtectedRoute>} />
+                    <Route path="/student/current-affairs" element={<ProtectedRoute><CurrentAffairs /></ProtectedRoute>} />
+                    <Route path="/student/exam-alerts" element={<ProtectedRoute><ExamAlerts /></ProtectedRoute>} />
+                    <Route path="/student/ai/study-planner" element={<ProtectedRoute><AIStudyPlanner /></ProtectedRoute>} />
+                    <Route path="/student/ai/test-analyzer" element={<ProtectedRoute><AITestAnalyzer /></ProtectedRoute>} />
+                    <Route path="/student/ai/note-summarizer" element={<ProtectedRoute><AINoteSummarizer /></ProtectedRoute>} />
+                    <Route path="/student/ai/current-affairs-quiz" element={<ProtectedRoute><AICurrentAffairsQuiz /></ProtectedRoute>} />
+                    <Route path="/student/ai/task-suggestions" element={<ProtectedRoute><AITaskSuggestions /></ProtectedRoute>} />
+                    <Route path="/student/ai/readiness-score" element={<ProtectedRoute><AIReadinessScore /></ProtectedRoute>} />
+                    <Route path="/student/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+                <PwaInstallBanner />
+            </Suspense>
+        </PinLockScreen>
     );
 }
 
