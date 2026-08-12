@@ -20,6 +20,7 @@ export default function PinLockScreen({ children }) {
     const { user, logout } = useAuth();
 
     const [pinEnabled, setPinEnabled] = useState(false);
+    const [pinLength, setPinLength] = useState(4); // Dynamically set to 4, 5, or 6
     const [locked, setLocked] = useState(false);
     const [checking, setChecking] = useState(true);
 
@@ -52,6 +53,7 @@ export default function PinLockScreen({ children }) {
                 const res = await api.get('/student/pin/status');
                 if (res.data.success && res.data.appPinEnabled) {
                     setPinEnabled(true);
+                    setPinLength(res.data.appPinLength || 4);
                     setLocked(true);
                 }
             } catch {
@@ -82,14 +84,15 @@ export default function PinLockScreen({ children }) {
         return () => clearInterval(cooldownRef.current);
     }, [cooldown]);
 
-    const handleUnlock = async () => {
+    const handleUnlock = async (pinVal) => {
+        const activePin = pinVal || pin;
         if (cooldown > 0 || loading) return;
-        if (!pin || pin.length < 4) { setError('Enter your PIN (4–6 digits)'); return; }
+        if (!activePin || activePin.length < pinLength) { setError(`Enter your ${pinLength}-digit PIN`); return; }
 
         setLoading(true);
         setError('');
         try {
-            await api.post('/student/pin/verify', { pin });
+            await api.post('/student/pin/verify', { pin: activePin });
             // Success — unlock
             sessionStorage.setItem(SESSION_KEY, 'true');
             setLocked(false);
@@ -117,13 +120,13 @@ export default function PinLockScreen({ children }) {
     const handlePad = (d) => {
         if (cooldown > 0) return;
         if (d === 'del') { setPin(p => p.slice(0, -1)); setError(''); return; }
-        if (pin.length >= 6) return;
+        if (pin.length >= pinLength) return;
         const next = pin + d;
         setPin(next);
         setError('');
-        if (next.length === 6) {
-            // Auto-submit for 6-digit PIN
-            setTimeout(() => handleUnlock(), 0);
+        if (next.length === pinLength) {
+            // Auto-submit when exact configured length is matched
+            setTimeout(() => handleUnlock(next), 100);
         }
     };
 
@@ -154,15 +157,15 @@ export default function PinLockScreen({ children }) {
                     transition={{ type: 'spring', stiffness: 320, damping: 26 }}
                     style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}
                 >
-                    {/* Lock icon */}
+                    {/* Lock icon with Orange Branding */}
                     <motion.div
                         animate={{ scale: [1, 1.06, 1] }}
                         transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
                         style={{
                             width: 72, height: 72, borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #6366f1, #818cf8)',
+                            background: 'linear-gradient(135deg, #F97316, #FB923C)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 0 40px rgba(99,102,241,0.5)',
+                            boxShadow: '0 0 40px rgba(249,115,22,0.4)',
                             marginBottom: 20,
                         }}>
                         <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,20 +179,20 @@ export default function PinLockScreen({ children }) {
                         {user?.name?.split(' ')[0] || 'Welcome back'}
                     </p>
                     <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: '0 0 28px', textAlign: 'center' }}>
-                        Enter your PIN to unlock
+                        Enter your {pinLength}-digit PIN to unlock
                     </p>
 
-                    {/* PIN dots display */}
+                    {/* PIN dots display - Dynamic length */}
                     <motion.div
                         animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}
                         transition={{ duration: 0.45 }}
                         style={{ display: 'flex', gap: 12, marginBottom: 24 }}
                     >
-                        {[0, 1, 2, 3, 4, 5].map(i => (
+                        {Array.from({ length: pinLength }).map((_, i) => (
                             <div key={i} style={{
                                 width: 14, height: 14, borderRadius: '50%',
-                                background: i < pin.length ? '#818cf8' : 'rgba(255,255,255,0.15)',
-                                border: '2px solid ' + (i < pin.length ? '#6366f1' : 'rgba(255,255,255,0.2)'),
+                                background: i < pin.length ? '#F97316' : 'rgba(255,255,255,0.15)',
+                                border: '2px solid ' + (i < pin.length ? '#EA580C' : 'rgba(255,255,255,0.2)'),
                                 transition: 'all 0.18s',
                                 transform: i < pin.length ? 'scale(1.2)' : 'scale(1)',
                             }} />
@@ -242,23 +245,23 @@ export default function PinLockScreen({ children }) {
                         ))}
                     </div>
 
-                    {/* Unlock button */}
+                    {/* Unlock button with Orange color branding */}
                     <motion.button
                         whileHover={!loading && !cooldown ? { opacity: 0.9, scale: 1.02 } : {}}
                         whileTap={!loading && !cooldown ? { scale: 0.97 } : {}}
-                        onClick={handleUnlock}
-                        disabled={loading || cooldown > 0 || pin.length < 4}
+                        onClick={() => handleUnlock()}
+                        disabled={loading || cooldown > 0 || pin.length < pinLength}
                         style={{
                             width: '100%', padding: '13px',
                             borderRadius: 14, border: 'none',
-                            background: (loading || cooldown > 0 || pin.length < 4)
+                            background: (loading || cooldown > 0 || pin.length < pinLength)
                                 ? 'rgba(255,255,255,0.08)'
-                                : 'linear-gradient(135deg, #6366f1, #818cf8)',
-                            color: (loading || cooldown > 0 || pin.length < 4) ? 'rgba(255,255,255,0.3)' : '#fff',
+                                : 'linear-gradient(135deg, #F97316, #FB923C)',
+                            color: (loading || cooldown > 0 || pin.length < pinLength) ? 'rgba(255,255,255,0.3)' : '#fff',
                             fontSize: 15, fontWeight: 700,
-                            cursor: (loading || cooldown > 0 || pin.length < 4) ? 'not-allowed' : 'pointer',
+                            cursor: (loading || cooldown > 0 || pin.length < pinLength) ? 'not-allowed' : 'pointer',
                             fontFamily: 'inherit',
-                            boxShadow: pin.length >= 4 && !cooldown ? '0 8px 24px rgba(99,102,241,0.4)' : 'none',
+                            boxShadow: pin.length >= pinLength && !cooldown ? '0 8px 24px rgba(249,115,22,0.4)' : 'none',
                             transition: 'all 0.2s',
                             marginBottom: 16,
                         }}

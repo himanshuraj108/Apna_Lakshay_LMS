@@ -192,7 +192,12 @@ const userSchema = new mongoose.Schema({
     appPinEnabled: {
         type: Boolean,
         default: false
+    },
+    appPinLength: {
+        type: Number,
+        default: 4
     }
+
 }, {
     timestamps: true
 });

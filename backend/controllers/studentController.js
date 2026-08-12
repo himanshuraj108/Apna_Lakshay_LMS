@@ -2293,9 +2293,10 @@ exports.setPin = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         user.appPin = await bcrypt.hash(String(pin), salt);
         user.appPinEnabled = true;
+        user.appPinLength = String(pin).length;
         await user.save();
 
-        res.status(200).json({ success: true, message: 'App PIN set successfully', appPinEnabled: true });
+        res.status(200).json({ success: true, message: 'App PIN set successfully', appPinEnabled: true, appPinLength: user.appPinLength });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
@@ -2315,6 +2316,7 @@ exports.removePin = async (req, res) => {
 
         user.appPin = null;
         user.appPinEnabled = false;
+        user.appPinLength = 4;
         await user.save();
 
         res.status(200).json({ success: true, message: 'App PIN removed successfully', appPinEnabled: false });
@@ -2327,8 +2329,8 @@ exports.removePin = async (req, res) => {
 // @route   GET /api/student/pin/status
 exports.getPinStatus = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('appPinEnabled');
-        res.status(200).json({ success: true, appPinEnabled: user.appPinEnabled });
+        const user = await User.findById(req.user.id).select('appPinEnabled appPinLength');
+        res.status(200).json({ success: true, appPinEnabled: user.appPinEnabled, appPinLength: user.appPinLength || 4 });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }

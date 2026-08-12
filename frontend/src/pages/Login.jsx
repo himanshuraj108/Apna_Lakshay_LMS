@@ -263,11 +263,6 @@ export default function Login() {
     const [showInstructions, setShowInstructions] = useState(false);
     const [visitorCount, setVisitorCount] = useState(null);
 
-    // ── PIN login state ──
-    const [pinMode, setPinMode] = useState(false);
-    const [pinMobile, setPinMobile] = useState('');
-    const [pinValue, setPinValue] = useState('');
-    const [pinLoading, setPinLoading] = useState(false);
 
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -342,29 +337,6 @@ export default function Login() {
         setLoading(false);
     };
 
-    const handlePinLogin = async (e) => {
-        e.preventDefault();
-        setError('');
-        if (!pinMobile || pinMobile.length !== 10) { setError('Enter a valid 10-digit mobile number'); return; }
-        if (!pinValue || pinValue.length < 4) { setError('Enter your 4–6 digit PIN'); return; }
-        setPinLoading(true);
-        try {
-            const res = await api.post('/auth/login-pin', { mobile: pinMobile, pin: pinValue });
-            if (res.data.success) {
-                localStorage.setItem('token', res.data.token);
-                localStorage.setItem('user', JSON.stringify(res.data.user));
-                const u = res.data.user;
-                navigate(u.role === 'admin' ? '/admin' : u.role === 'subadmin' ? '/sub-admin' : '/student');
-            }
-        } catch (err) {
-            const msg = err?.response?.data?.message || 'Invalid mobile or PIN';
-            setError(msg);
-            setShake(true);
-            setTimeout(() => setShake(false), 450);
-        } finally {
-            setPinLoading(false);
-        }
-    };
 
     const inputStyle = (name) => ({
         width: '100%',
@@ -612,8 +584,7 @@ export default function Login() {
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-                        {/* \u2500\u2500 Standard login fields (hidden in PIN mode) \u2500\u2500 */}
-                        {!pinMode && (<>
+                        {/* Email */}
                         <Field label="Email or Mobile Number" id="email">
                             <div style={{ position: 'relative' }}>
                                 <IoMail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: focused === 'email' ? '#F97316' : '#9CA3AF', transition: 'color 0.15s' }} />
@@ -679,51 +650,7 @@ export default function Login() {
                                 <>Login <IoArrowForward size={15} /></>
                             )}
                         </motion.button>
-                        </>)}
-
-                        {/* ── Divider + PIN toggle ── */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                            <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-                            <button type="button"
-                                onClick={() => { setPinMode(m => !m); setError(''); setPinMobile(''); setPinValue(''); }}
-                                style={{ fontSize: 12, fontWeight: 600, color: '#6366f1', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
-                                {pinMode ? 'Use Password instead' : '🔢 Login with PIN'}
-                            </button>
-                            <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-                        </div>
                     </form>
-
-                    {/* ── PIN Login Form ── */}
-                    {pinMode && (
-                        <form onSubmit={handlePinLogin} style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            <div style={{ background: '#F5F3FF', border: '1.5px solid #C7D2FE', borderRadius: 10, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#4338CA', marginBottom: 6 }}>Mobile Number</label>
-                                    <input
-                                        type="tel" maxLength={10} placeholder="10-digit mobile"
-                                        value={pinMobile}
-                                        onChange={e => setPinMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                        style={{ width: '100%', padding: '10px 13px', border: '1.5px solid #C7D2FE', borderRadius: 9, fontSize: 14, color: '#111827', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#4338CA', marginBottom: 6 }}>PIN (4–6 digits)</label>
-                                    <input
-                                        type="password" inputMode="numeric" maxLength={6} placeholder="Enter your PIN"
-                                        value={pinValue}
-                                        onChange={e => setPinValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        style={{ width: '100%', padding: '10px 13px', border: '1.5px solid #C7D2FE', borderRadius: 9, fontSize: 18, letterSpacing: '0.4em', color: '#111827', background: '#fff', outline: 'none', boxSizing: 'border-box' }}
-                                    />
-                                </div>
-                            </div>
-                            <motion.button type="submit" disabled={pinLoading}
-                                whileHover={!pinLoading ? { opacity: 0.9 } : {}}
-                                whileTap={!pinLoading ? { scale: 0.98 } : {}}
-                                style={{ width: '100%', padding: '13px', borderRadius: 10, background: pinLoading ? '#E5E7EB' : '#6366f1', color: pinLoading ? '#9CA3AF' : '#fff', border: 'none', cursor: pinLoading ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                {pinLoading ? <><div style={{ width: 16, height: 16, border: '2px solid #C7D2FE', borderTopColor: '#9CA3AF', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Logging in…</> : <>🔢 Login with PIN <IoArrowForward size={15} /></>}
-                            </motion.button>
-                        </form>
-                    )}
 
                 </motion.div>
             </div>
