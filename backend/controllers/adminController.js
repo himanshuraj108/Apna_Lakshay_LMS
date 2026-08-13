@@ -2599,11 +2599,11 @@ exports.getFees = async (req, res) => {
         }
 
         let fees = await Fee.find()
-            .populate('student', 'name email createdAt isActive')
+            .populate('student', 'name email createdAt admissionDate isActive')
             .sort({ year: -1, month: -1 });
 
-        // Filter out fees where student has been deleted (null after populate)
-        let filteredFees = fees.filter(fee => fee.student);
+        // Filter out fees where student has been deleted (null) or is inactive
+        let filteredFees = fees.filter(fee => fee.student && fee.student.isActive !== false);
 
         // Auto-generate missing next-month fees on the due date
         let generatedNew = false;
@@ -2621,9 +2621,9 @@ exports.getFees = async (req, res) => {
 
         for (const studentId in latestFees) {
             let currentFee = latestFees[studentId];
-            if (!currentFee.student.createdAt) continue;
+            if (!currentFee.student.createdAt && !currentFee.student.admissionDate) continue;
             
-            const joinedDate = new Date(currentFee.student.createdAt);
+            const joinedDate = new Date(currentFee.student.admissionDate || currentFee.student.createdAt);
             const billingDay = joinedDate.getDate();
 
             let iter = 0;
@@ -2666,9 +2666,9 @@ exports.getFees = async (req, res) => {
 
         if (generatedNew) {
             fees = await Fee.find()
-                .populate('student', 'name email createdAt')
+                .populate('student', 'name email createdAt admissionDate isActive')
                 .sort({ year: -1, month: -1 });
-            filteredFees = fees.filter(fee => fee.student);
+            filteredFees = fees.filter(fee => fee.student && fee.student.isActive !== false);
         }
 
         // Calculate Billing Cycles
@@ -2676,9 +2676,9 @@ exports.getFees = async (req, res) => {
             const student = fee.student;
             const feeObj = fee.toObject();
 
-            if (!student.createdAt) return feeObj;
+            if (!student.createdAt && !student.admissionDate) return feeObj;
 
-            const joinedDate = new Date(student.createdAt);
+            const joinedDate = new Date(student.admissionDate || student.createdAt);
             const billingDay = joinedDate.getDate();
 
             // Month is 1-indexed in DB, 0-indexed in JS Date
