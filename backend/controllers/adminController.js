@@ -795,13 +795,15 @@ exports.createStudent = async (req, res) => {
             createdBy: req.user.id
         };
 
-        // Allow admin to set a custom registration date
-        if (joinedAt) {
-            studentData.createdAt = new Date(joinedAt);
-        }
+        const initialAdmissionDate = joinedAt ? new Date(joinedAt) : new Date();
+        studentData.admissionDate = initialAdmissionDate;
+        studentData.statusHistory = [{
+            status: 'active',
+            date: new Date(),
+            admissionDate: initialAdmissionDate
+        }];
 
         const student = new User(studentData);
-        if (joinedAt) student.createdAt = new Date(joinedAt); // Force override Mongoose default
         await student.save();
 
         // ── Process referral if a code was provided ───────────────────────
@@ -963,36 +965,12 @@ exports.updateStudent = async (req, res) => {
         }
 
         if (joinedAt) {
-            updateData.createdAt = new Date(joinedAt);
+            // Update admissionDate (effective date for calculations), NOT createdAt
+            updateData.admissionDate = new Date(joinedAt);
         }
 
         // Remove undefined fields
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
-
-        // If reactivating (explicitly setting isActive to true), reset seat/shift
-        // We verify current state first to ensure we don't wipe active students' seats on profile edits
-        if (isActive === true) {
-            const currentStudent = await User.findById(req.params.id);
-            if (currentStudent && !currentStudent.isActive) {
-                // Was inactive, now activating -> RESET SEAT logic
-                updateData.seat = null;
-                updateData.seatAssignedAt = null;
-
-                // Note: We don't have a direct 'shift' field on User (it's in seat assignments), 
-                // but clearing the seat link effectively removes the shift association for the student.
-
-                console.log(`Resetting seat for reactivated student: ${currentStudent.name}`);
-
-                // Heal fees: any fee with a paidDate but still 'pending'/'overdue' should be 'paid'
-                const healed = await Fee.updateMany(
-                    { student: currentStudent._id, paidDate: { $ne: null }, status: { $in: ['pending', 'overdue'] } },
-                    { $set: { status: 'paid' } }
-                );
-                if (healed.modifiedCount > 0) {
-                    console.log(`Healed ${healed.modifiedCount} fee record(s) for reactivated student: ${currentStudent.name}`);
-                }
-            }
-        }
 
         const student = await User.findById(req.params.id);
         if (!student) {
@@ -1002,7 +980,59 @@ exports.updateStudent = async (req, res) => {
             });
         }
 
-        // No gender-to-avatar auto-healing is needed as avatars are stable and deterministic by student _id
+        let targetAdmissionDate = joinedAt ? new Date(joinedAt) : null;
+        let statusChanged = false;
+
+        // If reactivating (explicitly setting isActive to true), reset seat/shift
+        // We verify current state first to ensure we don't wipe active students' seats on profile edits
+        if (isActive !== undefined && isActive !== student.isActive) {
+            statusChanged = true;
+            if (isActive === true) {
+                // Was inactive, now activating -> RESET SEAT logic
+                updateData.seat = null;
+                updateData.seatAssignedAt = null;
+
+                // Note: We don't have a direct 'shift' field on User (it's in seat assignments), 
+                // but clearing the seat link effectively removes the shift association for the student.
+
+                console.log(`Resetting seat for reactivated student: ${student.name}`);
+
+                // Heal fees: any fee with a paidDate but still 'pending'/'overdue' should be 'paid'
+                const healed = await Fee.updateMany(
+                    { student: student._id, paidDate: { $ne: null }, status: { $in: ['pending', 'overdue'] } },
+                    { $set: { status: 'paid' } }
+                );
+                if (healed.modifiedCount > 0) {
+                    console.log(`Healed ${healed.modifiedCount} fee record(s) for reactivated student: ${student.name}`);
+                }
+
+                // Inactive -> active transition: set admissionDate to current date/time
+                if (!joinedAt) {
+                    targetAdmissionDate = new Date();
+                    updateData.admissionDate = targetAdmissionDate;
+                }
+            }
+        }
+
+        // Record status history transition
+        // admissionDate field = effective admission for calculations (never touches createdAt)
+        const effectiveAdmissionDate = targetAdmissionDate || student.admissionDate || student.createdAt || new Date();
+        if (statusChanged) {
+            if (!student.statusHistory) student.statusHistory = [];
+            student.statusHistory.push({
+                status: isActive ? 'active' : 'inactive',
+                date: new Date(),
+                admissionDate: effectiveAdmissionDate
+            });
+        } else if (joinedAt) {
+            // Log manually updated admission date
+            if (!student.statusHistory) student.statusHistory = [];
+            student.statusHistory.push({
+                status: student.isActive ? 'active' : 'inactive',
+                date: new Date(),
+                admissionDate: new Date(joinedAt)
+            });
+        }
 
         // Apply updates
         Object.assign(student, updateData);
@@ -1012,12 +1042,13 @@ exports.updateStudent = async (req, res) => {
 
         await student.save();
 
-        // Mongoose timestamps:true BLOCKS createdAt changes via .save()
-        // Use raw MongoDB updateOne to force-write the new admission date
-        if (joinedAt) {
+        // Update admissionDate via raw MongoDB to ensure it's always set
+        // (createdAt is NEVER modified — it stays as the original document creation timestamp)
+        const admissionDateToWrite = updateData.admissionDate || targetAdmissionDate;
+        if (admissionDateToWrite) {
             await User.collection.updateOne(
                 { _id: student._id },
-                { $set: { createdAt: new Date(joinedAt) } }
+                { $set: { admissionDate: admissionDateToWrite } }
             );
         }
         const { negotiatedPrice } = req.body;
