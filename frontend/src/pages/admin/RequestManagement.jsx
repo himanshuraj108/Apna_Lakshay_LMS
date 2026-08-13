@@ -9,6 +9,7 @@ import {
 } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 import useBackPath from '../../hooks/useBackPath';
+import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
 const PAGE_BG = { background: '#F8FAFC' };
 
@@ -132,7 +133,7 @@ const RequestManagement = () => {
 
                 {/* Request Cards */}
                 {loading ? (
-                    <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="bg-white/3 border border-white/8 rounded-2xl h-40 animate-pulse" />)}</div>
+                    <PrimaryLogoLoader text="Loading Requests..." />
                 ) : filteredRequests.length === 0 ? (
                     <div className="bg-white/3 border border-white/8 rounded-2xl p-10 text-center">
                         <IoDocumentTextOutline size={40} className="text-gray-600 mx-auto mb-3" />
