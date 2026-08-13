@@ -387,10 +387,50 @@ exports.getDashboard = async (req, res) => {
             ]
         });
 
-        // 2. Total Seats 
+        // 2. Total Seats & AC vs Non-AC breakdown
         const totalSeats = await Seat.countDocuments();
 
-        // 3. Occupied Seats (Active assignments)
+        const seatAcAgg = await Seat.aggregate([
+            {
+                $lookup: {
+                    from: 'rooms',
+                    localField: 'room',
+                    foreignField: '_id',
+                    as: 'roomInfo'
+                }
+            },
+            { $unwind: { path: '$roomInfo', preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    _id: 1,
+                    hasAc: { $ifNull: ['$roomInfo.hasAc', false] },
+                    assignments: 1
+                }
+            }
+        ]);
+
+        let acTotalSeats = 0;
+        let nonAcTotalSeats = 0;
+        let acOccupiedSeats = 0;
+        let nonAcOccupiedSeats = 0;
+
+        seatAcAgg.forEach(s => {
+            const hasAc = s.hasAc === true;
+            if (hasAc) acTotalSeats++;
+            else nonAcTotalSeats++;
+
+            const hasActiveAssignment = s.assignments && s.assignments.some(a => a.status === 'active');
+            if (hasActiveAssignment) {
+                if (hasAc) acOccupiedSeats++;
+                else nonAcOccupiedSeats++;
+            }
+        });
+
+        const acVacantSeats = Math.max(0, acTotalSeats - acOccupiedSeats);
+        const nonAcVacantSeats = Math.max(0, nonAcTotalSeats - nonAcOccupiedSeats);
+
+        // 3. Occupied Seats — count DISTINCT physical seats that have at least one active assignment
+        //    (a student with 2 shifts on 1 seat = 1 occupied seat, not 2)
         const occupiedSeatsAgg = await Seat.aggregate([
             { $unwind: '$assignments' },
             { $match: { 'assignments.status': 'active' } },
@@ -411,17 +451,29 @@ exports.getDashboard = async (req, res) => {
                     ]
                 }
             },
-            { $group: { _id: '$assignments._id', studentId: { $first: '$studentInfo._id' }, price: { $first: '$assignments.price' } } }
+            // Group by seat _id to get distinct physical seats + collect all students & prices
+            {
+                $group: {
+                    _id: '$_id',  // seat document ID = 1 physical seat
+                    studentIds: { $addToSet: '$studentInfo._id' },
+                    prices: { $push: '$assignments.price' }
+                }
+            }
         ]);
-        
+
+        // Distinct physical seats occupied
         const occupiedSeats = occupiedSeatsAgg.length;
-        
-        // 1b. Active Students (Distinct students from active assignments)
-        const activeStudentIds = new Set(occupiedSeatsAgg.map(s => s.studentId.toString()));
-        const activeStudents = activeStudentIds.size;
-        
-        // 3b. Expected Monthly Fee (sum of prices for all active assignments)
-        const expectedMonthlyFee = occupiedSeatsAgg.reduce((sum, curr) => sum + (curr.price || 0), 0);
+
+        // 1b. Active Students — distinct across all occupied seats
+        const activeStudentIdSet = new Set();
+        let expectedMonthlyFee = 0;
+        occupiedSeatsAgg.forEach(seat => {
+            seat.studentIds.forEach(id => activeStudentIdSet.add(id.toString()));
+            seat.prices.forEach(p => { if (p) expectedMonthlyFee += p; });
+        });
+        const activeStudents = activeStudentIdSet.size;
+
+        // 3b. expectedMonthlyFee already computed above
 
         // 4. Fees Collected
         const feesCollectedAgg = await Fee.aggregate([
@@ -447,9 +499,20 @@ exports.getDashboard = async (req, res) => {
         ]);
         const feesCollected = feesCollectedAgg[0]?.total || 0;
 
-        // 5. Pending Requests
-        const pendingRequestsAgg = await Request.aggregate([
-            { $match: { status: 'pending' } },
+        // 4b. Today's Fee Collection
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const todayFeesCollectedAgg = await Fee.aggregate([
+            {
+                $match: {
+                    status: 'paid',
+                    $or: [
+                        { paidDate: { $gte: startOfToday } },
+                        { paidDate: null, updatedAt: { $gte: startOfToday } }
+                    ]
+                }
+            },
             {
                 $lookup: {
                     from: 'users',
@@ -467,6 +530,30 @@ exports.getDashboard = async (req, res) => {
                     ]
                 }
             },
+            { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]);
+        const todayFeesCollected = todayFeesCollectedAgg[0]?.total || 0;
+
+        // 5. Pending Requests
+        const pendingRequestsAgg = await Request.aggregate([
+            { $match: { status: 'pending' } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'student',
+                    foreignField: '_id',
+                    as: 'studentInfo'
+                }
+            },
+            { $unwind: '$studentInfo' },
+            {
+                $match: {
+                    $or: [
+                        { 'studentInfo.systemMode': mode },
+                        ...(mode === 'default' ? [{ 'systemMode': { $exists: false } }] : [])
+                    ]
+                }
+            },
             { $count: 'count' }
         ]);
         const pendingRequests = pendingRequestsAgg[0]?.count || 0;
@@ -479,8 +566,13 @@ exports.getDashboard = async (req, res) => {
                 totalSeats,
                 occupiedSeats,
                 availableSeats: totalSeats - occupiedSeats, // Dynamic availability based on this mode's occupancy
+                acVacantSeats,
+                nonAcVacantSeats,
+                acTotalSeats,
+                nonAcTotalSeats,
                 expectedMonthlyFee,
                 feesCollected,
+                todayFeesCollected,
                 pendingRequests
             }
         });
