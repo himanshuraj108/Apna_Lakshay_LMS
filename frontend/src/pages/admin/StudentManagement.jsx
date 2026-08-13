@@ -116,6 +116,26 @@ const StudentManagement = () => {
     const [splitPairs, setSplitPairs] = useState([{ seatId: '', shiftId: '', price: '' }, { seatId: '', shiftId: '', price: '' }]);
     const [splitLoading, setSplitLoading] = useState(false);
 
+    const getStatusHistoryTooltip = (student) => {
+        const effectiveAdmission = student.admissionDate || student.createdAt;
+        const lines = [];
+        lines.push(`Current Admission Date: ${effectiveAdmission ? new Date(effectiveAdmission).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}`);
+
+        if (!student.statusHistory || student.statusHistory.length === 0) {
+            lines.push(`\n[First Joined] ${effectiveAdmission ? new Date(effectiveAdmission).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}`);
+        } else {
+            lines.push('\nHistory:');
+            student.statusHistory.forEach((hist, idx) => {
+                const isFirst = idx === 0;
+                const typeStr = isFirst ? '[Joined]' : hist.status === 'active' ? '[Reactivated]' : '[Deactivated]';
+                const dateStr = new Date(hist.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                const admStr = hist.admissionDate ? ` | Admission: ${new Date(hist.admissionDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : '';
+                lines.push(`${typeStr} on ${dateStr}${admStr}`);
+            });
+        }
+        return lines.join('\n');
+    };
+
     useEffect(() => {
         fetchStudents();
         fetchFloors();
@@ -1472,7 +1492,7 @@ const StudentManagement = () => {
                                                                 const hasSeat = getStudentSeat(student._id);
                                                                 const hasShifts = getStudentShifts(student._id);
                                                                 if (student.isActive && (!hasSeat || !hasShifts)) return <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20">Pending</span>;
-                                                                return <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${student.isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{student.isActive ? 'Active' : 'Inactive'}</span>;
+                                                                return <span title={getStatusHistoryTooltip(student)} className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border cursor-help ${student.isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>{student.isActive ? 'Active' : 'Inactive'}</span>;
                                                             })()}
                                                         </td>
                                                         <td className="px-5 py-3.5">
@@ -2011,6 +2031,72 @@ const StudentManagement = () => {
                                     </label>
                                 </div>
                             )}
+
+                            {/* Status & Reactivation History */}
+                            {editMode && selectedStudent?.statusHistory && selectedStudent.statusHistory.length > 0 && (
+                                <div className="border-t border-gray-200 pt-4 mt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="block text-sm font-semibold text-gray-700">Status & Reactivation History</label>
+                                        <span className="text-xs text-gray-500">
+                                            Effective Admission:{' '}
+                                            <span className="text-orange-600 font-semibold">
+                                                {new Date(selectedStudent.admissionDate || selectedStudent.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div className="space-y-3 bg-gray-50 border border-gray-200 rounded-xl p-3.5 max-h-[180px] overflow-y-auto">
+                                        {selectedStudent.statusHistory.map((hist, idx) => {
+                                            const isFirst = idx === 0;
+                                            const isReactivation = hist.status === 'active' && !isFirst;
+                                            
+                                            // To show prev inactivation date if reactivating, find the previous inactive history entry
+                                            let prevInactiveDate = null;
+                                            if (isReactivation) {
+                                                const prevEntries = selectedStudent.statusHistory.slice(0, idx).reverse();
+                                                const lastInactive = prevEntries.find(e => e.status === 'inactive');
+                                                if (lastInactive) {
+                                                    prevInactiveDate = lastInactive.date;
+                                                }
+                                            }
+
+                                            return (
+                                                <div key={idx} className="flex items-start gap-3 text-xs border-b border-gray-100 pb-2.5 last:border-0 last:pb-0">
+                                                    <div className="mt-0.5">
+                                                        {isFirst ? (
+                                                            <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 rounded-md font-bold uppercase tracking-wider text-[10px]">Joined</span>
+                                                        ) : hist.status === 'active' ? (
+                                                            <span className="px-2 py-0.5 bg-green-500/10 text-green-600 rounded-md font-bold uppercase tracking-wider text-[10px]">Reactivated</span>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 bg-red-500/10 text-red-500 rounded-md font-bold uppercase tracking-wider text-[10px]">Deactivated</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 text-left">
+                                                        <p className="text-gray-800 font-semibold">
+                                                            {isFirst ? 'Student admitted on' : hist.status === 'active' ? 'Reactivated on' : 'Inactivated on'}{' '}
+                                                            {new Date(hist.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                        </p>
+                                                        {hist.admissionDate && (
+                                                            <p className="text-gray-500 mt-0.5">
+                                                                {hist.status === 'inactive' ? 'Previous Admission Date: ' : 'New Admission Date: '}
+                                                                <span className="text-gray-700 font-medium">{new Date(hist.admissionDate).toLocaleDateString('en-IN')}</span>
+                                                            </p>
+                                                        )}
+                                                        {prevInactiveDate && (
+                                                            <p className="text-gray-500 mt-0.5">
+                                                                Previous Inactivation Date:{' '}
+                                                                <span className="text-gray-700 font-medium">
+                                                                    {new Date(prevInactiveDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex gap-3 mt-4">
                                 <button type="submit" disabled={loading} className={BTN_PRIMARY + ' flex-1'}>
                                     {loading ? (editMode ? 'Updating...' : 'Creating...') : (editMode ? 'Update Student' : 'Create Student')}
