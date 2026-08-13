@@ -14,6 +14,7 @@ import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import useBackPath from '../../hooks/useBackPath';
 import { useAuth } from '../../context/AuthContext';
+import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
 const PAGE_BG = { background: '#F8FAFC' };
 
@@ -824,9 +825,7 @@ const AttendanceManagement = () => {
 
                 {/* Student Grid */}
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {[...Array(6)].map((_, i) => <div key={i} className="bg-white border border-gray-100 rounded-2xl h-32 animate-pulse" />)}
-                    </div>
+                    <PrimaryLogoLoader text="Loading Attendance Grid..." />
                 ) : filteredStudents.length === 0 ? (
                     <div className="bg-white border border-gray-200 rounded-2xl p-10 text-center">
                         <IoPeopleOutline size={40} className="text-gray-400 mx-auto mb-3" />
