@@ -11,6 +11,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import useBackPath from '../../hooks/useBackPath';
 import { useAuth } from '../../context/AuthContext';
+import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
 const PAGE_BG = { background: '#F8FAFC' };
 
@@ -297,7 +298,7 @@ const FeeManagement = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
                             {loading ? (
-                                [...Array(4)].map((_, i) => <div key={i} className="h-44 bg-white border border-gray-100 rounded-2xl animate-pulse" />)
+                                <PrimaryLogoLoader text="Loading Fee Records..." />
                             ) : (() => {
                                 const pendingFees = baseFees.filter(f => ['pending', 'partial', 'overdue'].includes(f.status));
                                 if (pendingFees.length === 0) {
@@ -417,9 +418,7 @@ const FeeManagement = () => {
 
                 {/* Table */}
                 {loading ? (
-                    <div className="bg-white/3 border border-white/8 rounded-2xl overflow-hidden">
-                        {[...Array(5)].map((_, i) => <div key={i} className="h-16 border-b border-gray-100 animate-pulse bg-white/2" />)}
-                    </div>
+                    <PrimaryLogoLoader text="Loading Fee Table..." />
                 ) : (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
