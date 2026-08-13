@@ -479,7 +479,12 @@ const FeeManagement = () => {
                                                 {fee.status === 'paid' ? (
                                                     <span className="text-xs text-gray-500">Paid {fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : ''}</span>
                                                 ) : fee.status === 'cancelled' ? (
-                                                    <span className="text-xs text-gray-500">Cancelled</span>
+                                                    <span className="text-xs text-gray-500">
+                                                        Cancelled
+                                                        {fee.cancelledReason === 'inactive_period' && (
+                                                            <span className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-md">Inactive Period</span>
+                                                        )}
+                                                    </span>
                                                 ) : new Date() >= new Date(fee.cycleStart) || fee.student?.isActive === false ? (
                                                     <div className="flex items-center justify-end gap-2">
                                                         {fee.student?.isActive === false && (
