@@ -9,6 +9,7 @@ import {
     IoCloseCircle, IoChevronDown, IoOpenOutline, IoInformationCircleOutline
 } from 'react-icons/io5';
 import useBackPath from '../../hooks/useBackPath';
+import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const VacantSeats = () => {
@@ -169,11 +170,7 @@ const VacantSeats = () => {
                                 {/* Modal Body */}
                                 <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
                                     {loading ? (
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                                            {[...Array(12)].map((_, i) => (
-                                                <div key={i} className="h-28 bg-white border border-gray-100 rounded-xl animate-pulse" />
-                                            ))}
-                                        </div>
+                                        <PrimaryLogoLoader text="Loading Vacant Seats..." />
                                     ) : acFilter === null ? (
                                         <div className="flex flex-col sm:flex-row gap-6 max-w-2xl mx-auto py-12">
                                             {/* AC Card */}
