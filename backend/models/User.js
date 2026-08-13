@@ -196,6 +196,22 @@ const userSchema = new mongoose.Schema({
     appPinLength: {
         type: Number,
         default: 4
+    },
+    // Effective admission date used for fee/attendance calculations.
+    // Separate from createdAt (document creation). Updated on reactivation.
+    admissionDate: {
+        type: Date,
+        default: null
+    },
+    statusHistory: {
+        type: [
+            {
+                status: { type: String, enum: ['active', 'inactive'] },
+                date: { type: Date, default: Date.now },
+                admissionDate: { type: Date }
+            }
+        ],
+        default: []
     }
 
 }, {
