@@ -66,6 +66,12 @@ const feeSchema = new mongoose.Schema({
     originalAmount: {
         type: Number,
         default: null // stores original amount before discount
+    },
+    // Tracks why a fee was cancelled: 'inactive_period' = auto-cancelled on reactivation, 'manual' = admin cancelled
+    cancelledReason: {
+        type: String,
+        enum: ['inactive_period', 'manual', null],
+        default: null
     }
 }, {
     timestamps: true
