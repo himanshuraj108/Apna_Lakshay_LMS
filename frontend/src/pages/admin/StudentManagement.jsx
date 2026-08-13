@@ -11,11 +11,12 @@ import autoTable from 'jspdf-autotable';
 import useShifts from '../../hooks/useShifts';
 import useBackPath from '../../hooks/useBackPath';
 import { useAuth } from '../../context/AuthContext';
+import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
 const PAGE_BG = { background: '#F8FAFC' };
-const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
+const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-orange-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
 const LABEL = 'block text-sm font-semibold text-gray-700 mb-2';
-const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
+const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold shadow-lg shadow-orange-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
 const BTN_SECONDARY = 'px-4 py-2.5 rounded-xl text-sm text-gray-700 bg-white hover:bg-gray-50 border border-gray-200 font-medium transition-all disabled:opacity-50 shadow-sm';
 const BTN_DANGER = 'px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 transition-all hover:scale-[1.02] active:scale-[0.98]';
 
@@ -1131,96 +1132,98 @@ const StudentManagement = () => {
                             </Link>
                             <div>
                                 <div className="flex items-center gap-2 mb-0.5">
-                                    <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg"><IoPeopleOutline size={14} className="text-gray-900" /></div>
-                                    <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
+                                    <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg"><IoPeopleOutline size={14} className="text-white" /></div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-orange-500">Admin</span>
                                 </div>
                                 <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Student Management</h1>
                             </div>
                         </div>
-                        <div className="flex gap-2 flex-wrap items-center">
-                            {/* ── Settings Gear Dropdown ── */}
-                            <div className="relative">
-                                <motion.button
-                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    onClick={() => setShowSettingsMenu(prev => !prev)}
-                                    className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-gray-900 rounded-xl text-sm font-semibold transition-all"
-                                    title="Settings"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-300 ${showSettingsMenu ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    Settings
+                        {activeTab !== 'id-cards' && (
+                            <div className="flex gap-2 flex-wrap items-center">
+                                {/* ── Settings Gear Dropdown ── */}
+                                <div className="relative">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                        onClick={() => setShowSettingsMenu(prev => !prev)}
+                                        className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 hover:text-gray-900 rounded-xl text-sm font-semibold transition-all"
+                                        title="Settings"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 transition-transform duration-300 ${showSettingsMenu ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        Settings
+                                    </motion.button>
+
+                                    <AnimatePresence>
+                                        {showSettingsMenu && (
+                                            <>
+                                                {/* Backdrop to close */}
+                                                <div className="fixed inset-0 z-30" onClick={() => setShowSettingsMenu(false)} />
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
+                                                    style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(12px)' }}
+                                                >
+                                                    <div className="px-3 py-2 border-b border-gray-100">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
+                                                    </div>
+                                                    {[
+                                                        {
+                                                            label: 'Export PDF',
+                                                            icon: <IoDownloadOutline size={15} />,
+                                                            color: 'text-indigo-600',
+                                                            bg: 'hover:bg-indigo-500/10',
+                                                            action: () => { generateStudentTablePDF(); setShowSettingsMenu(false); }
+                                                        },
+                                                        {
+                                                            label: 'Swap Seats',
+                                                            icon: <IoSwapHorizontal size={15} />,
+                                                            color: 'text-orange-600',
+                                                            bg: 'hover:bg-orange-500/10',
+                                                            action: () => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); setShowSettingsMenu(false); }
+                                                        },
+                                                        {
+                                                            label: 'Reset All QRs',
+                                                            icon: <IoRefresh size={15} />,
+                                                            color: 'text-red-600',
+                                                            bg: 'hover:bg-red-500/10',
+                                                            action: () => { handleResetAllQrs(); setShowSettingsMenu(false); }
+                                                        },
+                                                        {
+                                                            label: 'Reset All Passwords to Mobile',
+                                                            icon: (
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                                </svg>
+                                                            ),
+                                                            color: 'text-orange-600',
+                                                            bg: 'hover:bg-orange-500/10',
+                                                            action: () => { setBulkResetResult(null); setShowBulkResetModal(true); setShowSettingsMenu(false); }
+                                                        },
+                                                    ].map((item, i) => (
+                                                        <button key={i} onClick={item.action}
+                                                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium ${item.color} ${item.bg} transition-colors text-left`}>
+                                                            {item.icon}
+                                                            {item.label}
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            </>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                {/* ── Add Student ── */}
+                                <motion.button whileHover={{ scale: 1.03 }} onClick={openAddModal}
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-orange-500/25">
+                                    <IoAdd size={16} /> Add Student
                                 </motion.button>
-
-                                <AnimatePresence>
-                                    {showSettingsMenu && (
-                                        <>
-                                            {/* Backdrop to close */}
-                                            <div className="fixed inset-0 z-30" onClick={() => setShowSettingsMenu(false)} />
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.95, y: -6 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95, y: -6 }}
-                                                transition={{ duration: 0.15 }}
-                                                className="absolute right-0 top-full mt-2 w-56 z-40 rounded-2xl overflow-hidden shadow-2xl"
-                                                style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(12px)' }}
-                                            >
-                                                <div className="px-3 py-2 border-b border-gray-100">
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Quick Actions</span>
-                                                </div>
-                                                {[
-                                                    {
-                                                        label: 'Export PDF',
-                                                        icon: <IoDownloadOutline size={15} />,
-                                                        color: 'text-indigo-600',
-                                                        bg: 'hover:bg-indigo-500/10',
-                                                        action: () => { generateStudentTablePDF(); setShowSettingsMenu(false); }
-                                                    },
-                                                    {
-                                                        label: 'Swap Seats',
-                                                        icon: <IoSwapHorizontal size={15} />,
-                                                        color: 'text-orange-600',
-                                                        bg: 'hover:bg-orange-500/10',
-                                                        action: () => { setShowSwapModal(true); setSwapStudentId1(''); setSwapStudentId2(''); setError(''); setShowSettingsMenu(false); }
-                                                    },
-                                                    {
-                                                        label: 'Reset All QRs',
-                                                        icon: <IoRefresh size={15} />,
-                                                        color: 'text-red-600',
-                                                        bg: 'hover:bg-red-500/10',
-                                                        action: () => { handleResetAllQrs(); setShowSettingsMenu(false); }
-                                                    },
-                                                    {
-                                                        label: 'Reset All Passwords to Mobile',
-                                                        icon: (
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                                            </svg>
-                                                        ),
-                                                        color: 'text-orange-600',
-                                                        bg: 'hover:bg-orange-500/10',
-                                                        action: () => { setBulkResetResult(null); setShowBulkResetModal(true); setShowSettingsMenu(false); }
-                                                    },
-                                                ].map((item, i) => (
-                                                    <button key={i} onClick={item.action}
-                                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium ${item.color} ${item.bg} transition-colors text-left`}>
-                                                        {item.icon}
-                                                        {item.label}
-                                                    </button>
-                                                ))}
-                                            </motion.div>
-                                        </>
-                                    )}
-                                </AnimatePresence>
                             </div>
-
-                            {/* ── Add Student ── */}
-                            <motion.button whileHover={{ scale: 1.03 }} onClick={openAddModal}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/25">
-                                <IoAdd size={16} /> Add Student
-                            </motion.button>
-                        </div>
+                        )}
                     </motion.div>
 
                     {/* Tab Navigation */}
@@ -1248,7 +1251,7 @@ const StudentManagement = () => {
                         })().map(tab => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === tab.id
-                                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25'
+                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-lg shadow-orange-500/25'
                                     : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
                                 {tab.icon}{tab.label}
                             </button>
@@ -1302,7 +1305,7 @@ const StudentManagement = () => {
                     )}
 
                     {loading ? (
-                        <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-14 bg-white/3 rounded-xl animate-pulse" />)}</div>
+                        <PrimaryLogoLoader text="Loading Students List..." />
                     ) : (
                         <>
                             {activeTab === 'id-cards' ? (
