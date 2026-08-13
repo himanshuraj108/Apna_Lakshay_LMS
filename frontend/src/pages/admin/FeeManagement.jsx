@@ -115,7 +115,8 @@ const FeeManagement = () => {
 
 
     // Base: exclude inactive unless showInactive is on
-    const baseFees = showInactive ? fees : fees.filter(f => f.student?.isActive !== false);
+    // Strictly check isActive === true so undefined (missing field from old records) also gets excluded when backend sends it
+    const baseFees = showInactive ? fees : fees.filter(f => f.student?.isActive === true);
 
     const filteredFees = filter === 'all' ? baseFees : 
                          filter === 'online' ? baseFees.filter(f => f.razorpayOrderId) :
