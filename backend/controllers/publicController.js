@@ -260,7 +260,13 @@ exports.registerStudent = async (req, res) => {
             password: plainPassword,
             role: 'student',
             isActive: true, // Auto-activate so they appear in Pending Allocation
-            registrationSource: 'self'
+            registrationSource: 'self',
+            admissionDate: new Date(),
+            statusHistory: [{
+                status: 'active',
+                date: new Date(),
+                admissionDate: new Date()
+            }]
         });
 
         // Send credentials email (BLOCKING - wait for email to send)
