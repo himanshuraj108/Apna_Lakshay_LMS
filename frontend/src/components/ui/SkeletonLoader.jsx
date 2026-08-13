@@ -887,6 +887,44 @@ const SkeletonLoader = ({ type = 'card', count = 1 }) => {
     );
 };
 
+// ── Primary LMS Logo Loader ──────────────────────────────────────────────────
+export const PrimaryLogoLoader = ({ text = "Loading data, please wait..." }) => (
+    <div className="py-16 sm:py-24 flex flex-col items-center justify-center text-center w-full col-span-full">
+        <div className="relative w-20 h-20 mb-4">
+            <svg className="animate-spin absolute inset-0 w-full h-full" viewBox="0 0 96 96" fill="none">
+                <circle cx="48" cy="48" r="44" stroke="rgba(249,115,22,0.15)" strokeWidth="4" />
+                <circle cx="48" cy="48" r="44"
+                    stroke="url(#primaryLogoGrad)" strokeWidth="4"
+                    strokeLinecap="round"
+                    strokeDasharray="138 138"
+                    strokeDashoffset="104" />
+                <defs>
+                    <linearGradient id="primaryLogoGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#f97316" />
+                        <stop offset="100%" stopColor="#ef4444" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/35">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <p className="text-sm font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+            {text}
+        </p>
+        <div className="flex gap-1.5 mt-2">
+            {[0, 1, 2].map(i => (
+                <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-500/60 animate-pulse"
+                    style={{ animationDelay: `${i * 0.2}s` }} />
+            ))}
+        </div>
+    </div>
+);
+
 // ── Full-page generic skeleton (drop-in for any page) ────────────────────────
 export const PageSkeleton = ({ title = '', subtitle = '' }) => (
     <div className="min-h-screen p-4 md:p-6 space-y-5 max-w-2xl mx-auto" style={{ background: '#f9fafb' }}>
