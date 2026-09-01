@@ -167,23 +167,25 @@ function App() {
     useEffect(() => {
         if (loading) return;
 
+        const isMaintenancePage = location.pathname === '/maintenance';
+        const isAdmin = user?.role === 'admin' || user?.role === 'subadmin';
+
         if (systemStatus === 'maintenance') {
-            const isMaintenancePage = location.pathname === '/maintenance';
-            const isAdmin = user?.role === 'admin';
-
-            // Check for admin override via URL query param
-            const searchParams = new URLSearchParams(location.search);
-            const adminOverride = searchParams.get('access') === 'admin';
-
-            // Allow access if:
-            // 1. It's the maintenance page
-            // 2. User is already an admin
-            // 3. User is accessing login with ?access=admin
-            if (!isMaintenancePage && !isAdmin && !adminOverride) {
+            // When maintenance is active, only authorized admins can access non-maintenance routes
+            if (!isMaintenancePage && !isAdmin) {
                 navigate('/maintenance');
             }
+        } else if (systemStatus === 'active' && isMaintenancePage) {
+            // When maintenance ends, automatically route back without forcing students to re-login
+            if (isAdmin) {
+                navigate('/admin');
+            } else if (user?.role === 'student') {
+                navigate('/student');
+            } else {
+                navigate('/login');
+            }
         }
-    }, [systemStatus, loading, user, location, navigate]);
+    }, [systemStatus, loading, user, location.pathname, navigate]);
 
     if (loading) {
         return null; // Don't show spinner, just blank (or nothing) while initializing

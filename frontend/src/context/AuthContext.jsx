@@ -20,13 +20,19 @@ export const AuthProvider = ({ children }) => {
     const checkSystemStatus = async () => {
         try {
             const response = await api.get('/settings/public');
-            if (response.data.success) {
-                setSystemStatus(response.data.settings.systemStatus);
+            if (response.data.success && response.data.settings) {
+                setSystemStatus(response.data.settings.systemStatus || 'active');
             }
         } catch (error) {
             console.error('Failed to check system status:', error);
         }
     };
+
+    // Live polling for system status changes every 4 seconds
+    useEffect(() => {
+        const interval = setInterval(checkSystemStatus, 4000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         const initAuth = async () => {
