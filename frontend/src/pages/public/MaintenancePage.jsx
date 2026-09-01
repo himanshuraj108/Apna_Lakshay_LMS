@@ -1,218 +1,368 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoWarning, IoSkull, IoNuclear, IoLockClosed } from 'react-icons/io5';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { IoShieldCheckmark, IoLockClosed, IoPerson, IoEye, IoEyeOff, IoArrowBack, IoArrowForward, IoTimeOutline } from 'react-icons/io5';
+
+/* ── Floating ambient particle ────────────────────────────────────────── */
+const Particle = ({ style }) => (
+    <motion.div
+        className="absolute rounded-full pointer-events-none"
+        style={style}
+        animate={{ y: [0, -30, 0], opacity: [0.3, 0.7, 0.3], scale: [1, 1.2, 1] }}
+        transition={{ duration: style.duration, repeat: Infinity, ease: 'easeInOut', delay: style.delay }}
+    />
+);
 
 const MaintenancePage = () => {
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes fake countdown
-    const [breachLevel, setBreachLevel] = useState(0);
-    const audioRef = useRef(null);
+    const navigate = useNavigate();
+    const { login, logout } = useAuth();
 
-    // Fake Countdown
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft(prev => (prev > 0 ? prev - 0.1 : 0));
-        }, 100);
-        return () => clearInterval(timer);
-    }, []);
+    const [showAdminLogin, setShowAdminLogin] = useState(false);
+    const [adminEmail, setAdminEmail] = useState('');
+    const [adminPassword, setAdminPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [shake, setShake] = useState(false);
 
-    // Random "Breach" spikes
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setBreachLevel(Math.random() * 100);
-        }, 200);
-        return () => clearInterval(interval);
-    }, []);
+    // Particles array
+    const particles = Array.from({ length: 18 }, (_, i) => ({
+        width: `${Math.random() * 8 + 4}px`,
+        height: `${Math.random() * 8 + 4}px`,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        background: i % 3 === 0
+            ? 'rgba(249,115,22,0.4)'
+            : i % 3 === 1
+            ? 'rgba(251,146,60,0.25)'
+            : 'rgba(255,237,213,0.3)',
+        duration: 3 + Math.random() * 4,
+        delay: Math.random() * 3,
+    }));
 
-    const formatTime = (seconds) => {
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        const ms = Math.floor((seconds % 1) * 100);
-        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
+    const handleAdminLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (!adminEmail.trim() || !adminPassword.trim()) {
+            setError('Please enter both Email and Password');
+            setShake(true);
+            setTimeout(() => setShake(false), 450);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await login(adminEmail.trim(), adminPassword);
+            if (res.success) {
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                if (storedUser.role === 'admin' || storedUser.role === 'subadmin') {
+                    navigate('/admin');
+                } else {
+                    // Non-admin attempted to login via admin panel during maintenance
+                    logout();
+                    setError('Access Denied: Only administrators can sign in while maintenance is active.');
+                    setShake(true);
+                    setTimeout(() => setShake(false), 450);
+                }
+            } else {
+                setError(res.message || 'Invalid administrator credentials');
+                setShake(true);
+                setTimeout(() => setShake(false), 450);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Login failed. Please verify credentials.');
+            setShake(true);
+            setTimeout(() => setShake(false), 450);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const errors = [
-        "CRITICAL_PROCESS_DIED",
-        "KERNEL_SECURITY_CHECK_FAILURE",
-        "SYSTEM_SERVICE_EXCEPTION",
-        "IRQL_NOT_LESS_OR_EQUAL",
-        "DATA_BUS_ERROR"
-    ];
-
     return (
-        <div className="h-screen w-screen bg-black text-red-600 font-mono flex flex-col items-center justify-center p-4 relative overflow-hidden select-none cursor-not-allowed overscroll-none fixed inset-0">
+        <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden select-none p-4"
+            style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #111 40%, #1a0f00 70%, #0f0a00 100%)' }}>
 
-            {/* CRT Scanline & flicker effect */}
-            <div className="absolute inset-0 z-50 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-            <div className="absolute inset-0 z-50 pointer-events-none" style={{ background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))', backgroundSize: '100% 2px, 3px 100%' }}></div>
-
-            {/* Red Strobe */}
-            <motion.div
-                animate={{ opacity: [0, 0.3, 0] }}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="absolute inset-0 bg-red-900/40 z-0 pointer-events-none mix-blend-overlay"
-            />
-
-            {/* Falling Code (Matrix style but red and chaotic) */}
-            <div className="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
-                    <motion.div
-                        key={i}
-                        initial={{ top: -100, left: `${Math.random() * 100}%` }}
-                        animate={{ top: '100%' }}
-                        transition={{
-                            duration: Math.random() * 2 + 1,
-                            repeat: Infinity,
-                            ease: "linear",
-                            delay: Math.random() * 2
-                        }}
-                        className="absolute text-xs vertical-text font-bold text-red-500/50"
-                        style={{ writingMode: 'vertical-rl' }}
-                    >
-                        {Array.from({ length: 20 }).map(() => String.fromCharCode(0x30A0 + Math.random() * 96)).join('')}
-                    </motion.div>
-                ))}
+            {/* Ambient bg glows */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full"
+                    style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full"
+                    style={{ background: 'radial-gradient(circle, rgba(251,146,60,0.06) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+                <div className="absolute top-[40%] left-[50%] w-[300px] h-[300px] rounded-full -translate-x-1/2"
+                    style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%)', filter: 'blur(80px)' }} />
             </div>
 
-            {/* Main Content Wrapper with Shake */}
-            <motion.div
-                animate={{ x: [-2, 2, -1, 1, 0], y: [1, -1, 0] }}
-                transition={{ repeat: Infinity, duration: 0.2 }}
-                className="relative z-40 max-w-5xl w-full h-full flex flex-col justify-center py-4"
-            >
-                <div className="bg-red-600 text-black font-black text-center py-4 text-2xl md:text-4xl panic-strobe tracking-widest mb-4 border-y-4 border-black uppercase shadow-[0_0_30px_rgba(220,38,38,0.8)] z-50">
-                    /// SERVER IN MAINTENANCE MODE ///
-                </div>
+            {/* Floating particles */}
+            {particles.map((p, i) => <Particle key={i} style={p} />)}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center bg-black/95 border-2 border-red-600 p-4 md:p-8 shadow-[0_0_100px_rgba(220,38,38,0.4)] backdrop-blur-sm relative max-h-[85vh] overflow-hidden">
+            {/* Grid pattern overlay */}
+            <div className="absolute inset-0 pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(249,115,22,0.06) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
-                    {/* Left Column: Visuals */}
-                    <div className="text-center relative">
+            <AnimatePresence mode="wait">
+                {!showAdminLogin ? (
+                    /* ── VIEW 1: Under Maintenance Notice ── */
+                    <motion.div
+                        key="maintenance-card"
+                        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                        transition={{ duration: 0.5, type: 'spring', stiffness: 120 }}
+                        className="relative z-10 flex flex-col items-center text-center px-8 py-12 max-w-md w-full"
+                        style={{
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(249,115,22,0.2)',
+                            borderRadius: '28px',
+                            backdropFilter: 'blur(20px)',
+                            boxShadow: '0 0 80px rgba(249,115,22,0.08), 0 20px 60px rgba(0,0,0,0.4)',
+                        }}
+                    >
+                        {/* Top accent line */}
+                        <div className="absolute top-0 left-8 right-8 h-[1.5px] rounded-full"
+                            style={{ background: 'linear-gradient(90deg, transparent, rgba(249,115,22,0.7), rgba(251,146,60,1), rgba(249,115,22,0.7), transparent)' }} />
+
+                        {/* Icon */}
                         <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                            className="inline-block relative"
+                            animate={{ rotate: [0, -4, 4, -2, 2, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                            className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 relative"
+                            style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(251,146,60,0.08))', border: '1px solid rgba(249,115,22,0.25)' }}
                         >
-                            <IoNuclear className="text-9xl text-red-600 opacity-80" />
-                            <div className="absolute inset-0 border-4 border-dashed border-red-500 rounded-full animate-spin-reverse" style={{ animationDirection: 'reverse' }}></div>
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                                <motion.path
+                                    d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                                    stroke="url(#iconGrad)"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    animate={{ pathLength: [0.8, 1, 0.8] }}
+                                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                                <defs>
+                                    <linearGradient id="iconGrad" x1="0" y1="0" x2="24" y2="24">
+                                        <stop offset="0%" stopColor="#f97316" />
+                                        <stop offset="100%" stopColor="#fb923c" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            {/* Glow ring */}
+                            <motion.div
+                                className="absolute inset-0 rounded-2xl"
+                                animate={{ boxShadow: ['0 0 0 0 rgba(249,115,22,0)', '0 0 0 8px rgba(249,115,22,0.08)', '0 0 0 0 rgba(249,115,22,0)'] }}
+                                transition={{ duration: 2.5, repeat: Infinity }}
+                            />
                         </motion.div>
 
-                        <div className="mt-8 relative overflow-hidden h-24 bg-red-950/30 border border-red-800 rounded p-2">
-                            {/* Fake Waveform */}
-                            <div className="flex items-end justify-center h-full gap-1">
-                                {[...Array(20)].map((_, i) => (
-                                    <motion.div
-                                        key={i}
-                                        animate={{ height: ["10%", `${Math.random() * 100}%`, "10%"] }}
-                                        transition={{ duration: 0.2, repeat: Infinity }}
-                                        className="w-2 bg-red-500"
+                        {/* Brand */}
+                        <div className="mb-2">
+                            <span className="text-sm font-black tracking-widest uppercase" style={{ color: '#f97316', letterSpacing: '0.2em' }}>
+                                Apna Lakshay
+                            </span>
+                        </div>
+
+                        {/* Heading */}
+                        <h1 className="text-3xl font-black text-white mb-3 leading-tight">
+                            Under Maintenance
+                        </h1>
+
+                        {/* Divider */}
+                        <div className="w-12 h-[2px] rounded-full mb-5" style={{ background: 'linear-gradient(90deg, #f97316, #fb923c)' }} />
+
+                        {/* Description */}
+                        <p className="text-sm font-medium leading-relaxed mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                            We're currently performing scheduled maintenance to optimize system performance.
+                        </p>
+                        <p className="text-xs font-semibold mb-7" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                            All accounts & study records are safe. We will be back online shortly.
+                        </p>
+
+                        {/* Status indicator */}
+                        <div className="flex items-center gap-2 mb-8 px-4 py-2 rounded-full"
+                            style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.18)' }}>
+                            <motion.div
+                                className="w-2 h-2 rounded-full"
+                                style={{ background: '#f97316' }}
+                                animate={{ opacity: [1, 0.3, 1], scale: [1, 0.8, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                            />
+                            <span className="text-xs font-bold" style={{ color: '#fb923c' }}>Maintenance mode active</span>
+                        </div>
+
+                        {/* Admin Login Button — Opens separate Admin Console */}
+                        <motion.button
+                            onClick={() => setShowAdminLogin(true)}
+                            whileHover={{ scale: 1.03, y: -1 }}
+                            whileTap={{ scale: 0.97 }}
+                            className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-2xl font-bold text-sm relative overflow-hidden cursor-pointer"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(251,146,60,0.08))',
+                                border: '1px solid rgba(249,115,22,0.35)',
+                                color: '#fb923c',
+                                boxShadow: '0 4px 20px rgba(249,115,22,0.12)',
+                            }}
+                        >
+                            {/* Shimmer */}
+                            <motion.div
+                                className="absolute inset-0 pointer-events-none"
+                                style={{ background: 'linear-gradient(105deg, transparent 35%, rgba(249,115,22,0.1) 50%, transparent 65%)', backgroundSize: '200% 100%' }}
+                                animate={{ backgroundPosition: ['-200% center', '200% center'] }}
+                                transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+                            />
+                            <IoLockClosed size={16} className="text-orange-500" />
+                            <span className="font-extrabold tracking-wide">Administrator Login</span>
+                        </motion.button>
+
+                        <p className="text-[11px] mt-4 font-medium" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                            Administrator portal access only
+                        </p>
+                    </motion.div>
+                ) : (
+                    /* ── VIEW 2: Dedicated Administrator Login Terminal ── */
+                    <motion.div
+                        key="admin-login-card"
+                        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1, x: shake ? [-6, 6, -4, 4, -2, 2, 0] : 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                        transition={{ duration: 0.45, type: 'spring', stiffness: 130 }}
+                        className="relative z-10 px-8 py-10 max-w-md w-full"
+                        style={{
+                            background: 'rgba(18,14,12,0.85)',
+                            border: '1.5px solid rgba(249,115,22,0.35)',
+                            borderRadius: '28px',
+                            backdropFilter: 'blur(25px)',
+                            boxShadow: '0 0 90px rgba(249,115,22,0.12), 0 25px 70px rgba(0,0,0,0.5)',
+                        }}
+                    >
+                        {/* Top accent line */}
+                        <div className="absolute top-0 left-8 right-8 h-[2px] rounded-full"
+                            style={{ background: 'linear-gradient(90deg, transparent, #f97316, #fb923c, transparent)' }} />
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                            <button
+                                onClick={() => { setShowAdminLogin(false); setError(''); }}
+                                className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors cursor-pointer py-1 px-2.5 rounded-lg hover:bg-white/5"
+                            >
+                                <IoArrowBack size={14} />
+                                <span>Back</span>
+                            </button>
+
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
+                                style={{ background: 'rgba(249,115,22,0.12)', border: '1px solid rgba(249,115,22,0.3)', color: '#fb923c' }}>
+                                <IoShieldCheckmark size={12} />
+                                <span>Admin Portal</span>
+                            </div>
+                        </div>
+
+                        {/* Title */}
+                        <div className="text-center mb-6">
+                            <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3 shadow-lg"
+                                style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)', boxShadow: '0 4px 20px rgba(249,115,22,0.4)' }}>
+                                <IoLockClosed size={24} className="text-white" />
+                            </div>
+                            <h2 className="text-2xl font-black text-white tracking-tight">Admin Console</h2>
+                            <p className="text-xs text-gray-400 mt-1">Authorized access to management dashboard</p>
+                        </div>
+
+                        {/* Error Alert */}
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-5 p-3 rounded-xl text-xs font-semibold text-red-400 flex items-start gap-2"
+                                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}
+                            >
+                                <span>⚠️</span>
+                                <span className="flex-1">{error}</span>
+                            </motion.div>
+                        )}
+
+                        {/* Form */}
+                        <form onSubmit={handleAdminLogin} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-300 mb-1.5 uppercase tracking-wider">
+                                    Admin Email / ID
+                                </label>
+                                <div className="relative flex items-center">
+                                    <IoPerson className="absolute left-3.5 text-gray-500 pointer-events-none" size={16} />
+                                    <input
+                                        type="text"
+                                        value={adminEmail}
+                                        onChange={(e) => setAdminEmail(e.target.value)}
+                                        placeholder="admin@apnalakshay.com"
+                                        autoFocus
+                                        className="w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium text-white placeholder-gray-500 focus:outline-none transition-all duration-200"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.06)',
+                                            border: '1px solid rgba(255,255,255,0.12)',
+                                        }}
+                                        onFocus={(e) => { e.target.style.borderColor = '#f97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.15)'; }}
+                                        onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.boxShadow = 'none'; }}
                                     />
-                                ))}
+                                </div>
                             </div>
-                            <div className="absolute top-1 left-2 text-xs text-red-400">CORE_TEMP_CRITICAL</div>
-                        </div>
-                    </div>
 
-                    {/* Right Column: Text & Data */}
-                    <div className="space-y-6">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-black text-white mix-blend-difference glitch-layers relative leading-tight" data-text="TEMPORARY SERVICE UNAVAILABLE">
-                                TEMPORARY SERVICE UNAVAILABLE
-                            </h1>
-                            <div className="h-1 w-full bg-red-600 mt-2"></div>
-                        </div>
-
-                        <div className="space-y-2 font-mono text-sm">
-                            <div className="flex justify-between border-b border-red-900 pb-1">
-                                <span>ERROR_CODE:</span>
-                                <span className="animate-pulse">0xDEAD_BEEF</span>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-300 mb-1.5 uppercase tracking-wider">
+                                    Password
+                                </label>
+                                <div className="relative flex items-center">
+                                    <IoLockClosed className="absolute left-3.5 text-gray-500 pointer-events-none" size={16} />
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={adminPassword}
+                                        onChange={(e) => setAdminPassword(e.target.value)}
+                                        placeholder="••••••••••••"
+                                        className="w-full pl-10 pr-11 py-3 rounded-xl text-sm font-medium text-white placeholder-gray-500 focus:outline-none transition-all duration-200"
+                                        style={{
+                                            background: 'rgba(255,255,255,0.06)',
+                                            border: '1px solid rgba(255,255,255,0.12)',
+                                        }}
+                                        onFocus={(e) => { e.target.style.borderColor = '#f97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.15)'; }}
+                                        onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.12)'; e.target.style.boxShadow = 'none'; }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 text-gray-400 hover:text-white p-1 transition-colors"
+                                    >
+                                        {showPassword ? <IoEyeOff size={16} /> : <IoEye size={16} />}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex justify-between border-b border-red-900 pb-1">
-                                <span>SYSTEM_STATUS:</span>
-                                <span className="text-red-500 font-bold blink">COMPROMISED</span>
-                            </div>
-                            <div className="flex justify-between border-b border-red-900 pb-1">
-                                <span>ESTIMATED_DATA_LOSS:</span>
-                                <span>{breachLevel.toFixed(2)}%</span>
-                            </div>
-                        </div>
 
-                        {/* Self Destruct Timer */}
-                        <div className="bg-red-900/20 p-2 border border-red-600 text-center">
-                            <div className="text-[10px] text-red-400 mb-0">AUTOMATIC_PURGE_SEQUENCE</div>
-                            <div className="text-4xl md:text-5xl font-black font-digital text-red-500 tracking-widest tabular-nums">
-                                {formatTime(timeLeft)}
-                            </div>
-                        </div>
+                            <motion.button
+                                type="submit"
+                                disabled={loading}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="w-full mt-6 py-3.5 px-6 rounded-xl font-extrabold text-white text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-orange-500/25 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                                style={{
+                                    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                                }}
+                            >
+                                {loading ? (
+                                    <>
+                                        <IoTimeOutline size={18} className="animate-spin" />
+                                        <span>Authenticating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Sign In to Admin Panel</span>
+                                        <IoArrowForward size={16} />
+                                    </>
+                                )}
+                            </motion.button>
+                        </form>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                        {/* Terminal Log */}
-                        <div className="h-24 md:h-32 overflow-hidden text-[10px] text-red-400/80 font-mono p-2 bg-black border border-red-900/50 flex flex-col justify-end">
-                            {errors.slice(-4).map((err, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ delay: i * 0.8 }}
-                                    className="mb-0.5 truncate"
-                                >
-                                    [{new Date().toLocaleTimeString().split(' ')[0]}] CRITICAL: {err}
-                                </motion.div>
-                            ))}
-                            <div className="animate-pulse">_</div>
-                        </div>
-                    </div>
-
-                    {/* Overlay Crosshairs */}
-                    <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-red-500"></div>
-                    <div className="absolute top-4 right-4 w-4 h-4 border-t border-r border-red-500"></div>
-                    <div className="absolute bottom-4 left-4 w-4 h-4 border-b border-l border-red-500"></div>
-                    <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-red-500"></div>
-                </div>
-
-                <div className="text-center mt-12">
-                    <Link to="/login?access=admin" className="inline-flex items-center gap-2 text-red-800 hover:text-red-500 transition-colors uppercase text-sm tracking-widest border border-transparent hover:border-900 px-4 py-2 opacity-50 hover:opacity-100">
-                        <IoLockClosed /> Emergency Admin Override
-                    </Link>
-                </div>
-
-            </motion.div>
-
-            {/* CSS for digital font force and blink */}
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-                .font-digital { font-family: 'Share Tech Mono', monospace; }
-                .blink { animation: blinker 0.1s linear infinite; }
-                @keyframes blinker { 50% { opacity: 0; } }
-                .glitch-layers { position: relative; }
-                .glitch-layers:before, .glitch-layers:after {
-                    content: attr(data-text);
-                    position: absolute;
-                    left: 0;
-                    text-shadow: 1px 0 #00ffff;
-                    top: 0;
-                    color: white;
-                    background: black;
-                    overflow: hidden;
-                    clip-path: inset(0 0 0 0);
-                    animation: noise-anim-2 2s infinite linear alternate-reverse;
-                }
-                .glitch-layers:after {
-                    text-shadow: -1px 0 #ff00ff;
-                    animation: noise-anim 2s infinite linear alternate-reverse;
-                }
-                @keyframes noise-anim {
-                    0% { clip-path: inset(10% 0 85% 0); transform: translate(-2px, 0); }
-                    20% { clip-path: inset(85% 0 10% 0); transform: translate(2px, 0); }
-                    40% { clip-path: inset(50% 0 30% 0); transform: translate(-2px, 0); }
-                    100% { clip-path: inset(25% 0 55% 0); transform: translate(2px, 0); }
-                }
-                .panic-strobe { animation: panic 0.1s infinite; }
-                @keyframes panic {
-                    0% { background-color: #dc2626; color: black; border-color: black; }
-                    50% { background-color: black; color: #dc2626; border-color: #dc2626; }
-                    100% { background-color: #dc2626; color: black; border-color: black; }
-                }
-            `}</style>
+            {/* Bottom brand footer */}
+            <p className="absolute bottom-6 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                © {new Date().getFullYear()} Apna Lakshay Library Management System
+            </p>
         </div>
     );
 };
