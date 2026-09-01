@@ -91,6 +91,16 @@ exports.updateSettings = async (req, res) => {
                 { new: true, runValidators: true }
             );
         }
+ 
+        // Broadcast system status change to all connected clients
+        try {
+            const io = req.app.get('io');
+            if (io && systemStatus !== undefined) {
+                io.emit('system_status_change', { systemStatus: settings.systemStatus });
+            }
+        } catch (e) {
+            console.error('Socket emit error on settings update:', e);
+        }
 
         res.status(200).json({
             success: true,
