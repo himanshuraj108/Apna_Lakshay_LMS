@@ -177,7 +177,9 @@ function App() {
             }
         } else if (systemStatus === 'active' && isMaintenancePage) {
             // When maintenance ends, automatically route back without forcing students to re-login
-            if (isAdmin) {
+            if (user?.role === 'subadmin') {
+                navigate('/sub-admin');
+            } else if (user?.role === 'admin') {
                 navigate('/admin');
             } else if (user?.role === 'student') {
                 navigate('/student');

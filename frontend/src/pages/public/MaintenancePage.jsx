@@ -67,7 +67,7 @@ const MaintenancePage = () => {
                 localStorage.setItem('token', token);
                 localStorage.setItem('user', JSON.stringify(userData));
                 if (setUser) setUser(userData);
-                navigate('/admin');
+                navigate(userData?.role === 'subadmin' ? '/sub-admin' : '/admin');
             } else {
                 // Student account tried to sign in via admin terminal:
                 // Do NOT save token or trigger backend requests
