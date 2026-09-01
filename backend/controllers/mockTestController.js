@@ -208,7 +208,7 @@ const analyzeHandwriting = async (imageUrl, apiKey) => {
     }
 
     const body = JSON.stringify({
-        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        model: 'llama-3.2-11b-vision-preview',
         messages: [
             {
                 role: 'user',
@@ -269,10 +269,12 @@ const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
 // Models tried in order — if one is rate-limited or unavailable, the next is used
 const GROQ_MODELS = [
-    'llama-3.1-8b-instant',                          // fast, light (still active)
-    'meta-llama/llama-4-maverick-17b-128e-instruct', // llama4 maverick – best quality
-    'qwen/qwen3.6-27b',                              // Qwen3.6 – latest Qwen
-    'moonshotai/kimi-k2-instruct-0905',              // Kimi K2 – MoE, large context fallback
+    'llama-3.3-70b-versatile', // Top quality Meta Llama 3.3 70B (primary)
+    'llama-3.1-8b-instant',    // Ultra-fast Llama 3.1 8B (speed fallback)
+    'llama3-70b-8192',         // Llama 3 70B fallback
+    'llama3-8b-8192',          // Llama 3 8B fallback
+    'mixtral-8x7b-32768',      // Mixtral 8x7B MoE fallback
+    'gemma2-9b-it',            // Google Gemma 2 9B fallback
 ];
 
 // Detailed Exam Patterns with Sections, Syllabus, and Marking Scheme

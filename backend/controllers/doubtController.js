@@ -4,56 +4,75 @@ const DoubtSession = require('../models/DoubtSession');
 
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
-const GROQ_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct';
+const GROQ_MODELS = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'llama3-70b-8192',
+    'llama3-8b-8192',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
+];
 
 const DAILY_DOUBT_LIMIT = 10;
 
-// ── Groq call (reuse same pattern as mockTestController) ──
-const callGroq = (messages) => new Promise((resolve, reject) => {
+// ── Groq call (with multi-key and multi-model fallback) ──
+const callGroq = async (messages) => {
     const keys = [
         process.env.GROQ_API_KEY,
         process.env.GROQ_API_KEY_2,
         process.env.GROQ_API_KEY_3,
     ].filter(Boolean);
-    if (keys.length === 0) return reject(new Error('No Groq API key configured'));
+    if (keys.length === 0) throw new Error('No Groq API key configured');
 
-    const tryKey = (idx) => {
-        if (idx >= keys.length) return reject(new Error('All Groq keys failed'));
-        const body = JSON.stringify({
-            model: GROQ_MODEL,
-            messages,
-            temperature: 0.6,
-            max_tokens: 1200,
-        });
-        const req = https.request({
-            hostname: GROQ_HOST,
-            path: GROQ_PATH,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${keys[idx]}`,
-                'Content-Length': Buffer.byteLength(body),
-            },
-            timeout: 30000,
-        }, (res) => {
-            let data = '';
-            res.on('data', c => (data += c));
-            res.on('end', () => {
-                if (res.statusCode === 429) return tryKey(idx + 1);
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed.error) return tryKey(idx + 1);
-                    resolve(parsed?.choices?.[0]?.message?.content || '');
-                } catch { tryKey(idx + 1); }
-            });
-        });
-        req.on('error', () => tryKey(idx + 1));
-        req.on('timeout', () => { req.destroy(); tryKey(idx + 1); });
-        req.write(body);
-        req.end();
-    };
-    tryKey(0);
-});
+    let lastError = null;
+    for (let ki = 0; ki < keys.length; ki++) {
+        const apiKey = keys[ki];
+        for (const model of GROQ_MODELS) {
+            try {
+                const text = await new Promise((resolve, reject) => {
+                    const body = JSON.stringify({
+                        model,
+                        messages,
+                        temperature: 0.6,
+                        max_tokens: 1200,
+                    });
+                    const req = https.request({
+                        hostname: GROQ_HOST,
+                        path: GROQ_PATH,
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Length': Buffer.byteLength(body),
+                        },
+                        timeout: 30000,
+                    }, (res) => {
+                        let data = '';
+                        res.on('data', c => (data += c));
+                        res.on('end', () => {
+                            if (res.statusCode === 429) return reject(new Error('rate_limit'));
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.error) return reject(new Error(parsed.error.message || 'Groq error'));
+                                resolve(parsed?.choices?.[0]?.message?.content || '');
+                            } catch (e) { reject(new Error('Invalid response')); }
+                        });
+                    });
+                    req.on('error', reject);
+                    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+                    req.write(body);
+                    req.end();
+                });
+                if (text) return text;
+            } catch (err) {
+                lastError = err;
+                console.warn(`[Groq Doubt] key[${ki}] model=${model} failed: ${err.message}`);
+                if (err.message === 'rate_limit') break;
+            }
+        }
+    }
+    throw lastError || new Error('All Groq keys and models failed');
+};
 
 const SUBJECT_CONTEXT = {
     maths:          'You are a brilliant Maths tutor for Indian competitive exams (SSC, UPSC, Banking).',
