@@ -35,7 +35,9 @@ api.interceptors.response.use(
         // Handle Simulated System Crash
         // Handle Server Maintenance (503)
         if (error.response?.status === 503 || (error.response?.status === 500 && error.response?.data?.maintenanceMode)) {
-            window.location.href = '/maintenance';
+            if (window.location.pathname !== '/maintenance') {
+                window.location.href = '/maintenance';
+            }
             return Promise.reject(error);
         }
 

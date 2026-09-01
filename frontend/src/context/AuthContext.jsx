@@ -110,6 +110,11 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('token');
             if (!token) return;
 
+            const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            if (systemStatus === 'maintenance' && savedUser?.role === 'student') {
+                return; // Avoid unnecessary 503 requests during maintenance for students
+            }
+
             const res = await api.get('/auth/me');
             if (res.data.success) {
                 updateUser(res.data.user);
@@ -121,6 +126,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
+        setUser,
         loading,
         systemStatus,
         isSubAdminVerified,
@@ -132,7 +138,7 @@ export const AuthProvider = ({ children }) => {
         updateUser,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
-        isStudent: user?.role === 'student'
+        isSubAdmin: user?.role === 'subadmin',
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

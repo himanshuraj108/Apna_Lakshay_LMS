@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { IoShieldCheckmark, IoLockClosed, IoPerson, IoEye, IoEyeOff, IoArrowBack, IoArrowForward, IoTimeOutline } from 'react-icons/io5';
+import api from '../../utils/api';
+import { IoShieldCheckmark, IoLockClosed, IoPerson, IoEye, IoEyeOff, IoArrowBack, IoArrowForward, IoTimeOutline, IoAlertCircleOutline } from 'react-icons/io5';
 
 /* ── Floating ambient particle ────────────────────────────────────────── */
 const Particle = ({ style }) => (
@@ -16,7 +17,7 @@ const Particle = ({ style }) => (
 
 const MaintenancePage = () => {
     const navigate = useNavigate();
-    const { login, logout } = useAuth();
+    const { setUser } = useAuth();
 
     const [showAdminLogin, setShowAdminLogin] = useState(false);
     const [adminEmail, setAdminEmail] = useState('');
@@ -24,6 +25,7 @@ const MaintenancePage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [studentNotice, setStudentNotice] = useState('');
     const [shake, setShake] = useState(false);
 
     // Particles array
@@ -44,6 +46,7 @@ const MaintenancePage = () => {
     const handleAdminLogin = async (e) => {
         e.preventDefault();
         setError('');
+        setStudentNotice('');
         if (!adminEmail.trim() || !adminPassword.trim()) {
             setError('Please enter both Email and Password');
             setShake(true);
@@ -53,25 +56,29 @@ const MaintenancePage = () => {
 
         setLoading(true);
         try {
-            const res = await login(adminEmail.trim(), adminPassword);
-            if (res.success) {
-                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-                if (storedUser.role === 'admin' || storedUser.role === 'subadmin') {
-                    navigate('/admin');
-                } else {
-                    // Non-admin attempted to login via admin panel during maintenance
-                    logout();
-                    setError('Access Denied: Only administrators can sign in while maintenance is active.');
-                    setShake(true);
-                    setTimeout(() => setShake(false), 450);
-                }
+            const res = await api.post('/auth/login', {
+                email: adminEmail.trim(),
+                password: adminPassword
+            });
+
+            const { token, user: userData } = res.data;
+
+            if (userData?.role === 'admin' || userData?.role === 'subadmin') {
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(userData));
+                if (setUser) setUser(userData);
+                navigate('/admin');
             } else {
-                setError(res.message || 'Invalid administrator credentials');
-                setShake(true);
-                setTimeout(() => setShake(false), 450);
+                // Student account tried to sign in via admin terminal:
+                // Do NOT save token or trigger backend requests
+                // Smoothly close admin form and return to maintenance home screen
+                setAdminEmail('');
+                setAdminPassword('');
+                setShowAdminLogin(false);
+                setStudentNotice('Student account detected. Access is restricted to administrators during maintenance.');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please verify credentials.');
+            setError(err.response?.data?.message || 'Invalid administrator credentials');
             setShake(true);
             setTimeout(() => setShake(false), 450);
         } finally {
@@ -178,7 +185,7 @@ const MaintenancePage = () => {
                         </p>
 
                         {/* Status indicator */}
-                        <div className="flex items-center gap-2 mb-8 px-4 py-2 rounded-full"
+                        <div className="flex items-center gap-2 mb-6 px-4 py-2 rounded-full"
                             style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.18)' }}>
                             <motion.div
                                 className="w-2 h-2 rounded-full"
@@ -188,6 +195,19 @@ const MaintenancePage = () => {
                             />
                             <span className="text-xs font-bold" style={{ color: '#fb923c' }}>Maintenance mode active</span>
                         </div>
+
+                        {/* Student Notice Banner */}
+                        {studentNotice && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="mb-6 p-3.5 rounded-2xl text-xs font-semibold text-amber-300 flex items-center gap-2.5 text-left w-full"
+                                style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)' }}
+                            >
+                                <IoAlertCircleOutline size={20} className="shrink-0 text-amber-400" />
+                                <span className="leading-snug">{studentNotice}</span>
+                            </motion.div>
+                        )}
 
                         {/* Admin Login Button — Opens separate Admin Console */}
                         <motion.button
