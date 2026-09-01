@@ -49,6 +49,19 @@ const AdminDashboard = () => {
         } catch (e) { console.error(e); }
     };
 
+    const handleToggleSystemStatus = async () => {
+        try {
+            const isCurrentlyActive = settings?.systemStatus !== 'maintenance';
+            const newStatus = isCurrentlyActive ? 'maintenance' : 'active';
+            const res = await api.put('/admin/settings', { systemStatus: newStatus });
+            if (res.data.settings) setSettings(res.data.settings);
+            else await fetchSettings();
+        } catch (e) {
+            console.error('Failed to toggle system status:', e);
+            await fetchSettings();
+        }
+    };
+
     const handleToggleMode = async (mode) => {
         try {
             const currentModes = settings.activeModes || { default: true, custom: false };
@@ -222,21 +235,26 @@ const AdminDashboard = () => {
                                             <div className="p-3 space-y-1">
 
                                                 {/* Row 1 — System Status */}
-                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${settings?.activeModes?.custom ? 'bg-red-500/15' : 'bg-green-500/15'}`}>
-                                                            <IoPower size={15} className={settings?.activeModes?.custom ? 'text-red-400' : 'text-green-400'} />
+                                                {(() => {
+                                                    const isSystemActive = settings?.systemStatus !== 'maintenance';
+                                                    return (
+                                                        <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`p-1.5 rounded-lg ${isSystemActive ? 'bg-green-500/15' : 'bg-red-500/15'}`}>
+                                                                    <IoPower size={15} className={isSystemActive ? 'text-green-500' : 'text-red-500'} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-gray-900">System Status</p>
+                                                                    <p className="text-xs text-gray-600">{isSystemActive ? 'System is active' : 'Maintenance mode ON'}</p>
+                                                                </div>
+                                                            </div>
+                                                            <button onClick={handleToggleSystemStatus}
+                                                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isSystemActive ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${isSystemActive ? 'translate-x-5' : ''}`} />
+                                                            </button>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">System Status</p>
-                                                            <p className="text-xs text-gray-600">{settings?.activeModes?.custom ? 'Maintenance mode ON' : 'System is active'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={handleToggleMode.bind(null, 'custom')}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.activeModes?.custom ? 'bg-red-500' : 'bg-green-500'}`}>
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.activeModes?.custom ? 'translate-x-5' : ''}`} />
-                                                    </button>
-                                                </div>
+                                                    );
+                                                })()}
 
                                                 {/* Row 2 — Location */}
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
