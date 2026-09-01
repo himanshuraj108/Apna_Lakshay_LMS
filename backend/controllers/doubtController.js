@@ -4,7 +4,7 @@ const DoubtSession = require('../models/DoubtSession');
 
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.1-8b-instant';
+const GROQ_MODEL = 'meta-llama/llama-4-maverick-17b-128e-instruct';
 
 const DAILY_DOUBT_LIMIT = 10;
 
