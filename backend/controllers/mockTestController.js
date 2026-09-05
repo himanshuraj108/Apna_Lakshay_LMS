@@ -208,7 +208,7 @@ const analyzeHandwriting = async (imageUrl, apiKey) => {
     }
 
     const body = JSON.stringify({
-        model: 'llama-3.2-11b-vision-preview',
+        model: 'openai/gpt-oss-20b',
         messages: [
             {
                 role: 'user',
@@ -267,14 +267,14 @@ const analyzeHandwriting = async (imageUrl, apiKey) => {
 // Groq OpenAI-compatible API
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
-// Models tried in order — if one is rate-limited or unavailable, the next is used
+// Models tried in order — verified on production Groq keys (updated per Groq deprecation notices)
 const GROQ_MODELS = [
-    'llama-3.3-70b-versatile', // Top quality Meta Llama 3.3 70B (primary)
-    'llama-3.1-8b-instant',    // Ultra-fast Llama 3.1 8B (speed fallback)
-    'llama3-70b-8192',         // Llama 3 70B fallback
-    'llama3-8b-8192',          // Llama 3 8B fallback
-    'mixtral-8x7b-32768',      // Mixtral 8x7B MoE fallback
-    'gemma2-9b-it',            // Google Gemma 2 9B fallback
+    'openai/gpt-oss-20b',     // Groq recommended replacement for Llama 3.1 8B (primary)
+    'openai/gpt-oss-120b',    // Larger GPT OSS variant
+    'qwen/qwen3.8-27b',       // Qwen 3.8 high quality fallback
+    'qwen/qwen3.6-27b',       // Qwen 3.6 fallback
+    'groq/compound',          // Groq Compound (compound-mini deprecated Sep 21 2026)
+    'allam-2-7b',             // Lightweight last fallback
 ];
 
 // Detailed Exam Patterns with Sections, Syllabus, and Marking Scheme

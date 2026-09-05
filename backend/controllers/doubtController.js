@@ -5,12 +5,12 @@ const DoubtSession = require('../models/DoubtSession');
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
 const GROQ_MODELS = [
-    'llama-3.3-70b-versatile',
-    'llama-3.1-8b-instant',
-    'llama3-70b-8192',
-    'llama3-8b-8192',
-    'mixtral-8x7b-32768',
-    'gemma2-9b-it',
+    'openai/gpt-oss-20b',     // Groq recommended replacement for Llama 3.1 8B (primary)
+    'openai/gpt-oss-120b',    // Larger GPT OSS variant
+    'qwen/qwen3.8-27b',       // Qwen 3.8 high quality fallback
+    'qwen/qwen3.6-27b',       // Qwen 3.6 fallback
+    'groq/compound',          // Groq Compound (compound-mini deprecated Sep 21 2026)
+    'allam-2-7b',             // Lightweight last fallback
 ];
 
 const DAILY_DOUBT_LIMIT = 10;
