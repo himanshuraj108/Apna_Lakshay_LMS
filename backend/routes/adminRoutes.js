@@ -228,7 +228,7 @@ router.route('/settings')
 const {
     getCardConfig, updateCardConfig,
     getAiCreditConfig, updateAiCreditConfig,
-    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll,
+    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll, resetAllAiCredits,
     getMockTestCreditStudents, updateStudentMockTestCredits, resetAllMockTestCredits
 } = require('../controllers/manageCardsController');
 
@@ -239,6 +239,7 @@ router.put('/ai-credit-config', updateAiCreditConfig);
 router.get('/ai-credits/students', getStudentsWithAiCredits);
 router.patch('/ai-credits/students/:id', updateStudentAiCredits);
 router.post('/ai-credits/apply-formula', applyFormulaToAll);
+router.post('/ai-credits/reset-all', resetAllAiCredits);
 
 // Mock Test Credits
 router.get('/mock-test-credits/students', getMockTestCreditStudents);

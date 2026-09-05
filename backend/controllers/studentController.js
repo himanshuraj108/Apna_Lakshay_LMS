@@ -88,7 +88,7 @@ exports.getDashboard = async (req, res) => {
 
             // Query 2: Get student details
             User.findById(studentId)
-                .select('registrationSource createdAt name isActive doubtCredits doubtCreditsResetDate')
+                .select('registrationSource createdAt name isActive doubtCredits maxDoubtCredits doubtCreditsResetDate')
                 .lean(),
 
             // Query 3: Get unread notifications count
@@ -170,9 +170,12 @@ exports.getDashboard = async (req, res) => {
         const studentJoinedDate = student.createdAt ? new Date(student.createdAt) : startOfMonth;
         studentJoinedDate.setHours(0, 0, 0, 0);
 
+        const endOfToday = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        endOfToday.setHours(23, 59, 59, 999);
+
         const attendanceRecords = await Attendance.find({
             student: studentId,
-            date: { $gte: studentJoinedDate, $lte: now }
+            date: { $gte: studentJoinedDate, $lte: endOfToday }
         }).lean(); // Use lean() for faster query
 
         // Deduplicate attendance records (fix for multiple entries per day)
@@ -339,7 +342,15 @@ exports.getDashboard = async (req, res) => {
                     present: presentCount,
                     total: totalDays,
                     percentage: attendancePercentage,
-                    rank: attendanceRank
+                    rank: attendanceRank,
+                    markedToday: (() => {
+                        const toIST = (d) => {
+                            try { return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); }
+                            catch (_) { return new Date(d).toISOString().slice(0, 10); }
+                        };
+                        const todayIST = toIST(now);
+                        return cleanAttendance.some(a => toIST(a.date) === todayIST && (a.status === 'present' || (a.status === 'holiday' && a.entryTime)));
+                    })()
                 },
                 fee: currentFee ? {
                     month: currentFee.month,
@@ -359,9 +370,11 @@ exports.getDashboard = async (req, res) => {
                 doubtCredits: (() => {
                     // Reset if it's a new day
                     const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
-                    if (student.doubtCreditsResetDate !== todayIST) return 10;
-                    return student.doubtCredits ?? 10;
+                    const maxLimit = Math.max(student?.maxDoubtCredits || 0, student?.doubtCredits || 0, 10);
+                    if (student?.doubtCreditsResetDate !== todayIST) return maxLimit;
+                    return Math.max(0, student?.doubtCredits ?? maxLimit);
                 })(),
+                maxDoubtCredits: Math.max(student?.maxDoubtCredits || 0, student?.doubtCredits || 0, 10),
                 onlinePaymentEnabled: settings ? settings.onlinePaymentEnabled !== false : true
             }
         });

@@ -94,6 +94,10 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 10
     },
+    maxDoubtCredits: {
+        type: Number,
+        default: 10
+    },
     doubtCreditsResetDate: {
         type: String,
         default: null

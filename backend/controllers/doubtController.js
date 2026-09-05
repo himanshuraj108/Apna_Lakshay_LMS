@@ -5,11 +5,11 @@ const DoubtSession = require('../models/DoubtSession');
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
 const GROQ_MODELS = [
-    'openai/gpt-oss-20b',     // Groq recommended replacement for Llama 3.1 8B (primary)
-    'openai/gpt-oss-120b',    // Larger GPT OSS variant
-    'qwen/qwen3.8-27b',       // Qwen 3.8 high quality fallback
+    'groq/compound',          // Built-in web retrieval for current affairs
+    'openai/gpt-oss-20b',     // GPT OSS 20B fallback
+    'openai/gpt-oss-120b',    // GPT OSS 120B fallback
+    'qwen/qwen3.8-27b',       // Qwen 3.8 fallback
     'qwen/qwen3.6-27b',       // Qwen 3.6 fallback
-    'groq/compound',          // Groq Compound (compound-mini deprecated Sep 21 2026)
     'allam-2-7b',             // Lightweight last fallback
 ];
 
@@ -34,7 +34,7 @@ const callGroq = async (messages) => {
                         model,
                         messages,
                         temperature: 0.6,
-                        max_tokens: 1200,
+                        max_tokens: 2000,
                     });
                     const req = https.request({
                         hostname: GROQ_HOST,
@@ -100,26 +100,35 @@ exports.askDoubt = async (req, res) => {
         }
 
         // ── Rate limit check ──
-        const student = await User.findById(studentId).select('doubtCredits doubtCreditsResetDate');
+        const student = await User.findById(studentId).select('doubtCredits maxDoubtCredits doubtCreditsResetDate');
         if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
 
         const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
 
+        const maxLimit = Math.max(student.maxDoubtCredits || 0, student.doubtCredits || 0, 10);
+
         if (student.doubtCreditsResetDate !== todayIST) {
-            student.doubtCredits = DAILY_DOUBT_LIMIT;
+            student.doubtCredits = maxLimit;
+            student.maxDoubtCredits = maxLimit;
             student.doubtCreditsResetDate = todayIST;
+        } else if (student.doubtCredits > maxLimit) {
+            student.doubtCredits = maxLimit;
         }
 
         if (student.doubtCredits <= 0) {
             return res.status(429).json({
                 success: false,
-                message: `Daily limit reached (${DAILY_DOUBT_LIMIT} questions/day). Come back tomorrow!`,
-                creditsLeft: 0
+                message: `Credit limit reached (${maxLimit} questions). Come back tomorrow!`,
+                creditsLeft: 0,
+                maxCredits: maxLimit
             });
         }
 
         // Deduct before calling API
-        student.doubtCredits -= 1;
+        student.doubtCredits = Math.max(0, student.doubtCredits - 1);
+        if (!student.maxDoubtCredits || student.maxDoubtCredits < maxLimit) {
+            student.maxDoubtCredits = maxLimit;
+        }
         await student.save({ validateBeforeSave: false });
 
         const systemPrompt = SUBJECT_CONTEXT[subject] || SUBJECT_CONTEXT.general;
@@ -146,13 +155,32 @@ exports.askDoubt = async (req, res) => {
                 role: 'system',
                 content: `${systemPrompt}
 ${langInstruction}
-Answer the student's question clearly and concisely. Format your response as:
-1. **Direct Answer** — give the answer in 1-3 sentences
-2. **Explanation** — explain in simple language (3-5 sentences)
-3. **Key Points** — 2-4 bullet points of important facts to remember
-4. **Exam Tip** — one practical tip for the exam
+CRITICAL FORMATTING RULES FOR MAXIMUM READABILITY:
+- Structure your response using clear markdown headings (##), numbered steps, and bullet points.
+- When explaining formulas, equations, or chemical reactions, write them in standard LaTeX math notation:
+  - Block equations: $$ [equation] $$ or \\[ [equation] \\]
+  - Inline formulas: $ [formula] $
+  - NEVER wrap LaTeX formulas or equations in backticks (\`...\`). Write them directly as $ [formula] $ or $$ [equation] $$.
+- When comparing concepts or presenting structured data, use clean Markdown tables (| Col 1 | Col 2 |).
+- Never write dense, unbroken blocks of text. Keep paragraphs short (2-3 sentences max).
+- Always organize into these clean, visually distinct sections:
 
-Keep the total response under 300 words. If unsure, say so honestly.`
+## Direct Answer
+[1-2 crisp sentences giving the exact answer clearly]
+
+## Step-by-Step Breakdown
+1. [First key step or concept with **bold** highlights]
+2. [Second mechanism, proof, or formula]
+3. [Third practical application or detail]
+
+## Key Points to Remember
+- [Crucial takeaway or fact 1]
+- [Crucial takeaway or fact 2]
+- [Crucial takeaway or fact 3]
+
+> 🎯 Key Tip / Formula: [One practical tip or memory trick for exams]
+
+Keep total response under 500 words. For current affairs, use your web retrieval capability to provide accurate and up-to-date information.`
             },
             { role: 'user', content: question.trim() }
         ];
@@ -163,7 +191,8 @@ Keep the total response under 300 words. If unsure, say so honestly.`
             success: true,
             answer: answer.trim(),
             subject,
-            creditsLeft: student.doubtCredits,
+            creditsLeft: Math.max(0, student.doubtCredits),
+            maxCredits: student.maxDoubtCredits || maxLimit,
             question: question.trim()
         });
 

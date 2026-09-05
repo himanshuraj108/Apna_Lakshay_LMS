@@ -184,6 +184,7 @@ exports.login = async (req, res) => {
                 mockTestCredits: user.mockTestCredits,
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
                 doubtCredits: user.doubtCredits || 0,
+                maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
                 gender: user.gender
             }
         });
@@ -259,6 +260,7 @@ exports.getMe = async (req, res) => {
             bonusMockTestCredits: user.bonusMockTestCredits || 0,
             examTarget: user.examTarget,
             doubtCredits: user.doubtCredits || 0,
+            maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
             gender: user.gender
         };
 
@@ -574,6 +576,7 @@ exports.verifySeatLogin = async (req, res) => {
                 mockTestCredits: user.mockTestCredits,
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
                 doubtCredits: user.doubtCredits || 0,
+                maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
                 gender: user.gender
             }
         });
@@ -843,6 +846,7 @@ exports.verifyOtpAndAutoLogin = async (req, res) => {
                 mockTestCredits: user.mockTestCredits,
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
                 doubtCredits: user.doubtCredits || 0,
+                maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
                 gender: user.gender
             }
         });

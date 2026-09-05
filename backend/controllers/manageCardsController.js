@@ -108,7 +108,7 @@ const getStudentsWithAiCredits = async (req, res) => {
             query.isActive = true;
         }
         const students = await User.find(query)
-            .select('name studentId email doubtCredits seat isActive')
+            .select('name studentId email doubtCredits maxDoubtCredits seat isActive')
             .populate('seat', 'seatNumber negotiatedPrice')
             .lean();
 
@@ -122,6 +122,7 @@ const getStudentsWithAiCredits = async (req, res) => {
             email: s.email,
             isActive: s.isActive !== false,
             doubtCredits: s.doubtCredits ?? 10,
+            maxDoubtCredits: s.maxDoubtCredits ?? s.doubtCredits ?? 10,
             creditMode: s.creditMode || 'auto',
             negotiatedFee: s.seat?.negotiatedPrice || 0,
             suggestedCredits: s.seat?.negotiatedPrice ? Math.round(s.seat.negotiatedPrice / divisor) : 10,
@@ -136,12 +137,18 @@ const getStudentsWithAiCredits = async (req, res) => {
 const updateStudentAiCredits = async (req, res) => {
     try {
         const { id } = req.params;
-        const { doubtCredits, creditMode } = req.body;
+        const { doubtCredits, creditMode, maxDoubtCredits } = req.body;
         const update = {};
-        if (doubtCredits != null && !isNaN(doubtCredits)) update.doubtCredits = Number(doubtCredits);
+        if (doubtCredits != null && !isNaN(doubtCredits)) {
+            const num = Number(doubtCredits);
+            update.doubtCredits = num;
+            update.maxDoubtCredits = maxDoubtCredits != null && !isNaN(maxDoubtCredits) ? Number(maxDoubtCredits) : num;
+            const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
+            update.doubtCreditsResetDate = todayIST;
+        }
         if (creditMode === 'auto' || creditMode === 'manual') update.creditMode = creditMode;
         if (Object.keys(update).length === 0) return res.status(400).json({ success: false, message: 'No valid fields' });
-        const student = await User.findByIdAndUpdate(id, update, { new: true }).select('name doubtCredits creditMode');
+        const student = await User.findByIdAndUpdate(id, update, { new: true }).select('name doubtCredits maxDoubtCredits creditMode');
         if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
         res.json({ success: true, student });
     } catch (err) {
@@ -157,11 +164,14 @@ const applyFormulaToAll = async (req, res) => {
 
         const students = await User.find({ role: 'student', isActive: true }).populate('seat', 'negotiatedPrice');
         let updated = 0;
+        const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
         for (const s of students) {
             // Skip manual-mode students — admin set their credits explicitly
             if (s.creditMode === 'manual') continue;
             const credits = s.seat?.negotiatedPrice ? Math.round(s.seat.negotiatedPrice / divisor) : defaultCredits;
             s.doubtCredits = credits;
+            s.maxDoubtCredits = credits;
+            s.doubtCreditsResetDate = todayIST;
             await s.save({ validateBeforeSave: false });
             updated++;
         }
@@ -252,9 +262,36 @@ const resetAllMockTestCredits = async (req, res) => {
     }
 };
 
+// ─── POST bulk reset/set all students' AI Doubt Credits to a value ───────────
+const resetAllAiCredits = async (req, res) => {
+    try {
+        const value = req.body.value != null ? Math.max(0, Number(req.body.value)) : 10;
+        const today = new Date().toLocaleString('en-US', {
+            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+
+        // Also update defaultCredits in aiCreditConfig
+        const setting = await SystemSetting.findOne({ key: 'aiCreditConfig' });
+        const currentVal = setting?.value || DEFAULT_AI_CREDIT_CONFIG;
+        await SystemSetting.findOneAndUpdate(
+            { key: 'aiCreditConfig' },
+            { key: 'aiCreditConfig', value: { ...currentVal, defaultCredits: value } },
+            { upsert: true, new: true }
+        );
+
+        const result = await User.updateMany(
+            { role: 'student', isActive: true },
+            { $set: { doubtCredits: value, maxDoubtCredits: value, doubtCreditsResetDate: today } }
+        );
+        res.json({ success: true, message: `Updated ${result.modifiedCount} active students to ${value} AI doubt credits` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     getCardConfig, updateCardConfig,
     getAiCreditConfig, updateAiCreditConfig,
-    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll,
+    getStudentsWithAiCredits, updateStudentAiCredits, applyFormulaToAll, resetAllAiCredits,
     getMockTestCreditStudents, updateStudentMockTestCredits, resetAllMockTestCredits,
 };
