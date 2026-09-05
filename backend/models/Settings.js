@@ -31,6 +31,10 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    forceDoubtBoard: {
+        type: Boolean,
+        default: false
+    },
     pinAttendanceEnabled: {
         type: Boolean,
         default: false

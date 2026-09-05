@@ -132,6 +132,15 @@ const AdminDashboard = () => {
         } catch (e) { await fetchSettings(); }
     };
 
+    const handleToggleForceDoubtBoard = async () => {
+        try {
+            const newVal = !settings?.forceDoubtBoard;
+            const res = await api.put('/admin/settings', { forceDoubtBoard: newVal });
+            if (res.data.settings) setSettings(res.data.settings);
+            else await fetchSettings();
+        } catch (e) { await fetchSettings(); }
+    };
+
     const fetchDashboardStats = async (mode = 'default') => {
         setLoading(true);
         try {
@@ -360,6 +369,24 @@ const AdminDashboard = () => {
                                                     <button onClick={handleToggleReferral}
                                                         className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.referral?.enabled ? 'bg-violet-500' : 'bg-gray-100'}`}>
                                                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.referral?.enabled ? 'translate-x-5' : ''}`} />
+                                                    </button>
+                                                </div>
+
+                                                {/* Row 7 — Force AI Doubt Board */}
+                                                <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-orange-50 transition-colors" style={{ background: settings?.forceDoubtBoard ? 'rgba(249,115,22,0.06)' : '' }}>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-1.5 rounded-lg ${settings?.forceDoubtBoard ? 'bg-orange-500/15' : 'bg-gray-500/15'}`}>
+                                                            <IoSparklesOutline size={15} className={settings?.forceDoubtBoard ? 'text-orange-500' : 'text-gray-500'} />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-gray-900">Auto Open Doubt Board on Attendance</p>
+                                                            <p className="text-xs text-gray-600">{settings?.forceDoubtBoard ? '🔥 Active — auto opens Doubt Board after attendance' : 'Off — students open it manually'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={handleToggleForceDoubtBoard}
+                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.forceDoubtBoard ? 'bg-orange-500' : 'bg-gray-100'}`}
+                                                        style={{ boxShadow: settings?.forceDoubtBoard ? '0 0 10px rgba(249,115,22,0.5)' : '' }}>
+                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.forceDoubtBoard ? 'translate-x-5' : ''}`} />
                                                     </button>
                                                 </div>
                                             </div>

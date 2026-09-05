@@ -16,19 +16,21 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [systemStatus, setSystemStatus] = useState('active');
     const [isSubAdminVerified, setSubAdminVerified] = useState(false);
+    const [forceDoubtBoard, setForceDoubtBoard] = useState(false);
 
     const checkSystemStatus = async () => {
         try {
             const response = await api.get('/settings/public');
             if (response.data.success && response.data.settings) {
                 setSystemStatus(response.data.settings.systemStatus || 'active');
+                setForceDoubtBoard(!!response.data.settings.forceDoubtBoard);
             }
         } catch (error) {
             console.error('Failed to check system status:', error);
         }
     };
 
-    // Live polling for system status changes every 4 seconds
+    // Live polling every 4 seconds
     useEffect(() => {
         const interval = setInterval(checkSystemStatus, 4000);
         return () => clearInterval(interval);
@@ -38,24 +40,11 @@ export const AuthProvider = ({ children }) => {
         const initAuth = async () => {
             const token = localStorage.getItem('token');
             const savedUser = localStorage.getItem('user');
-
-            if (token && savedUser) {
-                setUser(JSON.parse(savedUser));
-            }
-
-            // Start system status check in background
+            if (token && savedUser) { setUser(JSON.parse(savedUser)); }
             checkSystemStatus();
-
-            // IMPORTANT: Await the fresh profile fetch before removing the
-            // loading gate, so ProtectedRoute always sees complete user data
-            // (including seat/seatNumber) before deciding to redirect.
-            if (token) {
-                await checkAuth();
-            }
-
+            if (token) { await checkAuth(); }
             setLoading(false);
         };
-
         initAuth();
     }, []);
 
@@ -63,38 +52,20 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await api.post('/auth/login', { email, password });
             const { token, user: userData } = response.data;
-
-            // Save basic user first so the token is available for the next call
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
-
-            // Immediately fetch full profile (includes seat, seatNumber, shift etc.)
-            // so ProtectedRoute doesn't incorrectly redirect to /pending-allocation
             try {
                 const meRes = await api.get('/auth/me');
-                if (meRes.data.success) {
-                    const fullUser = meRes.data.user;
-                    updateUser(fullUser);
-                }
-            } catch (_) {
-                // Non-critical: if /me fails, basic userData is still usable
-            }
-
+                if (meRes.data.success) { updateUser(meRes.data.user); }
+            } catch (_) {}
             return { success: true };
         } catch (error) {
-            return {
-                success: false,
-                message: error.response?.data?.message || 'Login failed'
-            };
+            return { success: false, message: error.response?.data?.message || 'Login failed' };
         }
     };
 
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-    };
+    const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); };
 
     const updateUser = (userData) => {
         setUser((prevUser) => {
@@ -109,33 +80,17 @@ export const AuthProvider = ({ children }) => {
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
-
             const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            if (systemStatus === 'maintenance' && savedUser?.role === 'student') {
-                return; // Avoid unnecessary 503 requests during maintenance for students
-            }
-
+            if (systemStatus === 'maintenance' && savedUser?.role === 'student') { return; }
             const res = await api.get('/auth/me');
-            if (res.data.success) {
-                updateUser(res.data.user);
-            }
-        } catch (error) {
-            console.error('Failed to update auth context:', error);
-        }
+            if (res.data.success) { updateUser(res.data.user); }
+        } catch (error) { console.error('Failed to update auth context:', error); }
     };
 
     const value = {
-        user,
-        setUser,
-        loading,
-        systemStatus,
-        isSubAdminVerified,
-        setSubAdminVerified,
-        checkSystemStatus,
-        checkAuth,
-        login,
-        logout,
-        updateUser,
+        user, setUser, loading, systemStatus, forceDoubtBoard,
+        isSubAdminVerified, setSubAdminVerified,
+        checkSystemStatus, checkAuth, login, logout, updateUser,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         isSubAdmin: user?.role === 'subadmin',

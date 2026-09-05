@@ -1,11 +1,12 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, lazy, Suspense, useRef } from 'react';
+import { useEffect, lazy, Suspense, useRef, useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SubAdminPinGuard from './components/admin/SubAdminPinGuard';
 import { useSocket } from './hooks/useSocket';
 import PwaInstallBanner from './components/ui/PwaInstallBanner';
 import PinLockScreen from './components/ui/PinLockScreen';
+import ForcedDoubtOverlay from './components/ForcedDoubtOverlay';
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -142,9 +143,19 @@ const AIReadinessScore = lazy(() => import('./pages/student/AIReadinessScore'));
 const WalletPage = lazy(() => import('./pages/student/WalletPage'));
 
 function App() {
-    const { user, loading, systemStatus } = useAuth();
+    const { user, loading, systemStatus, forceDoubtBoard } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    // When student firstly enters, it will show if admin has toggle ON
+    // Clicking the red cross will dismiss it for the current viewing session
+    const [doubtDismissed, setDoubtDismissed] = useState(false);
+
+    // When admin turns force OFF, reset dismissed so it triggers again when turned ON
+    useEffect(() => {
+        if (!forceDoubtBoard) {
+            setDoubtDismissed(false);
+        }
+    }, [forceDoubtBoard]);
 
     // Ensure viewport is always responsive across all routes
     useEffect(() => {

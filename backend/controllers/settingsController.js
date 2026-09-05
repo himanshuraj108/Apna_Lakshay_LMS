@@ -13,7 +13,8 @@ exports.getSettings = async (req, res) => {
                 locationAttendance: true,
                 onlinePaymentEnabled: true,
                 showWhatsAppGroup: true,
-                showAITools: true
+                showAITools: true,
+                forceDoubtBoard: false
             });
         }
 
@@ -39,7 +40,7 @@ exports.updateSettings = async (req, res) => {
             shiftMode, systemStatus, activeModes, locationAttendance,
             onlinePaymentEnabled, pinAttendanceEnabled, attendancePin,
             timeRestrictionEnabled, loginAttendanceEnabled,
-            showWhatsAppGroup, showAITools, referral
+            showWhatsAppGroup, showAITools, forceDoubtBoard, referral
         } = req.body;
 
         let settings = await Settings.findOne();
@@ -56,6 +57,7 @@ exports.updateSettings = async (req, res) => {
         if (loginAttendanceEnabled !== undefined) updateFields.loginAttendanceEnabled = !!loginAttendanceEnabled;
         if (showWhatsAppGroup !== undefined) updateFields.showWhatsAppGroup = !!showWhatsAppGroup;
         if (showAITools !== undefined) updateFields.showAITools = !!showAITools;
+        if (forceDoubtBoard !== undefined) updateFields.forceDoubtBoard = !!forceDoubtBoard;
 
         // Referral sub-document — use dot notation to avoid overwriting other sub-fields
         if (referral !== undefined && typeof referral === 'object') {
@@ -121,7 +123,7 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup showAITools referral rewards');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup showAITools referral rewards forceDoubtBoard');
 
 
         if (!settings) {
@@ -132,6 +134,7 @@ exports.getPublicSettings = async (req, res) => {
                 onlinePaymentEnabled: true,
                 showWhatsAppGroup: true,
                 showAITools: true,
+                forceDoubtBoard: false,
                 referral: { enabled: false },
                 rewards: { enabled: true }
             };
