@@ -22,7 +22,7 @@ const ForcedDoubtOverlay = ({ onClose }) => {
                 style={{
                     position: 'fixed',
                     inset: 0,
-                    zIndex: 800,
+                    zIndex: 100000,
                     background: '#ffffff',
                 }}
             >
