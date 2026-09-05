@@ -132,11 +132,11 @@ const StudentChatHistory = ({ embedded = false }) => {
     const handleDeleteSession = async (studentId, sessionId) => {
         setDeleting(true);
         try {
-            await api.delete(`/admin/chat-history/${studentId}/${sessionId}`);
+            await api.delete(`/admin/chat-history/${studentId}/${encodeURIComponent(sessionId)}`);
             setSessions(prev => prev.filter(s => s.sessionId !== sessionId));
             if (activeSession?.sessionId === sessionId) setActiveSession(null);
             // Update count in students list
-            setStudents(prev => prev.map(s => s._id === studentId
+            setStudents(prev => prev.map(s => String(s._id) === String(studentId)
                 ? { ...s, sessionCount: Math.max(0, (s.sessionCount || 1) - 1) }
                 : s));
             showToast('Session deleted');
@@ -150,7 +150,7 @@ const StudentChatHistory = ({ embedded = false }) => {
             await api.delete(`/admin/chat-history/${studentId}/all`);
             setSessions([]);
             setActiveSession(null);
-            setStudents(prev => prev.filter(s => s._id !== studentId));
+            setStudents(prev => prev.filter(s => String(s._id) !== String(studentId)));
             setSelected(null);
             showToast('All sessions deleted');
         } catch { showToast('Failed to delete', 'error'); }

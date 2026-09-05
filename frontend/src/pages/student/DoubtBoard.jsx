@@ -766,7 +766,7 @@ const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename
     );
 
     const Item = ({ s }) => (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} onMouseLeave={() => setMenuId(null)}>
             <button
                 onClick={() => onSelect(s.id)}
                 style={{
@@ -815,7 +815,7 @@ const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        onMouseLeave={() => setMenuId(null)}
+                        transition={{ duration: 0.12 }}
                         style={{
                             position: 'absolute',
                             right: 8,
