@@ -67,6 +67,7 @@ const ManageCards = () => {
     const [searchMock, setSearchMock]   = useState('');
     const [editingCredit, setEditing]   = useState(null);
     const [editingMockCredit, setEditingMock] = useState(null);
+    const [bulkAiValue, setBulkAiValue] = useState(10);
     const [bulkMockValue, setBulkMockValue] = useState(2);
     const [showInactive, setShowInactive] = useState(false);
 
@@ -121,14 +122,31 @@ const ManageCards = () => {
         finally { setSaving(false); }
     };
 
+    const resetAllAiCredits = async () => {
+        if (!window.confirm(`Set ALL active students to ${bulkAiValue} AI Doubt credits?`)) return;
+        setSaving(true);
+        try {
+            const res = await api.post('/admin/ai-credits/reset-all', { value: bulkAiValue });
+            showToast(res.data.message);
+            loadAll();
+        } catch {
+            showToast('Bulk update failed', 'error');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const saveStudentCredit = async (id, val, creditMode) => {
         try {
             const payload = {};
-            if (val != null) payload.doubtCredits = val;
+            if (val != null) {
+                payload.doubtCredits = val;
+                payload.maxDoubtCredits = val;
+            }
             if (creditMode) payload.creditMode = creditMode;
             const res = await api.patch(`/admin/ai-credits/students/${id}`, payload);
             setStudents(prev => prev.map(s => s._id === id
-                ? { ...s, doubtCredits: res.data.student?.doubtCredits ?? val, creditMode: res.data.student?.creditMode ?? creditMode ?? s.creditMode }
+                ? { ...s, doubtCredits: res.data.student?.doubtCredits ?? val, maxDoubtCredits: res.data.student?.maxDoubtCredits ?? val, creditMode: res.data.student?.creditMode ?? creditMode ?? s.creditMode }
                 : s));
             setEditing(null);
             showToast('Updated Doubt Credits');
@@ -303,15 +321,28 @@ const ManageCards = () => {
                                         className={INPUT} />
                                 </div>
                             </div>
-                            <div className="flex gap-3">
+                            <div className="flex flex-wrap gap-3 items-center">
                                 <button onClick={saveAiConfig} disabled={saving}
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-white transition-all disabled:opacity-50 shadow-md shadow-amber-500/25">
                                     <IoSave size={13} /> Save Config
                                 </button>
                                 <button onClick={applyFormula} disabled={saving}
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-all">
-                                    <IoFlashOutline size={13} /> Apply to All Students
+                                    <IoFlashOutline size={13} /> Apply Formula to All
                                 </button>
+                            </div>
+
+                            <div className="pt-3 border-t border-amber-200">
+                                <label className="text-xs font-semibold text-gray-700 mb-1 block">Bulk Set Credits For All Students</label>
+                                <div className="flex items-center gap-3 max-w-sm">
+                                    <input type="number" min="0" value={bulkAiValue}
+                                        onChange={e => setBulkAiValue(Number(e.target.value))}
+                                        className={INPUT} />
+                                    <button onClick={resetAllAiCredits} disabled={saving}
+                                        className="flex items-center justify-center gap-2 px-4 py-2 h-[38px] rounded-xl text-xs font-bold border border-amber-400 bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-all shadow-sm shrink-0">
+                                        <IoFlashOutline size={13} /> Set All Now
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -381,10 +412,13 @@ const ManageCards = () => {
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`font-bold text-sm w-8 text-center ${isAuto ? 'text-gray-400' : 'text-indigo-600'}`}>{s.doubtCredits}</span>
+                                                    <span className={`font-bold text-sm text-center px-1 ${isAuto ? 'text-gray-400' : 'text-indigo-600'}`} title="Current Credits / Total Quota">
+                                                        {s.doubtCredits}{s.maxDoubtCredits && s.maxDoubtCredits !== s.doubtCredits ? ` / ${s.maxDoubtCredits}` : ''}
+                                                    </span>
                                                     {!isAuto && (
-                                                        <button onClick={() => setEditing({ id: s._id, value: s.doubtCredits })}
-                                                            className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                                                        <button onClick={() => setEditing({ id: s._id, value: s.maxDoubtCredits ?? s.doubtCredits })}
+                                                            className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                                                            title="Edit Credits">
                                                             <IoPencilOutline size={13} />
                                                         </button>
                                                     )}
