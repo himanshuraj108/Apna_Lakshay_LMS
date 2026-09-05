@@ -24,6 +24,40 @@ const BG_STYLE = `
 .admin-glass:hover{background:rgba(255,255,255,0.9);border-color:rgba(0,0,0,0.2);}
 `;
 
+const SettingsToggle = ({ checked, onClick, activeColor = 'bg-orange-500', shadow = '' }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className={`relative shrink-0 rounded-full transition-colors duration-200 cursor-pointer ${checked ? activeColor : 'bg-gray-200'}`}
+        style={{
+            width: 44,
+            height: 24,
+            minWidth: 44,
+            maxWidth: 44,
+            border: 'none',
+            padding: 0,
+            outline: 'none',
+            boxShadow: checked && shadow ? shadow : 'none'
+        }}
+    >
+        <span
+            style={{
+                position: 'absolute',
+                top: 2,
+                left: 2,
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: '#ffffff',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                transform: checked ? 'translateX(20px)' : 'translateX(0px)',
+                transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'block'
+            }}
+        />
+    </button>
+);
+
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -133,12 +167,15 @@ const AdminDashboard = () => {
     };
 
     const handleToggleForceDoubtBoard = async () => {
+        const newVal = !settings?.forceDoubtBoard;
+        setSettings(prev => ({ ...prev, forceDoubtBoard: newVal }));
         try {
-            const newVal = !settings?.forceDoubtBoard;
             const res = await api.put('/admin/settings', { forceDoubtBoard: newVal });
             if (res.data.settings) setSettings(res.data.settings);
-            else await fetchSettings();
-        } catch (e) { await fetchSettings(); }
+        } catch (e) {
+            console.error('Failed to toggle forceDoubtBoard:', e);
+            await fetchSettings();
+        }
     };
 
     const fetchDashboardStats = async (mode = 'default') => {
@@ -233,7 +270,7 @@ const AdminDashboard = () => {
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.92, y: -8 }}
                                             transition={{ duration: 0.15 }}
-                                            className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 w-80 max-w-[90vw] rounded-2xl shadow-2xl overflow-hidden"
+                                            className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-40 w-96 max-w-[95vw] rounded-2xl shadow-2xl overflow-hidden"
                                             style={{ background: 'rgba(255,255,255,0.98)', border: '1px solid rgba(0,0,0,0.1)', backdropFilter: 'blur(20px)' }}
                                         >
                                             {/* Header */}
@@ -248,56 +285,47 @@ const AdminDashboard = () => {
                                                     const isSystemActive = settings?.systemStatus !== 'maintenance';
                                                     return (
                                                         <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className={`p-1.5 rounded-lg ${isSystemActive ? 'bg-green-500/15' : 'bg-red-500/15'}`}>
+                                                            <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                                <div className={`p-1.5 rounded-lg shrink-0 ${isSystemActive ? 'bg-green-500/15' : 'bg-red-500/15'}`}>
                                                                     <IoPower size={15} className={isSystemActive ? 'text-green-500' : 'text-red-500'} />
                                                                 </div>
-                                                                <div>
-                                                                    <p className="text-sm font-semibold text-gray-900">System Status</p>
-                                                                    <p className="text-xs text-gray-600">{isSystemActive ? 'System is active' : 'Maintenance mode ON'}</p>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="text-sm font-semibold text-gray-900 leading-snug">System Status</p>
+                                                                    <p className="text-xs text-gray-500 mt-0.5 leading-snug">{isSystemActive ? 'System is active' : 'Maintenance mode ON'}</p>
                                                                 </div>
                                                             </div>
-                                                            <button onClick={handleToggleSystemStatus}
-                                                                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${isSystemActive ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                                                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${isSystemActive ? 'translate-x-5' : ''}`} />
-                                                            </button>
+                                                            <SettingsToggle checked={isSystemActive} onClick={handleToggleSystemStatus} activeColor="bg-green-500" />
                                                         </div>
                                                     );
                                                 })()}
 
                                                 {/* Row 2 — Location */}
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${settings?.locationAttendance !== false ? 'bg-blue-500/15' : 'bg-gray-500/15'}`}>
-                                                            <IoLocationOutline size={15} className={settings?.locationAttendance !== false ? 'text-blue-400' : 'text-gray-500'} />
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                        <div className={`p-1.5 rounded-lg shrink-0 ${settings?.locationAttendance !== false ? 'bg-blue-500/15' : 'bg-gray-500/15'}`}>
+                                                            <IoLocationOutline size={15} className={settings?.locationAttendance !== false ? 'text-blue-500' : 'text-gray-500'} />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">Location Check</p>
-                                                            <p className="text-xs text-gray-600">{settings?.locationAttendance !== false ? 'Required for attendance' : 'Disabled (anyone can mark)'}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-semibold text-gray-900 leading-snug">Location Check</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5 leading-snug">{settings?.locationAttendance !== false ? 'Required for attendance' : 'Disabled (anyone can mark)'}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={handleToggleLocation}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.locationAttendance !== false ? 'bg-blue-500' : 'bg-gray-100'}`}>
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.locationAttendance !== false ? 'translate-x-5' : ''}`} />
-                                                    </button>
+                                                    <SettingsToggle checked={settings?.locationAttendance !== false} onClick={handleToggleLocation} activeColor="bg-blue-500" />
                                                 </div>
 
                                                 {/* Row 3 — PIN Attendance */}
                                                 <div className="px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
                                                     <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`p-1.5 rounded-lg ${settings?.pinAttendanceEnabled ? 'bg-amber-500/15' : 'bg-gray-500/15'}`}>
-                                                                <IoKeypadOutline size={15} className={settings?.pinAttendanceEnabled ? 'text-amber-400' : 'text-gray-500'} />
+                                                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                            <div className={`p-1.5 rounded-lg shrink-0 ${settings?.pinAttendanceEnabled ? 'bg-amber-500/15' : 'bg-gray-500/15'}`}>
+                                                                <IoKeypadOutline size={15} className={settings?.pinAttendanceEnabled ? 'text-amber-500' : 'text-gray-500'} />
                                                             </div>
-                                                            <div>
-                                                                <p className="text-sm font-semibold text-gray-900">PIN Attendance</p>
-                                                                <p className="text-xs text-gray-600">{settings?.pinAttendanceEnabled ? `Active · PIN: ${settings?.attendancePin || 'not set'}` : 'Off (camera required)'}</p>
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="text-sm font-semibold text-gray-900 leading-snug">PIN Attendance</p>
+                                                                <p className="text-xs text-gray-500 mt-0.5 leading-snug">{settings?.pinAttendanceEnabled ? `Active · PIN: ${settings?.attendancePin || 'not set'}` : 'Off (camera required)'}</p>
                                                             </div>
                                                         </div>
-                                                        <button onClick={handleTogglePinAttendance}
-                                                            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.pinAttendanceEnabled ? 'bg-amber-500' : 'bg-gray-100'}`}>
-                                                            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.pinAttendanceEnabled ? 'translate-x-5' : ''}`} />
-                                                        </button>
+                                                        <SettingsToggle checked={!!settings?.pinAttendanceEnabled} onClick={handleTogglePinAttendance} activeColor="bg-amber-500" />
                                                     </div>
                                                     {/* PIN input — always visible when PIN mode is on */}
                                                     {settings?.pinAttendanceEnabled && (
@@ -318,76 +346,63 @@ const AdminDashboard = () => {
                                                             </button>
                                                         </div>
                                                     )}
-                                                    {pinMsg && <p className={`text-xs mt-1.5 ${pinMsg.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>{pinMsg}</p>}
+                                                    {pinMsg && <p className={`text-xs mt-1.5 ${pinMsg.startsWith('✓') ? 'text-green-500' : 'text-red-500'}`}>{pinMsg}</p>}
                                                 </div>
 
                                                 {/* Row 4 — Time Restriction */}
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${settings?.timeRestrictionEnabled !== false ? 'bg-purple-500/15' : 'bg-gray-500/15'}`}>
-                                                            <IoTimeOutline size={15} className={settings?.timeRestrictionEnabled !== false ? 'text-purple-400' : 'text-gray-500'} />
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                        <div className={`p-1.5 rounded-lg shrink-0 ${settings?.timeRestrictionEnabled !== false ? 'bg-purple-500/15' : 'bg-gray-500/15'}`}>
+                                                            <IoTimeOutline size={15} className={settings?.timeRestrictionEnabled !== false ? 'text-purple-500' : 'text-gray-500'} />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">Time Restriction</p>
-                                                            <p className="text-xs text-gray-600">{settings?.timeRestrictionEnabled !== false ? 'Shift hours only' : 'Anytime (no limit)'}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-semibold text-gray-900 leading-snug">Time Restriction</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5 leading-snug">{settings?.timeRestrictionEnabled !== false ? 'Shift hours only' : 'Anytime (no limit)'}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={handleToggleTimeRestriction}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.timeRestrictionEnabled !== false ? 'bg-purple-500' : 'bg-gray-100'}`}>
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.timeRestrictionEnabled !== false ? 'translate-x-5' : ''}`} />
-                                                    </button>
+                                                    <SettingsToggle checked={settings?.timeRestrictionEnabled !== false} onClick={handleToggleTimeRestriction} activeColor="bg-purple-500" />
                                                 </div>
 
                                                 {/* Row 5 — Login Attendance Button */}
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${settings?.loginAttendanceEnabled ? 'bg-green-500/15' : 'bg-gray-500/15'}`}>
-                                                            <IoQrCodeOutline size={15} className={settings?.loginAttendanceEnabled ? 'text-green-400' : 'text-gray-500'} />
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                        <div className={`p-1.5 rounded-lg shrink-0 ${settings?.loginAttendanceEnabled ? 'bg-green-500/15' : 'bg-gray-500/15'}`}>
+                                                            <IoQrCodeOutline size={15} className={settings?.loginAttendanceEnabled ? 'text-green-500' : 'text-gray-500'} />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">Login Attendance</p>
-                                                            <p className="text-xs text-gray-600">{settings?.loginAttendanceEnabled ? 'Button visible on login' : 'Hidden on login screen'}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-semibold text-gray-900 leading-snug">Login Attendance</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5 leading-snug">{settings?.loginAttendanceEnabled ? 'Button visible on login' : 'Hidden on login screen'}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={handleToggleLoginAttendance}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.loginAttendanceEnabled ? 'bg-green-500' : 'bg-gray-100'}`}>
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.loginAttendanceEnabled ? 'translate-x-5' : ''}`} />
-                                                    </button>
+                                                    <SettingsToggle checked={!!settings?.loginAttendanceEnabled} onClick={handleToggleLoginAttendance} activeColor="bg-green-500" />
                                                 </div>
 
                                                 {/* Row 6 — Referral System */}
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${settings?.referral?.enabled ? 'bg-violet-500/15' : 'bg-gray-500/15'}`}>
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                        <div className={`p-1.5 rounded-lg shrink-0 ${settings?.referral?.enabled ? 'bg-violet-500/15' : 'bg-gray-500/15'}`}>
                                                             <IoWalletOutline size={15} className={settings?.referral?.enabled ? 'text-violet-500' : 'text-gray-500'} />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">Referral System</p>
-                                                            <p className="text-xs text-gray-600">{settings?.referral?.enabled ? 'Students can share & earn via referrals' : 'Referral tab hidden from students'}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-semibold text-gray-900 leading-snug">Referral System</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5 leading-snug">{settings?.referral?.enabled ? 'Students can share & earn via referrals' : 'Referral tab hidden from students'}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={handleToggleReferral}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.referral?.enabled ? 'bg-violet-500' : 'bg-gray-100'}`}>
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.referral?.enabled ? 'translate-x-5' : ''}`} />
-                                                    </button>
+                                                    <SettingsToggle checked={!!settings?.referral?.enabled} onClick={handleToggleReferral} activeColor="bg-violet-500" />
                                                 </div>
 
                                                 {/* Row 7 — Force AI Doubt Board */}
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-orange-50 transition-colors" style={{ background: settings?.forceDoubtBoard ? 'rgba(249,115,22,0.06)' : '' }}>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`p-1.5 rounded-lg ${settings?.forceDoubtBoard ? 'bg-orange-500/15' : 'bg-gray-500/15'}`}>
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-3">
+                                                        <div className={`p-1.5 rounded-lg shrink-0 ${settings?.forceDoubtBoard ? 'bg-orange-500/15' : 'bg-gray-500/15'}`}>
                                                             <IoSparklesOutline size={15} className={settings?.forceDoubtBoard ? 'text-orange-500' : 'text-gray-500'} />
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-900">Auto Open Doubt Board on Attendance</p>
-                                                            <p className="text-xs text-gray-600">{settings?.forceDoubtBoard ? '🔥 Active — auto opens Doubt Board after attendance' : 'Off — students open it manually'}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-semibold text-gray-900 leading-snug">Auto Open Doubt Board on Attendance</p>
+                                                            <p className="text-xs text-gray-500 mt-0.5 leading-snug">{settings?.forceDoubtBoard ? '🔥 Active — auto opens Doubt Board after attendance' : 'Off — students open it manually'}</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={handleToggleForceDoubtBoard}
-                                                        className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${settings?.forceDoubtBoard ? 'bg-orange-500' : 'bg-gray-100'}`}
-                                                        style={{ boxShadow: settings?.forceDoubtBoard ? '0 0 10px rgba(249,115,22,0.5)' : '' }}>
-                                                        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${settings?.forceDoubtBoard ? 'translate-x-5' : ''}`} />
-                                                    </button>
+                                                    <SettingsToggle checked={!!settings?.forceDoubtBoard} onClick={handleToggleForceDoubtBoard} activeColor="bg-orange-500" shadow="0 0 10px rgba(249,115,22,0.4)" />
                                                 </div>
                                             </div>
                                         </motion.div>
