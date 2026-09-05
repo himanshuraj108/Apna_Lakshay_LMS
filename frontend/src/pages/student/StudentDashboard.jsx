@@ -110,8 +110,6 @@ const DASH_STYLE = `
 .new-badge-blink{animation:blink-new 1.4s ease-in-out infinite;}
 .label-blink-green{animation:blink-green 1.1s ease-in-out infinite;color:#22c55e;font-weight:800;}
 .label-blink-red{animation:blink-red 1.1s ease-in-out infinite;color:#ef4444;font-weight:800;}
-@keyframes fab-blink{0%,100%{box-shadow:0 8px 32px rgba(249,115,22,0.45),0 0 0 1px rgba(255,255,255,0.1);}50%{box-shadow:0 8px 52px rgba(249,115,22,0.85),0 0 0 5px rgba(249,115,22,0.2);}}
-.fab-blink{animation:fab-blink 1.6s ease-in-out infinite;}
 /* Ambient background blobs */
 .dash-blob{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
 .dash-blob-1{width:550px;height:550px;top:-120px;left:-150px;background:radial-gradient(circle,rgba(249,115,22,0.11) 0%,transparent 70%);animation:orb1 20s ease-in-out infinite;}
@@ -417,7 +415,7 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                     whileTap={!loading ? { scale: 0.95 } : {}}
                     onClick={toggle}
                     disabled={loading}
-                    className={`relative flex items-center overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed${!loading && !open ? ' fab-blink' : ''}`}
+                    className="relative flex items-center overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed"
                     style={{
                         borderRadius: open ? '50%' : '100px',
                         padding: open ? '14px' : '12px 22px 12px 14px',

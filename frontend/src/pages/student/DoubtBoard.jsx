@@ -747,6 +747,94 @@ const AnimatedPromptShowcase = ({ onSelectPrompt, isDark, t, lang }) => {
     );
 };
 
+// Sidebar section label — defined outside to keep stable reference
+const SidebarSectionLabel = ({ label, isDark }) => (
+    <p style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#71717a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '14px 14px 4px', margin: 0 }}>
+        {label}
+    </p>
+);
+
+// Sidebar session item — defined outside to keep stable reference, preventing blink on menuId change
+const SidebarItem = ({ s, activeId, menuId, editId, editVal, isDark, onSelect, onRename, onPin, onDelete, setMenuId, setEditId, setEditVal }) => (
+    <div style={{ position: 'relative' }} onMouseLeave={() => setMenuId(null)}>
+        <button
+            onClick={() => onSelect(s.id)}
+            style={{
+                width: '100%',
+                textAlign: 'left',
+                padding: '9px 12px',
+                borderRadius: 12,
+                background: activeId === s.id ? (isDark ? '#27272a' : '#f1f5f9') : 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+            }}
+        >
+            {s.pinned ? (
+                <IoPinOutline size={14} color="#f97316" style={{ flexShrink: 0 }} />
+            ) : (
+                <IoChatbubbleOutline size={14} color={isDark ? '#71717a' : '#94a3b8'} style={{ flexShrink: 0 }} />
+            )}
+            {editId === s.id ? (
+                <input
+                    autoFocus
+                    value={editVal}
+                    onChange={e => setEditVal(e.target.value)}
+                    onBlur={() => { onRename(s.id, editVal || s.title); setEditId(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') { onRename(s.id, editVal || s.title); setEditId(null); } }}
+                    style={{ flex: 1, fontSize: 13, background: 'transparent', outline: 'none', border: 'none', color: isDark ? '#fff' : '#0f172a' }}
+                />
+            ) : (
+                <span style={{ flex: 1, fontSize: 13, fontWeight: activeId === s.id ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isDark ? '#e4e4e7' : '#1e293b' }}>
+                    {s.title}
+                </span>
+            )}
+            <button
+                onClick={e => { e.stopPropagation(); setMenuId(menuId === s.id ? null : s.id); }}
+                style={{ opacity: menuId === s.id ? 1 : 0.4, padding: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#a1a1aa' : '#64748b', transition: 'opacity 0.15s' }}
+            >
+                <IoEllipsisVertical size={14} />
+            </button>
+        </button>
+
+        {/* Dropdown — CSS visibility instead of AnimatePresence to avoid remount flicker */}
+        <div
+            style={{
+                position: 'absolute',
+                right: 8,
+                top: 40,
+                zIndex: 100,
+                borderRadius: 14,
+                background: isDark ? '#18181b' : '#ffffff',
+                border: isDark ? '1px solid #27272a' : '1px solid #e2e8f0',
+                boxShadow: '0 12px 30px rgba(0,0,0,0.12)',
+                width: 136,
+                overflow: 'hidden',
+                opacity: menuId === s.id ? 1 : 0,
+                transform: menuId === s.id ? 'scale(1)' : 'scale(0.95)',
+                pointerEvents: menuId === s.id ? 'auto' : 'none',
+                transition: 'opacity 0.12s ease, transform 0.12s ease',
+                transformOrigin: 'top right',
+            }}
+        >
+            <button
+                onClick={() => { onPin(s.id); setMenuId(null); }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', fontSize: 13, fontWeight: 600, color: isDark ? '#e4e4e7' : '#0f172a', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+                <IoPinOutline size={14} />{s.pinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button
+                onClick={() => { onDelete(s.id); setMenuId(null); }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', fontSize: 13, fontWeight: 600, color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+            >
+                <IoTrashOutline size={14} />Delete
+            </button>
+        </div>
+    </div>
+);
+
 // Sidebar
 const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename, onPin, isDark, t }) => {
     const [search, setSearch] = useState('');
@@ -759,93 +847,7 @@ const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename
     const today = filtered.filter(s => !s.pinned && isToday(s.createdAt));
     const older = filtered.filter(s => !s.pinned && !isToday(s.createdAt));
 
-    const SectionLabel = ({ label }) => (
-        <p style={{ fontSize: 11, fontWeight: 700, color: isDark ? '#71717a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '14px 14px 4px', margin: 0 }}>
-            {label}
-        </p>
-    );
-
-    const Item = ({ s }) => (
-        <div style={{ position: 'relative' }} onMouseLeave={() => setMenuId(null)}>
-            <button
-                onClick={() => onSelect(s.id)}
-                style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '9px 12px',
-                    borderRadius: 12,
-                    background: activeId === s.id ? (isDark ? '#27272a' : '#f1f5f9') : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                }}
-            >
-                {s.pinned ? (
-                    <IoPinOutline size={14} color="#f97316" style={{ flexShrink: 0 }} />
-                ) : (
-                    <IoChatbubbleOutline size={14} color={isDark ? '#71717a' : '#94a3b8'} style={{ flexShrink: 0 }} />
-                )}
-                {editId === s.id ? (
-                    <input
-                        autoFocus
-                        value={editVal}
-                        onChange={e => setEditVal(e.target.value)}
-                        onBlur={() => { onRename(s.id, editVal || s.title); setEditId(null); }}
-                        onKeyDown={e => { if (e.key === 'Enter') { onRename(s.id, editVal || s.title); setEditId(null); } }}
-                        style={{ flex: 1, fontSize: 13, background: 'transparent', outline: 'none', border: 'none', color: isDark ? '#fff' : '#0f172a' }}
-                    />
-                ) : (
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: activeId === s.id ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isDark ? '#e4e4e7' : '#1e293b' }}>
-                        {s.title}
-                    </span>
-                )}
-                <button
-                    onClick={e => { e.stopPropagation(); setMenuId(menuId === s.id ? null : s.id); }}
-                    style={{ opacity: menuId === s.id ? 1 : 0.4, padding: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#a1a1aa' : '#64748b' }}
-                >
-                    <IoEllipsisVertical size={14} />
-                </button>
-            </button>
-
-            <AnimatePresence>
-                {menuId === s.id && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.12 }}
-                        style={{
-                            position: 'absolute',
-                            right: 8,
-                            top: 40,
-                            zIndex: 100,
-                            borderRadius: 14,
-                            background: isDark ? '#18181b' : '#ffffff',
-                            border: isDark ? '1px solid #27272a' : '1px solid #e2e8f0',
-                            boxShadow: '0 12px 30px rgba(0,0,0,0.12)',
-                            width: 136,
-                            overflow: 'hidden',
-                        }}
-                    >
-                        {[
-                            { icon: IoPinOutline, label: s.pinned ? 'Unpin' : 'Pin', fn: () => { onPin(s.id); setMenuId(null); } },
-                            { icon: IoTrashOutline, label: 'Delete', fn: () => { onDelete(s.id); setMenuId(null); }, danger: true },
-                        ].map(it => (
-                            <button
-                                key={it.label}
-                                onClick={it.fn}
-                                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', fontSize: 13, fontWeight: 600, color: it.danger ? '#ef4444' : (isDark ? '#e4e4e7' : '#0f172a'), background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                            >
-                                <it.icon size={14} />{it.label}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+    const itemProps = { activeId, menuId, editId, editVal, isDark, onSelect, onRename, onPin, onDelete, setMenuId, setEditId, setEditVal };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isDark ? '#121215' : '#fafafa', borderRight: isDark ? '1px solid #27272a' : '1px solid #f1f5f9' }}>
@@ -873,9 +875,9 @@ const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 16px' }}>
-                {pinned.length > 0 && <><SectionLabel label={t.pinned} />{pinned.map(s => <Item key={s.id} s={s} />)}</>}
-                {today.length > 0 && <><SectionLabel label="Today" />{today.map(s => <Item key={s.id} s={s} />)}</>}
-                {older.length > 0 && <><SectionLabel label="Previous" />{older.map(s => <Item key={s.id} s={s} />)}</>}
+                {pinned.length > 0 && <>{<SidebarSectionLabel label={t.pinned} isDark={isDark} />}{pinned.map(s => <SidebarItem key={s.id} s={s} {...itemProps} />)}</>}
+                {today.length > 0 && <>{<SidebarSectionLabel label="Today" isDark={isDark} />}{today.map(s => <SidebarItem key={s.id} s={s} {...itemProps} />)}</>}
+                {older.length > 0 && <>{<SidebarSectionLabel label="Previous" isDark={isDark} />}{older.map(s => <SidebarItem key={s.id} s={s} {...itemProps} />)}</>}
                 {filtered.length === 0 && (
                     <p style={{ fontSize: 13, color: isDark ? '#71717a' : '#94a3b8', textAlign: 'center', marginTop: 40 }}>{t.noChats}</p>
                 )}
