@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('token');
             const savedUser = localStorage.getItem('user');
             if (token && savedUser) { setUser(JSON.parse(savedUser)); }
-            checkSystemStatus();
+            await checkSystemStatus();
             if (token) { await checkAuth(); }
             setLoading(false);
         };
