@@ -363,7 +363,7 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.18 }}
-                        className="fixed inset-0 z-[61] flex flex-col items-end justify-end pb-24 pr-5 gap-3.5"
+                        className="fixed inset-0 z-[855] flex flex-col items-end justify-end pb-24 pr-5 gap-3.5"
                         style={{ pointerEvents: 'none' }}
                     >
                         {subBtns.map((btn, i) => (
@@ -408,7 +408,7 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
             </AnimatePresence>
 
             {/* ── Main FAB — premium pill ── */}
-            <div className="fixed bottom-6 right-4 z-[60]">
+            <div className="fixed bottom-6 right-4 z-[850]">
                 <motion.button
                     initial={{ opacity: 0, y: 20, scale: 0.85 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -465,7 +465,7 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                 </motion.button>
             </div>
 
-            {/* Backdrop — full blur overlay */}
+            {/* Backdrop — clean subtle dismiss overlay without blur */}
             <AnimatePresence>
                 {open && (
                     <motion.div
@@ -473,9 +473,9 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 z-[59]"
-                        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed inset-0 z-[840]"
+                        style={{ background: 'rgba(0, 0, 0, 0.15)' }}
                         onClick={() => setOpen(false)}
                     />
                 )}
@@ -484,9 +484,9 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
     );
 };
 
-/* â”€â”€â”€ Location Prompt Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Location Prompt Modal ─────────────────────────────────────────── */
 const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
         <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
             className="bg-white border border-amber-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-500 to-orange-500" />
@@ -508,7 +508,7 @@ const LocationPromptModal = ({ onClose, onEnable, enabling }) => (
 );
 
 /* â”€â”€â”€ Attendance Result Popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const AttendanceResultCard = ({ result, onClose }) => {
+const AttendanceResultCard = ({ result, onClose, forceDoubtBoard }) => {
     const isEntry = result.type === 'entry';
     const isAlreadyMarked = result.type === 'already_marked';
     const att = result.attendance || {};
@@ -519,7 +519,7 @@ const AttendanceResultCard = ({ result, onClose }) => {
             : { bg: '#ffffff', border: '#c7d2fe', bar: 'from-indigo-400 to-blue-400', iconBg: 'linear-gradient(135deg,#6366f1,#3b82f6)', text: '#4f46e5', glow: '#e0e7ff' };
 
     return (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
             <motion.div initial={{ opacity: 0, scale: 0.85, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ type: 'spring', stiffness: 280, damping: 22 }}
                 className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border" style={{ background: theme.bg, borderColor: theme.border }}>
                 <div className={`h-1 w-full bg-gradient-to-r ${theme.bar}`} />
@@ -574,7 +574,17 @@ const AttendanceResultCard = ({ result, onClose }) => {
                             </div>
                         )}
                     </div>
-                    <button onClick={onClose} className="w-full py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 active:scale-95 transition-all" style={{ background: theme.iconBg }}>Dismiss</button>
+
+                    {forceDoubtBoard && (
+                        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold mb-4 animate-pulse">
+                            <IoSparklesOutline size={14} className="text-orange-500" />
+                            <span>Opening AI Doubt Board...</span>
+                        </div>
+                    )}
+
+                    <button onClick={onClose} className="w-full py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 active:scale-95 transition-all" style={{ background: theme.iconBg }}>
+                        {forceDoubtBoard ? 'Continue to Doubt Board →' : 'Dismiss'}
+                    </button>
 
                 </div>
             </motion.div>
@@ -638,6 +648,7 @@ const StudentDashboard = () => {
     const [showNewspaper, setShowNewspaper]           = useState(false);
     const [scanMessage, setScanMessage]               = useState(null);
     const [attendanceResult, setAttendanceResult]     = useState(null);
+    const [attendanceMarkedToday, setAttendanceMarkedToday] = useState(false);
     const [showLocationPrompt, setShowLocationPrompt] = useState(false);
     const [loadingScanner, setLoadingScanner]         = useState(false);
     const [pinEntryOpen, setPinEntryOpen]             = useState(false);
@@ -655,7 +666,7 @@ const StudentDashboard = () => {
     const [pinLoading, setPinLoading]                 = useState(false);
     const [pinError, setPinError]                     = useState('');
     const [directMarkLoading, setDirectMarkLoading]   = useState(false);
-    const { logout, user } = useAuth();
+    const { logout, user, forceDoubtBoard }           = useAuth();
     const { t, language, setLanguage } = useLanguage();
     const isActive = user?.isActive;
     const hasSeat = dashboardData?.seat || (dashboardData?.tempAssignments?.length > 0);
@@ -862,6 +873,13 @@ const StudentDashboard = () => {
         try { 
             const res = await api.get('/student/dashboard'); 
             setDashboardData(res.data.data);
+            const isMarked = !!res.data.data?.attendance?.markedToday;
+            setAttendanceMarkedToday(isMarked);
+            if (isMarked) {
+                localStorage.setItem('attendance_marked_date', new Date().toDateString());
+            } else {
+                localStorage.removeItem('attendance_marked_date');
+            }
             setCache('dashboard', res.data.data);
             fetchEngagementData();
         } catch (e) { 
@@ -897,6 +915,37 @@ const StudentDashboard = () => {
         finally { setEnablingLocation(false); }
     };
 
+    const handleDismissAttendanceResult = () => {
+        setAttendanceResult(null);
+        if (forceDoubtBoard) {
+            navigate('/student/doubt');
+        }
+    };
+
+    const markAttendanceSuccess = (data) => {
+        const isNew = data.type !== 'already_marked';
+        if (isNew) playSuccessBeep();
+        localStorage.setItem('attendance_marked_date', new Date().toDateString());
+        setAttendanceMarkedToday(true);
+        setAttendanceResult({
+            type: data.type,
+            attendance: data.attendance,
+            message: data.message
+        });
+        if (isNew) {
+            bustCache('dashboard');
+            fetchDashboardData();
+        }
+
+        // When admin ON that (forceDoubtBoard), automatically open Doubt board after marking attendance
+        if (forceDoubtBoard) {
+            setTimeout(() => {
+                setAttendanceResult(null);
+                navigate('/student/doubt');
+            }, 1600);
+        }
+    };
+
     const handleQrScan = async (token) => {
         setShowScanner(false);
         try {
@@ -905,10 +954,7 @@ const StudentDashboard = () => {
             if (isLocationRequired) { try { coords = await getLocation(); } catch (e) { setScanMessage({ type: 'error', text: e.message }); setTimeout(() => setScanMessage(null), 6000); return; } }
             const res = await api.post('/student/attendance/qr-scan', { qrToken: token, ...coords });
             if (res.data.success) {
-                const isNew = res.data.type !== 'already_marked';
-                if (isNew) playSuccessBeep();
-                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
-                if (isNew) { bustCache('dashboard'); fetchDashboardData(); }
+                markAttendanceSuccess(res.data);
             }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
@@ -919,10 +965,7 @@ const StudentDashboard = () => {
             if (isLocationRequired) { try { coords = await getLocation(); } catch (e) { setScanMessage({ type: 'error', text: e.message }); setTimeout(() => setScanMessage(null), 6000); return; } }
             const res = await api.post('/student/attendance/mark-self', coords);
             if (res.data.success) {
-                const isNew = res.data.type !== 'already_marked';
-                if (isNew) playSuccessBeep();
-                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance });
-                if (isNew) { bustCache('dashboard'); fetchDashboardData(); }
+                markAttendanceSuccess(res.data);
             }
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Attendance failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
@@ -934,16 +977,9 @@ const StudentDashboard = () => {
         try {
             const res = await api.post('/student/attendance/mark-pin', { pin: trimmed });
             if (res.data.success) {
-                const isNew = res.data.type !== 'already_marked';
-                if (isNew) playSuccessBeep();          // beep only for fresh marks
                 setShowPinModal(false);
                 setPinValue('');
-                setAttendanceResult({
-                    type: res.data.type,
-                    attendance: res.data.attendance,
-                    message: res.data.message
-                });
-                if (isNew) { bustCache('dashboard'); fetchDashboardData(); } // refresh only if something changed
+                markAttendanceSuccess(res.data);
             }
         } catch (e) {
             setPinError(e.response?.data?.message || 'PIN incorrect or attendance failed.');
@@ -955,12 +991,8 @@ const StudentDashboard = () => {
         try {
             const res = await api.post('/student/attendance/mark-direct');
             if (res.data.success) {
-                const isNew = res.data.type !== 'already_marked';
-                if (isNew) playSuccessBeep();
-                // Success → close modal, show result card
                 setShowPinModal(false);
-                setAttendanceResult({ type: res.data.type, attendance: res.data.attendance, message: res.data.message });
-                if (isNew) { bustCache('dashboard'); fetchDashboardData(); }
+                markAttendanceSuccess(res.data);
             }
         } catch (e) {
             // Show error INSIDE the modal (not as a toast behind the backdrop)
@@ -1037,7 +1069,7 @@ const StudentDashboard = () => {
             { id: 'current-affairs',icon: IoGridOutline,        label: 'Current Affairs',accentColor: '#38bdf8', link: '/student/current-affairs', live: true },
             { id: 'exam-alerts',    icon: IoAlertCircleOutline, label: 'Exam Alerts',    accentColor: '#f97316', link: '/student/exam-alerts', live: true },
             { id: 'my-report',      icon: IoDocumentTextOutline,label: 'My Report',      accentColor: '#14b8a6', link: '/student/report' },
-            { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Ask AI',         accentColor: '#FACC15', link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits} credits left` : 'AI powered' },
+            { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Ask AI',         accentColor: '#FACC15', link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits}/${dashboardData.maxDoubtCredits || dashboardData.doubtCredits} credits` : 'AI powered' },
             { id: 'support',        icon: IoHelpCircleOutline,  label: 'Support',        accentColor: '#eab308', action: () => setShowSupportModal(true), badge: dashboardData?.requestsCount || 0 },
         ];
         const cfg = cardConfig?.quickActions;
@@ -1088,7 +1120,7 @@ const StudentDashboard = () => {
 
                 {/* ── Manual Attendance Modal (PIN or Direct) ── */}
                 {showPinModal && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
                         <motion.div
                             initial={{ opacity: 0, y: 40, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1178,7 +1210,13 @@ const StudentDashboard = () => {
                         </motion.div>
                     </div>
                 )}
-                {attendanceResult && <AttendanceResultCard result={attendanceResult} onClose={() => setAttendanceResult(null)} />}
+                {attendanceResult && (
+                    <AttendanceResultCard
+                        result={attendanceResult}
+                        onClose={handleDismissAttendanceResult}
+                        forceDoubtBoard={forceDoubtBoard}
+                    />
+                )}
             </AnimatePresence>
 
             <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
@@ -2504,7 +2542,7 @@ const StudentDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* ── Speed Dial FAB: Mark Attendance (camera + no-camera) ── */}
+            {/* ── Speed Dial FAB: Mark Attendance (camera + no-camera) — Always visible on /student ── */}
             {!showScanner && (
                 <SpeedDialFAB
                     loading={loadingScanner}

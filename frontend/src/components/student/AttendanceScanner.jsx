@@ -262,7 +262,7 @@ const AttendanceScanner = ({ onScanSuccess, onClose, verificationState }) => {
     }, [hasPermission]); // Removed onScanSuccess dependency to avoid re-init loops
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
             {/* Render Verification Card Overlay if state exists */}
             {verificationState && (
                 <VerificationCard
