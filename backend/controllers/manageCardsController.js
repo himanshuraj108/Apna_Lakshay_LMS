@@ -234,11 +234,19 @@ const resetAllMockTestCredits = async (req, res) => {
         const today = new Date().toLocaleString('en-US', {
             timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
         });
+
+        // Save this value as the new daily reset limit so it persists across days
+        await SystemSetting.findOneAndUpdate(
+            { key: 'mockTestDailyCredits' },
+            { key: 'mockTestDailyCredits', value },
+            { upsert: true, new: true }
+        );
+
         const result = await User.updateMany(
             { role: 'student', isActive: true },
             { $set: { mockTestCredits: value, mockTestCreditsResetDate: today } }
         );
-        res.json({ success: true, message: `Reset ${result.modifiedCount} students to ${value} mock test credits` });
+        res.json({ success: true, message: `Reset ${result.modifiedCount} students to ${value} mock test credits (new daily limit saved)` });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

@@ -1,7 +1,16 @@
 const User = require('../models/User');
 const Seat = require('../models/Seat');
 const Settings = require('../models/Settings');
+const SystemSetting = require('../models/SystemSetting');
 const { sendOTPEmail } = require('../services/emailService');
+
+// Helper: read admin-configured daily mock test credits (default 2)
+const getDailyMockCredits = async () => {
+    try {
+        const setting = await SystemSetting.findOne({ key: 'mockTestDailyCredits' });
+        return (setting?.value != null && !isNaN(setting.value)) ? Number(setting.value) : 2;
+    } catch { return 2; }
+};
 
 // @desc    Login user
 // @route   POST /api/auth/login
@@ -224,9 +233,11 @@ exports.getMe = async (req, res) => {
         // Check and Reset Daily Mock Test Credits (00:00 IST) (non-blocking update)
         const currentDateIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
         if (user.mockTestCreditsResetDate !== currentDateIST) {
-            user.mockTestCredits = 2;
-            user.mockTestCreditsResetDate = currentDateIST;
-            user.save({ validateBeforeSave: false }).catch(err => console.error('Credit reset update failed:', err.message));
+            getDailyMockCredits().then(dailyCredits => {
+                user.mockTestCredits = dailyCredits;
+                user.mockTestCreditsResetDate = currentDateIST;
+                user.save({ validateBeforeSave: false }).catch(err => console.error('Credit reset update failed:', err.message));
+            }).catch(() => {});
         }
 
         let userData = {

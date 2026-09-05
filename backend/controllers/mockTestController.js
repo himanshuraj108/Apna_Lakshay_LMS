@@ -1,9 +1,18 @@
 const https = require('https');
 const User = require('../models/User');
 const MockTestAttempt = require('../models/MockTestAttempt');
+const SystemSetting = require('../models/SystemSetting');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+
+// Helper: read admin-configured daily mock test credits (default 2)
+const getDailyMockCredits = async () => {
+    try {
+        const setting = await SystemSetting.findOne({ key: 'mockTestDailyCredits' });
+        return (setting?.value != null && !isNaN(setting.value)) ? Number(setting.value) : 2;
+    } catch { return 2; }
+};
 
 // Configure multer storage for mock test handwritten answers with Cloudinary or disk storage fallback
 const getMockTestUploadMiddleware = () => {
@@ -751,13 +760,15 @@ const generateTest = async (req, res) => {
         // Reset Daily Credits Logic (00:00 IST)
         const currentDateIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
         if (user.mockTestCreditsResetDate !== currentDateIST) {
-            user.mockTestCredits = 2;
+            const dailyCredits = await getDailyMockCredits();
+            user.mockTestCredits = dailyCredits;
             user.mockTestCreditsResetDate = currentDateIST;
         }
 
         const totalAvailable = (user.mockTestCredits || 0) + (user.bonusMockTestCredits || 0);
         if (totalAvailable <= 0) {
-            return res.status(403).json({ success: false, message: `Daily Mock Test limit reached (0/2). Resets tomorrow at midnight.` });
+            const dailyMax = await getDailyMockCredits();
+            return res.status(403).json({ success: false, message: `Daily Mock Test limit reached (0/${dailyMax}). Resets tomorrow at midnight.` });
         }
 
         // NOTE: Credit is deducted ONLY after successful generation (see bottom of function).
@@ -1359,8 +1370,9 @@ const getCredits = async (req, res) => {
         const currentDateIST = new Date().toLocaleString('en-US', {
             timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
         });
+        const dailyCredits = await getDailyMockCredits();
         if (user.mockTestCreditsResetDate !== currentDateIST) {
-            user.mockTestCredits = 2;
+            user.mockTestCredits = dailyCredits;
             user.mockTestCreditsResetDate = currentDateIST;
             await user.save({ validateBeforeSave: false });
         }
@@ -1369,7 +1381,7 @@ const getCredits = async (req, res) => {
             success: true,
             credits: user.mockTestCredits,
             bonusCredits: user.bonusMockTestCredits || 0,
-            maxCredits: 2
+            maxCredits: dailyCredits
         });
     } catch (err) {
         console.error('getCredits error:', err.message);
