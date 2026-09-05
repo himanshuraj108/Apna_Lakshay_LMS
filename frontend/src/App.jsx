@@ -6,6 +6,7 @@ import SubAdminPinGuard from './components/admin/SubAdminPinGuard';
 import { useSocket } from './hooks/useSocket';
 import PwaInstallBanner from './components/ui/PwaInstallBanner';
 import PinLockScreen from './components/ui/PinLockScreen';
+import ForcedDoubtOverlay from './components/ForcedDoubtOverlay';
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -281,6 +282,10 @@ function App() {
                 </Routes>
                 <PwaInstallBanner />
             </Suspense>
+            {/* Force Doubt Board overlay: shown to students when admin enables it */}
+            {forceDoubtBoard && user?.role === 'student' && !doubtDismissed && location.pathname !== '/student/doubt' && (
+                <ForcedDoubtOverlay onClose={() => setDoubtDismissed(true)} />
+            )}
         </PinLockScreen>
     );
 }
