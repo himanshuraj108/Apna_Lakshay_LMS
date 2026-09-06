@@ -75,7 +75,7 @@ const callGroq = async (messages) => {
 };
 
 const SUBJECT_CONTEXT = {
-    maths:          'You are a brilliant Maths tutor for Indian competitive exams (SSC, UPSC, Banking).',
+    maths:          'You are a brilliant Maths tutor for Indian competitive exams (SSC, UPSC, Banking). Answer all maths questions clearly with steps.',
     science:        'You are a Science teacher for Indian competitive exams, covering Physics, Chemistry, Biology.',
     history:        'You are a History expert specializing in Indian and World History for competitive exams.',
     polity:         'You are a Polity and Constitution expert for UPSC and SSC exams.',
@@ -83,7 +83,7 @@ const SUBJECT_CONTEXT = {
     geography:      'You are a Geography expert for Indian competitive exams (India and World Geography).',
     current_affairs:'You are a Current Affairs analyst specializing in Indian national and international news.',
     english:        'You are an English language expert for Indian competitive exams.',
-    general:        'You are a knowledgeable tutor helping Indian competitive exam students.',
+    general:        'You are a friendly, helpful AI assistant like ChatGPT. You can talk about absolutely anything — greetings, casual chat, advice, studies, general knowledge, current events, coding, creativity, or any topic the user brings up. Be warm, natural, and conversational. If someone says "hi" or "hello", greet them back warmly. Never refuse to engage with any topic.',
 };
 
 // POST /api/student/doubt/ask
@@ -92,8 +92,8 @@ exports.askDoubt = async (req, res) => {
         const studentId = req.user.id;
         const { question, subject = 'general', lang = 'en' } = req.body;
 
-        if (!question || question.trim().length < 5) {
-            return res.status(400).json({ success: false, message: 'Please enter a valid question.' });
+        if (!question || question.trim().length < 1) {
+            return res.status(400).json({ success: false, message: 'Please enter a message.' });
         }
         if (question.length > 1000) {
             return res.status(400).json({ success: false, message: 'Question too long (max 1000 characters).' });
@@ -150,37 +150,49 @@ exports.askDoubt = async (req, res) => {
             langInstruction = 'Respond clearly in English.';
         }
 
+        // Detect if this is a casual/conversational message or a study question
+        const trimmedQ = question.trim().toLowerCase();
+        const isCasual = trimmedQ.length < 20
+            || /^(hi|hello|hii|hey|helo|hlo|namaste|good\s*(morning|evening|night|afternoon)|how are you|kya haal|kaise ho|sup|whatsup|bye|thanks|thank you|ok|okay|great|nice|cool|lol|haha|😊|🙏)/.test(trimmedQ)
+            || subject === 'general';
+
+        const formattingInstruction = isCasual
+            ? `Respond naturally and conversationally like a friendly AI assistant (ChatGPT style). 
+- For greetings like "hi", "hello", respond warmly and ask how you can help.
+- For casual questions, give a direct friendly answer — no need for markdown sections or bullet points.
+- Keep it human, warm, and natural.
+- Short responses are perfectly fine for casual messages.`
+            : `FORMATTING RULES FOR MAXIMUM READABILITY:
+- Structure your response using clear markdown headings (##), numbered steps, and bullet points.
+- When explaining formulas or equations, write them in standard LaTeX math notation:
+  - Block equations: $$ [equation] $$
+  - Inline formulas: $ [formula] $
+  - NEVER wrap LaTeX in backticks. Write them directly as $ [formula] $.
+- Use clean Markdown tables for comparisons (| Col 1 | Col 2 |).
+- Keep paragraphs short (2-3 sentences max).
+- Organize into these sections:
+
+## Direct Answer
+[1-2 crisp sentences]
+
+## Step-by-Step Breakdown
+1. [First step with **bold** highlights]
+2. [Second step]
+3. [Third step]
+
+## Key Points to Remember
+- [Takeaway 1]
+- [Takeaway 2]
+- [Takeaway 3]
+
+> Key Tip: [One practical memory trick for exams]
+
+Keep total response under 500 words. For current affairs, use web retrieval for accurate info.`;
+
         const messages = [
             {
                 role: 'system',
-                content: `${systemPrompt}
-${langInstruction}
-CRITICAL FORMATTING RULES FOR MAXIMUM READABILITY:
-- Structure your response using clear markdown headings (##), numbered steps, and bullet points.
-- When explaining formulas, equations, or chemical reactions, write them in standard LaTeX math notation:
-  - Block equations: $$ [equation] $$ or \\[ [equation] \\]
-  - Inline formulas: $ [formula] $
-  - NEVER wrap LaTeX formulas or equations in backticks (\`...\`). Write them directly as $ [formula] $ or $$ [equation] $$.
-- When comparing concepts or presenting structured data, use clean Markdown tables (| Col 1 | Col 2 |).
-- Never write dense, unbroken blocks of text. Keep paragraphs short (2-3 sentences max).
-- Always organize into these clean, visually distinct sections:
-
-## Direct Answer
-[1-2 crisp sentences giving the exact answer clearly]
-
-## Step-by-Step Breakdown
-1. [First key step or concept with **bold** highlights]
-2. [Second mechanism, proof, or formula]
-3. [Third practical application or detail]
-
-## Key Points to Remember
-- [Crucial takeaway or fact 1]
-- [Crucial takeaway or fact 2]
-- [Crucial takeaway or fact 3]
-
-> 🎯 Key Tip / Formula: [One practical tip or memory trick for exams]
-
-Keep total response under 500 words. For current affairs, use your web retrieval capability to provide accurate and up-to-date information.`
+                content: `${systemPrompt}\n${langInstruction}\n${formattingInstruction}`
             },
             { role: 'user', content: question.trim() }
         ];
