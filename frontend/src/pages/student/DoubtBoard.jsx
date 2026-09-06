@@ -1860,8 +1860,8 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
             )}
         </AnimatePresence>
 
-        {/* ── Floating Mark Attendance Button (hidden once marked today) ── */}
-        {!attendanceMarkedToday && (
+        {/* ── Floating Mark Attendance Button (hidden in forceMode overlay, or once marked today) ── */}
+        {!forceMode && !attendanceMarkedToday && (
             <>
                 {/* Clean backdrop without any blur */}
                 <AnimatePresence>

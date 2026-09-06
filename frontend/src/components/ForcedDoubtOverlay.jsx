@@ -2,9 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DoubtBoard from '../pages/student/DoubtBoard';
 
-const STORAGE_KEY      = 'doubt_btn_y_ratio';
-const DISMISSED_KEY    = 'doubt_tutorial_dismissed'; // localStorage → permanent dismiss
-const SESSION_SHOWN_KEY = 'doubt_tutorial_shown';    // sessionStorage → shown this login session
+const STORAGE_KEY       = 'doubt_btn_y_ratio';
+const SESSION_SHOWN_KEY = 'doubt_tutorial_shown'; // sessionStorage → shown this login session
 const BTN_HEIGHT = 124;
 const BTN_WIDTH  = 52;
 
@@ -16,11 +15,10 @@ function getSavedY() {
     return 0.42;
 }
 
+// Show tutorial unless already shown in this browser session (cleared on new login/tab)
 function shouldShowTutorial() {
     try {
-        if (localStorage.getItem(DISMISSED_KEY) === 'true') return false; // permanently dismissed
-        if (sessionStorage.getItem(SESSION_SHOWN_KEY) === 'true') return false; // already shown this session
-        return true;
+        return sessionStorage.getItem(SESSION_SHOWN_KEY) !== 'true';
     } catch { return false; }
 }
 
@@ -211,8 +209,9 @@ const ForcedDoubtOverlay = ({ onClose }) => {
         setShowTutorial(false);
     }, []);
 
+    // "Got it" — hide for this session, show again next login
     const dismissTutorialPermanent = useCallback(() => {
-        try { localStorage.setItem(DISMISSED_KEY, 'true'); } catch {}
+        try { sessionStorage.setItem(SESSION_SHOWN_KEY, 'true'); } catch {}
         setShowTutorial(false);
     }, []);
 
