@@ -139,13 +139,21 @@ const TutorialOverlay = ({ btnTop, onDismiss, onDismissPermanent }) => {
                             <span style={{ fontSize: 18, fontWeight: 900, color: '#fff', fontFamily: 'Georgia,serif' }}>?</span>
                         </div>
                         <div>
-                            <p style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>AI Doubt Board</p>
-                            <p style={{ fontSize: 10, color: '#f97316', fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Available now</p>
+                            <p style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', margin: 0, lineHeight: 1.3 }}>
+                                AI Doubt Board
+                            </p>
+                            <p style={{ fontSize: 11, fontWeight: 700, color: '#334155', margin: '1px 0 0', lineHeight: 1.3 }}>
+                                AI डाउट बोर्ड
+                            </p>
+                            <p style={{ fontSize: 9, color: '#f97316', fontWeight: 700, margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Available now • अभी उपलब्ध</p>
                         </div>
                     </div>
 
-                    <p style={{ fontSize: 13, color: '#334155', margin: '0 0 16px', lineHeight: 1.6 }}>
-                        Tap the <span style={{ color: '#ea580c', fontWeight: 700 }}>orange button</span> on the left to ask any doubt instantly with AI assistance! 🤔
+                    <p style={{ fontSize: 12.5, color: '#334155', margin: '0 0 4px', lineHeight: 1.6 }}>
+                        Tap the <span style={{ color: '#ea580c', fontWeight: 700 }}>orange button</span> on the left to ask any doubt instantly with AI! 🤔
+                    </p>
+                    <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 14px', lineHeight: 1.6 }}>
+                        बाईं तरफ <span style={{ color: '#ea580c', fontWeight: 700 }}>ऑरेंज बटन</span> दबाएं और AI से कोई भी सवाल पूछें! 🙋
                     </p>
 
                     {/* Button */}
@@ -158,9 +166,10 @@ const TutorialOverlay = ({ btnTop, onDismiss, onDismissPermanent }) => {
                                 color: '#fff', fontWeight: 800, fontSize: 13,
                                 border: 'none', cursor: 'pointer',
                                 boxShadow: '0 4px 14px rgba(249,115,22,0.4)',
+                                lineHeight: 1.5,
                             }}
                         >
-                            Got it! 👍
+                            Got it! 👍 &nbsp;|&nbsp; समझ गया! ✅
                         </button>
                     </div>
                 </motion.div>
