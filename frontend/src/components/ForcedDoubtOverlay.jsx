@@ -358,6 +358,8 @@ const ForcedDoubtOverlay = ({ onClose }) => {
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                         style={{ position: 'fixed', inset: 0, zIndex: 99997, background: '#ffffff' }}
                     >
+                        {/* Hide Mark Attendance FAB while DoubtBoard is open */}
+                        <style>{`.attendance-fab-root { display: none !important; }`}</style>
                         <DoubtBoard forceMode={true} onClose={() => setIsOpen(false)} />
                     </motion.div>
                 )}

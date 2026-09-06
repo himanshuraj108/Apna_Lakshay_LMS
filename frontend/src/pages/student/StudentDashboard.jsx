@@ -406,7 +406,7 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
             </AnimatePresence>
 
             {/* ── Main FAB — premium pill ── */}
-            <div className="fixed bottom-6 right-4 z-[850]">
+            <div className="fixed bottom-6 right-4 z-[850] attendance-fab-root">
                 <motion.button
                     initial={{ opacity: 0, y: 20, scale: 0.85 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
