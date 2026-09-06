@@ -150,10 +150,10 @@ const TutorialOverlay = ({ btnTop, onDismiss, onDismissPermanent }) => {
                     </div>
 
                     <p style={{ fontSize: 12.5, color: '#334155', margin: '0 0 4px', lineHeight: 1.6 }}>
-                        Tap the <span style={{ color: '#ea580c', fontWeight: 700 }}>orange button</span> on the left to ask any doubt instantly with AI! 🤔
+                        Tap the <span style={{ color: '#ea580c', fontWeight: 700 }}>orange button</span> on the left to ask any doubt instantly with AI.
                     </p>
                     <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 14px', lineHeight: 1.6 }}>
-                        बाईं तरफ <span style={{ color: '#ea580c', fontWeight: 700 }}>ऑरेंज बटन</span> दबाएं और AI से कोई भी सवाल पूछें! 🙋
+                        बाईं तरफ <span style={{ color: '#ea580c', fontWeight: 700 }}>ऑरेंज बटन</span> दबाएं और AI से कोई भी सवाल पूछें।
                     </p>
 
                     {/* Button */}
@@ -169,7 +169,7 @@ const TutorialOverlay = ({ btnTop, onDismiss, onDismissPermanent }) => {
                                 lineHeight: 1.5,
                             }}
                         >
-                            Got it! 👍 &nbsp;|&nbsp; समझ गया! ✅
+                            Got it &nbsp;|&nbsp; समझ गया
                         </button>
                     </div>
                 </motion.div>
