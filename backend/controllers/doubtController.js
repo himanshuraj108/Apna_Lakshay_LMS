@@ -5,12 +5,11 @@ const DoubtSession = require('../models/DoubtSession');
 const GROQ_HOST = 'api.groq.com';
 const GROQ_PATH = '/openai/v1/chat/completions';
 const GROQ_MODELS = [
-    'groq/compound',          // Built-in web retrieval for current affairs
-    'openai/gpt-oss-20b',     // GPT OSS 20B fallback
-    'openai/gpt-oss-120b',    // GPT OSS 120B fallback
-    'qwen/qwen3.8-27b',       // Qwen 3.8 fallback
-    'qwen/qwen3.6-27b',       // Qwen 3.6 fallback
-    'allam-2-7b',             // Lightweight last fallback
+    'openai/gpt-oss-120b',      // Best quality, fast (tested 200 OK)
+    'openai/gpt-oss-20b',       // Fast fallback
+    'qwen/qwen3.8-27b',         // High-grade math & reasoning
+    'qwen/qwen3.6-27b',         // Fast fallback
+    'allam-2-7b',               // Lightweight fallback
 ];
 
 const DAILY_DOUBT_LIMIT = 10;
@@ -86,6 +85,17 @@ const SUBJECT_CONTEXT = {
     general:        'You are a friendly, helpful AI assistant like ChatGPT. You can talk about absolutely anything — greetings, casual chat, advice, studies, general knowledge, current events, coding, creativity, or any topic the user brings up. Be warm, natural, and conversational. If someone says "hi" or "hello", greet them back warmly. Never refuse to engage with any topic.',
 };
 
+// ── Auto-detect language from text ──────────────────────────────────────────
+function detectLang(text) {
+    // Devanagari Unicode block: U+0900–U+097F
+    const devanagariCount = (text.match(/[\u0900-\u097F]/g) || []).length;
+    if (devanagariCount > 2) return 'hi';
+    // Hinglish: mix of Hindi words written in Roman + English
+    const hinglishPattern = /\b(kya|hai|hain|mein|ka|ki|ke|aur|nahi|yaar|bhai|kaise|karo|iska|uska|toh|par|lekin|matlab|samajh|batao|bolo|dekho|achha|theek|sahi|galat|hoga|hota|karta|karti|hoti|gaya|gayi|gaye|aaya|aayi|aaye|kuch|bhi|sab|mera|meri|mere|tera|teri|tere|hum|tum|aap)\b/i;
+    if (hinglishPattern.test(text)) return 'hinglish';
+    return 'en';
+}
+
 // POST /api/student/doubt/ask
 exports.askDoubt = async (req, res) => {
     try {
@@ -128,63 +138,58 @@ exports.askDoubt = async (req, res) => {
         }
         await student.save({ validateBeforeSave: false });
 
+        // ── Auto-detect language from question ──
+        const autoLang = detectLang(question.trim());
+        const effectiveLang = autoLang !== 'en' ? autoLang : (lang || 'en');
+
         const systemPrompt = SUBJECT_CONTEXT[subject] || SUBJECT_CONTEXT.general;
 
         let langInstruction;
-        if (lang === 'hi') {
-            langInstruction = `CRITICAL LANGUAGE RULE: You MUST respond ENTIRELY in Hindi using Devanagari script (हिंदी). 
-- Do NOT use any English words or Roman script at all — not even for technical terms (use their Hindi equivalents or transliterations in Devanagari).
-- Every single word must be written in Devanagari script.
-- Section headings must also be in Hindi Devanagari.
-- If you don't know the Hindi word, write it in Devanagari phonetically.`;
-        } else if (lang === 'hinglish') {
-            langInstruction = `LANGUAGE RULE: Respond in Hinglish — a friendly mix of Hindi and English written in Roman script (NOT Devanagari). 
-- Write naturally like a friend explaining concepts, e.g. "Yaar, is topic mein basically..."
-- You can mix English and Hindi words freely but write everything in Roman letters.
-- Keep it casual, simple, and easy to understand.
-- Section headings can be in English.`;
+        if (effectiveLang === 'hi') {
+            langInstruction = `CRITICAL LANGUAGE RULE: You MUST respond in clean, natural Hindi using Devanagari script (हिंदी). For scientific/mathematical formulas, keep standard math notation ($F = ma$, $\\text{H}_2\\text{O}$) while explaining in Hindi.`;
+        } else if (effectiveLang === 'hinglish') {
+            langInstruction = `LANGUAGE RULE: Respond in friendly, natural Hinglish (Hindi written in Roman/English alphabet). Explain concepts clearly and simply like a top tutor. Mathematical formulas must remain in standard LaTeX notation ($...$).`;
         } else {
-            langInstruction = 'Respond clearly in English.';
+            langInstruction = 'Respond clearly and concisely in English. Use standard LaTeX for formulas.';
         }
 
-        // Detect if this is a casual/conversational message or a study question
+        // Detect if this is a casual greeting / smalltalk
         const trimmedQ = question.trim().toLowerCase();
-        const isCasual = trimmedQ.length < 20
-            || /^(hi|hello|hii|hey|helo|hlo|namaste|good\s*(morning|evening|night|afternoon)|how are you|kya haal|kaise ho|sup|whatsup|bye|thanks|thank you|ok|okay|great|nice|cool|lol|haha|😊|🙏)/.test(trimmedQ)
-            || subject === 'general';
+        const isGreeting = /^(hi|hello|hii|hey|helo|hlo|namaste|pranam|good\s*(morning|evening|night|afternoon)|how are you|kya haal|kaise ho|sup|whatsup|bye|thanks|thank you|ok|okay|theek hai|sahi hai|great|cool|lol|haha)[!.,?\s]*$/i.test(trimmedQ);
+        const isCasual = isGreeting || (trimmedQ.length < 15 && /^(hi|hello|hii|hey|namaste|kaise ho)/i.test(trimmedQ));
 
         const formattingInstruction = isCasual
-            ? `Respond naturally and conversationally like a friendly AI assistant (ChatGPT style). 
-- For greetings like "hi", "hello", respond warmly and ask how you can help.
-- For casual questions, give a direct friendly answer — no need for markdown sections or bullet points.
-- Keep it human, warm, and natural.
-- Short responses are perfectly fine for casual messages.`
-            : `FORMATTING RULES FOR MAXIMUM READABILITY:
-- Structure your response using clear markdown headings (##), numbered steps, and bullet points.
-- When explaining formulas or equations, write them in standard LaTeX math notation:
-  - Block equations: $$ [equation] $$
-  - Inline formulas: $ [formula] $
-  - NEVER wrap LaTeX in backticks. Write them directly as $ [formula] $.
-- Use clean Markdown tables for comparisons (| Col 1 | Col 2 |).
-- Keep paragraphs short (2-3 sentences max).
-- Organize into these sections:
+            ? `RULES FOR CASUAL CONVERSATION:
+- Jump DIRECTLY into your response. Do NOT repeat or re-phrase the user's greeting.
+- Do NOT say "ask: ..." or "My response:".
+- Do NOT use emojis.
+- Greet back warmly and politely like a top tutor. For example: "Hello! How can I help you with your studies or any questions today?"
+- Keep it short, natural, and friendly (1-2 sentences).`
+            : `RULES FOR QUESTIONS & DOUBTS:
+- Jump DIRECTLY into the answer. Never say "Sure, here is...", "ask: ...", or "My response:".
+- Do NOT use emojis.
+- Structure your response using clear Markdown:
 
 ## Direct Answer
-[1-2 crisp sentences]
+[1-2 clear, direct sentences answering the question]
 
-## Step-by-Step Breakdown
-1. [First step with **bold** highlights]
-2. [Second step]
-3. [Third step]
+## Step-by-Step Explanation
+[Clear, well-explained steps or concepts with **bold** key terms. Use numbered steps for derivations or calculations.]
 
-## Key Points to Remember
-- [Takeaway 1]
-- [Takeaway 2]
-- [Takeaway 3]
+## Key Formulas & Equations (if applicable)
+- Write all standalone equations in centered display LaTeX math:
+$$
+[formula]
+$$
+- Write inline variables using single dollar signs: $x$, $y$, $F = ma$.
+- NEVER put LaTeX formulas inside code backticks (\`...\`).
+- Clearly explain what each variable represents.
 
-> Key Tip: [One practical memory trick for exams]
+## Key Points
+- [Key takeaway 1]
+- [Key takeaway 2]
 
-Keep total response under 500 words. For current affairs, use web retrieval for accurate info.`;
+Keep total response well-organized, accurate, and easy to read.`;
 
         const messages = [
             {
@@ -210,17 +215,6 @@ Keep total response under 500 words. For current affairs, use web retrieval for 
         res.status(500).json({ success: false, message: 'Failed to get answer. Please try again.' });
     }
 };
-
-// ── Auto-detect language from text ──────────────────────────────────────────
-function detectLang(text) {
-    // Devanagari Unicode block: U+0900–U+097F
-    const devanagariCount = (text.match(/[\u0900-\u097F]/g) || []).length;
-    if (devanagariCount > 2) return 'hi';
-    // Hinglish: mix of Hindi words written in Roman + English
-    const hinglishPattern = /\b(kya|hai|hain|mein|ka|ki|ke|aur|nahi|yaar|bhai|kaise|karo|karo|iska|uska|toh|par|lekin|matlab|samajh|batao|bolo|dekho|achha|theek|sahi|galat|hoga|hota|karta|karti|hoti|gaya|gayi|gaye|aaya|aayi|aaye)\b/i;
-    if (hinglishPattern.test(text)) return 'hinglish';
-    return 'en';
-}
 
 // POST /api/student/doubt/ask-stream  — Server-Sent Events streaming version
 exports.askDoubtStream = async (req, res) => {

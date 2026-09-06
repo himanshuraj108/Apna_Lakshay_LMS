@@ -228,7 +228,7 @@ const useTypewriter = (prompts, typingSpeed = 50, deletingSpeed = 25, pauseTime 
 };
 
 // Mathematical LaTeX & Formula Renderer with KaTeX & Robust Universal Fallback
-function renderMath(rawExpr, isBlock = false) {
+function renderMath(rawExpr, isBlock = false, isDark = true) {
     if (!rawExpr) return null;
     let expr = String(rawExpr).trim();
     // Strip wrapping $, $$, \[, \], \(, \), or `
@@ -238,12 +238,26 @@ function renderMath(rawExpr, isBlock = false) {
     else if (expr.startsWith('\\[') && expr.endsWith('\\]')) expr = expr.slice(2, -2).trim();
     else if (expr.startsWith('\\(') && expr.endsWith('\\)')) expr = expr.slice(2, -2).trim();
 
+    const mathColor = isDark ? '#f8fafc' : '#0f172a';
+
     try {
         const html = katex.renderToString(expr, {
             displayMode: isBlock,
             throwOnError: false,
         });
-        return <span className="katex-rendered-math" dangerouslySetInnerHTML={{ __html: html }} />;
+        return (
+            <span
+                className="katex-rendered-math"
+                style={{
+                    display: isBlock ? 'block' : 'inline-block',
+                    overflowX: 'auto',
+                    maxWidth: '100%',
+                    verticalAlign: isBlock ? 'baseline' : 'middle',
+                    color: mathColor,
+                }}
+                dangerouslySetInnerHTML={{ __html: html }}
+            />
+        );
     } catch (e) {
         // Fallback for safety
         let cleaned = expr
@@ -280,7 +294,17 @@ function renderMath(rawExpr, isBlock = false) {
             .replace(/\^([a-zA-Z0-9])/g, '<sup>$1</sup>')
             .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)');
 
-        return <span style={{ fontFamily: 'KaTeX_Main, "Cambria Math", "Times New Roman", serif', fontWeight: 600, letterSpacing: '0.02em' }} dangerouslySetInnerHTML={{ __html: cleaned }} />;
+        return (
+            <span
+                style={{
+                    fontFamily: 'KaTeX_Main, "Cambria Math", "Times New Roman", serif',
+                    fontWeight: 600,
+                    letterSpacing: '0.02em',
+                    color: mathColor,
+                }}
+                dangerouslySetInnerHTML={{ __html: cleaned }}
+            />
+        );
     }
 }
 
@@ -300,7 +324,7 @@ function applyInline(text, isDark) {
             // If the code block contains LaTeX math (like $\mathbf{F}...$, \mathbf, \frac, \sqrt, _, ^, \vec, etc.), render as KaTeX math!
             const isMath = inner.startsWith('$') || inner.includes('\\') || /[_^]\{/.test(inner) || /\\(mathbf|mathit|mathrm|frac|sqrt|cdot|vec|times|pm|alpha|beta|gamma|theta|pi|le|ge|neq|approx|sum|int)/.test(inner);
             if (isMath) {
-                parts.push(<span key={m.index}>{renderMath(inner, false)}</span>);
+                parts.push(<span key={m.index}>{renderMath(inner, false, isDark)}</span>);
             } else {
                 parts.push(
                     <code
@@ -336,13 +360,13 @@ function applyInline(text, isDark) {
                 </a>
             );
         } else if (s.startsWith('$$') && s.endsWith('$$')) {
-            parts.push(<span key={m.index}>{renderMath(s.slice(2, -2), false)}</span>);
+            parts.push(<span key={m.index}>{renderMath(s.slice(2, -2), false, isDark)}</span>);
         } else if (s.startsWith('\\[') && s.endsWith('\\]')) {
-            parts.push(<span key={m.index}>{renderMath(s.slice(2, -2), false)}</span>);
+            parts.push(<span key={m.index}>{renderMath(s.slice(2, -2), false, isDark)}</span>);
         } else if (s.startsWith('\\(')) {
-            parts.push(<span key={m.index}>{renderMath(s.slice(2, -2), false)}</span>);
+            parts.push(<span key={m.index}>{renderMath(s.slice(2, -2), false, isDark)}</span>);
         } else if (s.startsWith('$') && s.endsWith('$')) {
-            parts.push(<span key={m.index}>{renderMath(s.slice(1, -1), false)}</span>);
+            parts.push(<span key={m.index}>{renderMath(s.slice(1, -1), false, isDark)}</span>);
         }
         last = m.index + s.length;
     }
@@ -362,43 +386,47 @@ const MarkdownRenderer = ({ text, isDark }) => {
         const line = lines[i];
         if (!line.trim()) { i++; continue; }
 
-        // Multi-line LaTeX Math Block: \[ ... \] or $$ ... $$
-        if (line.trim() === '\\[' || line.trim() === '$$') {
-            const endToken = line.trim() === '\\[' ? '\\]' : '$$';
+        // Universal Display LaTeX Math Block: $$ ... $$ or \[ ... \]
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('$$') || trimmedLine.startsWith('\\[')) {
+            const isBracket = trimmedLine.startsWith('\\[');
+            const closeMarker = isBracket ? '\\]' : '$$';
+
+            // Check if closed on the same line and has math inside
+            if (trimmedLine.length > 3 && trimmedLine.endsWith(closeMarker)) {
+                const inner = trimmedLine.slice(2, -2).trim();
+                if (inner) {
+                    elements.push(
+                        <div key={`m-s-${i}`} style={{ margin: '14px 0', padding: '14px 18px', borderRadius: 14, background: isDark ? '#141419' : '#f8fafc', border: isDark ? '1px solid rgba(249,115,22,0.25)' : '1px solid #e2e8f0', color: isDark ? '#f8fafc' : '#0f172a', overflowX: 'auto', textAlign: 'center', boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.25)' : '0 1px 4px rgba(0,0,0,0.04)' }}>
+                            {renderMath(inner, true, isDark)}
+                        </div>
+                    );
+                    i++;
+                    continue;
+                }
+            }
+
+            // Multi-line math block
             const mathLines = [];
+            const firstContent = trimmedLine.slice(2).trim();
+            if (firstContent && !firstContent.endsWith(closeMarker)) mathLines.push(firstContent);
             i++;
-            while (i < lines.length && lines[i].trim() !== endToken) {
+            while (i < lines.length && !lines[i].includes(closeMarker)) {
                 mathLines.push(lines[i]);
                 i++;
             }
+            if (i < lines.length) {
+                const closingLine = lines[i];
+                const closeIdx = closingLine.indexOf(closeMarker);
+                const beforeClose = closingLine.slice(0, closeIdx).trim();
+                if (beforeClose) mathLines.push(beforeClose);
+                i++;
+            }
             elements.push(
-                <div key={`m-${i}`} style={{ margin: '16px 0', padding: '16px 20px', borderRadius: 14, background: isDark ? '#141419' : '#fffaf5', border: isDark ? '1px solid rgba(249,115,22,0.25)' : '1px solid #fed7aa', overflowX: 'auto', textAlign: 'center', boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 2px 12px rgba(249,115,22,0.06)' }}>
-                    {renderMath(mathLines.join('\n'), true)}
+                <div key={`m-m-${i}`} style={{ margin: '16px 0', padding: '16px 20px', borderRadius: 14, background: isDark ? '#141419' : '#f8fafc', border: isDark ? '1px solid rgba(249,115,22,0.25)' : '1px solid #e2e8f0', color: isDark ? '#f8fafc' : '#0f172a', overflowX: 'auto', textAlign: 'center', boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.04)' }}>
+                    {renderMath(mathLines.join('\n'), true, isDark)}
                 </div>
             );
-            i++;
-            continue;
-        }
-
-        // Single-line Math Block: \[ eq \] or $$ eq $$
-        if (/^\\\[[\s\S]+?\\\]$/.test(line.trim())) {
-            const mathContent = line.trim().slice(2, -2);
-            elements.push(
-                <div key={`m-s-${i}`} style={{ margin: '14px 0', padding: '14px 18px', borderRadius: 14, background: isDark ? '#141419' : '#fffaf5', border: isDark ? '1px solid rgba(249,115,22,0.25)' : '1px solid #fed7aa', overflowX: 'auto', textAlign: 'center' }}>
-                    {renderMath(mathContent, true)}
-                </div>
-            );
-            i++;
-            continue;
-        }
-        if (/^\$\$[\s\S]+?\$\$$/.test(line.trim())) {
-            const mathContent = line.trim().slice(2, -2);
-            elements.push(
-                <div key={`m-d-${i}`} style={{ margin: '14px 0', padding: '14px 18px', borderRadius: 14, background: isDark ? '#141419' : '#fffaf5', border: isDark ? '1px solid rgba(249,115,22,0.25)' : '1px solid #fed7aa', overflowX: 'auto', textAlign: 'center' }}>
-                    {renderMath(mathContent, true)}
-                </div>
-            );
-            i++;
             continue;
         }
 
@@ -504,11 +532,11 @@ const MarkdownRenderer = ({ text, isDark }) => {
             elements.push(
                 <div key={`ol-${i}`} style={{ margin: '12px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {items.map((it, idx) => (
-                        <div key={idx} style={{ display: 'flex', gap: 12, padding: '10px 14px', borderRadius: 12, background: isDark ? '#18181b' : '#f8fafc', border: isDark ? '1px solid #27272a' : '1px solid #eef2f6', alignItems: 'flex-start' }}>
-                            <span style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#27272a' : '#ffffff', border: '1.5px solid #f97316', color: '#ea580c', fontWeight: 800, fontSize: 11.5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                        <div key={idx} style={{ display: 'flex', gap: 12, padding: '10px 14px', borderRadius: 12, background: isDark ? '#18181b' : '#f8fafc', border: isDark ? '1px solid #27272a' : '1px solid #e2e8f0', alignItems: 'flex-start' }}>
+                            <span style={{ width: 22, height: 22, borderRadius: '50%', background: isDark ? '#27272a' : '#fff7ed', border: '1.5px solid #f97316', color: '#ea580c', fontWeight: 800, fontSize: 11.5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
                                 {idx + 1}
                             </span>
-                            <span style={{ fontSize: 14.5, color: isDark ? '#e4e4e7' : '#1e293b', lineHeight: 1.65, flex: 1 }}>
+                            <span style={{ fontSize: 14.5, color: isDark ? '#e4e4e7' : '#0f172a', lineHeight: 1.65, flex: 1 }}>
                                 {applyInline(it, isDark)}
                             </span>
                         </div>
@@ -528,7 +556,7 @@ const MarkdownRenderer = ({ text, isDark }) => {
             elements.push(
                 <ul key={`ul-${i}`} style={{ margin: '10px 0', paddingLeft: 4, listStyle: 'none' }}>
                     {items.map((it, idx) => (
-                        <li key={idx} style={{ display: 'flex', gap: 10, marginBottom: 8, fontSize: 14.5, color: isDark ? '#d4d4d8' : '#334155', lineHeight: 1.7, alignItems: 'flex-start' }}>
+                        <li key={idx} style={{ display: 'flex', gap: 10, marginBottom: 8, fontSize: 14.5, color: isDark ? '#d4d4d8' : '#0f172a', lineHeight: 1.7, alignItems: 'flex-start' }}>
                             <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: '#f97316', marginTop: 8 }} />
                             <span>{applyInline(it, isDark)}</span>
                         </li>
@@ -540,7 +568,7 @@ const MarkdownRenderer = ({ text, isDark }) => {
 
         // Clear, readable paragraphs
         elements.push(
-            <p key={`p-${i}`} style={{ fontSize: 15, lineHeight: 1.75, color: isDark ? '#e4e4e7' : '#334155', margin: '6px 0 10px' }}>
+            <p key={`p-${i}`} style={{ fontSize: 15, lineHeight: 1.75, color: isDark ? '#e4e4e7' : '#0f172a', margin: '6px 0 10px' }}>
                 {applyInline(line, isDark)}
             </p>
         );
@@ -757,8 +785,11 @@ const SidebarSectionLabel = ({ label, isDark }) => (
 // Sidebar session item — defined outside to keep stable reference, preventing blink on menuId change
 const SidebarItem = ({ s, activeId, menuId, editId, editVal, isDark, onSelect, onRename, onPin, onDelete, setMenuId, setEditId, setEditVal }) => (
     <div style={{ position: 'relative' }} onMouseLeave={() => setMenuId(null)}>
-        <button
+        <div
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(s.id)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onSelect(s.id); }}
             style={{
                 width: '100%',
                 textAlign: 'left',
@@ -770,6 +801,7 @@ const SidebarItem = ({ s, activeId, menuId, editId, editVal, isDark, onSelect, o
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
+                boxSizing: 'border-box',
             }}
         >
             {s.pinned ? (
@@ -797,7 +829,7 @@ const SidebarItem = ({ s, activeId, menuId, editId, editVal, isDark, onSelect, o
             >
                 <IoEllipsisVertical size={14} />
             </button>
-        </button>
+        </div>
 
         {/* Dropdown — CSS visibility instead of AnimatePresence to avoid remount flicker */}
         <div
@@ -1083,6 +1115,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
     const [directMarkLoading, setDirectMarkLoading] = useState(false);
     const [pinEnabled, setPinEnabled] = useState(false);
     const [fabOpen, setFabOpen] = useState(false);
+    const [typingState, setTypingState] = useState(null); // { sid, fullText, displayedLength }
 
     // Voice recording modal
     const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -1102,15 +1135,18 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
     const animatedPlaceholder = useTypewriter(currentPrompts, 55, 30, 1800);
 
     useEffect(() => {
-        api.get('/student/dashboard').then(r => {
-            if (r.data?.data?.doubtCredits != null) {
-                const c = Number(r.data.data.doubtCredits);
-                const m = Number(r.data.data.maxDoubtCredits) || Math.max(c, 10);
-                setCredits(c);
-                setMaxCredits(m);
+        api.get('/student/dashboard').then(res => {
+            if (res.data?.success && res.data?.student?.doubtCredits != null) {
+                setCredits(Number(res.data.student.doubtCredits));
             }
-            if (r.data?.data?.attendance) {
-                const isMarked = !!r.data.data.attendance.markedToday;
+            if (res.data?.success && res.data?.student?.maxDoubtCredits != null) {
+                setMaxCredits(Number(res.data.student.maxDoubtCredits));
+            }
+            if (res.data?.success && res.data?.student?.pinAttendanceEnabled !== undefined) {
+                setPinEnabled(!!res.data.student.pinAttendanceEnabled);
+            }
+            if (res.data?.data?.attendance) {
+                const isMarked = !!res.data.data.attendance.markedToday;
                 setAttendanceMarkedToday(isMarked);
                 if (isMarked) {
                     localStorage.setItem('attendance_marked_date', new Date().toDateString());
@@ -1129,8 +1165,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
 
     useEffect(() => { saveSessions(sessions); }, [sessions]);
     useEffect(() => { if (lang) localStorage.setItem('doubt_lang', lang); }, [lang]);
-    useEffect(() => { localStorage.setItem('doubt_dark', isDark ? '1' : '0'); }, [isDark]);
-    useEffect(() => { if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, [sessions, loading, activeId]);
+    useEffect(() => { if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: 'smooth' }); }, [sessions, loading, activeId, typingState]);
 
     const activeSession = sessions.find(s => s.id === activeId) || null;
     const messages = activeSession?.messages || [];
@@ -1203,7 +1238,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
     const handleAsk = async (explicitText) => {
         if (displayCredits <= 0) return;
         const q = (explicitText || question).trim();
-        if (!q || loading) return;
+        if (!q || loading || typingState) return;
         setQuestion('');
 
         let sid = activeId;
@@ -1217,12 +1252,6 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
 
         setLoading(true);
 
-        // Add a placeholder AI message for the typing animation
-        const typingId = `typing_${Date.now()}`;
-        updateSession(sid, s => ({
-            messages: [...s.messages, { role: 'ai', text: '', typingId }],
-        }));
-
         try {
             const res = await api.post('/student/doubt/ask', {
                 question: q,
@@ -1234,44 +1263,44 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
             if (res.data?.creditsLeft != null) setCredits(Number(res.data.creditsLeft));
             if (res.data?.maxCredits   != null) setMaxCredits(Number(res.data.maxCredits));
 
-            // ── Typing animation: reveal text chunk by chunk ──────────────────
-            // Use chunks (not single chars) so it feels fast but smooth
-            const CHUNK = 4;       // chars per tick
-            const DELAY = 14;      // ms per tick  (~285 chars/sec)
-            let pos = 0;
-            await new Promise(resolve => {
-                const tick = () => {
-                    pos = Math.min(pos + CHUNK, fullText.length);
-                    const partial = fullText.slice(0, pos);
-                    updateSession(sid, s => ({
-                        messages: s.messages.map(m =>
-                            m.typingId === typingId ? { ...m, text: partial } : m
-                        ),
-                    }));
-                    if (pos < fullText.length) setTimeout(tick, DELAY);
-                    else resolve();
-                };
-                tick();
-            });
+            setLoading(false);
 
-            // Finalise — remove typingId marker
+            // ── Real-time smooth typing generation (ChatGPT style) ──
+            if (fullText) {
+                let len = 0;
+                const CHUNK = 4;
+                const DELAY = 16;
+                setTypingState({ sid, fullText, displayedLength: CHUNK });
+
+                await new Promise(resolve => {
+                    const timer = setInterval(() => {
+                        len += CHUNK;
+                        if (len >= fullText.length) {
+                            clearInterval(timer);
+                            resolve();
+                        } else {
+                            setTypingState({ sid, fullText, displayedLength: len });
+                        }
+                    }, DELAY);
+                });
+
+                setTypingState(null);
+            }
+
+            // Sync finalized response to session ONCE
             updateSession(sid, s => ({
-                messages: s.messages.map(m =>
-                    m.typingId === typingId ? { role: 'ai', text: fullText } : m
-                ),
+                messages: [...s.messages, { role: 'ai', text: fullText }]
             }));
 
         } catch (e) {
+            setLoading(false);
+            setTypingState(null);
             const msg = e.response?.data?.message || 'Unable to load solution. Please try again.';
             if (e.response?.data?.creditsLeft != null) setCredits(Number(e.response.data.creditsLeft));
             if (e.response?.data?.maxCredits   != null) setMaxCredits(Number(e.response.data.maxCredits));
             updateSession(sid, s => ({
-                messages: s.messages.map(m =>
-                    m.typingId === typingId ? { role: 'error', text: msg } : m
-                ),
+                messages: [...s.messages, { role: 'error', text: msg }]
             }));
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -1376,6 +1405,16 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                 @keyframes blinkC {
                     0%, 100% { opacity: 1; }
                     50% { opacity: 0; }
+                }
+                @keyframes bounceDot {
+                    0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+                    40% { transform: scale(1.1); opacity: 1; }
+                }
+                .katex, .katex-display, .katex-html, .katex-rendered-math, .katex * {
+                    color: ${isDark ? '#f8fafc' : '#0f172a'} !important;
+                }
+                .katex-display {
+                    margin: 0.4em 0 !important;
                 }
             `}</style>
 
@@ -1613,7 +1652,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                                         {m.text}
                                     </div>
                                 ) : (
-                                    <div style={{ padding: '4px 0' }}>
+                                    <div style={{ padding: '4px 0', color: textPrimary }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                                             <div style={{ width: 22, height: 22, borderRadius: 6, background: 'linear-gradient(135deg, #ff6b2b, #f43f5e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <IoSparkles size={12} color="#fff" />
@@ -1630,7 +1669,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                                             >
                                                 {copiedIdx === idx ? <><IoCheckmarkOutline size={14} color="#16a34a" /> {t.copied}</> : <><IoCopyOutline size={14} /> {t.copy}</>}
                                             </button>
-                                            {idx === messages.length - 1 && (
+                                            {idx === messages.length - 1 && !typingState && (
                                                 <button
                                                     onClick={handleRegenerate}
                                                     style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, padding: '4px 8px', borderRadius: 8, background: isDark ? '#27272a' : '#f1f5f9', border: 'none', color: textSecondary, cursor: 'pointer' }}
@@ -1644,12 +1683,34 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                             </motion.div>
                         ))}
 
-                        {loading && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', color: textSecondary, fontSize: 14 }}>
+                        {/* ── Active Real-time Typing Generation (ChatGPT style) ── */}
+                        {typingState && typingState.sid === activeId && (
+                            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '4px 0', color: textPrimary }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                                    <div style={{ width: 22, height: 22, borderRadius: 6, background: 'linear-gradient(135deg, #ff6b2b, #f43f5e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <IoSparkles size={12} color="#fff" />
+                                    </div>
+                                    <span style={{ fontSize: 13, fontWeight: 800, color: textPrimary }}>Apna Lakshay AI</span>
+                                </div>
+
+                                <MarkdownRenderer text={typingState.fullText.slice(0, typingState.displayedLength)} isDark={isDark} />
+                            </motion.div>
+                        )}
+
+                        {/* ── Thinking Indicator (Shown ONLY before response arrives; disappears as soon as typing begins) ── */}
+                        {loading && !typingState && (
+                            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', color: textSecondary, fontSize: 14 }}>
                                 <div style={{ width: 22, height: 22, borderRadius: 6, background: 'linear-gradient(135deg, #ff6b2b, #f43f5e)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <IoSparkles size={12} color="#fff" />
                                 </div>
-                                <span style={{ fontWeight: 600 }}>{t.thinking}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontWeight: 600 }}>{t.thinking}</span>
+                                    <span style={{ display: 'inline-flex', gap: 3, alignItems: 'center' }}>
+                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f97316', animation: 'bounceDot 1.2s infinite ease-in-out both' }} />
+                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f97316', animation: 'bounceDot 1.2s infinite ease-in-out both', animationDelay: '0.2s' }} />
+                                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#f97316', animation: 'bounceDot 1.2s infinite ease-in-out both', animationDelay: '0.4s' }} />
+                                    </span>
+                                </div>
                             </motion.div>
                         )}
 
