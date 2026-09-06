@@ -424,12 +424,12 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                             ? 'linear-gradient(135deg,#78716c,#57534e)'
                             : open
                             ? 'linear-gradient(135deg,#dc2626,#b91c1c)'
-                            : 'linear-gradient(135deg,#f97316 0%,#ea580c 50%,#c2410c 100%)',
+                            : 'linear-gradient(135deg,#16a34a 0%,#15803d 50%,#166534 100%)',
                         boxShadow: open
                             ? '0 8px 24px rgba(220,38,38,0.5)'
                             : loading
                             ? 'none'
-                            : '0 8px 28px rgba(249,115,22,0.5), 0 2px 8px rgba(249,115,22,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+                            : '0 8px 28px rgba(22,163,74,0.5), 0 2px 8px rgba(22,163,74,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
                         border: 'none',
                         transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
                         color: '#fff',
