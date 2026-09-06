@@ -214,6 +214,168 @@ Keep total response under 500 words. For current affairs, use web retrieval for 
     }
 };
 
+// ── Auto-detect language from text ──────────────────────────────────────────
+function detectLang(text) {
+    // Devanagari Unicode block: U+0900–U+097F
+    const devanagariCount = (text.match(/[\u0900-\u097F]/g) || []).length;
+    if (devanagariCount > 2) return 'hi';
+    // Hinglish: mix of Hindi words written in Roman + English
+    const hinglishPattern = /\b(kya|hai|hain|mein|ka|ki|ke|aur|nahi|yaar|bhai|kaise|karo|karo|iska|uska|toh|par|lekin|matlab|samajh|batao|bolo|dekho|achha|theek|sahi|galat|hoga|hota|karta|karti|hoti|gaya|gayi|gaye|aaya|aayi|aaye)\b/i;
+    if (hinglishPattern.test(text)) return 'hinglish';
+    return 'en';
+}
+
+// POST /api/student/doubt/ask-stream  — Server-Sent Events streaming version
+exports.askDoubtStream = async (req, res) => {
+    try {
+        const studentId = req.user.id;
+        const { question, subject = 'general', lang = 'en' } = req.body;
+
+        if (!question || question.trim().length < 1) {
+            return res.status(400).json({ success: false, message: 'Please enter a message.' });
+        }
+        if (question.length > 1000) {
+            return res.status(400).json({ success: false, message: 'Question too long (max 1000 characters).' });
+        }
+
+        // ── Rate limit check ──
+        const student = await User.findById(studentId).select('doubtCredits maxDoubtCredits doubtCreditsResetDate');
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
+
+        const todayIST = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' });
+        const maxLimit = Math.max(student.maxDoubtCredits || 0, student.doubtCredits || 0, 10);
+
+        if (student.doubtCreditsResetDate !== todayIST) {
+            student.doubtCredits = maxLimit;
+            student.maxDoubtCredits = maxLimit;
+            student.doubtCreditsResetDate = todayIST;
+        } else if (student.doubtCredits > maxLimit) {
+            student.doubtCredits = maxLimit;
+        }
+
+        if (student.doubtCredits <= 0) {
+            return res.status(429).json({
+                success: false,
+                message: `Credit limit reached (${maxLimit} questions). Come back tomorrow!`,
+                creditsLeft: 0, maxCredits: maxLimit
+            });
+        }
+
+        student.doubtCredits = Math.max(0, student.doubtCredits - 1);
+        if (!student.maxDoubtCredits || student.maxDoubtCredits < maxLimit) student.maxDoubtCredits = maxLimit;
+        await student.save({ validateBeforeSave: false });
+
+        // ── Auto-detect language from what user typed ──
+        const autoLang = detectLang(question.trim());
+        const effectiveLang = autoLang !== 'en' ? autoLang : lang; // prefer detected lang
+
+        const systemPrompt = SUBJECT_CONTEXT[subject] || SUBJECT_CONTEXT.general;
+
+        let langInstruction;
+        if (effectiveLang === 'hi') {
+            langInstruction = `CRITICAL LANGUAGE RULE: You MUST respond ENTIRELY in Hindi using Devanagari script (हिंदी). Every single word must be written in Devanagari script.`;
+        } else if (effectiveLang === 'hinglish') {
+            langInstruction = `LANGUAGE RULE: Respond in Hinglish — a friendly mix of Hindi and English in Roman script. Natural, casual tone like a friend. E.g. "Yaar, is topic mein basically..."`;
+        } else {
+            langInstruction = 'Respond clearly in English.';
+        }
+
+        const trimmedQ = question.trim().toLowerCase();
+        const isCasual = trimmedQ.length < 20
+            || /^(hi|hello|hii|hey|helo|hlo|namaste|good\s*(morning|evening|night|afternoon)|how are you|kya haal|kaise ho|sup|whatsup|bye|thanks|thank you|ok|okay|great|nice|cool|lol|haha)/.test(trimmedQ)
+            || subject === 'general';
+
+        const formattingInstruction = isCasual
+            ? `Respond naturally and conversationally like a friendly AI assistant (ChatGPT style). For greetings respond warmly. Short, warm, human responses are perfect.`
+            : `Structure your response with markdown (## headings, numbered steps, bullet points). Use LaTeX for math: $formula$ inline, $$formula$$ for blocks. Keep under 500 words.`;
+
+        const messages = [
+            { role: 'system', content: `${systemPrompt}\n${langInstruction}\n${formattingInstruction}` },
+            { role: 'user', content: question.trim() }
+        ];
+
+        // ── SSE headers ──
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // disable Nginx buffering
+        res.flushHeaders();
+
+        // Send metadata first
+        res.write(`data: ${JSON.stringify({ type: 'meta', creditsLeft: Math.max(0, student.doubtCredits), maxCredits: student.maxDoubtCredits || maxLimit })}\n\n`);
+
+        // ── Stream from Groq ──
+        const keys = [process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_2, process.env.GROQ_API_KEY_3].filter(Boolean);
+        if (keys.length === 0) { res.write(`data: ${JSON.stringify({ type: 'error', message: 'No API key' })}\n\n`); return res.end(); }
+
+        let streamed = false;
+        for (const apiKey of keys) {
+            for (const model of GROQ_MODELS) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        const body = JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 2000, stream: true });
+                        const request = https.request({
+                            hostname: GROQ_HOST,
+                            path: GROQ_PATH,
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${apiKey}`,
+                                'Content-Length': Buffer.byteLength(body),
+                            },
+                            timeout: 30000,
+                        }, (groqRes) => {
+                            if (groqRes.statusCode === 429) return reject(new Error('rate_limit'));
+                            let buffer = '';
+                            groqRes.on('data', (chunk) => {
+                                buffer += chunk.toString();
+                                const lines = buffer.split('\n');
+                                buffer = lines.pop(); // keep incomplete line
+                                for (const line of lines) {
+                                    const trimmed = line.trim();
+                                    if (!trimmed || trimmed === 'data: [DONE]') continue;
+                                    if (trimmed.startsWith('data: ')) {
+                                        try {
+                                            const parsed = JSON.parse(trimmed.slice(6));
+                                            const token = parsed?.choices?.[0]?.delta?.content;
+                                            if (token) {
+                                                res.write(`data: ${JSON.stringify({ type: 'token', token })}\n\n`);
+                                                streamed = true;
+                                            }
+                                        } catch (_) {}
+                                    }
+                                }
+                            });
+                            groqRes.on('end', () => resolve());
+                            groqRes.on('error', reject);
+                        });
+                        request.on('error', reject);
+                        request.on('timeout', () => { request.destroy(); reject(new Error('timeout')); });
+                        request.write(body);
+                        request.end();
+                    });
+                    if (streamed) {
+                        res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+                        return res.end();
+                    }
+                } catch (err) {
+                    console.warn(`[Stream] key failed model=${model}: ${err.message}`);
+                    if (err.message === 'rate_limit') break;
+                }
+            }
+        }
+        if (!streamed) {
+            res.write(`data: ${JSON.stringify({ type: 'error', message: 'Failed to get response. Please try again.' })}\n\n`);
+            res.end();
+        }
+
+    } catch (err) {
+        console.error('Stream doubt error:', err.message);
+        if (!res.headersSent) res.status(500).json({ success: false, message: 'Failed to get answer.' });
+        else { res.write(`data: ${JSON.stringify({ type: 'error', message: err.message })}\n\n`); res.end(); }
+    }
+};
+
 // POST /api/student/doubt/sync-session  — called by frontend to persist sessions
 exports.syncDoubtSession = async (req, res) => {
     try {

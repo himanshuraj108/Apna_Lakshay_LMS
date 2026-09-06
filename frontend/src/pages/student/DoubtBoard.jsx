@@ -10,7 +10,7 @@ import {
     IoScan, IoCameraOutline, IoKeypadOutline, IoLogInOutline, IoLogOutOutline,
     IoInformationCircleOutline, IoTimerOutline, IoCloseOutline
 } from 'react-icons/io5';
-import api from '../../utils/api';
+import api, { BASE_URL } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import katex from 'katex';
@@ -1216,28 +1216,91 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
         }));
 
         setLoading(true);
+
+        // Add a placeholder AI message that will be filled token by token
+        const streamingMsgId = `stream_${Date.now()}`;
+        updateSession(sid, s => ({
+            messages: [...s.messages, { role: 'ai', text: '', streamingId: streamingMsgId }],
+        }));
+
         try {
-            const res = await api.post('/student/doubt/ask', {
-                question: q,
-                subject: 'general',
-                lang: activeSession?.lang || lang || 'en',
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+            const response = await fetch(`${BASE_URL}/api/student/doubt/ask-stream`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    question: q,
+                    subject: 'general',
+                    lang: activeSession?.lang || lang || 'en',
+                }),
             });
-            updateSession(sid, s => ({ messages: [...s.messages, { role: 'ai', text: res.data.answer }] }));
-            if (res.data?.creditsLeft != null) {
-                setCredits(Number(res.data.creditsLeft));
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                if (errData?.creditsLeft != null) setCredits(Number(errData.creditsLeft));
+                throw new Error(errData?.message || 'Server error');
             }
-            if (res.data?.maxCredits != null) {
-                setMaxCredits(Number(res.data.maxCredits));
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulated = '';
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // keep incomplete line
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || !trimmed.startsWith('data: ')) continue;
+                    try {
+                        const event = JSON.parse(trimmed.slice(6));
+                        if (event.type === 'token') {
+                            accumulated += event.token;
+                            // Update the streaming placeholder message in real time
+                            updateSession(sid, s => ({
+                                messages: s.messages.map(m =>
+                                    m.streamingId === streamingMsgId
+                                        ? { ...m, text: accumulated }
+                                        : m
+                                ),
+                            }));
+                        } else if (event.type === 'meta') {
+                            if (event.creditsLeft != null) setCredits(Number(event.creditsLeft));
+                            if (event.maxCredits != null) setMaxCredits(Number(event.maxCredits));
+                        } else if (event.type === 'error') {
+                            throw new Error(event.message);
+                        }
+                    } catch (parseErr) {
+                        // ignore parse errors on individual lines
+                    }
+                }
             }
+
+            // Finalize — remove streamingId marker
+            updateSession(sid, s => ({
+                messages: s.messages.map(m =>
+                    m.streamingId === streamingMsgId
+                        ? { role: 'ai', text: accumulated || '...' }
+                        : m
+                ),
+            }));
+
         } catch (e) {
-            const msg = e.response?.data?.message || 'Unable to load solution. Please try again.';
-            if (e.response?.data?.creditsLeft != null) {
-                setCredits(Number(e.response.data.creditsLeft));
-            }
-            if (e.response?.data?.maxCredits != null) {
-                setMaxCredits(Number(e.response.data.maxCredits));
-            }
-            updateSession(sid, s => ({ messages: [...s.messages, { role: 'error', text: msg }] }));
+            const msg = e.message || 'Unable to load solution. Please try again.';
+            updateSession(sid, s => ({
+                messages: s.messages.map(m =>
+                    m.streamingId === streamingMsgId
+                        ? { role: 'error', text: msg }
+                        : m
+                ),
+            }));
         } finally {
             setLoading(false);
         }

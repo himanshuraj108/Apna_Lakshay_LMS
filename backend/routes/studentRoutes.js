@@ -31,7 +31,7 @@ const {
     getPinStatus,
     verifyPin
 } = require('../controllers/studentController');
-const { askDoubt, syncDoubtSession } = require('../controllers/doubtController');
+const { askDoubt, askDoubtStream, syncDoubtSession } = require('../controllers/doubtController');
 const { getCurrentAffairs } = require('../controllers/currentAffairsController');
 const { getExamAlerts } = require('../controllers/examAlertsController');
 const { getBooks } = require('../controllers/booksController');
@@ -61,6 +61,7 @@ router.get('/current-affairs', getCurrentAffairs);
 
 // AI Doubt Board
 router.post('/doubt/ask', authorizeActive, askDoubt);
+router.post('/doubt/ask-stream', authorizeActive, askDoubtStream);
 router.post('/doubt/sync-session', syncDoubtSession);
 
 // Exam Alerts (RSS feed aggregation)
