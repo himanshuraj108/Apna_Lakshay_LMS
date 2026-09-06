@@ -324,6 +324,15 @@ const NoCameraIcon = ({ size = 32 }) => (
 /* ─── Speed Dial FAB — expands to Camera / No-Camera sub-buttons ─── */
 const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
     const [open, setOpen] = useState(false);
+    const [hiddenByDoubt, setHiddenByDoubt] = useState(!!window.__doubtBoardOpen);
+
+    useEffect(() => {
+        const handler = () => setHiddenByDoubt(!!window.__doubtBoardOpen);
+        window.addEventListener('doubtboard-toggle', handler);
+        return () => window.removeEventListener('doubtboard-toggle', handler);
+    }, []);
+
+    if (hiddenByDoubt) return null;
 
     const toggle = () => { if (!loading) setOpen(o => !o); };
     const doCamera = () => { setOpen(false); onCamera(); };

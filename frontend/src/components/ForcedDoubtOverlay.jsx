@@ -216,6 +216,12 @@ const ForcedDoubtOverlay = ({ onClose }) => {
         setShowTutorial(false);
     }, []);
 
+    // Notify other components (e.g. attendance FAB) when DoubtBoard opens/closes
+    useEffect(() => {
+        window.__doubtBoardOpen = isOpen;
+        window.dispatchEvent(new Event('doubtboard-toggle'));
+    }, [isOpen]);
+
     const saveAndMaybeOpen = useCallback(() => {
         try { localStorage.setItem(STORAGE_KEY, yRatio.toString()); } catch {}
         if (!moved.current) setIsOpen(true);
