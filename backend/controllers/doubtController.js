@@ -92,11 +92,8 @@ exports.askDoubt = async (req, res) => {
         const studentId = req.user.id;
         const { question, subject = 'general', lang = 'en' } = req.body;
 
-        if (!question || question.trim().length < 1) {
-            return res.status(400).json({ success: false, message: 'Please enter a message.' });
-        }
-        if (question.length > 1000) {
-            return res.status(400).json({ success: false, message: 'Question too long (max 1000 characters).' });
+        if (!question || !question.trim()) {
+            return res.status(400).json({ success: false, message: 'Please type something.' });
         }
 
         // ── Rate limit check ──
