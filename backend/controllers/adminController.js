@@ -2736,14 +2736,21 @@ exports.getFees = async (req, res) => {
         }
 
         // Fetch active seat assignments map for instant receipt & ledger lookup
-        const activeSeats = await Seat.find({ 'assignments.status': 'active' })
+        const activeSeats = await Seat.find({
+            $or: [
+                { 'assignments.status': 'active' },
+                { 'assignments.student': { $exists: true, $ne: null } },
+                { isOccupied: true },
+                { assignedTo: { $exists: true, $ne: null } }
+            ]
+        })
             .populate('room floor assignments.shift')
             .lean();
         const seatMap = {};
         activeSeats.forEach(st => {
             (st.assignments || []).forEach(a => {
-                if (a.status === 'active' && a.student) {
-                    const sid = a.student.toString();
+                if ((a.status === 'active' || !a.status) && a.student) {
+                    const sid = (typeof a.student === 'object' && a.student._id) ? a.student._id.toString() : a.student.toString();
                     if (!seatMap[sid]) {
                         seatMap[sid] = {
                             seatNumber: st.number,
@@ -2755,6 +2762,18 @@ exports.getFees = async (req, res) => {
                     }
                 }
             });
+            if (st.assignedTo) {
+                const sid = (typeof st.assignedTo === 'object' && st.assignedTo._id) ? st.assignedTo._id.toString() : st.assignedTo.toString();
+                if (!seatMap[sid]) {
+                    seatMap[sid] = {
+                        seatNumber: st.number,
+                        seatId: st._id,
+                        roomName: st.room?.name || '',
+                        shiftName: st.shift?.name || 'Standard Shift',
+                        shift: st.shift
+                    };
+                }
+            }
         });
 
         const STUDENT_POPULATE = {
@@ -2851,12 +2870,16 @@ exports.getFees = async (req, res) => {
 
             if (student) {
                 const sid = student._id ? student._id.toString() : '';
-                const seatInfo = seatMap[sid];
+                const directSeatNumber = (typeof student.seat === 'object' && student.seat) ? (student.seat.number || student.seat.seatNumber) : '';
+                const resolvedSeat = seatInfo?.seatNumber || directSeatNumber || '';
+                const resolvedShift = seatInfo?.shiftName || (typeof student.shift === 'object' && student.shift?.name ? student.shift.name : student.shiftName) || 'Full Shift';
+                const resolvedRoom = seatInfo?.roomName || (typeof student.seat === 'object' && student.seat?.room?.name ? student.seat.room.name : '') || '';
+
                 feeObj.student = {
                     ...feeObj.student,
-                    seatNumber: seatInfo?.seatNumber || (typeof student.seat === 'object' && student.seat ? student.seat.number : '') || '',
-                    shiftName: seatInfo?.shiftName || 'Full Shift',
-                    roomName: seatInfo?.roomName || '',
+                    seatNumber: resolvedSeat,
+                    shiftName: resolvedShift,
+                    roomName: resolvedRoom,
                     fatherName: student.fatherName || student.guardianName || '',
                     dob: student.dob || null,
                     mobile: student.mobile || '',

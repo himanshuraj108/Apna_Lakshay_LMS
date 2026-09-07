@@ -94,18 +94,79 @@ const FeeManagement = () => {
         paidDate: true
     });
 
+    const [floors, setFloors] = useState([]);
+
+    const floorSeatMap = useMemo(() => {
+        const map = {};
+        if (!floors || !floors.length) return map;
+        floors.forEach(floor => {
+            (floor.rooms || []).forEach(room => {
+                (room.seats || []).forEach(seat => {
+                    (seat.assignments || []).forEach(a => {
+                        if (a.status === 'active' && a.student) {
+                            const sid = String(typeof a.student === 'object' ? (a.student._id || a.student) : a.student);
+                            if (!map[sid]) {
+                                map[sid] = {
+                                    seatNumber: seat.number,
+                                    shiftName: a.shift?.name || a.legacyShift || (a.type === 'full_day' ? 'Full Day' : 'Full Shift'),
+                                    roomName: room.name || ''
+                                };
+                            }
+                        }
+                    });
+                    if (seat.assignedTo) {
+                        const sid = String(typeof seat.assignedTo === 'object' ? (seat.assignedTo._id || seat.assignedTo) : seat.assignedTo);
+                        if (!map[sid]) {
+                            map[sid] = {
+                                seatNumber: seat.number,
+                                shiftName: 'Standard Shift',
+                                roomName: room.name || ''
+                            };
+                        }
+                    }
+                });
+            });
+        });
+        return map;
+    }, [floors]);
+
+    const getStudentSeatInfo = (student) => {
+        if (!student) return { seatNumber: '', shiftName: 'Standard Shift', roomName: '' };
+        const sid = student._id ? String(student._id) : '';
+        const fromFloor = floorSeatMap[sid];
+
+        const seatNumber = student.seatNumber ||
+            (typeof student.seat === 'object' && student.seat ? (student.seat.number || student.seat.seatNumber) : '') ||
+            fromFloor?.seatNumber ||
+            '';
+
+        const shiftName = student.shiftName ||
+            (typeof student.shift === 'object' && student.shift?.name ? student.shift.name : (typeof student.shift === 'string' ? student.shift : '')) ||
+            fromFloor?.shiftName ||
+            'Standard Shift';
+
+        const roomName = student.roomName ||
+            (typeof student.seat === 'object' && student.seat?.room?.name ? student.seat.room.name : '') ||
+            fromFloor?.roomName ||
+            '';
+
+        return { seatNumber, shiftName, roomName };
+    };
+
     useEffect(() => {
         fetchFees();
     }, []);
 
     const fetchFees = async () => {
         try {
-            const [feesRes, settingsRes] = await Promise.all([
+            const [feesRes, settingsRes, floorsRes] = await Promise.all([
                 api.get('/admin/fees'),
-                api.get('/admin/settings')
+                api.get('/admin/settings'),
+                api.get('/admin/floors').catch(() => ({ data: { floors: [] } }))
             ]);
             setFees(feesRes.data?.fees || []);
             setOnlinePaymentEnabled(settingsRes.data?.settings?.onlinePaymentEnabled !== false);
+            setFloors(floorsRes.data?.floors || []);
         } catch (e) {
             setError('Failed to load fee ledger records.');
         } finally {
@@ -183,13 +244,14 @@ const FeeManagement = () => {
         const regFee = fee.registrationFee || student?.registrationFee || 0;
         const dueAmt = fee.due || (fee.status === 'partial' ? (fee.outstanding || (fee.amount - (fee.partialPaid || 0))) : 0);
         const monthly = fee.amount || 0;
+        const seatInfo = getStudentSeatInfo(student);
 
         setReceiptForm({
             name: student?.name || '',
             fatherName: student?.fatherName || student?.guardianName || '',
             dob: defaultDob,
-            seatNo: student?.seatNumber || (typeof student?.seat === 'object' && student?.seat?.number ? student.seat.number : '') || '',
-            shiftName: student?.shiftName || (typeof student?.shift === 'object' && student?.shift?.name ? student.shift.name : 'Full Shift'),
+            seatNo: seatInfo.seatNumber,
+            shiftName: seatInfo.shiftName,
             mobile: student?.mobile || '',
             aadharNo: student?.aadharNo || student?.idNumber || '',
             address: student?.address || '',
@@ -314,7 +376,8 @@ const FeeManagement = () => {
                 const name = fee.student?.name?.toLowerCase() || '';
                 const email = fee.student?.email?.toLowerCase() || '';
                 const mobile = fee.student?.mobile?.toLowerCase() || '';
-                const seat = (fee.student?.seatNumber || fee.student?.seat?.number || fee.student?.seatNumber || '').toString().toLowerCase();
+                const seatInfo = getStudentSeatInfo(fee.student);
+                const seat = (seatInfo.seatNumber || '').toString().toLowerCase();
                 const rzp = fee.razorpayOrderId?.toLowerCase() || '';
                 return name.includes(q) || email.includes(q) || mobile.includes(q) || seat.includes(q) || rzp.includes(q);
             })
@@ -406,7 +469,8 @@ const FeeManagement = () => {
         processedFees.forEach(fee => {
             const cycleStart = new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
             const cycleEnd = new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
-            const seatNumber = fee.student?.seatNumber || fee.student?.seat?.number || 'N/A';
+            const seatInfo = getStudentSeatInfo(fee.student);
+            const seatNumber = seatInfo.seatNumber || 'N/A';
 
             const fullRow = [
                 fee.student?.name || 'Unknown',
@@ -728,8 +792,7 @@ const FeeManagement = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
                         {processedFees.map((fee, index) => {
                             const student = fee.student;
-                            const seatNumber = student?.seatNumber || student?.seat?.number;
-                            const shiftName = student?.shiftName || student?.shift?.name || 'Standard Shift';
+                            const { seatNumber, shiftName } = getStudentSeatInfo(student);
                             const cycleStart = new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
                             const cycleEnd = new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
                             const dueDate = new Date(fee.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -903,7 +966,7 @@ const FeeManagement = () => {
                                 <tbody className="divide-y divide-slate-100">
                                     {processedFees.map((fee, index) => {
                                         const student = fee.student;
-                                        const seatNumber = student?.seatNumber || student?.seat?.number;
+                                        const { seatNumber } = getStudentSeatInfo(student);
                                         const theme = getStatusTheme(fee.status);
                                         const cycleStart = new Date(fee.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
                                         const cycleEnd = new Date(fee.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' });
