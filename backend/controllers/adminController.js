@@ -860,7 +860,10 @@ exports.getStudent = async (req, res) => {
 // Create student
 exports.createStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, systemMode = 'custom', studentId, joinedAt, gender = 'male', referralCode } = req.body;
+        const {
+            name, email, mobile, address, systemMode = 'custom', studentId, joinedAt, gender = 'male', referralCode,
+            fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee
+        } = req.body;
 
         // Default avatar is handled deterministically by User.js pre-save hook based on _id
         let profileImage = undefined;
@@ -876,6 +879,13 @@ exports.createStudent = async (req, res) => {
             email: email || undefined, // Use undefined for missing email to respect sparse unique index
             mobile,
             address,
+            fatherName: fatherName || '',
+            guardianName: guardianName || '',
+            guardianPhone: guardianPhone || '',
+            dob: dob ? new Date(dob) : null,
+            aadharNo: aadharNo || '',
+            lockerNo: lockerNo || '',
+            registrationFee: registrationFee ? Number(registrationFee) : 0,
             gender,
             profileImage,
             password,
@@ -1039,7 +1049,10 @@ exports.bulkUpdateStudentFees = async (req, res) => {
 
 exports.updateStudent = async (req, res) => {
     try {
-        const { name, email, mobile, address, isActive, studentId, joinedAt, password, gender } = req.body;
+        const {
+            name, email, mobile, address, isActive, studentId, joinedAt, password, gender,
+            fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee
+        } = req.body;
 
         const updateData = { 
             name, 
@@ -1050,6 +1063,14 @@ exports.updateStudent = async (req, res) => {
             studentId,
             gender
         };
+
+        if (fatherName !== undefined) updateData.fatherName = fatherName;
+        if (guardianName !== undefined) updateData.guardianName = guardianName;
+        if (guardianPhone !== undefined) updateData.guardianPhone = guardianPhone;
+        if (dob !== undefined) updateData.dob = dob ? new Date(dob) : null;
+        if (aadharNo !== undefined) updateData.aadharNo = aadharNo;
+        if (lockerNo !== undefined) updateData.lockerNo = lockerNo;
+        if (registrationFee !== undefined) updateData.registrationFee = Number(registrationFee) || 0;
 
         // Handle password update if provided
         if (password && password.trim() !== '') {
@@ -2714,8 +2735,44 @@ exports.getFees = async (req, res) => {
             }
         }
 
+        // Fetch active seat assignments map for instant receipt & ledger lookup
+        const activeSeats = await Seat.find({ 'assignments.status': 'active' })
+            .populate('room floor assignments.shift')
+            .lean();
+        const seatMap = {};
+        activeSeats.forEach(st => {
+            (st.assignments || []).forEach(a => {
+                if (a.status === 'active' && a.student) {
+                    const sid = a.student.toString();
+                    if (!seatMap[sid]) {
+                        seatMap[sid] = {
+                            seatNumber: st.number,
+                            seatId: st._id,
+                            roomName: st.room?.name || '',
+                            shiftName: a.shift?.name || a.legacyShift || (a.type === 'full_day' ? 'Full Day' : 'Full Shift'),
+                            shift: a.shift
+                        };
+                    }
+                }
+            });
+        });
+
+        const STUDENT_POPULATE = {
+            path: 'student',
+            select: 'name email mobile address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate isActive',
+            populate: {
+                path: 'seat',
+                select: 'number room floor assignments',
+                populate: [
+                    { path: 'room', select: 'name' },
+                    { path: 'floor', select: 'name' },
+                    { path: 'assignments.shift', select: 'name startTime endTime' }
+                ]
+            }
+        };
+
         let fees = await Fee.find()
-            .populate('student', 'name email createdAt admissionDate isActive')
+            .populate(STUDENT_POPULATE)
             .sort({ year: -1, month: -1 });
 
         // Filter out fees where student has been deleted (null) or is inactive
@@ -2782,17 +2839,36 @@ exports.getFees = async (req, res) => {
 
         if (generatedNew) {
             fees = await Fee.find()
-                .populate('student', 'name email createdAt admissionDate isActive')
+                .populate(STUDENT_POPULATE)
                 .sort({ year: -1, month: -1 });
             filteredFees = fees.filter(fee => fee.student && fee.student.isActive !== false);
         }
 
-        // Calculate Billing Cycles
+        // Calculate Billing Cycles and Enrich Student Profile details
         const processedFees = filteredFees.map(fee => {
             const student = fee.student;
             const feeObj = fee.toObject();
 
-            if (!student.createdAt && !student.admissionDate) return feeObj;
+            if (student) {
+                const sid = student._id ? student._id.toString() : '';
+                const seatInfo = seatMap[sid];
+                feeObj.student = {
+                    ...feeObj.student,
+                    seatNumber: seatInfo?.seatNumber || (typeof student.seat === 'object' && student.seat ? student.seat.number : '') || '',
+                    shiftName: seatInfo?.shiftName || 'Full Shift',
+                    roomName: seatInfo?.roomName || '',
+                    fatherName: student.fatherName || student.guardianName || '',
+                    dob: student.dob || null,
+                    mobile: student.mobile || '',
+                    aadharNo: student.aadharNo || '',
+                    address: student.address || '',
+                    lockerNo: fee.lockerNo || student.lockerNo || '',
+                    registrationFee: fee.registrationFee || student.registrationFee || 0,
+                    due: fee.due || (fee.status === 'partial' ? fee.outstanding : 0)
+                };
+            }
+
+            if (!student || (!student.createdAt && !student.admissionDate)) return feeObj;
 
             const joinedDate = new Date(student.admissionDate || student.createdAt);
             const billingDay = joinedDate.getDate();

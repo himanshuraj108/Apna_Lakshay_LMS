@@ -34,6 +34,39 @@ const userSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    fatherName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    guardianName: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    guardianPhone: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    dob: {
+        type: Date,
+        default: null
+    },
+    aadharNo: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    lockerNo: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    registrationFee: {
+        type: Number,
+        default: 0
+    },
     seatAssignedAt: {
         type: Date
     },

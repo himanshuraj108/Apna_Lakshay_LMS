@@ -14,36 +14,37 @@ import { IoDownloadOutline, IoDocumentTextOutline, IoPrintOutline } from 'react-
                              due?, lockerNo? }
      slNo     – serial number (e.g. 205)
    ───────────────────────────────────────────────────────────── */
-const PaymentReceipt = ({ student, fee, slNo = 1 }) => {
+const PaymentReceipt = ({ student, fee, slNo = 1, customData = null }) => {
     const receiptRef = useRef(null);
 
-    /* ── Derived values ── */
-    const name       = student?.name      || '';
-    const fatherName = student?.fatherName || student?.guardianName || '';
-    const mobile     = student?.mobile    || '';
-    const aadharNo   = student?.aadharNo  || student?.idNumber || '';
-    const address    = student?.address   || '';
-    const dob        = student?.dob
+    /* ── Derived values (supports customData override) ── */
+    const name       = customData?.name       ?? (student?.name      || '');
+    const fatherName = customData?.fatherName ?? (student?.fatherName || student?.guardianName || '');
+    const mobile     = customData?.mobile     ?? (student?.mobile    || '');
+    const aadharNo   = customData?.aadharNo   ?? (student?.aadharNo  || student?.idNumber || '');
+    const address    = customData?.address    ?? (student?.address   || '');
+    const dob        = customData?.dob        ?? (student?.dob
         ? new Date(student.dob).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
-        : '';
-    const seatNo     = student?.seat?.number || student?.seatNumber || '';
-    const shiftName  = (() => {
+        : '');
+    const seatNo     = customData?.seatNo     ?? (student?.seat?.number || student?.seatNumber || '');
+    const shiftName  = customData?.shiftName  ?? (() => {
         if (student?.shift?.name) return student.shift.name;
         if (typeof student?.shift === 'string') return student.shift;
         if (student?.shiftName) return student.shiftName;
         return 'Full Shift';
     })();
-    const lockerNo   = fee?.lockerNo || student?.lockerNo || '';
+    const lockerNo   = customData?.lockerNo   ?? (fee?.lockerNo || student?.lockerNo || '');
 
-    const paidDate   = fee?.paidDate
+    const paidDate   = customData?.paidDate   ?? (fee?.paidDate
         ? new Date(fee.paidDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
-        : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }));
 
-    const monthlyFee      = fee?.amount          || 0;
-    const registrationFee = fee?.registrationFee || 0;
-    const due             = fee?.due             || 0;
-    const total           = monthlyFee + registrationFee - due;
-    const isPaid          = fee?.status === 'paid';
+    const monthlyFee      = customData?.monthlyFee != null ? Number(customData.monthlyFee) : (fee?.amount || 0);
+    const registrationFee = customData?.registrationFee != null ? Number(customData.registrationFee) : (fee?.registrationFee || student?.registrationFee || 0);
+    const due             = customData?.due != null ? Number(customData.due) : (fee?.due || 0);
+    const total           = customData?.total != null ? Number(customData.total) : (monthlyFee + registrationFee - due);
+    const isPaid          = customData?.isPaid ?? (fee?.status === 'paid');
+    const serialNo        = customData?.slNo ?? slNo;
 
     /* ── Download/Print helpers ── */
     const downloadPDF = async () => {
@@ -53,14 +54,14 @@ const PaymentReceipt = ({ student, fee, slNo = 1 }) => {
         // receipt is landscape ~ 3.35" x 2.1"
         const pdf = new jsPDF('landscape', 'mm', [90, 56]);
         pdf.addImage(img, 'PNG', 0, 0, 90, 56);
-        pdf.save(`Receipt_${slNo}_${name.replace(/\s+/g, '_')}.pdf`);
+        pdf.save(`Receipt_${serialNo}_${name.replace(/\s+/g, '_')}.pdf`);
     };
 
     const downloadPNG = async () => {
         if (!receiptRef.current) return;
         const canvas = await html2canvas(receiptRef.current, { scale: 3, useCORS: true, backgroundColor: '#fef9f0' });
         const link = document.createElement('a');
-        link.download = `Receipt_${slNo}_${name.replace(/\s+/g, '_')}.png`;
+        link.download = `Receipt_${serialNo}_${name.replace(/\s+/g, '_')}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     };
@@ -205,7 +206,7 @@ const PaymentReceipt = ({ student, fee, slNo = 1 }) => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                             <span style={{ fontSize: 9, color: FADED, fontFamily: 'Arial,sans-serif' }}>Sl. No.</span>
-                            <span style={{ fontSize: 18, fontWeight: '900', color: RED, fontFamily: 'Arial Black, sans-serif' }}>{slNo}</span>
+                            <span style={{ fontSize: 18, fontWeight: '900', color: RED, fontFamily: 'Arial Black, sans-serif' }}>{serialNo}</span>
                         </div>
 
                         {isPaid && (

@@ -12,7 +12,7 @@ import {
     IoCheckmarkDoneOutline, IoEyeOutline, IoMailOutline, IoCallOutline,
     IoWarningOutline, IoTrashOutline, IoGridOutline, IoListOutline,
     IoLockClosedOutline, IoPersonOutline, IoCalendarOutline, IoShuffleOutline,
-    IoPhonePortraitOutline
+    IoPhonePortraitOutline, IoReceiptOutline, IoCardOutline, IoCashOutline
 } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
@@ -50,8 +50,13 @@ const StudentManagement = () => {
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
+        fatherName: '',
         email: '',
         mobile: '',
+        dob: '',
+        aadharNo: '',
+        lockerNo: '',
+        registrationFee: 0,
         address: '',
         gender: 'male',
         password: '',
@@ -331,8 +336,13 @@ const StudentManagement = () => {
                 // Send all fields including negotiatedPrice — backend handles price update
                 await api.put(`/admin/students/${selectedStudent._id}`, {
                     name: formData.name,
+                    fatherName: formData.fatherName,
                     email: formData.email,
                     mobile: formData.mobile,
+                    dob: formData.dob ? new Date(formData.dob) : undefined,
+                    aadharNo: formData.aadharNo,
+                    lockerNo: formData.lockerNo,
+                    registrationFee: Number(formData.registrationFee) || 0,
                     address: formData.address,
                     gender: formData.gender,
                     joinedAt: formData.joinedAt,
@@ -349,7 +359,20 @@ const StudentManagement = () => {
             fetchStudents();
             fetchFloors(); // refresh seat data so updated price shows immediately in table
             setShowModal(false);
-            setFormData({ name: '', email: '', mobile: '' });
+            setFormData({
+                name: '',
+                fatherName: '',
+                email: '',
+                mobile: '',
+                dob: '',
+                aadharNo: '',
+                lockerNo: '',
+                registrationFee: 0,
+                address: '',
+                gender: 'male',
+                password: '',
+                joinedAt: new Date().toISOString().split('T')[0]
+            });
             setTimeout(() => setSuccess(''), 5000);
         } catch (error) {
             setError(error.response?.data?.message || 'Operation failed');
@@ -439,8 +462,13 @@ const StudentManagement = () => {
 
         setFormData({
             name: '',
+            fatherName: '',
             email: '',
             mobile: '',
+            dob: '',
+            aadharNo: '',
+            lockerNo: '',
+            registrationFee: 0,
             address: '',
             gender: 'male',
             password: password,
@@ -496,8 +524,13 @@ const StudentManagement = () => {
 
         setFormData({
             name: student.name,
+            fatherName: student.fatherName || student.guardianName || '',
             email: student.email,
             mobile: student.mobile || '',
+            dob: student.dob ? new Date(student.dob).toISOString().split('T')[0] : '',
+            aadharNo: student.aadharNo || '',
+            lockerNo: student.lockerNo || '',
+            registrationFee: student.registrationFee || 0,
             address: student.address || '',
             gender: student.gender || 'male',
             joinedAt: student.createdAt ? new Date(student.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -2918,6 +2951,86 @@ const StudentManagement = () => {
                                     placeholder="Residential or permanent address"
                                     rows={2}
                                 />
+                            </div>
+
+                            {/* Admission & Slip Details Section */}
+                            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                        <IoReceiptOutline size={14} className="text-orange-500" />
+                                        <span>Admission Slip & Official Receipt Parameters</span>
+                                    </label>
+                                    <span className="text-[10px] text-slate-400 font-medium">Used for printed receipts</span>
+                                </div>
+
+                                {/* Father's Name & Date of Birth */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className={LABEL}>Father's / Guardian Name</label>
+                                        <input
+                                            type="text"
+                                            value={formData.fatherName}
+                                            onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
+                                            className={INPUT}
+                                            placeholder="Father's or Guardian name"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={LABEL}>
+                                            <span className="flex items-center gap-1.5"><IoCalendarOutline size={13} className="text-slate-500" /> Date of Birth</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={formData.dob}
+                                            onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
+                                            className={INPUT}
+                                            style={{ colorScheme: 'light' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Aadhar No, Locker No, Registration Fee */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label className={LABEL}>
+                                            <span className="flex items-center gap-1.5"><IoCardOutline size={13} className="text-slate-500" /> Aadhar Card No.</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.aadharNo}
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                if (val.length <= 12) setFormData({ ...formData, aadharNo: val });
+                                            }}
+                                            className={INPUT}
+                                            placeholder="12-digit UIDAI"
+                                            maxLength={12}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={LABEL}>Locker Number</label>
+                                        <input
+                                            type="text"
+                                            value={formData.lockerNo}
+                                            onChange={(e) => setFormData({ ...formData, lockerNo: e.target.value })}
+                                            className={INPUT}
+                                            placeholder="e.g. L-12 or None"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className={LABEL}>
+                                            <span className="flex items-center gap-1.5"><IoCashOutline size={13} className="text-slate-500" /> Reg. Fee (₹)</span>
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={formData.registrationFee}
+                                            onChange={(e) => setFormData({ ...formData, registrationFee: e.target.value })}
+                                            className={INPUT}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Security / Password Section */}

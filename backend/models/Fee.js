@@ -72,6 +72,18 @@ const feeSchema = new mongoose.Schema({
         type: String,
         enum: ['inactive_period', 'manual', null],
         default: null
+    },
+    registrationFee: {
+        type: Number,
+        default: 0
+    },
+    due: {
+        type: Number,
+        default: 0
+    },
+    lockerNo: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true
