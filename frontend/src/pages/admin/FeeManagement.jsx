@@ -44,7 +44,7 @@ const FeeManagement = () => {
     const [fees, setFees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(true);
-    const [filter, setFilter] = useState('all');
+    const [filter, setFilter] = useState(isSubAdmin ? 'pending' : 'all');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
     const [sortBy, setSortBy] = useState('dueDate_asc');
@@ -391,7 +391,10 @@ const FeeManagement = () => {
             });
     }, [baseFees, filter, searchQuery, sortBy]);
 
-    const TABS = [
+    const TABS = isSubAdmin ? [
+        { key: 'pending',   label: 'Pending Dues', count: metrics.counts.pending },
+        { key: 'paid',      label: 'Settled Paid', count: metrics.counts.paid },
+    ] : [
         { key: 'all',       label: 'All Invoices', count: metrics.counts.all },
         { key: 'paid',      label: 'Settled Paid', count: metrics.counts.paid },
         ...(onlinePaymentEnabled ? [{ key: 'online', label: 'Online Gateway', count: metrics.counts.online }] : []),
@@ -401,10 +404,12 @@ const FeeManagement = () => {
     ];
 
     useEffect(() => {
-        if (!onlinePaymentEnabled && filter === 'online') {
+        if (isSubAdmin && (filter === 'all' || filter === 'online' || filter === 'overdue' || filter === 'cancelled')) {
+            setFilter('pending');
+        } else if (!onlinePaymentEnabled && filter === 'online') {
             setFilter('all');
         }
-    }, [onlinePaymentEnabled, filter]);
+    }, [onlinePaymentEnabled, filter, isSubAdmin]);
 
     const getStatusTheme = (status) => {
         switch (status) {
@@ -532,14 +537,14 @@ const FeeManagement = () => {
                         </Link>
                         <div>
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-bold mb-1">
-                                <IoSparkles size={12} className="text-orange-500" />
+                                <IoCashOutline size={13} className="text-orange-600" />
                                 <span>Main Campus (Sitamarhi) · Enterprise Financial Ledger</span>
                             </div>
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
                                 Fee Management
                             </h1>
                             <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                                Automated billing cycles, dues reconciliation, instant settlement, physical receipts & online gateway
+                                {isSubAdmin ? 'Fee collection, dues reconciliation and instant payment recording' : 'Automated billing cycles, dues reconciliation, instant settlement, physical receipts & online gateway'}
                             </p>
                         </div>
                     </div>
@@ -595,17 +600,19 @@ const FeeManagement = () => {
                             </button>
                         </div>
 
-                        {/* PDF Export Button */}
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setPdfModalOpen(true)}
-                            disabled={processedFees.length === 0}
-                            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <IoDownloadOutline size={16} />
-                            <span>Export PDF</span>
-                        </motion.button>
+                        {/* PDF Export Button (Super Admin Only) */}
+                        {!isSubAdmin && (
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setPdfModalOpen(true)}
+                                disabled={processedFees.length === 0}
+                                className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <IoDownloadOutline size={16} />
+                                <span>Export PDF</span>
+                            </motion.button>
+                        )}
                     </div>
                 </motion.div>
 
@@ -636,114 +643,129 @@ const FeeManagement = () => {
                 </AnimatePresence>
 
                 {/* ═════════════════════════════════════════════════════════
-                    4-CARD FINANCIAL KPI MATRIX (100% REAL DB METRICS)
+                    FINANCIAL KPI METRICS (PENDING ONLY FOR SUBADMIN)
                 ═════════════════════════════════════════════════════════ */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                    {/* Revenue Collected */}
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                {isSubAdmin ? (
+                    <div className="bg-white border border-amber-200/90 rounded-2xl p-5 shadow-2xs bg-gradient-to-br from-white to-amber-50/40 max-w-md">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Settled</span>
-                            <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
-                                <IoCheckmarkCircle size={16} />
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                                <IoTimeOutline size={20} />
                             </div>
                         </div>
-                        <p className="text-2xl font-black text-emerald-600 tabular-nums">₹{metrics.totalRevenue.toLocaleString('en-IN')}</p>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5">Cleared tuition & dues</p>
+                        <p className="text-3xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
+                        <p className="text-xs font-semibold text-slate-500 mt-1">{metrics.counts.pending} students awaiting fee payment</p>
                     </div>
+                ) : (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        {/* Revenue Collected */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Settled</span>
+                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                    <IoCheckmarkCircle size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-emerald-600 tabular-nums">₹{metrics.totalRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Cleared tuition & dues</p>
+                        </div>
 
-                    {/* Pending Dues */}
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending Dues</span>
-                            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
-                                <IoTimeOutline size={16} />
+                        {/* Pending Dues */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending Dues</span>
+                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                                    <IoTimeOutline size={16} />
+                                </div>
                             </div>
+                            <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
                         </div>
-                        <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
-                    </div>
 
-                    {/* Overdue Risk */}
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Overdue Risk</span>
-                            <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-xs">
-                                <IoAlertCircleOutline size={16} />
+                        {/* Overdue Risk */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Overdue Risk</span>
+                                <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-xs">
+                                    <IoAlertCircleOutline size={16} />
+                                </div>
                             </div>
+                            <p className="text-2xl font-black text-rose-600 tabular-nums">₹{metrics.totalOverdue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.overdue} overdue past deadline</p>
                         </div>
-                        <p className="text-2xl font-black text-rose-600 tabular-nums">₹{metrics.totalOverdue.toLocaleString('en-IN')}</p>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.overdue} overdue past deadline</p>
-                    </div>
 
-                    {/* Online Gateway Volume */}
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Online Gateway</span>
-                            <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-xs">
-                                <IoCardOutline size={16} />
+                        {/* Online Gateway Volume */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Online Gateway</span>
+                                <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-xs">
+                                    <IoCardOutline size={16} />
+                                </div>
                             </div>
+                            <p className="text-2xl font-black text-orange-600 tabular-nums">₹{metrics.onlineVolume.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.online} Razorpay transactions</p>
                         </div>
-                        <p className="text-2xl font-black text-orange-600 tabular-nums">₹{metrics.onlineVolume.toLocaleString('en-IN')}</p>
-                        <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.online} Razorpay transactions</p>
                     </div>
-                </div>
+                )}
 
                 {/* ═════════════════════════════════════════════════════════
                     SEARCH & FILTER TOOLBAR
                 ═════════════════════════════════════════════════════════ */}
                 <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-4">
-                    {/* Row 1: Search & Sorting */}
-                    <div className="flex flex-col md:flex-row items-center gap-3">
-                        {/* Search Input */}
-                        <div className="relative flex-1 w-full">
-                            <IoSearchOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by student name, email, mobile, seat number, or payment ID..."
-                                className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-orange-500 rounded-xl pl-10 pr-9 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all shadow-inner"
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
-                                    title="Clear search"
-                                >
-                                    <IoClose size={15} />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Sort Selector */}
-                        <div className="flex items-center gap-2.5 w-full md:w-auto">
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="flex-1 md:flex-initial px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none transition-colors"
-                            >
-                                <option value="dueDate_asc">Sort: Due Date (Earliest)</option>
-                                <option value="dueDate_desc">Sort: Due Date (Latest)</option>
-                                <option value="amount_desc">Sort: Amount (Highest)</option>
-                                <option value="amount_asc">Sort: Amount (Lowest)</option>
-                                <option value="name_asc">Sort: Student Name (A-Z)</option>
-                            </select>
-
-                            {/* Show Inactive Toggle */}
-                            <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl transition-colors">
+                    {/* Row 1: Search & Sorting (Admin Only) */}
+                    {!isSubAdmin && (
+                        <div className="flex flex-col md:flex-row items-center gap-3">
+                            {/* Search Input */}
+                            <div className="relative flex-1 w-full">
+                                <IoSearchOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
-                                    type="checkbox"
-                                    checked={showInactive}
-                                    onChange={(e) => setShowInactive(e.target.checked)}
-                                    className="w-4 h-4 rounded text-orange-600 border-slate-300 focus:ring-orange-500 accent-orange-600"
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search by student name, email, mobile, seat number, or payment ID..."
+                                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-orange-500 rounded-xl pl-10 pr-9 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all shadow-inner"
                                 />
-                                <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Include Inactive</span>
-                            </label>
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+                                        title="Clear search"
+                                    >
+                                        <IoClose size={15} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Sort Selector */}
+                            <div className="flex items-center gap-2.5 w-full md:w-auto">
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className="flex-1 md:flex-initial px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none transition-colors"
+                                >
+                                    <option value="dueDate_asc">Sort: Due Date (Earliest)</option>
+                                    <option value="dueDate_desc">Sort: Due Date (Latest)</option>
+                                    <option value="amount_desc">Sort: Amount (Highest)</option>
+                                    <option value="amount_asc">Sort: Amount (Lowest)</option>
+                                    <option value="name_asc">Sort: Student Name (A-Z)</option>
+                                </select>
+
+                                {/* Show Inactive Toggle */}
+                                <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        checked={showInactive}
+                                        onChange={(e) => setShowInactive(e.target.checked)}
+                                        className="w-4 h-4 rounded text-orange-600 border-slate-300 focus:ring-orange-500 accent-orange-600"
+                                    />
+                                    <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Include Inactive</span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Row 2: Segmented Status Tabs */}
-                    <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100 custom-scrollbar">
+                    <div className={`flex items-center justify-between gap-2 overflow-x-auto pb-1 custom-scrollbar ${!isSubAdmin ? 'pt-1 border-t border-slate-100' : ''}`}>
                         <div className="flex items-center gap-1.5 flex-nowrap">
                             {TABS.map(tab => {
                                 const isActive = filter === tab.key;
@@ -906,15 +928,17 @@ const FeeManagement = () => {
 
                                     {/* Card Footer: Action Buttons */}
                                     <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                                        {/* Physical Receipt Button */}
-                                        <button
-                                            onClick={() => openReceiptModal(fee, student, index + 101)}
-                                            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all"
-                                            title="View / Print Physical Receipt Slip"
-                                        >
-                                            <IoReceiptOutline size={15} />
-                                            <span>Receipt Slip</span>
-                                        </button>
+                                        {/* Physical Receipt Button (Admin Only) */}
+                                        {!isSubAdmin && (
+                                            <button
+                                                onClick={() => openReceiptModal(fee, student, index + 101)}
+                                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                                                title="View / Print Physical Receipt Slip"
+                                            >
+                                                <IoReceiptOutline size={15} />
+                                                <span>Receipt Slip</span>
+                                            </button>
+                                        )}
 
                                         {/* Pay / Settle Button */}
                                         {fee.status === 'paid' ? (
@@ -1028,13 +1052,15 @@ const FeeManagement = () => {
                                                 {/* Actions */}
                                                 <td className="px-5 py-4 text-right">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={() => openReceiptModal(fee, student, index + 101)}
-                                                            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all"
-                                                            title="Print / Download Receipt Slip"
-                                                        >
-                                                            <IoReceiptOutline size={15} />
-                                                        </button>
+                                                        {!isSubAdmin && (
+                                                            <button
+                                                                onClick={() => openReceiptModal(fee, student, index + 101)}
+                                                                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all"
+                                                                title="Print / Download Receipt Slip"
+                                                            >
+                                                                <IoReceiptOutline size={15} />
+                                                            </button>
+                                                        )}
 
                                                         {fee.status === 'paid' ? (
                                                             <span className="text-[11px] font-bold text-emerald-600 px-2 py-1">
@@ -1050,7 +1076,7 @@ const FeeManagement = () => {
                                                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
                                                             >
                                                                 <IoWalletOutline size={14} />
-                                                                <span>Settle</span>
+                                                                <span>Collect Fee</span>
                                                             </button>
                                                         )}
                                                     </div>
