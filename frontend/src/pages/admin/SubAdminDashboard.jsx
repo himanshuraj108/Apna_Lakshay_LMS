@@ -218,9 +218,11 @@ const SubAdminDashboard = () => {
             {/* ─── Sticky Header ─── */}
             <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/80 border-b border-white/60 shadow-sm">
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-sm shrink-0">
-                        <IoShieldCheckmarkOutline size={16} className="text-white" />
-                    </div>
+                    <img
+                        src="/app-icon-192.png"
+                        alt="Apna Lakshay"
+                        className="w-8 h-8 rounded-xl object-contain shadow-sm shrink-0"
+                    />
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none">Sub Admin Panel</p>
                         <p className="text-gray-800 font-black text-sm truncate leading-tight mt-0.5">{user?.name}</p>

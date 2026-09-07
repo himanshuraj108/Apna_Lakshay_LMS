@@ -1248,8 +1248,13 @@ const StudentDashboard = () => {
                 <div className="absolute bottom-0 left-0 right-0 h-[1.5px]" style={{ background: 'linear-gradient(90deg,transparent 0%,rgba(249,115,22,0.4) 30%,rgba(251,146,60,0.7) 50%,rgba(249,115,22,0.4) 70%,transparent 100%)', animation: 'shimmer-name 4s linear infinite', backgroundSize: '200% 100%' }} />
 
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-                    {/* Brand — full shining title L→R */}
-                    <div className="flex items-center gap-2 select-none">
+                    {/* Brand — official logo & full shining title L→R */}
+                    <div className="flex items-center gap-2.5 select-none">
+                        <img
+                            src="/app-icon-192.png"
+                            alt="Apna Lakshay"
+                            className="w-7 h-7 rounded-lg object-contain shadow-sm shrink-0"
+                        />
                         <span className="font-black text-base tracking-tight" style={{
                             background: 'linear-gradient(90deg, #ea580c 0%, #f97316 15%, #fdba74 35%, #fff7ed 50%, #fdba74 65%, #f97316 85%, #ea580c 100%)',
                             backgroundSize: '300% auto',
@@ -1283,6 +1288,16 @@ const StudentDashboard = () => {
                             </div>
                             <span className="text-[12px] font-bold hidden sm:block" style={{ color: '#f9fafb' }}>{user?.name?.split(' ')[0]}</span>
                         </Link>
+
+                        {/* Logout button */}
+                        <button
+                            onClick={logout}
+                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all duration-200 text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600/80 border border-rose-500/30 text-xs font-bold shrink-0 cursor-pointer shadow-sm"
+                            title="Log Out"
+                        >
+                            <IoLogoutIcon size={15} />
+                            <span className="hidden xs:inline sm:inline">Logout</span>
+                        </button>
                     </div>
                 </div>
             </header>

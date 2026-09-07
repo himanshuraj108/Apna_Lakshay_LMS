@@ -4,17 +4,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
 import {
-    IoSchool, IoCalendarOutline, IoCashOutline, IoBedOutline,
+    IoCalendarOutline, IoCashOutline, IoBedOutline,
     IoNotificationsOutline, IoLogOut, IoScanOutline, IoTimeOutline, IoKey,
     IoPersonOutline, IoBarChartOutline, IoChatbubblesOutline,
     IoShieldCheckmarkOutline, IoDocumentTextOutline, IoArrowForward, IoPower, IoLocationOutline,
-    IoGridOutline, IoSparklesOutline, IoSearchOutline, IoKeypadOutline, IoSettingsOutline, IoQrCodeOutline, IoRefreshOutline,
+    IoGridOutline, IoSearchOutline, IoKeypadOutline, IoSettingsOutline, IoQrCodeOutline, IoRefreshOutline,
     IoTrophy, IoCheckmarkCircleOutline, IoWalletOutline, IoClose, IoChevronDown, IoChevronForward,
-    IoSend, IoSparkles, IoMic, IoMicOff, IoCopyOutline, IoCheckmark, IoMegaphoneOutline, IoWarningOutline,
-    IoTrendingUp, IoTrendingDown, IoBusinessOutline
+    IoSend, IoMic, IoMicOff, IoCopyOutline, IoCheckmark, IoMegaphoneOutline, IoWarningOutline,
+    IoTrendingUp, IoTrendingDown, IoBusinessOutline, IoMenuOutline,
+    IoTerminalOutline, IoStatsChartOutline, IoRibbonOutline, IoHardwareChipOutline, IoPulseOutline,
+    IoAnalyticsOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
+import StructuredAIResponse from '../../components/admin/StructuredAIResponse';
 
 /* ── Enterprise Styling & Animation ─────────────────────── */
 const DASHBOARD_STYLES = `
@@ -100,6 +103,7 @@ const AdminDashboard = () => {
 
     // UI States
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
     const [showShiftModal, setShowShiftModal] = useState(false);
     const [showScanner, setShowScanner] = useState(false);
@@ -468,19 +472,156 @@ const AdminDashboard = () => {
             )}
 
             {/* ══════════════════════════════════════════════════════════
-                ENTERPRISE LEFT SIDEBAR
+                MOBILE NAVIGATION DRAWER (< lg screens)
+            ══════════════════════════════════════════════════════════ */}
+            <AnimatePresence>
+                {mobileSidebarOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setMobileSidebarOpen(false)}
+                            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 lg:hidden"
+                        />
+                        <motion.aside
+                            initial={{ x: -280 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -280 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="fixed top-0 left-0 bottom-0 w-[280px] max-w-[85vw] bg-[#0b1329] text-slate-300 flex flex-col z-50 lg:hidden border-r border-slate-800 shadow-2xl"
+                        >
+                            {/* Brand Header with Close */}
+                            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800/80 bg-[#080e1f] shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src="/app-icon-192.png"
+                                        alt="Apna Lakshay"
+                                        className="w-9 h-9 rounded-xl object-contain shadow-md shrink-0"
+                                    />
+                                    <div>
+                                        <h1 className="font-bold text-white text-[15px] leading-tight tracking-tight">Apna Lakshay</h1>
+                                        <p className="text-[10px] uppercase font-semibold text-amber-400 tracking-wider">Enterprise Suite</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setMobileSidebarOpen(false)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                >
+                                    <IoClose size={20} />
+                                </button>
+                            </div>
+
+                            {/* Mobile Nav Links */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-4 space-y-5">
+                                <div className="space-y-1">
+                                    <Link
+                                        to="/admin"
+                                        onClick={() => setMobileSidebarOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white font-semibold text-sm shadow-md shadow-orange-500/25"
+                                    >
+                                        <IoGridOutline size={18} className="shrink-0" />
+                                        <span>Dashboard</span>
+                                    </Link>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                        LIBRARY OPERATIONS
+                                    </p>
+                                    {[
+                                        { title: 'Student Directory', path: '/admin/students', icon: IoPersonOutline },
+                                        { title: 'Floor & Seat Matrix', path: '/admin/floors', icon: IoBedOutline },
+                                        { title: 'Shift Operations', path: '/admin/shifts', icon: IoTimeOutline },
+                                        { title: 'Attendance Tracking', path: '/admin/attendance', icon: IoCalendarOutline },
+                                        { title: 'Fee Management', path: '/admin/fees', icon: IoCashOutline },
+                                        { title: 'Discussion Rooms', path: '/admin/chat', icon: IoChatbubblesOutline },
+                                        { title: 'QR Entry Kiosk', path: '/admin/kiosk', icon: IoScanOutline },
+                                        { title: 'Vacant Seats', path: '/admin/vacant-seats', icon: IoSearchOutline },
+                                    ].map((item, i) => (
+                                        <Link
+                                            key={i}
+                                            to={item.path}
+                                            onClick={() => setMobileSidebarOpen(false)}
+                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
+                                        >
+                                            <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-1">
+                                    <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                        GOVERNANCE & SECURITY
+                                    </p>
+                                    {[
+                                        { title: 'Sub-Admins & Roles', path: '/admin/subadmins', icon: IoShieldCheckmarkOutline },
+                                        { title: 'Student ID Cards', path: '/admin/cards', icon: IoKey },
+                                        { title: 'System Activity Logs', path: '/admin/logs', icon: IoDocumentTextOutline },
+                                        { title: 'Analytics Dashboard', path: '/admin/analytics', icon: IoBarChartOutline },
+                                        { title: 'Notice & Alerts', path: '/admin/notifications', icon: IoNotificationsOutline },
+                                        { title: 'Student Requests', path: '/admin/requests', icon: IoDocumentTextOutline },
+                                        { title: 'Referrals & Rewards', path: '/admin/referrals', icon: IoWalletOutline },
+                                        { title: 'System Settings', path: '/admin/settings', icon: IoSettingsOutline },
+                                    ].map((item, i) => (
+                                        <Link
+                                            key={i}
+                                            to={item.path}
+                                            onClick={() => setMobileSidebarOpen(false)}
+                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
+                                        >
+                                            <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Mobile Drawer Bottom: Logout & AI */}
+                            <div className="p-3 border-t border-slate-800 bg-[#080e1f] space-y-2 shrink-0">
+                                <button
+                                    onClick={() => {
+                                        setMobileSidebarOpen(false);
+                                        setShowAIModal(true);
+                                    }}
+                                    className="w-full py-2 px-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5"
+                                >
+                                    <IoTerminalOutline size={14} />
+                                    <span>Executive Operations Console</span>
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setMobileSidebarOpen(false);
+                                        handleLogout();
+                                    }}
+                                    className="w-full py-2.5 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-400 font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-sm cursor-pointer"
+                                >
+                                    <IoLogOut size={17} />
+                                    <span>Sign Out of Dashboard</span>
+                                </button>
+                            </div>
+                        </motion.aside>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* ══════════════════════════════════════════════════════════
+                ENTERPRISE DESKTOP SIDEBAR (hidden on mobile < lg)
             ══════════════════════════════════════════════════════════ */}
             <aside
-                className={`bg-[#0b1329] text-slate-300 flex flex-col transition-all duration-300 z-30 shrink-0 select-none border-r border-slate-800 ${
+                className={`hidden lg:flex bg-[#0b1329] text-slate-300 flex-col transition-all duration-300 z-30 shrink-0 select-none border-r border-slate-800 ${
                     sidebarCollapsed ? 'w-[72px]' : 'w-[260px]'
                 }`}
             >
                 {/* Brand Header */}
                 <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800/80 bg-[#080e1f]">
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 shrink-0 font-black">
-                            <IoSchool size={20} />
-                        </div>
+                        <img
+                            src="/app-icon-192.png"
+                            alt="Apna Lakshay"
+                            className="w-9 h-9 rounded-xl object-contain shadow-md shrink-0"
+                        />
                         {!sidebarCollapsed && (
                             <div className="truncate">
                                 <h1 className="font-bold text-white text-[15px] leading-tight tracking-tight">Apna Lakshay</h1>
@@ -548,7 +689,7 @@ const AdminDashboard = () => {
                         )}
                         {[
                             { title: 'Reports & Analytics', path: '/admin/analytics', icon: IoBarChartOutline },
-                            { title: 'Student Activities & XP', path: '/admin/activities', icon: IoSparklesOutline },
+                            { title: 'Student Activities & XP', path: '/admin/activities', icon: IoRibbonOutline },
                             { title: 'AI Study Logs', path: '/admin/ai-activity', icon: IoTrophy },
                             { title: 'Referral & Wallet', path: '/admin/referral-wallet', icon: IoWalletOutline },
                         ].map((item, i) => (
@@ -574,7 +715,7 @@ const AdminDashboard = () => {
                         {[
                             { title: 'Sub-Admin Roles', path: '/admin/sub-admins', icon: IoShieldCheckmarkOutline },
                             { title: 'Student Requests', path: '/admin/requests', icon: IoDocumentTextOutline },
-                            { title: 'Action History Logs', path: '/admin/history', icon: IoSchool },
+                            { title: 'Action History Logs', path: '/admin/history', icon: IoTimeOutline },
                             { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey },
                             { title: 'Manage Cards & Layout', path: '/admin/manage-cards', icon: IoGridOutline },
                         ].map((item, i) => (
@@ -591,35 +732,35 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Bottom AI Assistant Card */}
+                {/* Bottom Executive Intelligence Card */}
                 {!sidebarCollapsed ? (
                     <div className="p-3 border-t border-slate-800 bg-[#080e1f]">
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-950/70 via-slate-900 to-slate-950 border border-orange-500/20 shadow-inner">
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-[#080e1f] border border-slate-800 shadow-inner">
                             <div className="flex items-center gap-2 mb-1.5">
-                                <div className="p-1 rounded-lg bg-orange-500/20 text-orange-400">
-                                    <IoSparkles size={14} />
+                                <div className="p-1 rounded-lg bg-orange-500/10 text-orange-400">
+                                    <IoTerminalOutline size={14} />
                                 </div>
-                                <span className="text-xs font-bold text-white tracking-wide">Apna Lakshay AI</span>
-                                <span className="text-[9px] bg-orange-500/20 text-orange-300 font-bold px-1.5 py-0.2 rounded border border-orange-500/30">BETA</span>
+                                <span className="text-xs font-bold text-white tracking-wide">Campus Intelligence</span>
+                                <span className="text-[9px] bg-slate-800 text-emerald-400 font-bold px-1.5 py-0.2 rounded border border-slate-700">LIVE</span>
                             </div>
-                            <p className="text-[11px] text-slate-400 leading-snug mb-3">Live intelligence over campus database</p>
+                            <p className="text-[11px] text-slate-400 leading-snug mb-3">Live database queries & telemetry</p>
                             <button
                                 onClick={() => setShowAIModal(true)}
-                                className="w-full py-1.5 px-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5"
+                                className="w-full py-1.5 px-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
-                                <IoSparkles size={13} />
-                                Ask AI Console
+                                <IoAnalyticsOutline size={13} />
+                                Open Command Console
                             </button>
                         </div>
                     </div>
                 ) : (
-                    <div className="p-3 border-t border-slate-800 flex justify-center bg-[#080e1f]">
+                    <div className="p-3 border-t border-slate-800 flex flex-col items-center bg-[#080e1f]">
                         <button
                             onClick={() => setShowAIModal(true)}
-                            className="p-2.5 rounded-xl bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 transition-colors"
-                            title="Open AI Assistant"
+                            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-orange-400 transition-colors cursor-pointer"
+                            title="Open Command Console"
                         >
-                            <IoSparkles size={18} />
+                            <IoTerminalOutline size={18} />
                         </button>
                     </div>
                 )}
@@ -631,27 +772,35 @@ const AdminDashboard = () => {
             <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
 
                 {/* ── Top Bar (Global Header) ────────────────────────── */}
-                <header className="h-16 px-6 bg-white border-b border-slate-200 flex items-center justify-between gap-4 z-20 shrink-0 shadow-sm">
-                    {/* Left: Global Search Command Palette Bar */}
-                    <div className="flex-1 max-w-xl flex items-center gap-3">
+                <header className="h-16 px-3 sm:px-6 bg-white border-b border-slate-200 flex items-center justify-between gap-2 sm:gap-4 z-20 shrink-0 shadow-sm">
+                    {/* Left: Mobile Menu Trigger & Global Search */}
+                    <div className="flex-1 max-w-xl flex items-center gap-2 sm:gap-3 min-w-0">
+                        <button
+                            onClick={() => setMobileSidebarOpen(true)}
+                            className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0"
+                            title="Open Navigation Menu"
+                        >
+                            <IoMenuOutline size={20} />
+                        </button>
+
                         <div
                             onClick={() => setShowCommandPalette(true)}
-                            className="w-full flex items-center justify-between px-3.5 py-2 bg-slate-100/90 hover:bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-pointer transition-all shadow-inner"
+                            className="w-full flex items-center justify-between px-3 py-2 bg-slate-100/90 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-500 cursor-pointer transition-all shadow-inner min-w-0"
                         >
-                            <div className="flex items-center gap-2.5">
-                                <IoSearchOutline size={17} className="text-slate-400" />
-                                <span className="truncate">Search students, seats, transactions, reports, settings...</span>
+                            <div className="flex items-center gap-2 min-w-0 truncate">
+                                <IoSearchOutline size={16} className="text-slate-400 shrink-0" />
+                                <span className="truncate">Search students, seats, transactions, settings...</span>
                             </div>
-                            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[11px] font-bold text-slate-500 bg-white rounded border border-slate-200 shadow-sm">
+                            <kbd className="hidden md:inline-block px-1.5 py-0.5 text-[10px] font-bold text-slate-500 bg-white rounded border border-slate-200 shadow-sm shrink-0 ml-1">
                                 Ctrl + K
                             </kbd>
                         </div>
                     </div>
 
                     {/* Right: Quick Controls, Settings, Campus & Profile */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
                         {/* Campus Selector */}
-                        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
                             <IoBusinessOutline size={15} className="text-amber-500" />
                             <span>{selectedCampus}</span>
                         </div>
@@ -806,7 +955,7 @@ const AdminDashboard = () => {
                                                 <div className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-orange-50/60">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`p-2 rounded-lg ${settings?.forceDoubtBoard ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
-                                                            <IoSparklesOutline size={16} />
+                                                            <IoHardwareChipOutline size={16} />
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-semibold text-slate-900">Auto-Doubt Board</p>
@@ -839,34 +988,36 @@ const AdminDashboard = () => {
                         {/* Scan ID button */}
                         <button
                             onClick={() => setShowScanner(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors"
+                            className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors shrink-0"
+                            title="Scan Student QR ID"
                         >
                             <IoScanOutline size={16} />
                             <span>Scan ID</span>
                         </button>
 
-                        {/* Admin Profile & Logout */}
-                        <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 text-white flex items-center justify-center font-bold text-xs shadow">
+                        {/* Admin Profile & ALWAYS-VISIBLE Logout Button */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-slate-200 shrink-0">
+                            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">
                                 {user?.name ? user.name[0].toUpperCase() : 'A'}
                             </div>
-                            <div className="hidden sm:block text-left">
+                            <div className="hidden xl:block text-left">
                                 <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[100px]">{user?.name || 'Administrator'}</p>
                                 <p className="text-[10px] text-slate-500 leading-tight">Super Admin</p>
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors ml-1"
+                                className="flex items-center gap-1 px-2.5 py-1.5 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200/90 rounded-xl transition-all font-bold text-xs shadow-2xs shrink-0 cursor-pointer"
                                 title="Sign Out"
                             >
-                                <IoLogOut size={18} />
+                                <IoLogOut size={16} />
+                                <span>Logout</span>
                             </button>
                         </div>
                     </div>
                 </header>
 
                 {/* ── Scrollable Dashboard Workspace ─────────────────── */}
-                <main className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                <main className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6">
 
                     {/* ══════════════════════════════════════════════════════
                         HERO GREETING BANNER
@@ -876,8 +1027,8 @@ const AdminDashboard = () => {
                         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                             <div>
                                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-amber-300 text-xs font-semibold mb-3 border border-white/10">
-                                    <IoSparkles size={13} />
-                                    <span>Apna Lakshay Live Management</span>
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                                    <span>Live Campus Monitoring</span>
                                 </div>
                                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
                                     Good morning, {user?.name ? user.name.split(' ')[0] : 'Administrator'}!
@@ -1258,7 +1409,7 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        {/* APNA LAKSHAY AI ASSISTANT (BETA) - Direct Real Data Intelligence */}
+                        {/* CAMPUS EXECUTIVE INTELLIGENCE - Direct Real Data Telemetry */}
                         <div className="lg:col-span-7 glass-card rounded-2xl p-5 border-orange-200 shadow-md bg-gradient-to-br from-white via-orange-50/20 to-amber-50/30 flex flex-col justify-between relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-orange-400/15 via-amber-400/15 to-transparent rounded-full blur-2xl pointer-events-none" />
 
@@ -1266,20 +1417,20 @@ const AdminDashboard = () => {
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-2.5">
-                                        <div className="p-2 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20">
-                                            <IoSparkles size={16} />
+                                        <div className="p-2 rounded-xl bg-slate-900 text-orange-400 shadow-md border border-slate-800">
+                                            <IoTerminalOutline size={16} />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <h3 className="font-bold text-slate-900 text-sm">Apna Lakshay AI Assistant</h3>
-                                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-orange-600 text-white shadow-sm">BETA</span>
+                                                <h3 className="font-bold text-slate-900 text-sm">Executive Intelligence Console</h3>
+                                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-slate-900 text-emerald-400 border border-slate-700 shadow-sm">LIVE</span>
                                             </div>
-                                            <p className="text-xs text-slate-500">Ask directly what is happening across your campus</p>
+                                            <p className="text-xs text-slate-500">Query live campus records, attendance telemetry, and financial health</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => setShowAIModal(true)}
-                                        className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1"
+                                        className="text-xs font-bold text-orange-600 hover:text-orange-700 hover:underline flex items-center gap-1 cursor-pointer"
                                     >
                                         Fullscreen Console <IoArrowForward size={12} />
                                     </button>
@@ -1296,32 +1447,30 @@ const AdminDashboard = () => {
                                         <button
                                             key={idx}
                                             onClick={() => { setAiQuestion(q); handleAskAI(q); }}
-                                            className="px-2.5 py-1 rounded-lg bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-[11px] font-medium text-slate-700 transition-all shadow-2xs text-left"
+                                            className="px-2.5 py-1 rounded-lg bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-[11px] font-medium text-slate-700 transition-all shadow-2xs text-left cursor-pointer"
                                         >
                                             {q}
                                         </button>
                                     ))}
                                 </div>
 
-                                {/* Inline AI Answer Box */}
+                                {/* Inline AI Structured Answer Box */}
                                 {aiLoading ? (
                                     <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200/60 flex items-center gap-3 my-2">
                                         <div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                                        <p className="text-xs font-semibold text-orange-950">Querying real database metrics and generating executive intelligence...</p>
+                                        <p className="text-xs font-semibold text-orange-950">Querying real database metrics and generating executive briefing...</p>
                                     </div>
                                 ) : aiAnswer ? (
-                                    <div className="p-4 rounded-xl bg-white border border-orange-100 shadow-sm my-2 max-h-48 overflow-y-auto custom-scrollbar relative group">
+                                    <div className="p-4 rounded-2xl bg-white border border-orange-200 shadow-sm my-2 max-h-96 overflow-y-auto custom-scrollbar relative group">
                                         <button
                                             onClick={copyAIText}
-                                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs flex items-center gap-1 transition-colors"
-                                            title="Copy AI Response"
+                                            className="absolute top-3 right-3 p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs flex items-center gap-1 transition-colors z-10 cursor-pointer"
+                                            title="Copy Executive Briefing"
                                         >
                                             {aiCopied ? <IoCheckmark size={14} className="text-emerald-600" /> : <IoCopyOutline size={14} />}
                                             <span className="text-[10px]">{aiCopied ? 'Copied' : 'Copy'}</span>
                                         </button>
-                                        <div className="text-xs text-slate-800 leading-relaxed whitespace-pre-line pr-12">
-                                            {aiAnswer}
-                                        </div>
+                                        <StructuredAIResponse content={aiAnswer} />
                                     </div>
                                 ) : (
                                     <p className="text-xs text-slate-400 italic my-2">
@@ -1384,20 +1533,20 @@ const AdminDashboard = () => {
                             {/* Modal Header */}
                             <div className="px-6 py-4 bg-[#0b1329] text-white flex items-center justify-between border-b border-slate-800">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-md shadow-orange-500/30">
-                                        <IoSparkles size={20} />
+                                    <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-orange-400 flex items-center justify-center shadow-md">
+                                        <IoTerminalOutline size={20} />
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <h2 className="font-bold text-base text-white">Apna Lakshay AI Intelligence Console</h2>
-                                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-400/30">PRO</span>
+                                            <h2 className="font-bold text-base text-white">Executive Operations & Intelligence Console</h2>
+                                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">LIVE DB</span>
                                         </div>
                                         <p className="text-xs text-slate-400">Direct conversational access to live database metrics</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowAIModal(false)}
-                                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                    className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                                 >
                                     <IoClose size={20} />
                                 </button>
@@ -1408,7 +1557,7 @@ const AdminDashboard = () => {
                                 {aiHistory.length === 0 && !aiAnswer ? (
                                     <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-3">
                                         <div className="w-16 h-16 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner">
-                                            <IoSparkles size={32} />
+                                            <IoStatsChartOutline size={32} />
                                         </div>
                                         <h3 className="font-bold text-slate-900 text-base">How can I assist your operations today?</h3>
                                         <p className="text-xs text-slate-500 leading-relaxed">
@@ -1426,7 +1575,7 @@ const AdminDashboard = () => {
                                                         setModalAiQuestion(suggest);
                                                         handleAskAI(suggest);
                                                     }}
-                                                    className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-orange-400 text-xs font-medium text-slate-700 hover:text-orange-700 text-left shadow-2xs transition-all flex items-center justify-between"
+                                                    className="p-2.5 rounded-xl bg-white border border-slate-200 hover:border-orange-400 text-xs font-medium text-slate-700 hover:text-orange-700 text-left shadow-2xs transition-all flex items-center justify-between cursor-pointer"
                                                 >
                                                     <span>{suggest}</span>
                                                     <IoArrowForward size={13} className="text-slate-400" />
@@ -1444,11 +1593,15 @@ const AdminDashboard = () => {
                                                 <div
                                                     className={`max-w-2xl rounded-2xl p-4 text-xs leading-relaxed ${
                                                         item.role === 'user'
-                                                            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-tr-none shadow-md'
-                                                            : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-sm whitespace-pre-line'
+                                                            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-tr-none shadow-md font-medium'
+                                                            : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-none shadow-sm w-full'
                                                     }`}
                                                 >
-                                                    {item.content}
+                                                    {item.role === 'user' ? (
+                                                        item.content
+                                                    ) : (
+                                                        <StructuredAIResponse content={item.content} />
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

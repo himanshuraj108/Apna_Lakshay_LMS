@@ -7,7 +7,7 @@ import {
     IoTimeOutline, IoTrophyOutline, IoTrophy, IoPulseOutline, IoChevronBackOutline,
     IoChevronForwardOutline, IoBookOutline, IoPersonOutline, IoRibbonOutline,
     IoCalendarOutline, IoChevronDownOutline, IoChevronUpOutline, IoCloseOutline,
-    IoStatsChartOutline, IoAlertCircleOutline, IoCheckmarkCircleOutline, IoShieldOutline, IoSparklesOutline
+    IoStatsChartOutline, IoAlertCircleOutline, IoCheckmarkCircleOutline, IoShieldOutline, IoHardwareChipOutline
 } from 'react-icons/io5';
 
 const renderPayloadDetails = (toolName, payload) => {
@@ -989,7 +989,7 @@ const StudentActivities = () => {
                                             : 'text-gray-500 hover:text-gray-800'
                                     }`}
                                 >
-                                    <IoSparklesOutline size={14} />
+                                    <IoHardwareChipOutline size={14} />
                                     AI Suite Logs
                                 </button>
                             </div>
@@ -1232,7 +1232,7 @@ const StudentActivities = () => {
                                             <div className="space-y-6">
                                                 <div>
                                                     <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                                                        <IoSparklesOutline className="text-orange-550" size={15} />
+                                                        <IoHardwareChipOutline className="text-orange-550" size={15} />
                                                         AI Study Suite Activity Logs ({studentDetails.aiActivities?.length || 0})
                                                     </h4>
 
