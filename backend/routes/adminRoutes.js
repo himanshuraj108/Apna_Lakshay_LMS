@@ -64,6 +64,8 @@ const {
     getAIActivityLogs
 } = require('../controllers/adminController');
 
+const { askAdminAI, getAdminAIBriefing, getLiveDashboardData } = require('../controllers/adminAiController');
+
 // Settings come from settingsController
 const { getSettings, updateSettings } = require('../controllers/settingsController');
 
@@ -116,8 +118,13 @@ router.delete('/archives/clear', clearArchives);
 router.get('/archives/:id', getArchivedStudent);
 router.delete('/archives/:id', deleteArchivedStudent);
 
+// Executive AI Assistant
+router.post('/ai/ask', askAdminAI);
+router.get('/ai/briefing', getAdminAIBriefing);
+
 // Dashboard
 router.get('/dashboard', getDashboard);
+router.get('/dashboard/live', getLiveDashboardData);
 
 // Student management
 router.route('/students')
