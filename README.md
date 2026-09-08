@@ -1,591 +1,387 @@
-# Apna Lakshay Library -- Production-Grade Library Management System
+# Apna Lakshay Library - Production-Grade Library Management System
 
-[![Production Ready](https://img.shields.io/badge/Status-Production--Ready-success.svg?style=flat-for-the-badge)](https://apnalakshay.com)
-[![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue.svg?style=flat-for-the-badge)](https://mongodb.com)
-[![Deployment](https://img.shields.io/badge/Deployment-VPS%20%7C%20PM2-purple.svg?style=flat-for-the-badge)](https://pm2.keymetrics.io/)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg?style=flat-for-the-badge)](https://apnalakshay.com)
-[![Version](https://img.shields.io/badge/Version-1.6.0-orange.svg?style=flat-for-the-badge)](https://apnalakshay.com)
-[![Last Updated](https://img.shields.io/badge/Updated-August%202026-brightgreen.svg?style=flat-for-the-badge)](https://apnalakshay.com)
+Live Production Deployment: https://apnalakshay.com
 
-**Live Production System:** [https://apnalakshay.com](https://apnalakshay.com)
-
-A premium, full-stack, production-ready MERN enterprise suite engineered for modern offline libraries. The system handles end-to-end operations including interactive seat booking grids, multi-shift allocations, location-verified QR check-ins, automated billing cycles with partial payment tracking, and AI-powered academic engines. Built for scale, high reliability, and elite UI/UX standards, this codebase is designed according to enterprise software architecture best practices.
+A full-stack, production-ready MERN enterprise suite engineered for modern offline libraries, study centers, and educational hubs. The system handles end-to-end operations including interactive multi-floor seat matrices, multi-shift student allocations, GPS-verified QR and biometric check-ins, automated billing cycles with partial payment tracking, role-based sub-admin delegation, and artificial intelligence-powered academic engines. Designed for scalability, high availability, and enterprise architectural standards.
 
 ---
 
-## Master System Architecture & Enterprise Design Blueprint
+## Master System Architecture and Enterprise Design
 
-The entire Apna Lakshay LMS system is designed with a highly decoupled, layered architecture. The client interface communicates with a secured Express API gateway layer, driving specialized controller logic that acts as the core database state machine. Third-party gateways are integrated with reliable resilience pipelines, including an AI rate-limit fallback loop.
+The Apna Lakshay LMS system is built with a decoupled, layered software architecture. Each layer handles a distinct operational responsibility, from client-side interface rendering to resilient data persistence and external service pipelines.
 
-```mermaid
-graph TB
-    %% Styling Configurations
-    classDef clientStyle fill:#f0f9ff,stroke:#0284c7,stroke-width:2px,color:#0369a1;
-    classDef gatewayStyle fill:#fdf4ff,stroke:#c084fc,stroke-width:2px,color:#86198f;
-    classDef controlStyle fill:#fef9c3,stroke:#eab308,stroke-width:2px,color:#854d0e;
-    classDef modelStyle fill:#f0fdf4,stroke:#22c55e,stroke-width:2px,color:#166534;
-    classDef externStyle fill:#fff1f2,stroke:#f43f5e,stroke-width:2px,color:#9f1239;
+### Layer 1: Presentation Layer (Client Application)
+- Framework: React 18 Single Page Application powered by Vite.
+- Styling and Animation: Tailwind CSS with custom design tokens, CSS variables, and Framer Motion transitions.
+- Client State Management: Centralized authentication context (AuthContext) with persistent localStorage synchronization and route guard protections.
+- Specialized Components:
+  - Interactive Multi-Floor Seating Canvas: Real-time desk occupancy visualization.
+  - Digital 3D ID Card: Two-sided flip card with high-contrast zoomable barcode and SVG QR code rendering.
+  - Pomodoro and Study Planner Suite: Time tracking, daily target setting, and personal checklists.
+  - Public Seating Availability Board: Unauthenticated live desk view for prospective student inquiries.
 
-    subgraph ClientSPA ["Presentation Layer (React SPA App)"]
-        Dashboards["Student & Admin Dashboards (Framer Motion, Tailwind)"]:::clientStyle
-        AuthCtx["AuthContext Hook (State Persistence Core)"]:::clientStyle
-        IDCard["3D Flip Digital ID Card (Rules Panel & Zoomable QR SVG)"]:::clientStyle
-        TimerPomodoro["Pomodoro Timer & Study Planner Tools"]:::clientStyle
-        PublicGrid["Public Room Seating Availability Board"]:::clientStyle
-    end
+### Layer 2: API Ingress and Security Gateway
+- Routing Multiplexer: Express.js REST API router handling versioned endpoint dispatch.
+- Authentication Guards: JSON Web Token (JWT) verification middleware with cryptographic signature checks. Standard session lifetimes for students and 365-day persistent tokens for designated sub-admin staff.
+- Role-Based Access Control (RBAC): Hierarchical authorization layer enforcing Super Admin, Sub-Admin (with granular capability bitmasks), and Student scopes.
+- Geofencing Verification: Haversine spherical distance calculation engine validating device GPS coordinates against library geographic coordinates prior to check-in acceptance.
+- Real-Time Communication Broker: Socket.IO WebSocket server managing bidirectional event loops for live occupancy telemetry and online presence indicators.
 
-    subgraph RouterIngress ["API Ingress & Session Security Guard (Express Gateway)"]
-        RouteMux["API Router Routing Multiplexer"]:::gatewayStyle
-        JWTGuard["JWT Token Verification & Session Expiration (365-day Sub-Admins)"]:::gatewayStyle
-        RoleScope["Role Authorization Guard (Admin vs Sub-Admin permissions vs Student)"]:::gatewayStyle
-        GeoFencing["GPS Geofencing Guard (Haversine Spherical Formula)"]:::gatewayStyle
-        SocketBroker["Socket.IO Bidirectional Live Web Socket Broker"]:::gatewayStyle
-    end
+### Layer 3: Controller and Business Logic Layer
+- Decoupled Model-View-Controller (MVC) architecture separating HTTP transport from business logic.
+- Authentication Controller: Seat-based login verification, credential management, password reset flows, and profile target hydration.
+- Seat and Shift Controller: Conflict-free interval allocation logic, atomic seat transfers, multi-shift combinations, and room pricing calculations.
+- Student Controller: Attendance metrics, fee ledger queries, personal analytics, and doubt session state management.
+- Fee Controller: Automated billing cycle generation, partial and full settlement handling, cash transaction audits, and receipt generation.
+- Sub-Admin Controller: Granular staff account provisioning, PIN-based access restrictions, and administrative action delegation.
+- Engagement Controller: Study streak calculations, experience point (XP) algorithms, and active-student leaderboard generators.
+- Settings Controller: Dynamic campus toggles, maintenance mode, geofencing enforcement, and doubt board launch policies.
 
-    subgraph CoreControllers ["Core Logic & Service Controllers (Decoupled MVC backend)"]
-        authController["authController (verifySeatLogin, target persistence)"]:::controlStyle
-        engagementController["engagementController (Active student leaderboard, streak XP calculator)"]:::controlStyle
-        seatController["seatController (Multi-shift overlap checker, atomic seat swaps)"]:::controlStyle
-        studentController["studentController (Attendance metrics, fee checks, review solvers)"]:::controlStyle
-        adminController["adminController (Backdated Join updates, student registers CRUD)"]:::controlStyle
-    end
+### Layer 4: Data and Persistence Layer
+- Database Engine: MongoDB Atlas with Mongoose Object Data Modeling (ODM).
+- Schema Design:
+  - User: Student credentials, contact information, role definitions, exam targets, and account status flags.
+  - Seat: Floor identification, room assignments, physical desk numbering, and nested shift allocation subdocuments.
+  - Shift: Shift names, start times, end times, and active capacity limits.
+  - Fee: Billing cycles, total dues, amount paid, balance pending, settlement status, and transaction histories.
+  - Attendance: Daily timestamps, check-in methods (QR, PIN, manual), verification coordinates, and duration counters.
+  - StudyStreak: Consecutive study days, accumulated XP, activity dates, and weekly performance milestones.
+  - DoubtSession: Subject categorization, conversation history, token counts, and language configurations.
+  - MockTestAttempt: Exam metadata, question states, response logs, timing breakdowns, and final scorecards.
+  - SystemSetting: Key-value configuration documents for application-wide policies and card layouts.
+  - AIActivityLog: Audit logs of student interactions across all artificial intelligence tools.
 
-    subgraph DatabaseLayer ["Data Layer (Mongoose ODM / MongoDB Atlas)"]
-        UserModel[("User Collection (credentials, roles, examTarget)")]:::modelStyle
-        SeatModel[("Seat Collection (floor, room, assignments subdocuments)")]:::modelStyle
-        ShiftModel[("Shift Collection (custom names, time ranges)")]:::modelStyle
-        FeeModel[("Fee Collection (billing cycles, partial statuses)")]:::modelStyle
-        AttModel[("Attendance Collection (daily check-in sessions)")]:::modelStyle
-        StreakModel[("StudyStreak Collection (XP levels, consecutive days)")]:::modelStyle
-        DoubtModel[("DoubtSession Collection (subject-aware chat logs)")]:::modelStyle
-        MockModel[("MockTestAttempt Collection (exam templates, review scorecards)")]:::modelStyle
-    end
+### Layer 5: Caching and Acceleration Layer
+- In-Memory Cache: Redis via the ioredis client for high-frequency read operations.
+- Eviction Strategies: Automated key invalidation on database write operations (allocations, swaps, XP updates).
+- Resilient Fallback: Built-in in-memory map store fallback if Redis connectivity is interrupted, ensuring zero downtime in standalone and offline environments.
 
-    subgraph Integrations ["Third-Party Service Pipelines"]
-        RazorpayGate["Razorpay Gateway (Order creation, hash signature checks)"]:::externStyle
-        SMTPTransactor["Brevo SMTP / Nodemailer (Transactional HTML receipts & broadcasts)"]:::externStyle
-        groqGeminiPipeline["Groq-Gemini AI Pipe (Groq Key Rotator -> Llama 3.1 8B -> Gemini Fallback Engine)"]:::externStyle
-    end
+### Layer 6: External Integration Pipelines
+- Payment Gateway: Razorpay webhook and order integration with cryptographic signature verification for online fee settlements.
+- Transactional Messaging: Brevo (formerly Sendinblue) SMTP and Nodemailer for automated HTML fee receipts and broadcast notices.
+- Artificial Intelligence Pipeline: High-speed Groq API (Compound and Llama models) with automatic failover to Google Gemini API for uninterrupted academic support.
 
-    %% Routing Ingress Connections
-    Dashboards -->|REST HTTPS Requests| RouteMux
-    IDCard -->|Barcode Check-In Trigger| RouteMux
-    TimerPomodoro -->|Log Engagement Metrics| RouteMux
-    PublicGrid -->|Unauthenticated Seats Sync| RouteMux
-    SocketBroker <-->|Live Connection Handshake| Dashboards
+---
 
-    %% Gateway to Controllers
-    RouteMux --> JWTGuard
-    JWTGuard --> RoleScope
-    RoleScope --> GeoFencing
-    GeoFencing --> authController
-    GeoFencing --> engagementController
-    GeoFencing --> seatController
-    GeoFencing --> studentController
-    GeoFencing --> adminController
+## Core Operational Workflows
 
-    %% Controllers to Models (Read/Write)
-    authController <--> UserModel
-    engagementController <--> StreakModel
-    engagementController <--> UserModel
-    seatController <--> SeatModel
-    seatController <--> ShiftModel
-    studentController <--> AttModel
-    studentController <--> FeeModel
-    adminController <--> UserModel
-    adminController <--> SeatModel
-    adminController <--> FeeModel
+### 1. GPS-Restricted QR and PIN Attendance Control Flow
 
-    %% Models Cross Relations
-    UserModel -->|Assigned Shift | ShiftModel
-    SeatModel -->|Subdocument Array| UserModel
-    FeeModel -->|Billing Anchor Date| UserModel
-    StreakModel -->|Engagement Score| UserModel
-    DoubtModel -->|Subject Logs| UserModel
-    MockModel -->|Review Sets| UserModel
+Attendance integrity is enforced through a two-layer verification loop combining device geolocation validation and cryptographic token checks.
 
-    %% Controllers to Integrations
-    studentController <--> RazorpayGate
-    adminController --> SMTPTransactor
-    studentController --> SMTPTransactor
-    studentController <--> groqGeminiPipeline
+1. Handshake and Coordinate Acquisition:
+   - When a student initiates a check-in, the client requests high-accuracy device geolocation coordinates using the browser Geolocation API.
+   - Concurrently, the client retrieves the active student identifier and security token.
+2. QR Code Generation and Ingress:
+   - The student presents their digital ID card containing an encoded barcode and QR payload (prefixed with designated campus identifiers).
+   - The scanning terminal or kiosk captures the payload and dispatches a secure POST request to the API gateway along with scanner coordinates.
+3. Cryptographic and Geofencing Verification:
+   - The gateway parses the student identifier and queries the database for the active student profile, assigned shift, and campus geofencing configuration.
+   - The system executes the Haversine spherical distance calculation:
+     d = 2 * R * asin(sqrt(sin^2((lat2 - lat1)/2) + cos(lat1) * cos(lat2) * sin^2((lon2 - lon1)/2)))
+   - If the calculated distance exceeds the configured threshold (default: 15 meters), the transaction is rejected with a Location Violation response.
+4. Time Window and State Upsert:
+   - If geographic verification passes, the server checks the student's assigned shift time window.
+   - The attendance controller creates or updates the daily Attendance document for the current calendar day in Indian Standard Time (IST).
+   - The system updates the live attendance counter in Redis and emits a WebSocket event to update administrative dashboards in real time.
+5. Offline PIN Fallback:
+   - If student device camera or GPS capabilities are unavailable, authorized administrators can provide a daily rotating 4-8 digit attendance PIN, allowing validated manual check-in through the student dashboard.
+
+### 2. Multi-Shift Seat Overlap Verification Flow
+
+The library supports assigning a single physical desk to multiple students across distinct, non-overlapping time shifts. Conflicts are prevented via deterministic interval intersection logic.
+
+1. Allocation Request:
+   - An administrator selects a physical seat and one or more target shifts for a student.
+2. Interval Intersection Check:
+   - The controller retrieves all existing active assignments for the designated seat from the Seat collection.
+   - For every existing assignment and requested assignment pair, the system computes interval overlap using normalized minutes from midnight:
+     Overlap = max(0, min(EndA, EndB) - max(StartA, StartB))
+   - If any pair returns an overlap greater than zero, the allocation is aborted with an HTTP 409 Conflict error specifying the conflicting time window.
+3. Transactional Assignment and Pricing:
+   - If zero conflicts exist, the assignments array is constructed.
+   - Base seat pricing is applied to the primary shift, with discounted or zeroed rates for contiguous multi-shift bundles according to institutional policy.
+   - The Seat document is updated atomically.
+4. Financial Ledger Synchronization:
+   - A Fee record is generated for the current billing cycle matching the calculated multi-shift total.
+   - An email confirmation detailing shift hours and seat assignment is dispatched to the student.
+
+### 3. Automated Fee Management and Ledger Lifecycle
+
+Fee tracking supports enterprise multi-cycle billing, partial payments, and split administrative responsibilities.
+
+1. Billing Cycle Anchoring:
+   - Each student account is anchored to an admission date. Billing intervals generate recurring monthly or custom fee records.
+2. Payment Collection:
+   - Online settlements trigger via Razorpay integration with server-side signature validation.
+   - Physical desk collections can be recorded by administrators and authorized sub-administrators.
+3. Sub-Admin Ledger Restrictions:
+   - Sub-administrators operate in a restricted fee management view:
+     - Direct visibility limited to Pending Dues and Settled Paid tabs.
+     - Access to single total pending dues metric without enterprise KPI leakage.
+     - Search bars, inactive student filters, and receipt slip generators are suppressed.
+     - Single-action Collect Fee modal for direct payment processing.
+4. Super Admin Enterprise View:
+   - Full KPI matrix: Total Fees Collected, Today Collections, Pending Dues Defaulters Count, Total Outstanding Amount.
+   - Six comprehensive filter tabs: All Records, Paid, Pending, Expired, Inactive, and Advance.
+   - Individual student payment history modal, printable thermal receipt slips, and custom PDF ledger exports.
+
+---
+
+## 20 Enterprise Admin Modules
+
+The Super Admin dashboard provides a centralized management console comprising 20 enterprise modules organized into three operational categories.
+
+### Library Operations (10 Modules)
+1. Student Directory (/admin/students): Complete student roster, detailed profiles, seat assignments, status toggles, and document management.
+2. Floor and Seat Matrix (/admin/floors): Visual grid editor for library floors, rooms, desk numbering, AC and Non-AC categorization, and pricing tiers.
+3. Attendance Tracking (/admin/attendance): Daily check-in logs, biometric punches, manual attendance toggles, and date-filtered attendance registers.
+4. Fee Management (/admin/fees): Complete financial ledger, billing cycles, partial payments, dues collection, and PDF receipts.
+5. Shift Operations (/admin/shifts): Configuration of study shifts, batch timings, operational windows, and hourly quotas.
+6. Vacant Seats (/admin/vacant-seats): Real-time vacancy matrix displaying unoccupied desks filtered by shift, room, and floor.
+7. QR Entry Kiosk (/admin/kiosk): Full-screen entrance kiosk interface optimized for automated QR code scanning at front desks.
+8. Notice and Announcements (/admin/notifications): Broadcast notice dispatch system delivering alerts directly to student dashboards.
+9. Discussion Rooms (/admin/chat): Real-time academic chat spaces organized by competitive examination subjects.
+10. Student Chat History (/admin/chat-history): Moderation panel and audit repository for artificial intelligence queries and student room discussions.
+
+### Analytics and Insights (4 Modules)
+11. Reports and Analytics (/admin/analytics): High-level operational dashboards, revenue charts, seat utilization curves, and student retention reports.
+12. Student Activities and XP (/admin/activities): Gamification tracking displaying study streaks, focus hours, and student experience point leaderboards.
+13. AI Study Logs (/admin/ai-activity): Telemetry and usage records across all artificial intelligence tools, tracking student engagement and credit consumption.
+14. Referral and Wallet (/admin/referral-wallet): Campus referral system tracking reward balances, payout requests, and incentive coin distributions.
+
+### Administration and Governance (6 Modules)
+15. Sub-Admin Roles (/admin/sub-admins): Staff user provisioning, credential management, PIN assignments, and capability permissions.
+16. Student Requests (/admin/requests): Workflow approval inbox for seat transfer requests, shift changes, and student feedback.
+17. Action History Logs (/admin/history): Immutable audit log recording all administrative modifications, deletions, and operational updates.
+18. Password Activity (/admin/password-activity): Security monitor tracking student credential resets, password modifications, and security events.
+19. Manage Cards and Layout (/admin/manage-cards): Student application interface manager controlling card visibility, ordering, new badges, and AI credit quotas.
+20. System Settings (/admin/settings): Global institutional controls including maintenance mode, geofencing enforcement, PIN attendance, and WhatsApp group links.
+
+---
+
+## Artificial Intelligence Academic Suite
+
+The platform includes seven artificial intelligence features powered by Groq API (Compound and Llama 3.1 8B models) with automatic failover to Google Gemini.
+
+### 1. Multi-Lingual AI Doubt Board
+- Interactive doubt solver supporting English, Hindi, and Hinglish.
+- Equipped with web-aware retrieval capabilities for current affairs, recent events, and contemporary general knowledge questions.
+- Configurable auto-launch policy triggered upon successful attendance check-in.
+- Daily credit allowance allocated dynamically based on student fee arrangements.
+
+### 2. AI Study Plan Generator
+- Generates structured multi-week daily schedules based on target examinations (UPSC, BPSC, SSC, Banking, Railway, JEE, NEET).
+- Formulates daily study blocks, subject priorities, and designated rest days.
+
+### 3. Mock Test Performance Analyzer
+- Evaluates test scorecards section-by-section.
+- Pinpoints weak subject areas, provides targeted explanations for incorrect responses, and generates a concrete three-day corrective study roadmap.
+
+### 4. AI Notes Summarizer
+- Condenses raw academic text (up to 4000 characters) into five bullet points, key facts, and three auto-generated multiple-choice questions with answer keys.
+
+### 5. Current Affairs Quiz Generator
+- Analyzes editorial and news article titles to generate three exam-style multiple-choice questions with rationale explanations.
+
+### 6. Smart Task Suggestion Engine
+- Reads the student database profile, current streak, and planned targets to suggest three actionable, time-estimated study tasks for the day.
+
+### 7. Exam Readiness Score Calculator
+- Computes an objective 0-100 readiness metric based on four weighted parameters:
+  - Study Streak consistency (25 points max)
+  - 30-day Attendance percentage (25 points max)
+  - Recent Mock Test average score (30 points max)
+  - Academic tool engagement (20 points max)
+
+---
+
+## Technical Implementations and Solved Engineering Challenges
+
+### 1. Active Student Mapping in Leaderboard Queries
+- Problem: Conventional engagement aggregations only queried existing streak records, omitting newly enrolled students without logs.
+- Implementation: Re-engineered the engagement resolver to query the primary User collection for all active students, joining StudyStreak documents via left outer joins. Missing records default safely to Level 1, 0 XP, and 0 days, preventing pagination and sorting failures.
+
+### 2. State Hydration and Target Configuration Persistence
+- Problem: Partial payload returns during seat logins caused client state to reset customized examination targets to default values upon page refresh.
+- Implementation: Updated the authentication controller to include complete profile objects (including explicit examTarget and remaining AI test credits) and added a hydration guard in AuthContext to preserve localized preferences.
+
+### 3. Multi-Key Round-Robin AI Resilience Pipeline
+- Problem: Strict rate limits on third-party AI endpoints during peak study hours resulted in service interruptions.
+- Implementation: Constructed a dynamic key rotator that cycles through a pool of Groq API keys. Upon encountering an HTTP 429 response across all keys, requests automatically route to the Google Gemini API fallback pipeline, ensuring uninterrupted availability.
+
+### 4. Mongoose Timestamp Lock Bypass for Backdated Records
+- Problem: Standard Mongoose models with timestamps enabled overwrite createdAt values with system time on save, preventing backdated admission records.
+- Implementation: Bypassed schema-level hooks using native MongoDB collection updates:
+```javascript
+await User.collection.updateOne(
+    { _id: userId },
+    { $set: { createdAt: new Date(backdatedAdmissionDate) } }
+);
 ```
 
----
+### 5. High-Performance Redis Caching with Resilient Fallback
+- Problem: Heavy read traffic on public seating availability grids and vacancy endpoints placed excessive load on MongoDB.
+- Implementation: Integrated an ioredis caching layer with short time-to-live (TTL) limits:
+  - Leaderboards: 60-second TTL, invalidated on XP changes.
+  - Vacant Seats: 30-second TTL, invalidated on seat allocation or transfer.
+  - Public Seating Grid: 30-second TTL, invalidated on seat mutations.
+  - Resilience: If Redis is unreachable, the system transparently defaults to an in-memory Map store, preventing application crashes.
 
-## GPS-Restricted QR Attendance Control Flow
-
-Attendance integrity is enforced via a two-layer control loop: cryptographic token verification and geographic distance validation within a 15-meter radius, using highly precise spherical geodesy (Haversine formula).
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Student as Student (Mobile / Client)
-    actor Scanner as Library Barcode / QR Scanner
-    participant Gateway as Express Backend Router
-    participant DB as MongoDB Atlas
-    
-    Note over Student, DB: Step 1: Secure Handshake & Local GPS Lock
-    Student->>Student: Get High-Accuracy GPS Coordinates
-    Student->>Student: Generate Instant QR (Token + ID)
-    Student->>Scanner: Scan QR Code (AL- prefix decode)
-    
-    Note over Scanner, Gateway: Step 2: Payload Extraction & Cryptographic Check
-    Scanner->>Gateway: API Call with QR Payload & Device GPS
-    Gateway->>Gateway: Parse Student Code (Filters "AL-" / "HL-" Barcode prefixes)
-    Gateway->>DB: Fetch Active Session Token & Geofence Settings
-    DB-->>Gateway: Active Member Token & Library GPS Coordinates
-    
-    Note over Gateway, DB: Step 3: Geographic Boundary & Time Validation
-    Gateway->>Gateway: Compute Distance (Haversine Matrix Check)
-    alt Distance > Allowed Geofence Radius (e.g. 15m)
-        Gateway-->>Student: Reject Access (Location Violation Event)
-    else Distance <= Allowed Geofence Radius
-        Gateway->>Gateway: Resolve IST Timezone Boundaries
-        Gateway->>DB: Upsert Attendance Record (Atomic check-in state)
-        DB-->>Gateway: Successful Check-in Acknowledge
-        Gateway-->>Student: Approve Entry (Access Granted Sound Played)
-    end
-```
-
----
-
-## Multi-Shift Seat Overlap Verification Flow
-
-Seats can be allocated to multiple students over distinct, non-overlapping time shifts. Conflicts are prevented via a deterministic interval overlap matrix prior to insertion.
-
-```mermaid
-graph TD
-    classDef proc fill:#f1f5f9,stroke:#64748b,stroke-dasharray: 5 5;
-    classDef decision fill:#ffedd5,stroke:#ea580c;
-    classDef endPoint fill:#f0fdf4,stroke:#16a34a;
-    classDef errPoint fill:#fef2f2,stroke:#dc2626;
-
-    A[Admin Initiates Multi-Shift Allocation] --> B[Fetch Selected Seat & Desired Shifts Array]
-    B --> C[Retrieve All Existing Active Assignments for Selected Seat]:::proc
-    C --> D{Evaluate Shift Overlaps:<br>doTimeRangesOverlap startA, endA, startB, endB}:::decision
-    
-    D -->|True: Intersecting Slots Found| E[Return Conflict Error: Seat Occupied during Time Windows]:::errPoint
-    D -->|False: Zero Conflicts| F[Construct Transactional Assignments Object Array]:::proc
-    
-    F --> G[Assign Price to the First Shift Block, Zero-Out Secondary Shifts]:::proc
-    G --> H[Update Seat via MongoDB collection.updateOne Bypass timestamps]:::proc
-    H --> I[Generate Single Fee Record for Combined Shift Price]:::proc
-    I --> J[Success Broadcast Email Details to Student]:::endPoint
-```
-
----
-
-## Technical Implementations & Production Details
-
-This codebase solves critical enterprise-level challenges through resilient architectural decisions:
-
-### 1. Robust Leaderboard Logic (Active Student Mapping)
-* **Problem**: Traditional engagement trackers only query streak documents. Newly registered students who do not yet have an active study log are completely left out of leaderboard views.
-* **Solution**: Re-implemented the engagement resolver to query the primary `User` collection directly for all active, non-disabled student profiles. The engine then populates corresponding `StudyStreak` documents on the fly. Missing values default to Level 1, 0 XP, 0 streak days, and 0 focus hours safely—preventing frontend ranking pagination failures.
-
-### 2. Reliable Context Persistence (Preventing Target Reset)
-* **Problem**: Incomplete backend payload returns during seat logins caused the frontend `AuthContext` to overwrite the local cache, resetting custom `examTarget` configurations to "generic" on page refresh.
-* **Solution**: Refactored `verifySeatLogin` in the authentication controller to include complete profile objects (including explicit `examTarget` and outstanding test credits). Complemented this with a state fallback pipeline in the frontend context to prevent hydration race conditions.
-
-### 3. Date-Locked Multi-Key Round-Robin AI Pipeline
-* **Problem**: Severe rate-limiting during high-concurrency exam preparation periods.
-* **Solution**: Engineered a dynamic API scheduler that rotates requests among a stack of active Groq keys. If the entire Groq stack triggers an HTTP 429 (Rate Limit), a fallback exception catcher shifts the traffic dynamically to Google Gemini API, ensuring zero student downtime.
-
-### 4. Mongoose Timestamp Override Bypass
-* **Problem**: Setting `timestamps: true` in Mongoose models locks the `createdAt` and `updatedAt` properties, making backdated admissions impossible to persist since `.save()` overwrites the inputs with the system time.
-* **Solution**: Bypassed Mongoose schema locks using a native MongoDB driver update:
-  ```js
-  await User.collection.updateOne(
-      { _id: userId },
-      { $set: { createdAt: new Date(backdatedAdmissionDate) } }
-  );
-  ```
-
-### 5. High-Performance Redis Caching Layer with Mock Fallback
-* **Problem**: High-traffic read operations on public seating grids, seat vacancies, and leaderboards cause heavy MongoDB read loads and slow down response times.
-* **Solution**: Integrated a Redis caching layer using the `ioredis` library. Keys are strategically set with short time-to-live (TTL) limits and cleared upon database mutations to maintain consistency.
-  * **Leaderboards**: Cached (`leaderboard:xp`, `leaderboard:streak`, `leaderboard:focus`) for 60 seconds. Evicted automatically whenever XP/streak/focus hours values change.
-  * **Vacant Seats**: Cached (`seats:vacant`) for 30 seconds. Evicted on seat allocation and seat swap events.
-  * **Public Grid**: Cached (`seats:public`) for 30 seconds. Evicted on seat allocation and seat swap events.
-* **Resiliency Pipeline**: If Redis is offline or fails to connect after 3 attempts, the app outputs a warning and seamlessly falls back to an in-memory `mockClient` Map store, preventing server crashes and ensuring flawless offline development.
-
-### 6. Dynamic PDF Report Coloring & Inactive Student Filters
-* **Problem**: PDF exports had basic, non-intuitive layouts, and inactive students contaminated historical monthly/yearly attendance records.
-* **Solution**: Restructured the Daily, Monthly, and Yearly attendance registers:
-  * **Report Filtering**: Modified the aggregation pipeline to check the student's `isActive` state, dynamically excluding disabled/inactive members from monthly and yearly calculations to guarantee clean, current reporting.
-  * **Visual Styling Rules**: Applied strict HSL color styling on cells in the PDF templates: `P` (Present) cells render in light green, `A` (Absent) cells render in light red, and `H` (Holiday) in light amber/orange, providing immediate visual scannability.
-
-### 7. BPSC CCE Prelims — Exam Pattern Engine & MCQ-Only Enforcement
-* **Problem**: BPSC (Bihar Public Service Commission) CCE Prelims is a purely objective exam, but the mock test UI allowed students to accidentally select Subjective or Mixed mode, generating wrong question formats.
-* **Solution**: Added a `MCQ_ONLY_EXAMS` Set on both frontend and backend. For any exam in this set (BPSC, UPSC, SSC, IBPS, RRB etc.), the mode selector is replaced with a locked info badge and the backend overrides any incoming `mode` to `mcq` regardless. Exam pattern for BPSC is precisely configured: 150 questions across 7 sections with weight-based quota distribution (History 20%, Geography 15%, Polity 15%, Economy 15%, Science 15%, Bihar GK 10%, Current Affairs 10%).
-
-### 8. Progressive Section-Aware Batch Question Loading
-* **Problem**: Generating all questions for a 150-question exam upfront would time out Groq API, consume excessive credits, and overwhelm the student UI on load.
-* **Solution**: Engineered a two-layer batching system:
-  * **Initial Load**: Sections are generated in parallel batches of 3 (not all at once) to avoid Groq rate-limit failures. Each section starts with 5 questions.
-  * **Progressive Loading**: As the student reaches the last question of any section, the frontend automatically calls `POST /mock-test/generate-more-section/:id` to fetch exactly 5 more questions for that section — staying within the section's weight-calculated quota.
-  * **Last Section Trigger**: When the student reaches the last question of the last section, 5 more are generated across ALL remaining sections, and the student is automatically redirected to their first unanswered question.
-  * **Quota Cap**: Each section has a hard quota computed from `Math.floor(totalQuestions × weight/100)`. Generation stops when the quota is reached, ensuring the total never exceeds the real exam count (e.g., exactly 150 for BPSC).
+### 6. Progressive Batch Question Loading for Examination Engines
+- Problem: Generating 150 questions for comprehensive examination patterns (such as BPSC Prelims) simultaneously caused API timeouts and heavy client payload sizes.
+- Implementation: Built a progressive batch loading system:
+  - Parallel generation of sections in batches of 3.
+  - Initial load of 5 questions per section.
+  - Progressive retrieval of 5 additional questions as the student approaches the end of a section, strictly respecting quota weights.
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology | Production Detail |
+| Architecture Layer | Technology | Specification and Usage |
 |---|---|---|
-| **Frontend** | React.js (Vite Core) | SPA, Client-side routing, high-performance bundling |
-| **Styling** | Tailwind CSS & Vanilla CSS | Dynamic Tailwind layers, HSL-themed UI tokens, Glassmorphism |
-| **Animations** | Framer Motion | Smooth dashboard transitions, modular micro-animations |
-| **Backend** | Node.js, Express.js | Structured controller-route MVC architecture |
-| **Database** | MongoDB (Mongoose ODM) | Document storage, deep subdocument embedding for seats |
-| **Caching** | Redis (ioredis client) | High-performance cache layer for leaderboard and seats with mock fallback |
-| **Real-time** | Socket.IO | High-concurrency bidirectional event loops for online status |
-| **Security** | JWT (JSON Web Tokens) & bcrypt | Cryptographic session tokens, salt-hashed authorization |
-| **Payments** | Razorpay Gateways | Direct webhook integration, secure online invoice settlements |
-| **Mailing** | Brevo SMTP / Nodemailer | E-Commerce-style responsive HTML transacting templates |
-| **AI Processing** | Groq & Gemini Pipelines | Intelligent syllabi mock generator, active chat sessions |
+| Frontend Framework | React.js (v18.x) | Single Page Application built with Vite |
+| Styling Framework | Tailwind CSS | Utility-first CSS, custom design tokens, CSS variables |
+| Client Animations | Framer Motion | Interface transitions and micro-interactions |
+| Icons Library | React Icons (Ionicons 5) | Consistent, lightweight vector icons |
+| Backend Runtime | Node.js (v18.x+) | Event-driven server runtime |
+| Web Application Framework | Express.js (v4.x) | RESTful API routing, middleware, and controllers |
+| Database Engine | MongoDB | Document database via Mongoose ODM |
+| In-Memory Caching | Redis / ioredis | Fast key-value caching with memory fallback |
+| Real-Time Communication | Socket.IO | Bidirectional WebSocket event communication |
+| Authentication | JSON Web Tokens and bcrypt | Stateless token verification with salted hashing |
+| Payment Gateway | Razorpay Node SDK | Online payment processing and webhook validation |
+| Transactional Email | Brevo SMTP and Nodemailer | Automated HTML receipts and notification delivery |
+| Artificial Intelligence | Groq API and Google Gemini | High-speed LLM processing with automated failover |
 
 ---
 
-## Quick Start Guide
+## Installation and Setup Guide
 
 ### Prerequisites
-* **Node.js** v18.0.0 or higher
-* **MongoDB** instance running locally on `mongodb://localhost:27017` or a MongoDB Atlas Cloud URI
-* **Razorpay Key Credentials** (Merchant account details for Sandbox testing)
-* **Groq API Cloud Key(s)** and **Google Gemini API Key**
+- Node.js version 18.0.0 or higher
+- MongoDB instance (local server or MongoDB Atlas connection string)
+- Redis instance (optional; system falls back to in-memory cache if omitted)
+- Razorpay API credentials (for payment processing)
+- Groq and Google Gemini API keys (for AI features)
 
-### 1. Installation Blueprint
+### 1. Repository Clone and Dependency Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/himanshuraj108/Apna_Lakshay_LMS.git
 cd Apna_Lakshay_LMS
 
-# Install Backend Node Modules
+# Install backend dependencies
 cd backend
 npm install
 
-# Install Frontend Node Modules
+# Install frontend dependencies
 cd ../frontend
 npm install
 ```
 
-### 2. Environment Configuration
+### 2. Environment Variable Configuration
 
-Create a secure configuration file `backend/.env`:
+Create a configuration file named .env in the backend/ directory:
+
 ```env
-PORT=
-MONGODB_URI=
-JWT_SECRET=
-JWT_EXPIRE=
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/apna_lakshay_lms
+JWT_SECRET=your_jwt_cryptographic_secret_key_here
+JWT_EXPIRE=30d
 
-# Email Configuration (Google App Password)
-EMAIL_USER=
-EMAIL_PASSWORD=
-EMAIL_FROM_ADDRESS=
+# Primary Email Configuration
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASSWORD=your_google_app_password
+EMAIL_FROM_ADDRESS=noreply@apnalakshay.com
 
-# Backup Email Configuration (Brevo SMTP)
-BREVO_HOST=
-BREVO_PORT=
-BREVO_USER=
-BREVO_PASS=
+# Secondary Transactional Email (Brevo SMTP)
+BREVO_HOST=smtp-relay.brevo.com
+BREVO_PORT=587
+BREVO_USER=your_brevo_username
+BREVO_PASS=your_brevo_password
 
-# App Download Link (for mobile users)
-APK_DOWNLOAD_URL=
+# Client and Host URLs
+FRONTEND_URL=http://localhost:5173
+APK_DOWNLOAD_URL=https://apnalakshay.com/download
 
-# Frontend URL (for CORS)
-FRONTEND_URL=
-# Admin Credentials (for seed and fallback)
-ADMIN_EMAIL=
-ADMIN_PASSWORD=
+# Default Administrator Account (Seed Setup)
+ADMIN_EMAIL=admin@apnalakshay.com
+ADMIN_PASSWORD=your_secure_admin_password
 
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
+# Geofence Configuration (Library Campus Coordinates)
+LIBRARY_LAT=26.5890
+LIBRARY_LNG=85.5000
+LIBRARY_RADIUS_M=15
 
-# RSS2JSON API Key (for Exam Alerts feed)
-RSS2JSON_KEY=
+# Payment Integration (Razorpay)
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 
-# Google Books API Key
-GOOGLE_BOOKS_API_KEY=
+# AI Engine API Keys
+GROQ_API_KEY=your_primary_groq_api_key
+GROQ_API_KEY_2=your_secondary_groq_api_key
+GROQ_API_KEY_3=your_tertiary_groq_api_key
+GEMINI_API_KEY=your_google_gemini_api_key
 
-# Groq AI API Key (Mock Test -- Free, Fast Llama 3)
-GROQ_API_KEY=
-GROQ_API_KEY_2=
-GROQ_API_KEY_3=
-
-# Library Geolocation (for attendance geo-fence)
-LIBRARY_LAT=
-LIBRARY_LNG=
-LIBRARY_RADIUS_M=
-
-# Payment Integrations
-RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
-
-# Redis Configuration (Required for Caching, falls back to Mock store if omitted)
-REDIS_URL=
-REDIS_HOST=
-REDIS_PORT=
+# Redis Caching (Optional - Prefix with rediss:// for TLS connections)
+REDIS_URL=redis://localhost:6379
 ```
 
-### 2.1. Redis Caching & Upstash Configuration
-
-To enable caching for leaderboards and seat availability in production, configure a Redis instance (e.g., Upstash Redis).
-
-* **Secure TLS/SSL Protocol**: Upstash Redis requires secure SSL connections. When configuring `REDIS_URL` in `backend/.env`, you must prefix the connection URI with `rediss://` (double `s`) instead of `redis://` to enforce secure socket connection via `ioredis`.
-  * **Incorrect**: `redis://default:xxx@xxx.upstash.io:6379`
-  * **Correct**: `rediss://default:xxx@xxx.upstash.io:6379` (enforces TLS)
-* **Development Auto-Fallback**: If neither `REDIS_URL` nor `REDIS_HOST` is configured in your local environment, or if the connection fails, the system automatically defaults to a built-in mock memory cache. You will see a warning message `⚠️ Redis connection failed. Falling back to Mock store.` in your console, but the application will start and run successfully.
-
-### 3. Database Seeding & Launch
+### 3. Database Seeding and Local Launch
 
 ```bash
-# Seed the initial floors, custom shifts, and default admin credentials
-cd ../backend
+# Seed default floors, shifts, and master admin account
+cd backend
 node scripts/seedData.js
 
-# Launch Backend Engine
+# Launch the backend development server
 npm start
 
-# In a new terminal: Launch Frontend Client
+# In a separate terminal, launch the frontend development client
 cd ../frontend
 npm run dev
 ```
 
-* **Backend Gateway:** `http://localhost:5000`
-* **Frontend Web App:** `http://localhost:5173`
+- Backend API Endpoint: http://localhost:5000
+- Frontend Web Interface: http://localhost:5173
 
 ---
 
-## Default Credentials Matrix
+## Production Deployment with PM2
 
-| System Role | Username / E-Mail Address | Secret Password |
-|---|---|---|
-| **Global Admin** | `admin` | `admin123` |
-| **Demo Student** | `student@apnalakshay.com` | Generated & sent via SMTP mailer during creation |
+For Linux VPS deployments (Ubuntu/Debian):
 
----
+```bash
+# Build the production frontend bundle
+cd frontend
+npm run build
 
-## Production-Grade Features List
-
-### Enterprise Admin Suite
-* **Real-time Analytics Desk**: Track operational capacities, current seated volume, active online logs via web sockets, and payment pipelines.
-* **Granular Student Management**: Fully operational CRUD console including status deactivation, custom profile photos, and backdated admissions.
-* **Dynamic Geofenced Attendance**: Manual check-in overrides, instant barcode scanning processing, automated daily report builders, and Excel/PDF generators.
-* **Flexible Seat Configuration**: Multi-floor visual map builder allowing AC/Non-AC tagging, granular seat status views, and instant seat-swaps preserving pricing rules.
-* **Advanced Fee Invoicing**: Multi-shift balance split, customizable partial payment entries with colored highlights, and global payment gate toggle overrides.
-
-### Premium Student Experience
-* **Double-Sided Digital ID Card**: Beautiful sliding glassmorphic card equipped with:
-  * **3D Flip Interaction**: Flips seamlessly on tap to display active rules, streak boosters, and rewards systems.
-  * **QR Code Zoom Overlays**: Responsive barcode modal zoom optimized for high-speed scanner terminal decoding.
-* **Monthly Attendance Calendar & Rankings**: Visual present/absent color grids accompanied by inclusive leaderboard rankings, highlighting the student with custom themes.
-* **Interactive AI Doubt Assistant**: Conversational session engine pre-programmed with specific civil service and government examination syllabi.
-* **Mock Test Generator (AI-Powered NTA-Style Engine)**: Instant adaptive tests with standard negative-marking, section tabs, real-time question palette, anti-cheat fullscreen guard, saved progress records, and dynamic scorecard breakdowns. Supports **BPSC CCE Prelims, UPSC CSE, SSC CGL, IBPS PO, RRB NTPC, JEE, NEET** and more. Features a progressive **Batch Loading System** — questions load in sets of 5 per section as the student progresses, respecting exact exam-pattern quotas.
-* **Built-in Study Tools**: High-fidelity Pomodoro timers, collaborative study streak rewards, and editable checklist boards.
-
----
-
-## AI Automation Suite — 7 Intelligent Features (Groq + Gemini)
-
-All AI features are powered by the **Groq API (Llama 3.1 8B)** with **Google Gemini** as an automatic fallback. Every AI interaction is logged to a dedicated `AIActivityLog` MongoDB collection for full auditability and history retrieval per student.
-
-```
-POST /api/student/ai/generate-study-plan     → AI Study Plan Generator
-POST /api/student/ai/analyze-test            → Mock Test Performance Analyzer
-POST /api/student/ai/summarize-notes         → AI Notes Summarizer
-POST /api/student/ai/quiz-from-article       → Current Affairs Quiz Generator
-POST /api/student/ai/suggest-tasks           → Smart Task Suggestion Engine
-GET  /api/student/ai/readiness-score         → Exam Readiness Score Calculator
-GET  /api/student/ai/history                 → AI Activity History Retrieval
+# Start backend cluster with PM2 process manager
+cd ../backend
+pm2 start server.js --name "apna-lakshay-backend" -i max
+pm2 save
+pm2 startup
 ```
 
----
-
-### Feature 1 — AI Study Plan Generator
-Generates a personalized, week-by-week study schedule based on the student's exam target, exam date, daily study hours, and self-reported weak subjects.
-
-- Calculates days and weeks remaining dynamically
-- Generates up to 4 weeks of daily plans (6 days/week, Sunday as rest)
-- Each day entry includes subject, specific topics, hours, and priority level (`high | medium | low`)
-- Outputs a summary, weekly plans array, and exam-specific study tips
-- If exam is 30+ days away, explicitly labels the plan as a "kickstart/foundational phase"
-
-```json
-{
-  "summary": "Initial 4-week kickstart phase for UPSC CSE preparation",
-  "daysLeft": 180,
-  "weeklyPlans": [{ "week": 1, "focus": "...", "days": [...] }],
-  "tips": ["tip1", "tip2", "tip3"]
-}
-```
+Configure Nginx as a reverse proxy to route port 80/443 traffic to the frontend distribution build and the /api route to port 5000.
 
 ---
 
-### Feature 2 — Mock Test Performance Analyzer
-Evaluates a student's mock test result section-by-section and generates a comprehensive, personalized performance report.
+## Default System Credentials
 
-- Accepts total score, max score, percentage, section-wise scores, and a sample of wrong questions
-- Identifies weak areas with reasons and specific corrective actions
-- Lists strong areas for confidence reinforcement
-- Outputs a subject-wise revision plan with priority levels
-- Provides a "next steps" paragraph covering the student's immediate 3-day action plan
-- Assigns an overall rating: `Excellent | Good | Average | Needs Improvement`
+| Role | Identifier / Email | Password | Access Scope |
+|---|---|---|---|
+| Global Super Admin | admin | admin123 | Complete access to all 20 modules and settings |
+| Seed Student Account | student@apnalakshay.com | Delivered via email | Student portal and study suite access |
 
-```json
-{
-  "overallRating": "Good",
-  "weakAreas": [{ "topic": "...", "reason": "...", "action": "..." }],
-  "revisionPlan": [{ "subject": "...", "priority": "high", "suggestion": "..." }],
-  "nextSteps": "..."
-}
-```
+Important: Default administrative credentials must be updated immediately upon initial deployment using the System Settings or Sub-Admin management panels.
 
 ---
 
-### Feature 3 — AI Notes Summarizer
-Transforms raw study text (up to 4000 characters) into structured, exam-ready material.
+## License and Governance
 
-- Extracts 5 key bullet points from the content
-- Identifies important facts with exam-relevance explanations
-- Writes a 3–4 sentence concise summary
-- Auto-generates 3 MCQ practice questions with options, correct answers, and explanations
-- Tags which competitive exams (UPSC, SSC, Banking, RRB) the content is relevant to
-
-```json
-{
-  "keyPoints": ["...", "..."],
-  "importantFacts": [{ "fact": "...", "importance": "..." }],
-  "practiceQuestions": [{ "question": "...", "options": [...], "answer": "A", "explanation": "..." }],
-  "examRelevance": "UPSC, SSC CGL"
-}
-```
-
----
-
-### Feature 4 — Current Affairs Quiz Generator
-Reads a news article title and auto-generates 3 MCQ questions tailored for Indian competitive exams.
-
-- Accepts article title, source, and category as input
-- Produces exam-pattern MCQs with four options each
-- Each question includes the correct answer letter and a brief explanation
-- Designed for SSC, UPSC, Banking, and RRB exam preparation
-
----
-
-### Feature 5 — Smart Task Suggestion Engine
-Reads the student's real database profile (exam target, study streak) and recommends 3 specific, actionable study tasks for the current day.
-
-- Fetches live student data from MongoDB (`examTarget`, `streak`)
-- Considers pending tasks already in the student's planner
-- Each suggestion includes task title, subject, estimated minutes, priority, and a reason
-- Generates a personalized motivation tip based on the student's current streak count
-
-```json
-{
-  "suggestions": [{ "title": "...", "subject": "...", "estimatedMinutes": 45, "priority": "high", "reason": "..." }],
-  "motivationTip": "Your 12-day streak shows real commitment — keep it going!"
-}
-```
-
----
-
-### Feature 6 — Exam Readiness Score Calculator
-Computes a weighted 0–100 readiness score using four real data signals pulled live from MongoDB, then generates a personalized AI insight.
-
-| Signal | Weight | Source |
-|---|---|---|
-| Study Streak | 25 pts max | `User.streak` (3 pts/day, capped at 9 days) |
-| Attendance | 25 pts max | `Attendance` collection (last 30 days %) |
-| Mock Test Avg | 30 pts max | `MockTestAttempt` collection (last 5 tests) |
-| AI Engagement | 20 pts max | `AIActivityLog` (doubt sessions used today) |
-
-- Assigns a level: `Excellent (≥80) | Good (≥60) | Average (≥40) | Needs Work`
-- Calls Groq LLM to generate a single personalized motivating insight sentence
-- Returns a full breakdown with per-category scores and detail strings
-
-```json
-{
-  "score": 72,
-  "level": "Good",
-  "insight": "Your consistent attendance shows dedication — now push your mock scores higher!",
-  "breakdown": [{ "label": "Study Streak", "score": 21, "max": 25, "detail": "7 day streak" }]
-}
-```
-
----
-
-### Feature 7 — AI Activity History Retrieval
-Fetches the last 20 AI interactions for a specific tool per student from the `AIActivityLog` collection.
-
-- Filterable by `toolName` (Study Planner, Test Analyzer, Notes Summarizer, etc.)
-- Returns full payload history sorted by most recent
-- Enables students to revisit previously generated plans, analyses, and suggestions
-
----
-
-### AI Pipeline Architecture — Multi-Key Round-Robin with Gemini Fallback
-
-```
-Request → Groq Key 1
-       → Groq Key 2 (on 429 / rate limit)
-       → Groq Key 3 (on 429 / rate limit)
-       → Google Gemini Flash (full Groq stack exhausted)
-       → Error response (all providers failed)
-```
-
-- All AI calls use structured JSON-mode prompts — no markdown, raw JSON only
-- Regex-based JSON extraction handles edge-case LLM outputs
-- All interactions logged to `AIActivityLog` with student ID, tool name, details, and full payload
-
----
-
-## Complete Architecture Changelog
-
-### v1.6.0 -- BPSC Integration, MCQ-Only Enforcement & Progressive Batch Loading (July 2026)
-* **BPSC CCE Prelims Support**: Added full exam pattern for Bihar Public Service Commission CCE Prelims — 150 questions across 7 weighted sections (History, Geography, Polity, Economy, Science, Bihar GK, Current Affairs). Registered `bpsc_pre` in User model enum, exam selector UI, Profile, Dashboard, Admin panels, and AI Study Planner.
-* **MCQ-Only Exam Enforcement**: Introduced `MCQ_ONLY_EXAMS` constant (frontend + backend) covering BPSC, UPSC, SSC, IBPS, RRB series. For these exams, the mode selector is hidden and replaced with a locked info badge; backend overrides mode to `mcq` regardless of payload.
-* **Batched Parallel Section Generation**: Replaced single `Promise.allSettled` (all sections at once) with a `BATCH_PARALLEL=3` batched loop. Prevents Groq rate-limit failures for exams with many sections (e.g., BPSC with 7 sections).
-* **New API Endpoint — generate-more-section**: Added `POST /mock-test/generate-more-section/:attemptId` that generates exactly 5 questions for one specific section, respecting per-section quotas computed from exam weight distribution.
-* **Smart Progressive Frontend Loading**: TestSession now detects when the student is on the last question of a section and auto-fetches 5 more for that section. On last section last question — generates 5 for all remaining sections and redirects to first unanswered question.
-* **Section Quota Progress UI**: Loading overlay now shows per-section progress bars (done/quota) turning green when a section reaches its target count.
-* **Bilingual Batch System Instructions**: Added dedicated amber-highlighted "Batch Question System" instruction block in both English and Hindi to the pre-exam instructions modal, warning students not to leave or refresh the page mid-test.
-* **sectionQuotas API Response**: The `/generate` endpoint now returns `sectionQuotas` and `isMcqOnly` fields, allowing the frontend to track quotas without additional API calls.
-
-### v1.2.1 -- Redis Caching Layer, Enhanced Attendance Reports & Dynamic Score Visuals (June 2026)
-* **High-Performance Redis Caching**: Integrated `ioredis` cache targeting leaderboards, public layouts, and vacancy counts. Added automatic cache eviction on database mutations and built an in-memory fallback store to ensure connection failures never crash the server.
-* **Smart PDF Reporting Rules**: Colored status cells within Daily/Monthly PDF registers (`P` as green, `A` as red, `H` as amber). Excluded inactive/disabled students from monthly and yearly attendance summaries.
-* **Student Dashboard Score Visuals**: Implemented dynamic percentage-based coloring on readiness score card indicators.
-
-### v1.2.0 -- Leaderboard Resiliency, Persistent Auth Contexts & Zoomable QR Cards (May 2026)
-* **Inclusive Engagement Leaderboards**: Updated engagement queries to list all registered students, gracefully defaulting absent StudyStreak entries to basic stats (Level 1, 0 XP) rather than omitting students without database documents.
-* **Exam Target Hydration**: Integrated target persistence in the seat login controller and React authentication hooks. Resolves standard page reload hydration issues, securing state consistency.
-* **Multi-Prefix Barcode Parsing**: Enhanced scanner input parsing logic to seamlessly resolve both AL- and HL- student card prefixes on check-in.
-* **Double-Sided 3D Card Animations**: Rolled out absolute CSS 3D transform layers for profile student cards, featuring interactive flip states with rules content on the back.
-* **High-Contrast QR Modal**: Integrated full-view overlay zooms with SVG renderers for seamless scanner check-ins.
-
-### v1.5.0 -- Sub-Admin Permissions, Login Expiration & Seat Swap Enhancements (May 2026)
-* **Sub-Admin ID Access**: Added specific id-card privileges to sub-admin configurations.
-* **Ultra-Extended Sessions**: Extended JWT expiration parameters for secondary admin endpoints to 365 days, mitigating daily session timeouts.
-* **Atomic Seat Swap Controller**: Created transactional seat swap endpoints, ensuring all seat types, negotiated fee configurations, and shift dates transfer concurrently.
-* **Mobile ID Layout Polish**: Wrapped layout sections in ID components to prevent typography overflowing.
-
-### v1.4.0 -- Unified Settings & PIN Attendance (May 2026)
-* **FAB Pulse Contexts**: Refactored dashboard entry structures to display responsive, pulsing check-in actions.
-* **Offline PIN Fallback**: Configured keypads to allow local pin code authentication when GPS signal boundaries fail.
-* **Dynamic Global Toggles**: Unified settings into a clean dropdown control block on the admin panel.
-
-### v1.1.0 -- Partial Billing & Razorpay Sandbox (Apr 2026)
-* **Dynamic Balances**: Integrated orange partial-payment statuses, tracking outstanding amounts per billing cycle.
-* **E-Mail Receipts**: Upgraded Nodemailer actions to automatically deliver responsive HTML receipts upon full or partial settlement.
-
----
-
-## Engineering Core
-
-* **Lead Architect:** [Himanshu Raj]
-* **Enterprise License:** Proprietary -- All Rights Reserved 2026. Used in live production daily.
+Proprietary Software - Apna Lakshay Library Management System.
+All Rights Reserved 2026. Designed, engineered, and maintained for live enterprise library operations.
