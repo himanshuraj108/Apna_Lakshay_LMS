@@ -32,6 +32,250 @@ const DASHBOARD_STYLES = `
 .metric-card-hover:hover { transform: translateY(-3px); box-shadow: 0 8px 20px -4px rgba(0,0,0,0.08); }
 `;
 
+/* ── All 20 Enterprise Modules & Categories ──────────────── */
+export const ALL_ADMIN_MODULES = [
+    // ─── LIBRARY OPERATIONS ───
+    {
+        id: 'students',
+        title: 'Student Directory',
+        desc: 'Student rosters, profiles, seat allocations & documents',
+        path: '/admin/students',
+        category: 'Library Operations',
+        icon: IoPersonOutline,
+        color: '#2563eb',
+        bg: '#eff6ff',
+        tag: 'Roster'
+    },
+    {
+        id: 'floors',
+        title: 'Floor & Seat Matrix',
+        desc: 'Visual desk layout, hall occupancy, rooms & seat pricing',
+        path: '/admin/floors',
+        category: 'Library Operations',
+        icon: IoBedOutline,
+        color: '#10b981',
+        bg: '#ecfdf5',
+        tag: 'Seats'
+    },
+    {
+        id: 'attendance',
+        title: 'Attendance Tracking',
+        desc: 'Daily check-in logs, biometric punches & absent tracking',
+        path: '/admin/attendance',
+        category: 'Library Operations',
+        icon: IoCalendarOutline,
+        color: '#f59e0b',
+        bg: '#fffbeb',
+        tag: 'Daily Log'
+    },
+    {
+        id: 'fees',
+        title: 'Fee Management',
+        desc: 'Automated billing, dues settlement & physical receipts',
+        path: '/admin/fees',
+        category: 'Library Operations',
+        icon: IoCashOutline,
+        color: '#8b5cf6',
+        bg: '#f5f3ff',
+        tag: 'Finance'
+    },
+    {
+        id: 'shifts',
+        title: 'Shift Operations',
+        desc: 'Configure shift timings, hourly quotas & batch schedules',
+        path: '/admin/shifts',
+        category: 'Library Operations',
+        icon: IoTimeOutline,
+        color: '#06b6d4',
+        bg: '#ecfeff',
+        tag: 'Timings'
+    },
+    {
+        id: 'vacant-seats',
+        title: 'Vacant Seats',
+        desc: 'Real-time vacant desks matrix across shifts and rooms',
+        path: '/admin/vacant-seats',
+        category: 'Library Operations',
+        icon: IoSearchOutline,
+        color: '#0d9488',
+        bg: '#f0fdfa',
+        tag: 'Available'
+    },
+    {
+        id: 'kiosk',
+        title: 'QR Entry Kiosk',
+        desc: 'Full-screen entrance kiosk for instant QR code attendance',
+        path: '/admin/kiosk',
+        category: 'Library Operations',
+        icon: IoScanOutline,
+        color: '#ec4899',
+        bg: '#fdf2f8',
+        tag: 'Kiosk'
+    },
+    {
+        id: 'notifications',
+        title: 'Notice & Announcements',
+        desc: 'Broadcast alerts, exam updates & campus announcements',
+        path: '/admin/notifications',
+        category: 'Library Operations',
+        icon: IoMegaphoneOutline,
+        color: '#f97316',
+        bg: '#fff7ed',
+        tag: 'Broadcast'
+    },
+    {
+        id: 'chat',
+        title: 'Discussion Rooms',
+        desc: 'Real-time subject study rooms & community chat groups',
+        path: '/admin/chat',
+        category: 'Library Operations',
+        icon: IoChatbubblesOutline,
+        color: '#6366f1',
+        bg: '#eef2ff',
+        tag: 'Community'
+    },
+    {
+        id: 'chat-history',
+        title: 'Student Chat History',
+        desc: 'Audit AI doubt queries, chat transcripts & moderation',
+        path: '/admin/chat-history',
+        category: 'Library Operations',
+        icon: IoDocumentTextOutline,
+        color: '#475569',
+        bg: '#f8fafc',
+        tag: 'Audit'
+    },
+
+    // ─── ANALYTICS & INSIGHTS ───
+    {
+        id: 'analytics',
+        title: 'Reports & Analytics',
+        desc: 'In-depth charts, revenue forecasting & library growth',
+        path: '/admin/analytics',
+        category: 'Analytics & Insights',
+        icon: IoBarChartOutline,
+        color: '#2563eb',
+        bg: '#eff6ff',
+        tag: 'Executive'
+    },
+    {
+        id: 'activities',
+        title: 'Student Activities & XP',
+        desc: 'Gamification leaderboard, study streaks & student XP',
+        path: '/admin/activities',
+        category: 'Analytics & Insights',
+        icon: IoRibbonOutline,
+        color: '#e11d48',
+        bg: '#fff1f2',
+        tag: 'Streaks'
+    },
+    {
+        id: 'ai-activity',
+        title: 'AI Study Logs',
+        desc: 'Telemetry on AI Doubt Solver, quiz tests & study planner',
+        path: '/admin/ai-activity',
+        category: 'Analytics & Insights',
+        icon: IoTrophy,
+        color: '#d97706',
+        bg: '#fffbeb',
+        tag: 'Telemetry'
+    },
+    {
+        id: 'referral-wallet',
+        title: 'Referral & Wallet',
+        desc: 'Student referral payouts, coin ledger & reward balance',
+        path: '/admin/referral-wallet',
+        category: 'Analytics & Insights',
+        icon: IoWalletOutline,
+        color: '#059669',
+        bg: '#ecfdf5',
+        tag: 'Rewards'
+    },
+
+    // ─── ADMINISTRATION & GOVERNANCE ───
+    {
+        id: 'sub-admins',
+        title: 'Sub-Admin Roles',
+        desc: 'Manage staff accounts, PIN passcodes & granular permissions',
+        path: '/admin/sub-admins',
+        category: 'Administration',
+        icon: IoShieldCheckmarkOutline,
+        color: '#4f46e5',
+        bg: '#eef2ff',
+        tag: 'Roles'
+    },
+    {
+        id: 'requests',
+        title: 'Student Requests',
+        desc: 'Process seat shifting, locker requests & complaints',
+        path: '/admin/requests',
+        category: 'Administration',
+        icon: IoDocumentTextOutline,
+        color: '#ea580c',
+        bg: '#fff7ed',
+        tag: 'Approvals'
+    },
+    {
+        id: 'history',
+        title: 'Action History Logs',
+        desc: 'Immutable audit trail of staff actions, edits & deletes',
+        path: '/admin/history',
+        category: 'Administration',
+        icon: IoTimeOutline,
+        color: '#0891b2',
+        bg: '#ecfeff',
+        tag: 'Logs'
+    },
+    {
+        id: 'password-activity',
+        title: 'Password Activity',
+        desc: 'Live security log of student password resets & credential updates',
+        path: '/admin/password-activity',
+        category: 'Administration',
+        icon: IoKey,
+        color: '#dc2626',
+        bg: '#fef2f2',
+        tag: 'Security'
+    },
+    {
+        id: 'manage-cards',
+        title: 'Manage Cards & Layout',
+        desc: 'Customize student app cards order, visibility & AI credits',
+        path: '/admin/manage-cards',
+        category: 'Administration',
+        icon: IoGridOutline,
+        color: '#7c3aed',
+        bg: '#f5f3ff',
+        tag: 'Student App'
+    },
+    {
+        id: 'settings',
+        title: 'System Settings',
+        desc: 'Campus maintenance mode, geofence & attendance rules',
+        path: '/admin/settings',
+        category: 'Administration',
+        icon: IoSettingsOutline,
+        color: '#334155',
+        bg: '#f1f5f9',
+        tag: 'System'
+    }
+];
+
+export const NAV_CATEGORIES = [
+    {
+        name: 'LIBRARY OPERATIONS',
+        items: ALL_ADMIN_MODULES.filter(m => m.category === 'Library Operations')
+    },
+    {
+        name: 'ANALYTICS & INSIGHTS',
+        items: ALL_ADMIN_MODULES.filter(m => m.category === 'Analytics & Insights')
+    },
+    {
+        name: 'ADMINISTRATION & GOVERNANCE',
+        items: ALL_ADMIN_MODULES.filter(m => m.category === 'Administration')
+    }
+];
+
 /* ── Toggle Switch Component ───────────────────────────── */
 const SettingsToggle = ({ checked, onClick, activeColor = 'bg-orange-500', shadow = '' }) => (
     <button
@@ -110,6 +354,9 @@ const AdminDashboard = () => {
     const [showCommandPalette, setShowCommandPalette] = useState(false);
     const [showAIModal, setShowAIModal] = useState(false);
     const [selectedCampus, setSelectedCampus] = useState('Main Campus (Sitamarhi)');
+    const [moduleSearch, setModuleSearch] = useState('');
+    const [selectedModuleCategory, setSelectedModuleCategory] = useState('All');
+    const [commandSearch, setCommandSearch] = useState('');
 
     // Settings PIN states
     const [pinInput, setPinInput] = useState('');
@@ -422,17 +669,27 @@ const AdminDashboard = () => {
         },
     ];
 
-    /* ── Quick Action Buttons (Real routes) ─────────────────── */
-    const QUICK_ACTIONS = [
-        { label: 'Student Directory', sub: 'Roster & Profile', path: '/admin/students', icon: IoPersonOutline, color: '#3b82f6', bg: '#eff6ff' },
-        { label: 'Floor Matrix', sub: 'Seat Allocations', path: '/admin/floors', icon: IoBedOutline, color: '#10b981', bg: '#ecfdf5' },
-        { label: 'Mark Attendance', sub: 'Daily Log Entry', path: '/admin/attendance', icon: IoCalendarOutline, color: '#f59e0b', bg: '#fffbeb' },
-        { label: 'Collect Fees', sub: 'Ledger & Dues', path: '/admin/fees', icon: IoCashOutline, color: '#8b5cf6', bg: '#f5f3ff' },
-        { label: 'Shift Timings', sub: 'Manage Shifts', action: () => setShowShiftModal(true), icon: IoTimeOutline, color: '#06b6d4', bg: '#ecfeff' },
-        { label: 'Launch QR Kiosk', sub: 'Entry Gate Kiosk', path: '/admin/kiosk', icon: IoScanOutline, color: '#ec4899', bg: '#fdf2f8' },
-        { label: 'Broadcast Alert', sub: 'Send Notice', path: '/admin/notifications', icon: IoMegaphoneOutline, color: '#6366f1', bg: '#eef2ff' },
-        { label: 'Vacant Seats', sub: 'Available Desks', path: '/admin/vacant-seats', icon: IoSearchOutline, color: '#14b8a6', bg: '#f0fdfa' },
-    ];
+    /* ── Filtered Modules for Dashboard Cards Grid ────────── */
+    const filteredModules = ALL_ADMIN_MODULES.filter(mod => {
+        const matchesCat = selectedModuleCategory === 'All' || mod.category === selectedModuleCategory;
+        const q = moduleSearch.toLowerCase().trim();
+        const matchesSearch = !q ||
+            mod.title.toLowerCase().includes(q) ||
+            mod.desc.toLowerCase().includes(q) ||
+            mod.tag.toLowerCase().includes(q) ||
+            mod.category.toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
+    });
+
+    /* ── Filtered Modules for Command Palette ─────────────── */
+    const paletteModules = ALL_ADMIN_MODULES.filter(mod => {
+        const q = commandSearch.toLowerCase().trim();
+        return !q ||
+            mod.title.toLowerCase().includes(q) ||
+            mod.desc.toLowerCase().includes(q) ||
+            mod.tag.toLowerCase().includes(q) ||
+            mod.category.toLowerCase().includes(q);
+    });
 
     /* ── Real Attendance Trend Points Calculation ──────────── */
     const maxAttendanceCount = Math.max(1, ...attendanceTrends.map(t => t.count || 0));
@@ -525,57 +782,24 @@ const AdminDashboard = () => {
                                     </Link>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                        LIBRARY OPERATIONS
-                                    </p>
-                                    {[
-                                        { title: 'Student Directory', path: '/admin/students', icon: IoPersonOutline },
-                                        { title: 'Floor & Seat Matrix', path: '/admin/floors', icon: IoBedOutline },
-                                        { title: 'Shift Operations', path: '/admin/shifts', icon: IoTimeOutline },
-                                        { title: 'Attendance Tracking', path: '/admin/attendance', icon: IoCalendarOutline },
-                                        { title: 'Fee Management', path: '/admin/fees', icon: IoCashOutline },
-                                        { title: 'Discussion Rooms', path: '/admin/chat', icon: IoChatbubblesOutline },
-                                        { title: 'QR Entry Kiosk', path: '/admin/kiosk', icon: IoScanOutline },
-                                        { title: 'Vacant Seats', path: '/admin/vacant-seats', icon: IoSearchOutline },
-                                    ].map((item, i) => (
-                                        <Link
-                                            key={i}
-                                            to={item.path}
-                                            onClick={() => setMobileSidebarOpen(false)}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
-                                        >
-                                            <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-
-                                <div className="space-y-1">
-                                    <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                        GOVERNANCE & SECURITY
-                                    </p>
-                                    {[
-                                        { title: 'Sub-Admins & Roles', path: '/admin/subadmins', icon: IoShieldCheckmarkOutline },
-                                        { title: 'Student ID Cards', path: '/admin/cards', icon: IoKey },
-                                        { title: 'System Activity Logs', path: '/admin/logs', icon: IoDocumentTextOutline },
-                                        { title: 'Analytics Dashboard', path: '/admin/analytics', icon: IoBarChartOutline },
-                                        { title: 'Notice & Alerts', path: '/admin/notifications', icon: IoNotificationsOutline },
-                                        { title: 'Student Requests', path: '/admin/requests', icon: IoDocumentTextOutline },
-                                        { title: 'Referrals & Rewards', path: '/admin/referrals', icon: IoWalletOutline },
-                                        { title: 'System Settings', path: '/admin/settings', icon: IoSettingsOutline },
-                                    ].map((item, i) => (
-                                        <Link
-                                            key={i}
-                                            to={item.path}
-                                            onClick={() => setMobileSidebarOpen(false)}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
-                                        >
-                                            <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    ))}
-                                </div>
+                                {NAV_CATEGORIES.map((cat, cIdx) => (
+                                    <div key={cIdx} className="space-y-1">
+                                        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                            {cat.name}
+                                        </p>
+                                        {cat.items.map((item) => (
+                                            <Link
+                                                key={item.id}
+                                                to={item.path}
+                                                onClick={() => setMobileSidebarOpen(false)}
+                                                className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
+                                            >
+                                                <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ))}
                             </div>
 
                             {/* Mobile Drawer Bottom: Logout & AI */}
@@ -651,85 +875,26 @@ const AdminDashboard = () => {
                         </Link>
                     </div>
 
-                    {/* LIBRARY OPERATIONS */}
-                    <div className="space-y-1">
-                        {!sidebarCollapsed && (
-                            <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                LIBRARY OPERATIONS
-                            </p>
-                        )}
-                        {[
-                            { title: 'Student Directory', path: '/admin/students', icon: IoPersonOutline },
-                            { title: 'Floor & Seat Matrix', path: '/admin/floors', icon: IoBedOutline },
-                            { title: 'Shift Operations', path: '/admin/shifts', icon: IoTimeOutline },
-                            { title: 'Attendance Tracking', path: '/admin/attendance', icon: IoCalendarOutline },
-                            { title: 'Fee Management', path: '/admin/fees', icon: IoCashOutline },
-                            { title: 'Discussion Rooms', path: '/admin/chat', icon: IoChatbubblesOutline },
-                            { title: 'QR Entry Kiosk', path: '/admin/kiosk', icon: IoScanOutline },
-                            { title: 'Vacant Seats', path: '/admin/vacant-seats', icon: IoSearchOutline },
-                        ].map((item, i) => (
-                            <Link
-                                key={i}
-                                to={item.path}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
-                                title={sidebarCollapsed ? item.title : ''}
-                            >
-                                <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
-                                {!sidebarCollapsed && <span className="truncate">{item.title}</span>}
-                            </Link>
-                        ))}
-                    </div>
-
-                    {/* ANALYTICS & INSIGHTS */}
-                    <div className="space-y-1">
-                        {!sidebarCollapsed && (
-                            <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                ANALYTICS & INSIGHTS
-                            </p>
-                        )}
-                        {[
-                            { title: 'Reports & Analytics', path: '/admin/analytics', icon: IoBarChartOutline },
-                            { title: 'Student Activities & XP', path: '/admin/activities', icon: IoRibbonOutline },
-                            { title: 'AI Study Logs', path: '/admin/ai-activity', icon: IoTrophy },
-                            { title: 'Referral & Wallet', path: '/admin/referral-wallet', icon: IoWalletOutline },
-                        ].map((item, i) => (
-                            <Link
-                                key={i}
-                                to={item.path}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
-                                title={sidebarCollapsed ? item.title : ''}
-                            >
-                                <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
-                                {!sidebarCollapsed && <span className="truncate">{item.title}</span>}
-                            </Link>
-                        ))}
-                    </div>
-
-                    {/* ADMINISTRATION */}
-                    <div className="space-y-1">
-                        {!sidebarCollapsed && (
-                            <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                                ADMINISTRATION
-                            </p>
-                        )}
-                        {[
-                            { title: 'Sub-Admin Roles', path: '/admin/sub-admins', icon: IoShieldCheckmarkOutline },
-                            { title: 'Student Requests', path: '/admin/requests', icon: IoDocumentTextOutline },
-                            { title: 'Action History Logs', path: '/admin/history', icon: IoTimeOutline },
-                            { title: 'Password Activity', path: '/admin/password-activity', icon: IoKey },
-                            { title: 'Manage Cards & Layout', path: '/admin/manage-cards', icon: IoGridOutline },
-                        ].map((item, i) => (
-                            <Link
-                                key={i}
-                                to={item.path}
-                                className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
-                                title={sidebarCollapsed ? item.title : ''}
-                            >
-                                <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
-                                {!sidebarCollapsed && <span className="truncate">{item.title}</span>}
-                            </Link>
-                        ))}
-                    </div>
+                    {NAV_CATEGORIES.map((cat, cIdx) => (
+                        <div key={cIdx} className="space-y-1">
+                            {!sidebarCollapsed && (
+                                <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                    {cat.name}
+                                </p>
+                            )}
+                            {cat.items.map((item) => (
+                                <Link
+                                    key={item.id}
+                                    to={item.path}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all text-xs font-medium group"
+                                    title={sidebarCollapsed ? item.title : ''}
+                                >
+                                    <item.icon size={17} className="shrink-0 text-slate-400 group-hover:text-amber-400 transition-colors" />
+                                    {!sidebarCollapsed && <span className="truncate">{item.title}</span>}
+                                </Link>
+                            ))}
+                        </div>
+                    ))}
                 </div>
 
                 {/* Bottom Executive Intelligence Card */}
@@ -1226,32 +1391,108 @@ const AdminDashboard = () => {
                     </div>
 
                     {/* ══════════════════════════════════════════════════════
-                        ROW 3: OPERATIONAL QUICK ACTIONS
+                        ROW 3: ALL ENTERPRISE CAMPUS MODULES (All 20 Cards)
                     ══════════════════════════════════════════════════════ */}
-                    <div className="space-y-2">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Operational Quick Actions</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-                            {QUICK_ACTIONS.map((act, i) => {
-                                const content = (
-                                    <div className="glass-card p-3 rounded-2xl flex flex-col items-center text-center group cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md">
-                                        <div
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-sm transition-transform group-hover:scale-110"
-                                            style={{ background: act.bg, color: act.color }}
-                                        >
-                                            <act.icon size={20} />
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-900 leading-tight group-hover:text-orange-600 transition-colors">{act.label}</span>
-                                        <span className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[90px]">{act.sub}</span>
-                                    </div>
-                                );
+                    <div className="space-y-3">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">Campus Management Modules</h3>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-100 text-orange-700 border border-orange-200">
+                                        {ALL_ADMIN_MODULES.length} Active Modules
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">Explore all library operations, financial ledgers, analytics, and administrative suites</p>
+                            </div>
 
-                                return act.action ? (
-                                    <div key={i} onClick={act.action}>{content}</div>
-                                ) : (
-                                    <Link key={i} to={act.path}>{content}</Link>
-                                );
-                            })}
+                            {/* Search & Category Filter Controls */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <div className="relative flex-1 sm:w-56">
+                                    <IoSearchOutline size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={moduleSearch}
+                                        onChange={(e) => setModuleSearch(e.target.value)}
+                                        placeholder="Search modules..."
+                                        className="w-full pl-8 pr-7 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-orange-500 focus:bg-white transition-all"
+                                    />
+                                    {moduleSearch && (
+                                        <button onClick={() => setModuleSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+                                            <IoClose size={13} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-0.5">
+                                    {[
+                                        { id: 'All', label: 'All (20)' },
+                                        { id: 'Library Operations', label: 'Operations (10)' },
+                                        { id: 'Analytics & Insights', label: 'Analytics (4)' },
+                                        { id: 'Administration', label: 'Admin (6)' }
+                                    ].map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            onClick={() => setSelectedModuleCategory(cat.id)}
+                                            className={`px-2.5 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                                                selectedModuleCategory === cat.id
+                                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/25'
+                                                    : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {cat.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Module Cards Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                            {filteredModules.map((mod) => (
+                                <Link
+                                    key={mod.id}
+                                    to={mod.path}
+                                    className="glass-card metric-card-hover rounded-2xl p-3.5 flex flex-col justify-between border border-slate-200 hover:border-orange-300 transition-all group relative overflow-hidden"
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2.5">
+                                            <div
+                                                className="w-9 h-9 rounded-xl flex items-center justify-center shadow-xs transition-transform group-hover:scale-110 shrink-0"
+                                                style={{ background: mod.bg, color: mod.color, border: `1px solid ${mod.color}25` }}
+                                            >
+                                                <mod.icon size={18} />
+                                            </div>
+                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md border truncate max-w-[85px]" style={{ background: mod.bg, color: mod.color, borderColor: `${mod.color}35` }}>
+                                                {mod.tag}
+                                            </span>
+                                        </div>
+                                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 group-hover:text-orange-600 transition-colors truncate">
+                                            {mod.title}
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 mt-1 leading-snug line-clamp-2">
+                                            {mod.desc}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] font-semibold text-slate-400 group-hover:text-orange-600 transition-colors">
+                                        <span>Open Module</span>
+                                        <IoArrowForward size={12} className="transform group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+
+                        {filteredModules.length === 0 && (
+                            <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+                                <p className="text-sm font-semibold text-slate-700">No modules match "{moduleSearch}"</p>
+                                <button
+                                    onClick={() => { setModuleSearch(''); setSelectedModuleCategory('All'); }}
+                                    className="mt-2 text-xs text-orange-600 font-bold hover:underline"
+                                >
+                                    Reset search filters
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* ══════════════════════════════════════════════════════
@@ -1669,33 +1910,43 @@ const AdminDashboard = () => {
                                 <input
                                     type="text"
                                     autoFocus
-                                    placeholder="Type a command, page, or question..."
+                                    value={commandSearch}
+                                    onChange={(e) => setCommandSearch(e.target.value)}
+                                    placeholder="Search any module, operation, or log (20 available)..."
                                     className="w-full text-sm outline-none text-slate-900 placeholder-slate-400"
                                 />
                                 <kbd className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">ESC</kbd>
                             </div>
-                            <div className="p-3 max-h-80 overflow-y-auto space-y-1 text-xs">
-                                <p className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">Quick Jump Pages</p>
-                                {[
-                                    { name: 'Student Management', path: '/admin/students', icon: IoPersonOutline },
-                                    { name: 'Floor & Seat Matrix', path: '/admin/floors', icon: IoBedOutline },
-                                    { name: 'Attendance Records', path: '/admin/attendance', icon: IoCalendarOutline },
-                                    { name: 'Fee Ledger', path: '/admin/fees', icon: IoCashOutline },
-                                    { name: 'Reports & Analytics', path: '/admin/analytics', icon: IoBarChartOutline },
-                                    { name: 'QR Entry Kiosk', path: '/admin/kiosk', icon: IoScanOutline },
-                                ].map((item, i) => (
+                            <div className="p-3 max-h-80 overflow-y-auto space-y-1 text-xs custom-scrollbar">
+                                <p className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase">
+                                    {commandSearch ? `Matching Modules (${paletteModules.length})` : 'All Campus Modules (20)'}
+                                </p>
+                                {paletteModules.map((item) => (
                                     <button
-                                        key={i}
-                                        onClick={() => { navigate(item.path); setShowCommandPalette(false); }}
-                                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-colors"
+                                        key={item.id}
+                                        onClick={() => { navigate(item.path); setShowCommandPalette(false); setCommandSearch(''); }}
+                                        className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-colors text-left"
                                     >
-                                        <div className="flex items-center gap-2.5">
-                                            <item.icon size={16} className="text-slate-400" />
-                                            <span className="font-semibold">{item.name}</span>
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div
+                                                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                                style={{ background: item.bg, color: item.color }}
+                                            >
+                                                <item.icon size={15} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <span className="font-semibold block truncate">{item.title}</span>
+                                                <span className="text-[10px] text-slate-400 truncate block">{item.desc}</span>
+                                            </div>
                                         </div>
-                                        <IoChevronForward size={13} className="text-slate-400" />
+                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                                            {item.tag}
+                                        </span>
                                     </button>
                                 ))}
+                                {paletteModules.length === 0 && (
+                                    <p className="text-center py-6 text-slate-400 text-xs">No matching modules found for "{commandSearch}".</p>
+                                )}
                             </div>
                             <div className="p-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-400">
                                 <span>Press ESC or click outside to close</span>

@@ -238,6 +238,7 @@ function App() {
                     <Route path="/admin/activities" element={<ProtectedRoute superAdminOnly><StudentActivities /></ProtectedRoute>} />
                     <Route path="/admin/ai-activity" element={<ProtectedRoute superAdminOnly><AIActivityLogs /></ProtectedRoute>} />
                     <Route path="/admin/referral-wallet" element={<ProtectedRoute superAdminOnly><AdminReferralWallet /></ProtectedRoute>} />
+                    <Route path="/admin/settings" element={<ProtectedRoute superAdminOnly><Settings /></ProtectedRoute>} />
 
 
                     {/* Admin Routes — Sub-Admin accessible (based on permissions granted by super admin) */}
