@@ -45,20 +45,46 @@ const getLiveOperationalMetrics = async () => {
         Attendance.countDocuments({ date: { $gte: startOfToday } }),
         Attendance.countDocuments({ date: { $gte: startOfToday }, isActive: true }),
         Fee.aggregate([
-            { $match: { status: 'paid' } },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
+            { $match: { status: { $in: ['paid', 'partial'] } } },
+            {
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'partial'] },
+                                { $ifNull: ['$partialPaid', 0] },
+                                '$amount'
+                            ]
+                        }
+                    }
+                }
+            }
         ]),
         Fee.aggregate([
             {
                 $match: {
-                    status: 'paid',
+                    status: { $in: ['paid', 'partial'] },
                     $or: [
                         { paidDate: { $gte: startOfToday } },
                         { paidDate: null, updatedAt: { $gte: startOfToday } }
                     ]
                 }
             },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
+            {
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'partial'] },
+                                { $ifNull: ['$partialPaid', 0] },
+                                '$amount'
+                            ]
+                        }
+                    }
+                }
+            }
         ]),
         Fee.aggregate([
             { $match: { status: { $in: ['pending', 'overdue'] } } },
