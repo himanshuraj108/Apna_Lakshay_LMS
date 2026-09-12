@@ -998,16 +998,28 @@ const FeeManagement = () => {
 
                                             {/* Partial Payment Progress bar if applicable */}
                                             {fee.status === 'partial' && (
-                                                <div className="pt-2 border-t border-slate-200/70 space-y-1.5">
-                                                    <div className="flex justify-between text-[11px] font-bold">
-                                                        <span className="text-emerald-700">Paid: ₹{fee.partialPaid}</span>
-                                                        <span className="text-amber-700">Due: ₹{outstanding}</span>
+                                                <div className="pt-2.5 border-t border-slate-200/80 space-y-2">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div className="bg-emerald-50 border border-emerald-200/90 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Paid</span>
+                                                            <span className="text-xs font-black text-emerald-800 tabular-nums">₹{fee.partialPaid || 0}</span>
+                                                        </div>
+                                                        <div className="bg-amber-50 border border-amber-300 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
+                                                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Remaining Due</span>
+                                                            <span className="text-xs font-black text-amber-900 tabular-nums">₹{outstanding}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-amber-500 rounded-full transition-all duration-300"
-                                                            style={{ width: `${percentPaid}%` }}
-                                                        />
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                                                            <span>Payment Progress</span>
+                                                            <span className="text-amber-700 font-extrabold">{percentPaid}% Paid</span>
+                                                        </div>
+                                                        <div className="w-full h-2 bg-slate-200/90 rounded-full overflow-hidden p-0.5">
+                                                            <div
+                                                                className="h-full bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full transition-all duration-300"
+                                                                style={{ width: `${percentPaid}%` }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1120,8 +1132,13 @@ const FeeManagement = () => {
                                                 <td className="px-5 py-4 text-right">
                                                     <div className="font-black text-slate-900 text-sm">₹{fee.amount}</div>
                                                     {fee.status === 'partial' && (
-                                                        <div className="text-[10px] text-amber-700 font-semibold">
-                                                            ₹{fee.partialPaid} paid · ₹{fee.outstanding} due
+                                                        <div className="flex items-center justify-end gap-1.5 mt-1">
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold tabular-nums">
+                                                                ₹{fee.partialPaid} Paid
+                                                            </span>
+                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-extrabold tabular-nums">
+                                                                ₹{fee.outstanding} Due
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </td>
@@ -1211,8 +1228,13 @@ const FeeManagement = () => {
                                 </span>
                             </div>
                             {payModal.partialPaid > 0 && (
-                                <div className="text-xs text-emerald-700 font-semibold pt-1 border-t border-slate-200">
-                                    Already Received: ₹{payModal.partialPaid} (Outstanding: ₹{payModal.outstanding || (payModal.amount - payModal.partialPaid)})
+                                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200">
+                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                        Received: ₹{payModal.partialPaid}
+                                    </span>
+                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-300">
+                                        Balance Due: ₹{payModal.outstanding || (payModal.amount - payModal.partialPaid)}
+                                    </span>
                                 </div>
                             )}
                         </div>
