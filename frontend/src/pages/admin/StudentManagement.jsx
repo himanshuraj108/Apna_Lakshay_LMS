@@ -533,7 +533,7 @@ const StudentManagement = () => {
             registrationFee: student.registrationFee || 0,
             address: student.address || '',
             gender: student.gender || 'male',
-            joinedAt: student.createdAt ? new Date(student.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            joinedAt: (student.admissionDate || student.createdAt) ? new Date(student.admissionDate || student.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             shift: shiftId,
             negotiatedPrice: negotiatedPrice,
             seatId: getStudentSeat(student._id) ? student.seat._id : '', // Needed for assignSeat

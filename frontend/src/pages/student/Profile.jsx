@@ -776,8 +776,8 @@ const Profile = () => {
                         />
                         <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
                         <InfoRow icon={IoCalendar}  label="Member Since"
-                            value={profile?.createdAt
-                                ? new Date(profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
+                            value={(profile?.admissionDate || profile?.createdAt)
+                                ? new Date(profile.admissionDate || profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
                                 : 'Not available'
                             } color="text-pink-500"
                         />

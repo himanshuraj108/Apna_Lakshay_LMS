@@ -316,14 +316,14 @@ const FeeManagement = () => {
         }
     };
 
-    // Base active filter
+    // Base active filter — inactive students are ALWAYS excluded (never shown in fee management)
     const baseFees = useMemo(() => {
-        let list = showInactive ? fees : fees.filter(f => f.student?.isActive === true);
+        let list = fees.filter(f => f.student?.isActive === true);
         if (isSubAdmin) {
             list = list.filter(f => ['pending', 'partial', 'overdue'].includes(f.status));
         }
         return list;
-    }, [fees, showInactive, isSubAdmin]);
+    }, [fees, isSubAdmin]);
 
     // Financial KPI Metrics calculated across base roster
     const metrics = useMemo(() => {
