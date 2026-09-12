@@ -327,7 +327,19 @@ const FeeManagement = () => {
 
     // Financial KPI Metrics calculated across base roster
     const metrics = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
         const totalRevenue = baseFees.reduce((sum, f) => {
+            if (f.status === 'paid') return sum + (f.amount || 0);
+            if (f.status === 'partial') return sum + (f.partialPaid || 0);
+            return sum;
+        }, 0);
+
+        const todayRevenue = baseFees.reduce((sum, f) => {
+            if (!f.paidDate) return sum;
+            const pd = new Date(f.paidDate);
+            if (pd < today) return sum;
             if (f.status === 'paid') return sum + (f.amount || 0);
             if (f.status === 'partial') return sum + (f.partialPaid || 0);
             return sum;
@@ -356,8 +368,9 @@ const FeeManagement = () => {
             cancelled: baseFees.filter(f => f.status === 'cancelled').length
         };
 
-        return { totalRevenue, totalPending, totalOverdue, onlineVolume, counts };
+        return { totalRevenue, todayRevenue, totalPending, totalOverdue, onlineVolume, counts };
     }, [baseFees]);
+
 
     // Filtered & Searched & Sorted records
     const processedFees = useMemo(() => {
@@ -661,13 +674,17 @@ const FeeManagement = () => {
                         {/* Revenue Collected */}
                         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Settled</span>
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Collected</span>
                                 <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
                                     <IoCheckmarkCircle size={16} />
                                 </div>
                             </div>
                             <p className="text-2xl font-black text-emerald-600 tabular-nums">₹{metrics.totalRevenue.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Cleared tuition & dues</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                                {metrics.todayRevenue > 0
+                                    ? `₹${metrics.todayRevenue.toLocaleString('en-IN')} collected today`
+                                    : 'Full paid + partial installments'}
+                            </p>
                         </div>
 
                         {/* Pending Dues */}
