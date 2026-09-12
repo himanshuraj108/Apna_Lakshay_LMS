@@ -154,8 +154,23 @@ const SubAdminDashboard = () => {
     const fetchStats = async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
         try {
-            const res = await api.get('/admin/dashboard?mode=custom');
-            setStats(res.data.data);
+            const [liveRes, stdRes] = await Promise.allSettled([
+                api.get('/admin/dashboard/live'),
+                api.get('/admin/dashboard')
+            ]);
+            let s = {};
+            if (stdRes.status === 'fulfilled' && stdRes.value.data?.data) {
+                s = { ...s, ...stdRes.value.data.data };
+            }
+            if (liveRes.status === 'fulfilled' && liveRes.value.data?.metrics) {
+                s = {
+                    ...s,
+                    ...liveRes.value.data.metrics,
+                    acVacantSeats: s.acVacantSeats ?? 0,
+                    nonAcVacantSeats: s.nonAcVacantSeats ?? 0
+                };
+            }
+            setStats(s);
         } catch (e) {
             console.error(e);
         } finally {

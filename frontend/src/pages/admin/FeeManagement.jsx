@@ -319,12 +319,9 @@ const FeeManagement = () => {
 
     // Base active filter — inactive students are ALWAYS excluded (never shown in fee management)
     const baseFees = useMemo(() => {
-        let list = fees.filter(f => f.student?.isActive === true);
-        if (isSubAdmin) {
-            list = list.filter(f => ['pending', 'partial', 'overdue'].includes(f.status));
-        }
-        return list;
-    }, [fees, isSubAdmin]);
+        return fees.filter(f => f.student?.isActive === true);
+    }, [fees]);
+
 
     // Financial KPI Metrics calculated across base roster
     const metrics = useMemo(() => {
@@ -684,17 +681,21 @@ const FeeManagement = () => {
                     FINANCIAL KPI METRICS (PENDING ONLY FOR SUBADMIN)
                 ═════════════════════════════════════════════════════════ */}
                 {isSubAdmin ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-2xl">
-                        {/* Pending Dues */}
-                        <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-2xs bg-gradient-to-br from-white to-amber-50/40">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        {/* Total Collected */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
-                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
-                                    <IoTimeOutline size={16} />
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Collected</span>
+                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                    <IoCheckmarkCircle size={16} />
                                 </div>
                             </div>
-                            <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
+                            <p className="text-2xl font-black text-emerald-600 tabular-nums">₹{metrics.totalRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                                {metrics.todayRevenue > 0
+                                    ? `₹${metrics.todayRevenue.toLocaleString('en-IN')} collected today`
+                                    : 'Full paid + partial installments'}
+                            </p>
                         </div>
 
                         {/* This Month */}
@@ -715,6 +716,18 @@ const FeeManagement = () => {
                             <p className="text-[11px] font-medium mt-0.5 text-blue-400">
                                 {monthlyFilter ? 'Filtered — click to clear' : `1–${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} ${metrics.monthName}`}
                             </p>
+                        </div>
+
+                        {/* Pending Dues */}
+                        <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-2xs bg-gradient-to-br from-white to-amber-50/40">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
+                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                                    <IoTimeOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
                         </div>
                     </div>
                 ) : (
