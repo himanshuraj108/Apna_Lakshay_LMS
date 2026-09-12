@@ -681,23 +681,7 @@ const FeeManagement = () => {
                     FINANCIAL KPI METRICS (PENDING ONLY FOR SUBADMIN)
                 ═════════════════════════════════════════════════════════ */}
                 {isSubAdmin ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                        {/* Total Collected */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Collected</span>
-                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
-                                    <IoCheckmarkCircle size={16} />
-                                </div>
-                            </div>
-                            <p className="text-2xl font-black text-emerald-600 tabular-nums">₹{metrics.totalRevenue.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
-                                {metrics.todayRevenue > 0
-                                    ? `₹${metrics.todayRevenue.toLocaleString('en-IN')} collected today`
-                                    : 'Full paid + partial installments'}
-                            </p>
-                        </div>
-
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-2xl">
                         {/* This Month */}
                         <div
                             onClick={() => setMonthlyFilter(f => !f)}
