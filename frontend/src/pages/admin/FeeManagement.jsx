@@ -684,15 +684,38 @@ const FeeManagement = () => {
                     FINANCIAL KPI METRICS (PENDING ONLY FOR SUBADMIN)
                 ═════════════════════════════════════════════════════════ */}
                 {isSubAdmin ? (
-                    <div className="bg-white border border-amber-200/90 rounded-2xl p-5 shadow-2xs bg-gradient-to-br from-white to-amber-50/40 max-w-md">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
-                                <IoTimeOutline size={20} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-2xl">
+                        {/* Pending Dues */}
+                        <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-2xs bg-gradient-to-br from-white to-amber-50/40">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
+                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                                    <IoTimeOutline size={16} />
+                                </div>
                             </div>
+                            <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
                         </div>
-                        <p className="text-3xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
-                        <p className="text-xs font-semibold text-slate-500 mt-1">{metrics.counts.pending} students awaiting fee payment</p>
+
+                        {/* This Month */}
+                        <div
+                            onClick={() => setMonthlyFilter(f => !f)}
+                            className={`rounded-2xl p-4 shadow-2xs transition-all cursor-pointer select-none
+                                ${monthlyFilter
+                                    ? 'bg-blue-50 border-2 border-blue-500 shadow-blue-100'
+                                    : 'bg-white border border-slate-200/90 hover:shadow-xs hover:border-blue-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">This Month</span>
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-xs ${monthlyFilter ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600'}`}>
+                                    <IoCalendarOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-blue-600 tabular-nums">₹{metrics.monthlyRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium mt-0.5 text-blue-400">
+                                {monthlyFilter ? 'Filtered — click to clear' : `1–${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} ${metrics.monthName}`}
+                            </p>
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
