@@ -49,6 +49,7 @@ const FeeManagement = () => {
     const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
     const [sortBy, setSortBy] = useState('dueDate_asc');
     const [showInactive, setShowInactive] = useState(false);
+    const [monthlyFilter, setMonthlyFilter] = useState(false); // true = show only this month's fees
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
 
@@ -389,8 +390,16 @@ const FeeManagement = () => {
 
     // Filtered & Searched & Sorted records
     const processedFees = useMemo(() => {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
         return baseFees
             .filter(fee => {
+                if (monthlyFilter) {
+                    if (!fee.paidDate) return false;
+                    const pd = new Date(fee.paidDate);
+                    return pd >= startOfMonth && (fee.status === 'paid' || fee.status === 'partial');
+                }
                 if (filter === 'paid') return fee.status === 'paid';
                 if (filter === 'online') return !!fee.razorpayOrderId;
                 if (filter === 'pending') return fee.status === 'pending' || fee.status === 'partial';
@@ -417,7 +426,8 @@ const FeeManagement = () => {
                 if (sortBy === 'name_asc') return (a.student?.name || '').localeCompare(b.student?.name || '');
                 return 0;
             });
-    }, [baseFees, filter, searchQuery, sortBy]);
+    }, [baseFees, filter, monthlyFilter, searchQuery, sortBy]);
+
 
     const TABS = isSubAdmin ? [
         { key: 'pending',   label: 'Pending Dues', count: metrics.counts.pending },
@@ -703,15 +713,23 @@ const FeeManagement = () => {
                         </div>
 
                         {/* This Month */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                        <div
+                            onClick={() => setMonthlyFilter(f => !f)}
+                            className={`rounded-2xl p-4 shadow-2xs transition-all cursor-pointer select-none
+                                ${monthlyFilter
+                                    ? 'bg-blue-50 border-2 border-blue-500 shadow-blue-100'
+                                    : 'bg-white border border-slate-200/90 hover:shadow-xs hover:border-blue-300'}`}
+                        >
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">This Month</span>
-                                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-xs">
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-xs ${monthlyFilter ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600'}`}>
                                     <IoCalendarOutline size={16} />
                                 </div>
                             </div>
                             <p className="text-2xl font-black text-blue-600 tabular-nums">₹{metrics.monthlyRevenue.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">1–{new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} {metrics.monthName}</p>
+                            <p className="text-[11px] font-medium mt-0.5 text-blue-400">
+                                {monthlyFilter ? 'Filtered — click to clear' : `1–${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} ${metrics.monthName}`}
+                            </p>
                         </div>
 
                         {/* Pending Dues */}
@@ -756,6 +774,23 @@ const FeeManagement = () => {
                     SEARCH & FILTER TOOLBAR
                 ═════════════════════════════════════════════════════════ */}
                 <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-4">
+                    {/* Monthly filter active banner */}
+                    {monthlyFilter && (
+                        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 shadow-2xs">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                <span className="text-xs font-bold text-blue-800">
+                                    Showing {processedFees.length} fee collection{processedFees.length === 1 ? '' : 's'} for {metrics.monthName} (Total: ₹{metrics.monthlyRevenue.toLocaleString('en-IN')})
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setMonthlyFilter(false)}
+                                className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 bg-white border border-blue-200 hover:border-blue-300 px-2.5 py-1 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <IoClose size={14} /> Clear Filter
+                            </button>
+                        </div>
+                    )}
                     {/* Row 1: Search & Sorting (Admin Only) */}
                     {!isSubAdmin && (
                         <div className="flex flex-col md:flex-row items-center gap-3">
@@ -812,12 +847,15 @@ const FeeManagement = () => {
                     <div className={`flex items-center justify-between gap-2 overflow-x-auto pb-1 custom-scrollbar ${!isSubAdmin ? 'pt-1 border-t border-slate-100' : ''}`}>
                         <div className="flex items-center gap-1.5 flex-nowrap">
                             {TABS.map(tab => {
-                                const isActive = filter === tab.key;
+                                const isActive = !monthlyFilter && filter === tab.key;
                                 return (
                                     <button
                                         key={tab.key}
-                                        onClick={() => setFilter(tab.key)}
-                                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                                        onClick={() => {
+                                            setFilter(tab.key);
+                                            setMonthlyFilter(false);
+                                        }}
+                                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                                             isActive
                                                 ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-sm shadow-orange-500/20'
                                                 : 'bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200/80'
