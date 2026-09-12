@@ -327,8 +327,14 @@ const FeeManagement = () => {
 
     // Financial KPI Metrics calculated across base roster
     const metrics = useMemo(() => {
-        const today = new Date();
+        const now = new Date();
+        const today = new Date(now);
         today.setHours(0, 0, 0, 0);
+
+        // Start of current month
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Month name for subtext
+        const monthName = now.toLocaleString('en-IN', { month: 'long' });
 
         const totalRevenue = baseFees.reduce((sum, f) => {
             if (f.status === 'paid') return sum + (f.amount || 0);
@@ -340,6 +346,15 @@ const FeeManagement = () => {
             if (!f.paidDate) return sum;
             const pd = new Date(f.paidDate);
             if (pd < today) return sum;
+            if (f.status === 'paid') return sum + (f.amount || 0);
+            if (f.status === 'partial') return sum + (f.partialPaid || 0);
+            return sum;
+        }, 0);
+
+        const monthlyRevenue = baseFees.reduce((sum, f) => {
+            if (!f.paidDate) return sum;
+            const pd = new Date(f.paidDate);
+            if (pd < startOfMonth) return sum;
             if (f.status === 'paid') return sum + (f.amount || 0);
             if (f.status === 'partial') return sum + (f.partialPaid || 0);
             return sum;
@@ -368,7 +383,7 @@ const FeeManagement = () => {
             cancelled: baseFees.filter(f => f.status === 'cancelled').length
         };
 
-        return { totalRevenue, todayRevenue, totalPending, totalOverdue, onlineVolume, counts };
+        return { totalRevenue, todayRevenue, monthlyRevenue, monthName, totalPending, totalOverdue, onlineVolume, counts };
     }, [baseFees]);
 
 
@@ -670,8 +685,8 @@ const FeeManagement = () => {
                         <p className="text-xs font-semibold text-slate-500 mt-1">{metrics.counts.pending} students awaiting fee payment</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-                        {/* Revenue Collected */}
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+                        {/* Total Collected */}
                         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Collected</span>
@@ -685,6 +700,18 @@ const FeeManagement = () => {
                                     ? `₹${metrics.todayRevenue.toLocaleString('en-IN')} collected today`
                                     : 'Full paid + partial installments'}
                             </p>
+                        </div>
+
+                        {/* This Month */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">This Month</span>
+                                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-xs">
+                                    <IoCalendarOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-blue-600 tabular-nums">₹{metrics.monthlyRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">1–{new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} {metrics.monthName}</p>
                         </div>
 
                         {/* Pending Dues */}
