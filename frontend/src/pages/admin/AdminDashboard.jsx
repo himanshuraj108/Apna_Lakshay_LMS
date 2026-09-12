@@ -917,15 +917,30 @@ const AdminDashboard = () => {
                                 Open Command Console
                             </button>
                         </div>
+                        <button
+                            onClick={handleLogout}
+                            className="w-full mt-2 py-2 px-3 rounded-xl hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 border border-transparent hover:border-rose-500/20 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                            title="Sign Out"
+                        >
+                            <IoLogOut size={15} />
+                            <span>Logout</span>
+                        </button>
                     </div>
                 ) : (
-                    <div className="p-3 border-t border-slate-800 flex flex-col items-center bg-[#080e1f]">
+                    <div className="p-3 border-t border-slate-800 flex flex-col items-center gap-2 bg-[#080e1f]">
                         <button
                             onClick={() => setShowAIModal(true)}
                             className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-orange-400 transition-colors cursor-pointer"
                             title="Open Command Console"
                         >
                             <IoTerminalOutline size={18} />
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2.5 rounded-xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                            title="Logout"
+                        >
+                            <IoLogOut size={18} />
                         </button>
                     </div>
                 )}
@@ -1160,23 +1175,15 @@ const AdminDashboard = () => {
                             <span>Scan ID</span>
                         </button>
 
-                        {/* Admin Profile & ALWAYS-VISIBLE Logout Button */}
+                        {/* Admin Profile */}
                         <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-slate-200 shrink-0">
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-600 text-white flex items-center justify-center font-bold text-xs shadow shrink-0">
                                 {user?.name ? user.name[0].toUpperCase() : 'A'}
                             </div>
-                            <div className="hidden xl:block text-left">
-                                <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[100px]">{user?.name || 'Administrator'}</p>
+                            <div className="hidden sm:block text-left">
+                                <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[120px]">{user?.name || 'Administrator'}</p>
                                 <p className="text-[10px] text-slate-500 leading-tight">Super Admin</p>
                             </div>
-                            <button
-                                onClick={handleLogout}
-                                className="flex items-center gap-1 px-2.5 py-1.5 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200/90 rounded-xl transition-all font-bold text-xs shadow-2xs shrink-0 cursor-pointer"
-                                title="Sign Out"
-                            >
-                                <IoLogOut size={16} />
-                                <span>Logout</span>
-                            </button>
                         </div>
                     </div>
                 </header>

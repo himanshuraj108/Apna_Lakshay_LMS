@@ -371,10 +371,12 @@ const Profile = () => {
                                 <IoArrowBack size={16} /> Back to Dashboard
                             </motion.button>
                         </Link>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleLogout}
-                            className="flex items-center justify-center w-12 h-12 bg-[#FFF2F2] hover:bg-[#FFE5E5] border border-[#FFE0E0] hover:border-[#FFCCCC] text-red-500 rounded-[18px] transition-all shadow-sm"
+                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-[20px] text-sm font-bold transition-all shadow-sm cursor-pointer"
+                            title="Log Out"
                         >
-                            <IoLogOut size={20} />
+                            <IoLogOut size={18} />
+                            <span>Logout</span>
                         </motion.button>
                     </motion.div>
 
@@ -1300,6 +1302,19 @@ const Profile = () => {
                     </div>
                 </div>
             )}
+
+            {/* ── Logout Section at bottom of profile ── */}
+            <div className="mt-8 pt-6 border-t border-gray-200/80 flex justify-center">
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleLogout}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-2xl text-sm font-bold transition-all shadow-xs cursor-pointer"
+                >
+                    <IoLogOut size={18} />
+                    <span>Sign Out of Account</span>
+                </motion.button>
+            </div>
         </div >
 
         {/* ──────── App PIN Modal ──────── */}

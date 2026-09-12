@@ -1288,16 +1288,6 @@ const StudentDashboard = () => {
                             </div>
                             <span className="text-[12px] font-bold hidden sm:block" style={{ color: '#f9fafb' }}>{user?.name?.split(' ')[0]}</span>
                         </Link>
-
-                        {/* Logout button */}
-                        <button
-                            onClick={logout}
-                            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl transition-all duration-200 text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600/80 border border-rose-500/30 text-xs font-bold shrink-0 cursor-pointer shadow-sm"
-                            title="Log Out"
-                        >
-                            <IoLogoutIcon size={15} />
-                            <span className="hidden xs:inline sm:inline">Logout</span>
-                        </button>
                     </div>
                 </div>
             </header>
