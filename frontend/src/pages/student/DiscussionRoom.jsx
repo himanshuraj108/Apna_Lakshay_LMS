@@ -690,11 +690,12 @@ const DiscussionRoom = () => {
     }, []);
 
     return (
-        <div className={`h-[100dvh] overflow-hidden flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`} style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
+        <div className={`h-[100dvh] overflow-hidden flex flex-col overscroll-none touch-manipulation ${isShaking ? 'shake-screen' : ''}`} style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
+            <div className="fixed inset-0 -z-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3 md:px-6 md:pt-5 shrink-0">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl transition-all shadow-sm">
+                    <button onClick={() => navigate('/student')} className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-xl transition-all shadow-sm" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", color: "#78350F" }}>
                         <IoArrowBack size={16} /> <span className="hidden sm:inline">Dashboard</span>
                     </button>
                     <div className="h-5 w-px bg-gray-200 hidden sm:block" />
@@ -731,7 +732,7 @@ const DiscussionRoom = () => {
 
             {/* Tab Navigation */}
             <div className="shrink-0 px-4 md:px-6 mb-3">
-                <div className="flex items-center bg-white border border-gray-200 rounded-2xl p-1 gap-1 shadow-sm">
+                <div className="flex items-center rounded-2xl p-1 gap-1" style={{ background: "#F5F0EA", border: "1.5px solid #EDE8E0" }}>
                     {[['public', <IoPeople size={15} />, 'Public'],
                     ['groups', <IoPeople size={15} />, 'Groups'],
                     ['private', <IoPersonOutline size={15} />, 'Private']
@@ -747,8 +748,8 @@ const DiscussionRoom = () => {
                                 }
                             }}
                             className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-sm font-medium transition-all ${activeTab === tab
-                                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-md'
-                                : 'text-gray-500 hover:text-gray-800'
+                                ? 'bg-white text-orange-600 border border-[#FDDCAE] shadow-sm font-bold'
+                                : 'text-[#9B7B5A] hover:text-gray-900 font-medium'
                                 }`}
                         >
                             {icon} <span>{label}</span>
@@ -922,9 +923,9 @@ const DiscussionRoom = () => {
                 {
                     (activeTab === 'public' || ((activeTab === 'groups' || activeTab === 'private') && currentRoom)) && (
                         <div className={`flex-1 flex flex-col h-full z-20 ${!currentRoom && 'hidden lg:flex'}`}>
-                            <div className="flex flex-col h-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="flex flex-col h-full rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}>
                                 {/* Chat Header */}
-                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0">
+                                <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ background: "#FFFAF5", borderBottom: "1.5px solid #EDE8E0" }}>
                                     <div className="flex items-center gap-3">
                                         <button onClick={() => setCurrentRoom(null)} className="lg:hidden p-1.5 -ml-1 text-gray-400 hover:text-gray-700 transition-colors">
                                             <IoArrowBack size={22} />
@@ -975,7 +976,7 @@ const DiscussionRoom = () => {
                                 </div>
 
                                 {/* Messages Area */}
-                                <div className="flex-1 overflow-y-auto p-4 space-y-3" onClick={() => setShowPrivateMenu(false)}>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: "#FFFCF8" }} onClick={() => setShowPrivateMenu(false)}>
                                     {messages.length === 0 ? (
                                         <div className="text-center py-20 text-gray-400">
                                             <IoChatbubblesOutline size={48} className="mx-auto mb-4 opacity-30" />
@@ -1036,10 +1037,10 @@ const DiscussionRoom = () => {
                                                             </span>
                                                         </div>
                                                         <div className={`rounded-2xl px-4 py-2.5 border max-w-[75%] sm:max-w-[65%] ${isOwnMessage
-                                                            ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-200 text-gray-900'
+                                                            ? 'bg-[#FFF5EE] border-[#FDDCAE] text-[#1A1A1A]'
                                                             : msg.sender?.role === 'admin'
                                                                 ? 'bg-gradient-to-br from-red-900/90 to-black border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.3)] text-white'
-                                                                : 'bg-white border-gray-200 text-gray-800'
+                                                                : 'bg-white border-[#EDE8E0] text-[#1A1A1A] shadow-sm'
                                                             }`}>
                                                             {/* Reply indicator */}
                                                             {msg.replyTo && (
@@ -1097,7 +1098,7 @@ const DiscussionRoom = () => {
                                 </div>
 
                                 {/* Input Area */}
-                                <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0 relative">
+                                <div className="px-4 py-3 shrink-0 relative" style={{ background: "#FFFFFF", borderTop: "1.5px solid #EDE8E0" }}>
                                     {/* Mention Autocomplete Dropdown */}
                                     <AnimatePresence>
                                         {showMentionDropdown && (
@@ -1246,7 +1247,7 @@ const DiscussionRoom = () => {
                                         </div>
                                     )}
 
-                                    <div className={`flex items-center gap-2 md:gap-3 border rounded-xl px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-gray-200 shadow-sm'}`}>
+                                    <div className={`flex items-center gap-2 md:gap-3 border rounded-xl px-2 md:px-4 py-2 ${(!isGlobalChatEnabled || user?.isChatBlocked || currentRoom?.isDisabled) ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-[#FFFAF5] border-[#EDE8E0]'}`}>
                                         {/* File Input Hidden */}
                                         <input
                                             ref={fileInputRef}
