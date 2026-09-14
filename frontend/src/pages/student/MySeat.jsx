@@ -14,23 +14,23 @@ import StudentRoomGrid from '../../components/student/StudentRoomGrid';
 /* ─── Background ─────────────────────────────────────────────────── */
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F7F3EC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
     </>
 );
 
 /* ─── Detail chip ──────────────────────────────────────────────────── */
 const DetailChip = ({ icon: Icon, label, value, accentColor }) => (
-    <div className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm"
-        style={{ padding: '14px 16px' }}>
+    <div className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden"
+        style={{ padding: '14px 16px', background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
         <div className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full" style={{ background: accentColor }} />
         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${accentColor}18` }}>
             <Icon size={17} style={{ color: accentColor }} />
         </div>
         <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-gray-500">{label}</p>
-            <p className="text-gray-900 font-bold text-sm truncate">{value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: '#9B7B5A' }}>{label}</p>
+            <p className="font-bold text-sm truncate" style={{ color: '#1A1A1A' }}>{value}</p>
         </div>
     </div>
 );
@@ -54,22 +54,25 @@ const MySeat = () => {
 
     /* ── No seat ─────────────────────────────────────────────────── */
     if (!seatData?.seat && (!seatData?.tempAssignments || seatData.tempAssignments.length === 0)) return (
-        <div className="min-h-screen text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen" style={{ fontFamily: "'DM Sans','Inter',sans-serif", color: '#1A1A1A' }}>
             <PageBg />
             <div className="relative z-10 max-w-2xl mx-auto px-5 py-10">
                 <Link to="/student">
                     <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 transition-all mb-10 bg-white border border-gray-200 shadow-sm">
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all mb-10"
+                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F', boxShadow: '0 2px 8px rgba(180,120,60,0.07)' }}>
                         <IoArrowBack size={15} /> Back to Dashboard
                     </motion.button>
                 </Link>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    className="text-center py-20 rounded-2xl bg-white border border-gray-200 shadow-sm">
-                    <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                        <IoSadOutline size={30} className="text-gray-400" />
+                    className="text-center py-20 rounded-2xl"
+                    style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                        style={{ background: '#FEF3C7' }}>
+                        <IoSadOutline size={30} style={{ color: '#FDDCAE' }} />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">No Seat Assigned</h2>
-                    <p className="text-gray-500 text-sm">Contact admin to get a seat allocated.</p>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>No Seat Assigned</h2>
+                    <p className="text-sm" style={{ color: '#9B7B5A' }}>Contact admin to get a seat allocated.</p>
                 </motion.div>
             </div>
         </div>
@@ -107,7 +110,7 @@ const MySeat = () => {
     const room = primarySeat?.room;
 
     return (
-        <div className="min-h-screen text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen" style={{ fontFamily: "'DM Sans','Inter',sans-serif", color: '#1A1A1A' }}>
             <PageBg />
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
@@ -115,14 +118,15 @@ const MySeat = () => {
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/student">
                         <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 transition-all bg-white border border-gray-200 shadow-sm">
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F', boxShadow: '0 2px 8px rgba(180,120,60,0.07)' }}>
                             <IoArrowBack size={15} />
                             <span className="hidden sm:inline">Dashboard</span>
                         </motion.button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">My Seat</h1>
-                        <p className="text-gray-500 text-sm mt-0.5">Your assigned study spot</p>
+                        <h1 className="text-2xl sm:text-3xl font-black" style={{ color: '#1A1A1A' }}>My Seat</h1>
+                        <p className="text-sm mt-0.5" style={{ color: '#9B7B5A' }}>Your assigned study spot</p>
                     </div>
                 </motion.div>
 
@@ -134,19 +138,25 @@ const MySeat = () => {
                             <div key={idx} className="flex flex-col gap-4">
                                 {/* Seat number hero */}
                                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + idx * 0.1 }}
-                                    className={`relative rounded-2xl overflow-hidden bg-white border shadow-sm ${ds.isTemp ? 'border-red-200' : 'border-orange-200'}`}
-                                    style={{ padding: '20px' }}>
-                                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+                                    className="relative rounded-2xl overflow-hidden"
+                                    style={{
+                                        padding: '20px',
+                                        background: '#FFFFFF',
+                                        border: `1.5px solid ${ds.isTemp ? '#FECACA' : '#FDDCAE'}`,
+                                        boxShadow: '0 4px 20px rgba(180,120,60,0.07)'
+                                    }}>
+                                    <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
                                         style={{ background: ds.isTemp ? 'linear-gradient(90deg, #ef4444, #f87171, transparent)' : 'linear-gradient(90deg, #f97316, #fb923c, transparent)' }} />
                                     <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl pointer-events-none"
                                         style={{ background: ds.isTemp ? 'rgba(239,68,68,0.06)' : 'rgba(249,115,22,0.06)' }} />
 
                                     <div className="relative flex items-center gap-4 pr-28">
                                         <div className="min-w-0 flex-1">
-                                            <p className={`text-[11px] font-semibold uppercase tracking-wider mb-0.5 ${ds.isTemp ? 'text-red-500' : 'text-orange-500'}`}>
+                                            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5"
+                                                style={{ color: ds.isTemp ? '#dc2626' : '#EA580C' }}>
                                                 {ds.isTemp ? 'Temporary Seat No.' : 'Seat No.'}
                                             </p>
-                                            <p className="text-3xl font-black text-gray-900 leading-none truncate" title={ds.number}>
+                                            <p className="text-3xl font-black leading-none truncate" title={ds.number} style={{ color: '#1A1A1A' }}>
                                                 {ds.number}
                                             </p>
                                         </div>
@@ -166,7 +176,7 @@ const MySeat = () => {
                                         </div>
                                     </div>
 
-                                    <div className="relative mt-4 pt-4 border-t border-gray-100">
+                                    <div className="relative mt-4 pt-4" style={{ borderTop: '1px solid #EDE8E0' }}>
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className={`w-2 h-2 rounded-full animate-pulse ${ds.isTemp ? 'bg-red-400' : 'bg-emerald-400'}`} />
                                             <span className={`text-xs font-semibold ${ds.isTemp ? 'text-red-600' : 'text-emerald-600'}`}>Active</span>
@@ -188,7 +198,7 @@ const MySeat = () => {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400 text-xs">—</span>
+                                            <span className="text-xs" style={{ color: '#9B7B5A' }}>—</span>
                                         )}
                                         {ds.isTemp && ds.note && (
                                             <p className="mt-3 text-xs italic text-red-500 bg-red-50 p-2 rounded-lg border border-red-100">{ds.note}</p>
@@ -203,15 +213,15 @@ const MySeat = () => {
                                     {ds.shifts && ds.shifts.length > 0 ? (
                                         <div className="flex flex-col gap-2">
                                             {ds.shifts.map((s, i) => (
-                                                <div key={i} className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm"
-                                                    style={{ padding: '14px 16px' }}>
+                                                <div key={i} className="relative flex items-center gap-3.5 rounded-2xl overflow-hidden"
+                                                    style={{ padding: '14px 16px', background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
                                                     <div className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${ds.isTemp ? 'bg-red-500' : 'bg-emerald-500'}`} />
                                                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${ds.isTemp ? 'bg-red-50' : 'bg-emerald-50'}`}>
                                                         <IoTimeOutline size={17} className={ds.isTemp ? 'text-red-500' : 'text-emerald-500'} />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-gray-500">Shift {i + 1}</p>
-                                                        <p className="text-gray-900 font-bold text-sm">{s.name}</p>
+                                                        <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: '#9B7B5A' }}>Shift {i + 1}</p>
+                                                        <p className="font-bold text-sm" style={{ color: '#1A1A1A' }}>{s.name}</p>
                                                         {s.startTime && s.endTime && (
                                                             <p className={`text-[11px] font-semibold mt-0.5 ${ds.isTemp ? 'text-red-600' : 'text-emerald-600'}`}>{s.startTime} – {s.endTime}</p>
                                                         )}
@@ -230,12 +240,14 @@ const MySeat = () => {
                         {/* Pricing plans - Only show for primary seat */}
                         {seatData.seat && (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.26 }}
-                                className="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm mt-2">
-                                <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
-                                    <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-amber-50">
-                                        <IoCashOutline size={13} className="text-amber-500" />
+                                className="rounded-2xl overflow-hidden mt-2"
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                <div className="px-5 py-4 flex items-center gap-2.5" style={{ borderBottom: '1px solid #EDE8E0' }}>
+                                    <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                                        style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
+                                        <IoCashOutline size={13} style={{ color: '#FFFFFF' }} />
                                     </div>
-                                    <p className="text-gray-900 font-bold text-sm">Pricing Plans</p>
+                                    <p className="font-bold text-sm" style={{ color: '#1A1A1A' }}>Pricing Plans</p>
                                 </div>
                                 <div className="p-4 flex flex-col gap-2">
                                     {shifts.map(shift => {
@@ -247,25 +259,25 @@ const MySeat = () => {
                                         return (
                                             <div key={shift.id} className="flex justify-between items-center px-4 py-3 rounded-xl transition-all"
                                                 style={{
-                                                    background: isCurrent ? 'rgba(16,185,129,0.06)' : '#f8fafc',
-                                                    border: `1px solid ${isCurrent ? 'rgba(16,185,129,0.25)' : '#e2e8f0'}`,
+                                                    background: isCurrent ? 'rgba(16,185,129,0.06)' : '#F5F0EA',
+                                                    border: `1px solid ${isCurrent ? 'rgba(16,185,129,0.25)' : '#EDE8E0'}`,
                                                 }}>
                                                 <div>
-                                                    <p className="text-sm font-semibold" style={{ color: isCurrent ? '#059669' : '#374151' }}>{shift.name}</p>
-                                                    <p className="text-[11px] text-gray-400">{getShiftTimeRange(shift)}</p>
+                                                    <p className="text-sm font-semibold" style={{ color: isCurrent ? '#059669' : '#1A1A1A' }}>{shift.name}</p>
+                                                    <p className="text-[11px]" style={{ color: '#9B7B5A' }}>{getShiftTimeRange(shift)}</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {isCurrent && <IoCheckmarkCircle className="text-emerald-500" size={15} />}
-                                                    <span className="font-black text-sm" style={{ color: isCurrent ? '#059669' : '#9ca3af' }}>₹{shiftPrice}</span>
+                                                    <span className="font-black text-sm" style={{ color: isCurrent ? '#059669' : '#9B7B5A' }}>₹{shiftPrice}</span>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                     {!isCustom && !shifts.some(s => s.id === 'full') && (
                                         <div className="flex justify-between items-center px-4 py-3 rounded-xl"
-                                            style={{ background: seatData.seat.shift === 'Full Day' ? 'rgba(16,185,129,0.06)' : '#f8fafc', border: '1px solid #e2e8f0' }}>
-                                            <span className="text-sm text-gray-500">Full Day</span>
-                                            <span className="font-black text-sm text-gray-400">₹{seatData.seat.basePrices?.full || 1200}</span>
+                                            style={{ background: seatData.seat.shift === 'Full Day' ? 'rgba(16,185,129,0.06)' : '#F5F0EA', border: '1px solid #EDE8E0' }}>
+                                            <span className="text-sm" style={{ color: '#9B7B5A' }}>Full Day</span>
+                                            <span className="font-black text-sm" style={{ color: '#9B7B5A' }}>₹{seatData.seat.basePrices?.full || 1200}</span>
                                         </div>
                                     )}
                                 </div>
@@ -277,34 +289,39 @@ const MySeat = () => {
                     <div className="lg:col-span-3">
                         {room && room.seats ? (
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                                className="rounded-2xl overflow-hidden h-full bg-white border border-gray-200 shadow-sm">
-                                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                                className="rounded-2xl overflow-hidden h-full"
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid #EDE8E0' }}>
                                     <div className="flex items-center gap-2.5">
-                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-orange-50">
-                                            <IoGridOutline size={13} className="text-orange-500" />
+                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                                            style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
+                                            <IoGridOutline size={13} style={{ color: '#FFFFFF' }} />
                                         </div>
-                                        <p className="text-gray-900 font-bold text-sm">Seat Location Map</p>
+                                        <p className="font-bold text-sm" style={{ color: '#1A1A1A' }}>Seat Location Map</p>
                                     </div>
-                                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-600">
+                                    <span className="text-[11px] font-bold px-3 py-1 rounded-full"
+                                        style={{ background: '#FEF3C7', border: '1px solid #FDDCAE', color: '#EA580C' }}>
                                         {room?.name || 'Room View'}
                                     </span>
                                 </div>
                                 <div className="p-6 overflow-x-auto min-h-[600px] flex items-start justify-center">
                                     <StudentRoomGrid room={room} highlightSeatId={primarySeat?._id || primarySeat?.id} onSeatClick={() => {}} />
                                 </div>
-                                <div className="mx-5 mb-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm bg-orange-50 border border-orange-200">
-                                    <IoBedOutline size={15} className="text-orange-500 shrink-0" />
-                                    <p className="text-orange-700 text-sm">
-                                        Your seat <strong className="text-orange-900 font-black">#{room.roomId ? `${room.roomId} - ${primarySeat.number}` : primarySeat.number}</strong> is highlighted on the map.
+                                <div className="mx-5 mb-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm"
+                                    style={{ background: '#FEF3C7', border: '1px solid #FDDCAE' }}>
+                                    <IoBedOutline size={15} style={{ color: '#EA580C' }} className="shrink-0" />
+                                    <p className="text-sm" style={{ color: '#92400E' }}>
+                                        Your seat <strong className="font-black" style={{ color: '#78350F' }}>#{room.roomId ? `${room.roomId} - ${primarySeat.number}` : primarySeat.number}</strong> is highlighted on the map.
                                     </p>
                                 </div>
                             </motion.div>
                         ) : (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="h-64 lg:h-full rounded-2xl flex items-center justify-center text-center bg-white border border-gray-200 shadow-sm">
+                                className="h-64 lg:h-full rounded-2xl flex items-center justify-center text-center"
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
                                 <div>
-                                    <IoGridOutline size={36} className="text-gray-300 mx-auto mb-3" />
-                                    <p className="text-gray-400 text-sm">Room map not available</p>
+                                    <IoGridOutline size={36} className="mx-auto mb-3" style={{ color: '#FDDCAE' }} />
+                                    <p className="text-sm" style={{ color: '#9B7B5A' }}>Room map not available</p>
                                 </div>
                             </motion.div>
                         )}
