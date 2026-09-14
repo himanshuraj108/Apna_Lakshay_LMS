@@ -74,82 +74,104 @@ const AINoteSummarizer = () => {
     };
 
     return (
-        <div className="min-h-screen" style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
-            <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-md">
+        <div className="min-h-screen" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
+            {/* Warm dot grid overlay */}
+            <div style={{
+                position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                backgroundSize: '28px 28px'
+            }} />
+
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-30" style={{ borderBottom: '1.5px solid #EDE8E0', background: 'rgba(247,243,236,0.92)', backdropFilter: 'blur(16px)' }}>
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/student" className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                    <Link to="/student"
+                        className="p-2 rounded-lg transition-all"
+                        style={{ background: '#FFFFFF', border: '1px solid #EDE8E0', color: '#78350F' }}>
                         <IoArrowBack size={18} />
                     </Link>
                     <div className="flex items-center gap-2 flex-1">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
-                            <IoDocumentTextOutline size={14} className="text-violet-500" />
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                            <IoDocumentTextOutline size={14} style={{ color: '#F97316' }} />
                         </div>
-                        <h1 className="text-gray-900 font-bold text-base">AI Notes Summarizer</h1>
+                        <h1 className="font-bold text-base" style={{ color: '#1A1A1A' }}>AI Notes Summarizer</h1>
                     </div>
                     {step === 'result' && (
                         <button onClick={() => { setStep('form'); setResult(null); setQuizAnswers({}); setQuizRevealed({}); }}
-                            className="text-xs font-bold px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all">
+                            className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                             Summarize More
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto px-4 py-6">
+            <div className="max-w-3xl mx-auto px-4 py-6" style={{ position: 'relative', zIndex: 1 }}>
                 <AnimatePresence mode="wait">
 
                     {step === 'form' && (
                         <motion.div key="form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                             className="space-y-4">
-                            <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                                <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-                                    <p className="text-sm font-bold text-gray-800">Paste Your Study Material</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">AI will summarize, extract key facts, and generate practice questions</p>
+                            <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                {/* Card accent bar */}
+                                <div style={{ height: 3, background: 'linear-gradient(135deg,#F97316,#EA580C)', borderRadius: '12px 12px 0 0' }} />
+                                <div className="px-5 py-4 border-b" style={{ borderColor: '#EDE8E0', background: '#FAFAF8' }}>
+                                    <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Paste Your Study Material</p>
+                                    <p className="text-xs mt-0.5" style={{ color: '#9B7B5A' }}>AI will summarize, extract key facts, and generate practice questions</p>
                                 </div>
                                 <div className="p-5 space-y-4">
                                     {/* Subject */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Subject</label>
+                                        <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#9B7B5A' }}>Subject</label>
                                         <div className="relative">
                                             <select value={subject} onChange={e => setSubject(e.target.value)}
-                                                className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 focus:outline-none focus:border-violet-400 transition-all capitalize">
+                                                className="w-full appearance-none rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none transition-all capitalize"
+                                                style={{ background: '#FAFAF8', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
+                                                onFocus={e => { e.target.style.borderColor = '#F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.12)'; }}
+                                                onBlur={e => { e.target.style.borderColor = '#EDE8E0'; e.target.style.boxShadow = 'none'; }}>
                                                 {SUBJECTS.map(s => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                                             </select>
-                                            <IoChevronDownOutline size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                            <IoChevronDownOutline size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#9B7B5A' }} />
                                         </div>
                                         {subject === 'other' && (
                                             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mt-3">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Custom Subject Name</label>
+                                                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#9B7B5A' }}>Custom Subject Name</label>
                                                 <input type="text" value={customSubject}
                                                     onChange={e => setCustomSubject(e.target.value)}
                                                     placeholder="e.g. Physics, Chemistry, Biology..."
-                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 focus:outline-none focus:border-violet-400 transition-all" />
+                                                    className="w-full rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none transition-all"
+                                                    style={{ background: '#FAFAF8', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
+                                                    onFocus={e => { e.target.style.borderColor = '#F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.12)'; }}
+                                                    onBlur={e => { e.target.style.borderColor = '#EDE8E0'; e.target.style.boxShadow = 'none'; }} />
                                             </motion.div>
                                         )}
                                     </div>
 
                                     {/* Textarea */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                                            Study Material — <span className="text-violet-600 normal-case font-semibold">{text.length}/4000 chars</span>
+                                        <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#9B7B5A' }}>
+                                            Study Material — <span className="normal-case font-semibold" style={{ color: '#F97316' }}>{text.length}/4000 chars</span>
                                         </label>
                                         <textarea ref={textareaRef} value={text}
                                             onChange={e => setText(e.target.value)}
                                             rows={8}
                                             maxLength={4000}
                                             placeholder="Paste chapter notes, textbook paragraphs, articles, or any study content here..."
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 resize-none focus:outline-none focus:border-violet-400 transition-all leading-relaxed" />
+                                            className="w-full rounded-xl px-4 py-3 text-sm resize-none focus:outline-none transition-all leading-relaxed"
+                                            style={{ background: '#FAFAF8', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
+                                            onFocus={e => { e.target.style.borderColor = '#F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.12)'; }}
+                                            onBlur={e => { e.target.style.borderColor = '#EDE8E0'; e.target.style.boxShadow = 'none'; }} />
                                     </div>
 
                                     {error && (
-                                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                                        <div className="flex items-center gap-2 text-sm rounded-xl px-4 py-3" style={{ color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca' }}>
                                             <IoAlertCircleOutline size={16} />{error}
                                         </div>
                                     )}
 
                                     <button onClick={handleSummarize} disabled={text.length < 30}
                                         className="w-full py-3.5 rounded-xl font-extrabold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-                                        style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)' }}>
+                                        style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                                         Summarize with AI
                                     </button>
                                 </div>
@@ -157,17 +179,17 @@ const AINoteSummarizer = () => {
 
                             {/* Recent History Card */}
                             {history.length > 0 && (
-                                <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden mt-6" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                                    <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                <div className="rounded-2xl overflow-hidden mt-6" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                    <div className="px-5 py-4 border-b flex justify-between items-center" style={{ borderColor: '#EDE8E0', background: '#FAFAF8' }}>
                                         <div>
-                                            <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                                <IoTimeOutline className="text-violet-500" />
+                                            <p className="text-sm font-bold flex items-center gap-2" style={{ color: '#1A1A1A' }}>
+                                                <IoTimeOutline style={{ color: '#F97316' }} />
                                                 Recent Summaries
                                             </p>
-                                            <p className="text-xs text-gray-400 mt-0.5">Click any past summary to restore and view it instantly</p>
+                                            <p className="text-xs mt-0.5" style={{ color: '#9B7B5A' }}>Click any past summary to restore and view it instantly</p>
                                         </div>
                                     </div>
-                                    <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                                    <div className="divide-y max-h-60 overflow-y-auto" style={{ borderColor: '#EDE8E0' }}>
                                         {history.map((item, idx) => (
                                             <button
                                                 key={item._id || idx}
@@ -176,17 +198,21 @@ const AINoteSummarizer = () => {
                                                     setResult(item.payload);
                                                     setStep('result');
                                                 }}
-                                                className="w-full text-left px-5 py-3.5 hover:bg-violet-55/10 active:bg-violet-55/20 transition-colors flex justify-between items-center group"
+                                                className="w-full text-left px-5 py-3.5 transition-colors flex justify-between items-center group"
+                                                style={{ borderColor: '#EDE8E0' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(249,115,22,0.04)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                             >
                                                 <div className="pr-4 min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-gray-800 group-hover:text-violet-600 transition-colors truncate">
+                                                    <p className="text-xs font-bold truncate transition-colors" style={{ color: '#1A1A1A' }}>
                                                         {item.payload?.title || item.details || 'Note Summary'}
                                                     </p>
-                                                    <p className="text-[10px] text-gray-400 font-medium mt-1 truncate">
+                                                    <p className="text-[10px] font-medium mt-1 truncate" style={{ color: '#9B7B5A' }}>
                                                         {new Date(item.createdAt).toLocaleString()}
                                                     </p>
                                                 </div>
-                                                <span className="text-[10px] font-bold text-violet-600 bg-violet-50 border border-violet-100 px-2 py-0.5 rounded-lg shrink-0">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0"
+                                                    style={{ color: '#EA580C', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
                                                     Restore
                                                 </span>
                                             </button>
@@ -200,11 +226,18 @@ const AINoteSummarizer = () => {
                     {step === 'loading' && (
                         <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                             className="flex flex-col items-center justify-center py-32 gap-4">
-                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
-                                <IoSparklesOutline size={28} className="text-violet-500 animate-pulse" />
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)' }}>
+                                <IoSparklesOutline size={28} className="animate-pulse" style={{ color: '#F97316' }} />
                             </div>
-                            <p className="text-gray-900 font-bold text-base">Summarizing your notes...</p>
-                            <p className="text-gray-400 text-sm">Extracting key points and generating questions</p>
+                            {/* Warm spinner */}
+                            <div style={{
+                                width: 36, height: 36, borderRadius: '50%',
+                                border: '3px solid #FDDCAE', borderTopColor: '#F97316',
+                                animation: 'spin 0.8s linear infinite'
+                            }} />
+                            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                            <p className="font-bold text-base" style={{ color: '#1A1A1A' }}>Summarizing your notes...</p>
+                            <p className="text-sm" style={{ color: '#9B7B5A' }}>Extracting key points and generating questions</p>
                         </motion.div>
                     )}
 
@@ -213,35 +246,41 @@ const AINoteSummarizer = () => {
                             className="space-y-4">
 
                             {/* Title + Summary */}
-                            <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 bg-gray-50/50">
-                                    <p className="text-sm font-bold text-gray-800">{result.title}</p>
+                            <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                <div style={{ height: 3, background: 'linear-gradient(135deg,#F97316,#EA580C)', borderRadius: '12px 12px 0 0' }} />
+                                <div className="px-5 py-4 flex items-center justify-between border-b" style={{ borderColor: '#EDE8E0', background: '#FAFAF8' }}>
+                                    <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>{result.title}</p>
                                     <button onClick={() => copyToClipboard(result.summary, 'summary')}
-                                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
-                                        {copiedIndex === 'summary' ? <IoCheckmarkCircleOutline size={14} className="text-green-500" /> : <IoCopyOutline size={14} />}
+                                        className="p-1.5 rounded-lg transition-all"
+                                        style={{ color: '#9B7B5A' }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = '#F5F0EA'; e.currentTarget.style.color = '#1A1A1A'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9B7B5A'; }}>
+                                        {copiedIndex === 'summary' ? <IoCheckmarkCircleOutline size={14} style={{ color: '#22c55e' }} /> : <IoCopyOutline size={14} />}
                                     </button>
                                 </div>
                                 <div className="p-5">
-                                    <p className="text-sm text-gray-700 leading-relaxed">{result.summary}</p>
+                                    <p className="text-sm leading-relaxed" style={{ color: '#6B6560' }}>{result.summary}</p>
                                     {result.examRelevance && (
-                                        <p className="text-xs text-violet-600 font-semibold mt-3 border-t border-gray-100 pt-3">{result.examRelevance}</p>
+                                        <p className="text-xs font-semibold mt-3 pt-3" style={{ color: '#EA580C', borderTop: '1px solid #EDE8E0' }}>{result.examRelevance}</p>
                                     )}
                                 </div>
                             </div>
 
                             {/* Key Points */}
                             {result.keyPoints?.length > 0 && (
-                                <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                                    <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
-                                        <IoBulbOutline size={14} className="text-violet-500" />
-                                        <p className="text-sm font-bold text-gray-800">Key Points</p>
+                                <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                    <div className="px-5 py-3 border-b flex items-center gap-2" style={{ borderColor: '#EDE8E0', background: '#FAFAF8' }}>
+                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                                            <IoBulbOutline size={13} style={{ color: '#F97316' }} />
+                                        </div>
+                                        <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Key Points</p>
                                     </div>
                                     <div className="p-5 space-y-2.5">
                                         {result.keyPoints.map((point, i) => (
                                             <div key={i} className="flex items-start gap-2.5">
                                                 <span className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-black mt-0.5"
-                                                    style={{ background: 'rgba(139,92,246,0.1)', color: '#7c3aed' }}>{i + 1}</span>
-                                                <p className="text-sm text-gray-700">{point}</p>
+                                                    style={{ background: 'rgba(249,115,22,0.1)', color: '#EA580C' }}>{i + 1}</span>
+                                                <p className="text-sm" style={{ color: '#6B6560' }}>{point}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -250,15 +289,15 @@ const AINoteSummarizer = () => {
 
                             {/* Important Facts */}
                             {result.importantFacts?.length > 0 && (
-                                <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                                    <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-                                        <p className="text-sm font-bold text-gray-800">Important Facts for Exam</p>
+                                <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                    <div className="px-5 py-3 border-b" style={{ borderColor: '#EDE8E0', background: '#FAFAF8' }}>
+                                        <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Important Facts for Exam</p>
                                     </div>
-                                    <div className="divide-y divide-gray-100">
+                                    <div className="divide-y" style={{ borderColor: '#EDE8E0' }}>
                                         {result.importantFacts.map((f, i) => (
                                             <div key={i} className="px-5 py-3.5">
-                                                <p className="text-sm font-semibold text-gray-800">{f.fact}</p>
-                                                <p className="text-xs text-violet-600 mt-0.5">{f.importance}</p>
+                                                <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{f.fact}</p>
+                                                <p className="text-xs mt-0.5" style={{ color: '#EA580C' }}>{f.importance}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -267,15 +306,17 @@ const AINoteSummarizer = () => {
 
                             {/* Practice Questions */}
                             {result.practiceQuestions?.length > 0 && (
-                                <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                                    <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
-                                        <IoHelpCircleOutline size={14} className="text-violet-500" />
-                                        <p className="text-sm font-bold text-gray-800">Practice Questions</p>
+                                <div className="rounded-2xl overflow-hidden" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                    <div className="px-5 py-3 border-b flex items-center gap-2" style={{ borderColor: '#EDE8E0', background: '#FAFAF8' }}>
+                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.1)' }}>
+                                            <IoHelpCircleOutline size={13} style={{ color: '#F97316' }} />
+                                        </div>
+                                        <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Practice Questions</p>
                                     </div>
-                                    <div className="divide-y divide-gray-100">
+                                    <div className="divide-y" style={{ borderColor: '#EDE8E0' }}>
                                         {result.practiceQuestions.map((q, qi) => (
                                             <div key={qi} className="p-5 space-y-3">
-                                                <p className="text-sm font-bold text-gray-800">Q{qi + 1}. {q.question}</p>
+                                                <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Q{qi + 1}. {q.question}</p>
                                                 <div className="grid grid-cols-1 gap-1.5">
                                                     {q.options.map((opt, oi) => {
                                                         const letter = opt.charAt(0);
@@ -287,12 +328,12 @@ const AINoteSummarizer = () => {
                                                                 onClick={() => { setQuizAnswers(a => ({ ...a, [qi]: letter })); setQuizRevealed(r => ({ ...r, [qi]: true })); }}
                                                                 className="text-left px-3 py-2 rounded-xl text-xs font-semibold border transition-all"
                                                                 style={{
-                                                                    background: !revealed ? (isSelected ? 'rgba(139,92,246,0.08)' : 'transparent')
+                                                                    background: !revealed ? (isSelected ? 'rgba(249,115,22,0.08)' : 'transparent')
                                                                         : isCorrect ? 'rgba(16,185,129,0.08)' : (isSelected ? 'rgba(239,68,68,0.08)' : 'transparent'),
-                                                                    borderColor: !revealed ? (isSelected ? 'rgba(139,92,246,0.3)' : '#e2e8f0')
-                                                                        : isCorrect ? 'rgba(16,185,129,0.3)' : (isSelected ? 'rgba(239,68,68,0.3)' : '#e2e8f0'),
-                                                                    color: !revealed ? (isSelected ? '#7c3aed' : '#374151')
-                                                                        : isCorrect ? '#059669' : (isSelected ? '#dc2626' : '#374151'),
+                                                                    borderColor: !revealed ? (isSelected ? 'rgba(249,115,22,0.3)' : '#EDE8E0')
+                                                                        : isCorrect ? 'rgba(16,185,129,0.3)' : (isSelected ? 'rgba(239,68,68,0.3)' : '#EDE8E0'),
+                                                                    color: !revealed ? (isSelected ? '#EA580C' : '#6B6560')
+                                                                        : isCorrect ? '#059669' : (isSelected ? '#dc2626' : '#6B6560'),
                                                                 }}>
                                                                 {opt}
                                                             </button>
@@ -300,7 +341,7 @@ const AINoteSummarizer = () => {
                                                     })}
                                                 </div>
                                                 {quizRevealed[qi] && q.explanation && (
-                                                    <div className="text-xs text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-200">
+                                                    <div className="text-xs rounded-xl px-3 py-2.5" style={{ color: '#6B6560', background: '#F5F0EA', border: '1px solid #EDE8E0' }}>
                                                         {q.explanation}
                                                     </div>
                                                 )}
