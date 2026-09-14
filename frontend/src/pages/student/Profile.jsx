@@ -363,7 +363,7 @@ const Profile = () => {
                 {/* ── Center aligned Top Bar and Redesigned Profile Card ── */}
                 <div className="w-full max-w-[420px] mx-auto mb-8">
                     {/* ── Top bar ── */}
-                    <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3">
+                    <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center mb-6">
                         <Link to="/student">
                             <motion.button whileHover={{ scale: 1.03, x: -2 }} whileTap={{ scale: 0.98 }}
                                 className="flex items-center gap-2 px-5 py-3 rounded-[20px] text-sm font-semibold transition-all shadow-sm" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", color: "#78350F" }}
@@ -371,13 +371,6 @@ const Profile = () => {
                                 <IoArrowBack size={16} /> Back to Dashboard
                             </motion.button>
                         </Link>
-                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-[20px] text-sm font-bold transition-all shadow-sm cursor-pointer"
-                            title="Log Out"
-                        >
-                            <IoLogOut size={18} />
-                            <span>Logout</span>
-                        </motion.button>
                     </motion.div>
 
                     {/* ── Toast alerts ── */}
