@@ -30,6 +30,13 @@ import NewspaperModal from '../../components/student/NewspaperModal';
 import InactiveScreen from '../../components/student/InactiveScreen';
 import AccessDeniedPending from '../../pages/public/AccessDeniedPending';
 import Footer from '../../components/layout/Footer';
+import { useLenis } from '../../hooks/useLenis';
+import { useGsapReveal, useGsapCountUp } from '../../hooks/useGsapReveal';
+import '@fontsource/dm-sans/400.css';
+import '@fontsource/dm-sans/500.css';
+import '@fontsource/dm-sans/700.css';
+import '@fontsource/dm-sans/800.css';
+
 
 const EXAM_TARGET_NAMES = {
     'ssc_cgl': 'SSC CGL',
@@ -94,222 +101,75 @@ const playSuccessBeep = () => {
     if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
 };
 
-/* ─── CSS injected once ─────────────────────────────────────────────── */
+/* ─── Premium Warm Design System CSS ───────────────────────────── */
 const DASH_STYLE = `
+/* ── Font ── */
+* { font-family: 'DM Sans', 'Inter', 'Segoe UI', sans-serif; }
+
+/* ── Keyframes ── */
 @keyframes orb1{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(40px,-60px) scale(1.1);}66%{transform:translate(-30px,20px) scale(0.9);}}
 @keyframes orb2{0%,100%{transform:translate(0,0) scale(1);}33%{transform:translate(-40px,30px) scale(1.08);}66%{transform:translate(20px,-30px) scale(0.92);}}
 @keyframes orb3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(25px,40px) scale(1.05);}}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
-@keyframes pulse-ring{0%{transform:scale(.9);opacity:1;}80%,100%{transform:scale(1.35);opacity:0;}}
 @keyframes shimmer-name{0%{background-position:200% center;}100%{background-position:-200% center;}}
 @keyframes shimmer-ltr{0%{background-position:0% center;}100%{background-position:-200% center;}}
-@keyframes blink-new{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(250,204,21,0.5);}50%{opacity:0.7;box-shadow:0 0 8px 3px rgba(250,204,21,0.35);}}
+@keyframes blink-new{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(250,204,21,0.5);}50%{opacity:0.7;box-shadow:0 0 8px 3px rgba(250,204,21,0.35);}}}
 @keyframes blink-green{0%,100%{opacity:1;text-shadow:0 0 8px rgba(34,197,94,0.9);}50%{opacity:0.7;text-shadow:0 0 16px rgba(34,197,94,0.5);}}
 @keyframes blink-red{0%,100%{opacity:1;text-shadow:0 0 8px rgba(239,68,68,0.9);}50%{opacity:0.7;text-shadow:0 0 16px rgba(239,68,68,0.5);}}
+@keyframes refMiniTicker{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(-50%,0,0);}}
+@keyframes buttonPulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(249,115,22,0.5);}70%{transform:scale(1.05);box-shadow:0 0 0 7px rgba(236,72,153,0);}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(249,115,22,0);}}
+@keyframes card-shimmer-bg{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+@keyframes holo-rotate{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@keyframes ticker-sweep{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(-50%,0,0);}}
+
+/* ── Utility classes ── */
 .shimmer-text{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-name 4s linear infinite;}
 .new-badge-blink{animation:blink-new 1.4s ease-in-out infinite;}
 .label-blink-green{animation:blink-green 1.1s ease-in-out infinite;color:#22c55e;font-weight:800;}
 .label-blink-red{animation:blink-red 1.1s ease-in-out infinite;color:#ef4444;font-weight:800;}
-/* Ambient background blobs */
-.dash-blob{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
-.dash-blob-1{width:550px;height:550px;top:-120px;left:-150px;background:radial-gradient(circle,rgba(249,115,22,0.11) 0%,transparent 70%);animation:orb1 20s ease-in-out infinite;}
-.dash-blob-2{width:400px;height:400px;top:20%;right:-100px;background:radial-gradient(circle,rgba(251,146,60,0.07) 0%,transparent 70%);animation:orb2 26s ease-in-out infinite;}
-.dash-blob-3{width:350px;height:350px;bottom:20%;left:5%;background:radial-gradient(circle,rgba(253,186,116,0.08) 0%,transparent 70%);animation:orb3 30s ease-in-out infinite;}
-.dash-blob-4{width:280px;height:280px;top:60%;right:15%;background:radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 70%);animation:orb2 24s ease-in-out infinite reverse;}
+.animate-ref-mini-ticker{display:inline-flex;white-space:nowrap;animation:refMiniTicker 24s linear infinite;}
+.animate-ref-mini-ticker:hover{animation-play-state:paused;}
+.animate-view-pulse{animation:buttonPulse 1.8s infinite ease-in-out;}
 
-/* --- Premium Flip Card Styles --- */
-.rank-card-container {
-  perspective: 1500px;
-  width: 100%;
-  max-width: 340px;
-  cursor: pointer;
-}
-.rank-card-inner {
-  width: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.rank-card-container.flipped .rank-card-inner {
-  transform: rotateY(180deg);
-}
-.rank-card-front {
-  position: relative;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  border-radius: 14px;
-  overflow: hidden;
-  z-index: 2;
-}
-.rank-card-back {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: rotateY(180deg);
-  border-radius: 14px;
-  overflow: hidden;
-  z-index: 1;
-}
+/* ── Warm ambient blobs (subtle — 6% opacity max) ── */
+.dash-blob{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
+.dash-blob-1{width:600px;height:600px;top:-150px;left:-180px;background:radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 70%);animation:orb1 22s ease-in-out infinite;}
+.dash-blob-2{width:450px;height:450px;top:20%;right:-120px;background:radial-gradient(circle,rgba(251,146,60,0.04) 0%,transparent 70%);animation:orb2 28s ease-in-out infinite;}
+.dash-blob-3{width:380px;height:380px;bottom:20%;left:5%;background:radial-gradient(circle,rgba(253,186,116,0.05) 0%,transparent 70%);animation:orb3 32s ease-in-out infinite;}
+.dash-blob-4{width:300px;height:300px;top:60%;right:15%;background:radial-gradient(circle,rgba(249,115,22,0.04) 0%,transparent 70%);animation:orb2 26s ease-in-out infinite reverse;}
 
-.premium-metallic-card {
-  background: linear-gradient(135deg, #ff6a00 0%, #ff8c00 25%, #ffa500 50%, #ff6a00 75%, #e85d00 100%);
-  background-size: 200% 200%;
-  animation: card-shimmer-bg 4s ease-in-out infinite;
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  box-shadow: 
-    0 8px 32px -4px rgba(255, 106, 0, 0.55),
-    0 0 0 1px rgba(255, 200, 100, 0.2),
-    inset 0 1px 2px rgba(255, 255, 255, 0.55),
-    inset 0 -1px 2px rgba(180, 60, 0, 0.3);
-}
-@keyframes card-shimmer-bg {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-.premium-back-card {
-  background: linear-gradient(135deg, #1a0a00 0%, #2d1200 40%, #1a0a00 100%);
-  border: 1.5px solid rgba(255, 140, 0, 0.35);
-  box-shadow: 
-    0 8px 32px -4px rgba(255, 106, 0, 0.4),
-    inset 0 1px 2px rgba(255, 255, 255, 0.08);
-}
-.premium-card-glow {
-  position: absolute;
-  top: -20%;
-  right: -20%;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 100%);
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(40px);
-}
-.premium-card-glow-2 {
-  position: absolute;
-  bottom: -20%;
-  left: -20%;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, rgba(217, 70, 239, 0.1) 60%, transparent 100%);
-  border-radius: 50%;
-  pointer-events: none;
-  filter: blur(40px);
-}
-.premium-card-chip {
-  width: 28px;
-  height: 20px;
-  background: linear-gradient(135deg, #fffbeb 0%, #f59e0b 50%, #b45309 100%);
-  border-radius: 4px;
-  position: relative;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.5), 
-    0 1px 3px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(180, 83, 9, 0.4);
-  overflow: hidden;
-}
-.premium-card-chip::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    linear-gradient(90deg, transparent 50%, rgba(0, 0, 0, 0.15) 50%),
-    linear-gradient(transparent 50%, rgba(0, 0, 0, 0.15) 50%);
-  background-size: 5px 5px;
-}
-.premium-card-hologram {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: linear-gradient(45deg, #ff007f, #7f00ff, #00f0ff, #ffef00, #ff007f);
-  background-size: 300% 300%;
-  animation: holo-rotate 6s linear infinite;
-  opacity: 0.75;
-  mix-blend-mode: color-dodge;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
-}
-@keyframes holo-rotate {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.premium-card-pattern {
-  position: absolute;
-  inset: 0;
-  background: 
-    radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.03) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.03) 0%, transparent 40%),
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.01) 0px, rgba(255, 255, 255, 0.01) 1px, transparent 1px, transparent 10px);
-  pointer-events: none;
-}
-.premium-card-overlay-line {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.0) 30%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.0) 70%, transparent);
-  transform: skewX(-25deg) translateX(-100%);
-  transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1);
-  pointer-events: none;
-}
-.rank-card-container:hover .premium-card-overlay-line {
-  transform: skewX(-25deg) translateX(280%);
-}
-.premium-card-magnetic-stripe {
-  height: 28px;
-  background: linear-gradient(to bottom, #1e1e1e, #0a0a0a);
-  width: 100%;
-  margin-top: 10px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
-}
-.premium-card-signature-panel {
-  height: 24px;
-  background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 6px, #e2e8f0 6px, #e2e8f0 12px);
-  border-radius: 3px;
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  padding-left: 8px;
-  color: #1e293b;
-  font-family: 'Dancing Script', 'Caveat', 'Courier New', cursive, serif;
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
-}
-.premium-card-cvv {
-  background: #ffffff;
-  color: #0f172a;
-  padding: 0 7px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  font-weight: 800;
-  font-style: italic;
-  font-family: monospace;
-  font-size: 10px;
-  border-radius: 3px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.25);
-  border: 1px solid #cbd5e1;
-}
-.rank-card-back-content::-webkit-scrollbar {
-  width: 4px;
-}
-.rank-card-back-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-}
-.rank-card-back-content::-webkit-scrollbar-thumb {
-  background: rgba(251, 191, 36, 0.25);
-  border-radius: 2px;
-}
-.rank-card-back-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(251, 191, 36, 0.45);
-}
+/* ── Premium warm service card ── */
+.warm-card{background:#ffffff;border:1.5px solid #EDE8E0;border-radius:18px;transition:border-color 0.2s,box-shadow 0.2s,transform 0.18s;}
+.warm-card:hover{border-color:#E2B08A;box-shadow:0 8px 32px -6px rgba(249,115,22,0.14);transform:translateY(-2px);}
+.warm-card-accent-top::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:18px 18px 0 0;background:var(--accent,#F97316);}
+
+/* ── GSAP reveal helper ── */
+.gsap-reveal{opacity:0;transform:translateY(36px);}
+
+/* ── Flip card styles (preserved) ── */
+.rank-card-container{perspective:1500px;width:100%;max-width:340px;cursor:pointer;}
+.rank-card-inner{width:100%;position:relative;transform-style:preserve-3d;transition:transform 0.8s cubic-bezier(0.175,0.885,0.32,1.275);}
+.rank-card-container.flipped .rank-card-inner{transform:rotateY(180deg);}
+.rank-card-front{position:relative;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;overflow:hidden;z-index:2;}
+.rank-card-back{position:absolute;inset:0;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);border-radius:14px;overflow:hidden;z-index:1;}
+.premium-metallic-card{background:linear-gradient(135deg,#ff6a00 0%,#ff8c00 25%,#ffa500 50%,#ff6a00 75%,#e85d00 100%);background-size:200% 200%;animation:card-shimmer-bg 4s ease-in-out infinite;border:1.5px solid rgba(255,255,255,0.45);box-shadow:0 8px 32px -4px rgba(255,106,0,0.55),0 0 0 1px rgba(255,200,100,0.2),inset 0 1px 2px rgba(255,255,255,0.55),inset 0 -1px 2px rgba(180,60,0,0.3);}
+.premium-back-card{background:linear-gradient(135deg,#1a0a00 0%,#2d1200 40%,#1a0a00 100%);border:1.5px solid rgba(255,140,0,0.35);box-shadow:0 8px 32px -4px rgba(255,106,0,0.4),inset 0 1px 2px rgba(255,255,255,0.08);}
+.premium-card-glow{position:absolute;top:-20%;right:-20%;width:320px;height:320px;background:radial-gradient(circle,rgba(236,72,153,0.15) 0%,rgba(99,102,241,0.15) 50%,transparent 100%);border-radius:50%;pointer-events:none;filter:blur(40px);}
+.premium-card-glow-2{position:absolute;bottom:-20%;left:-20%;width:320px;height:320px;background:radial-gradient(circle,rgba(245,158,11,0.12) 0%,rgba(217,70,239,0.1) 60%,transparent 100%);border-radius:50%;pointer-events:none;filter:blur(40px);}
+.premium-card-chip{width:28px;height:20px;background:linear-gradient(135deg,#fffbeb 0%,#f59e0b 50%,#b45309 100%);border-radius:4px;position:relative;box-shadow:inset 0 1px 1px rgba(255,255,255,0.5),0 1px 3px rgba(0,0,0,0.35);border:1px solid rgba(180,83,9,0.4);overflow:hidden;}
+.premium-card-chip::after{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(90deg,transparent 50%,rgba(0,0,0,0.15) 50%),linear-gradient(transparent 50%,rgba(0,0,0,0.15) 50%);background-size:5px 5px;}
+.premium-card-hologram{width:24px;height:24px;border-radius:50%;background:linear-gradient(45deg,#ff007f,#7f00ff,#00f0ff,#ffef00,#ff007f);background-size:300% 300%;animation:holo-rotate 6s linear infinite;opacity:0.75;mix-blend-mode:color-dodge;border:1px solid rgba(255,255,255,0.3);box-shadow:0 0 12px rgba(0,240,255,0.4);}
+.premium-card-pattern{position:absolute;inset:0;background:radial-gradient(circle at 10% 20%,rgba(255,255,255,0.03) 0%,transparent 40%),radial-gradient(circle at 90% 80%,rgba(245,158,11,0.03) 0%,transparent 40%),repeating-linear-gradient(45deg,rgba(255,255,255,0.01) 0px,rgba(255,255,255,0.01) 1px,transparent 1px,transparent 10px);pointer-events:none;}
+.premium-card-overlay-line{position:absolute;inset:0;background:linear-gradient(to right,transparent,rgba(255,255,255,0) 30%,rgba(255,255,255,0.12) 50%,rgba(255,255,255,0) 70%,transparent);transform:skewX(-25deg) translateX(-100%);transition:transform 1.5s cubic-bezier(0.19,1,0.22,1);pointer-events:none;}
+.rank-card-container:hover .premium-card-overlay-line{transform:skewX(-25deg) translateX(280%);}
+.premium-card-magnetic-stripe{height:28px;background:linear-gradient(to bottom,#1e1e1e,#0a0a0a);width:100%;margin-top:10px;box-shadow:inset 0 2px 4px rgba(0,0,0,0.8);}
+.premium-card-signature-panel{height:24px;background:repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9 6px,#e2e8f0 6px,#e2e8f0 12px);border-radius:3px;flex-grow:1;display:flex;align-items:center;padding-left:8px;color:#1e293b;font-family:'Dancing Script','Caveat','Courier New',cursive,serif;font-size:11px;font-weight:bold;letter-spacing:0.5px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.15);}
+.premium-card-cvv{background:#ffffff;color:#0f172a;padding:0 7px;height:24px;display:flex;align-items:center;font-weight:800;font-style:italic;font-family:monospace;font-size:10px;border-radius:3px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.25);border:1px solid #cbd5e1;}
+.rank-card-back-content::-webkit-scrollbar{width:4px;}
+.rank-card-back-content::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);}
+.rank-card-back-content::-webkit-scrollbar-thumb{background:rgba(251,191,36,0.25);border-radius:2px;}
+.rank-card-back-content::-webkit-scrollbar-thumb:hover{background:rgba(251,191,36,0.45);}
 `;
+
 
 /* ─── No-Camera SVG icon: black camera + red diagonal slash ─── */
 const NoCameraIcon = ({ size = 32 }) => (
@@ -898,6 +758,9 @@ const StudentDashboard = () => {
 
     const handleLogout = () => { logout(); navigate('/login'); };
 
+    // ── Premium smooth scroll ──────────────────────────────────────────
+    useLenis(!showScanner);
+
     const getLocation = () => new Promise((resolve, reject) => {
         if (!navigator.geolocation) { reject(new Error('Geolocation not supported.')); return; }
         navigator.geolocation.getCurrentPosition(
@@ -1020,13 +883,15 @@ const StudentDashboard = () => {
 
     /* â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) return (
-        <div className="relative min-h-screen" style={{ background: 'linear-gradient(135deg,#fffaf7 0%,#fafafa 40%,#fffbf8 70%,#fafafa 100%)' }}>
+        <div className="relative min-h-screen" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter','Segoe UI',sans-serif" }}>
             <style>{DASH_STYLE}</style>
-            {/* Ambient floating color blobs */}
+            {/* Subtle warm blobs */}
             <div className="dash-blob dash-blob-1" />
             <div className="dash-blob dash-blob-2" />
             <div className="dash-blob dash-blob-3" />
             <div className="dash-blob dash-blob-4" />
+            {/* Subtle dot grid */}
+            <div className="fixed inset-0 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.06) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             <div className="relative z-10"><DashboardSkeleton /></div>
             {!showScanner && <SpeedDialFAB loading={loadingScanner} onCamera={handleOpenScanner} onManual={handleWithoutCamera} manualEnabled={manualMarkEnabled} />}
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
@@ -1103,18 +968,21 @@ const StudentDashboard = () => {
     })();
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden" style={{ background: 'linear-gradient(135deg,#fffaf7 0%,#fafafa 40%,#fffbf8 70%,#fafafa 100%)', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+        <div
+            className="relative min-h-screen overflow-x-hidden"
+            style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter','Segoe UI',sans-serif" }}
+        >
             <style>{DASH_STYLE}</style>
 
-            {/* Ambient floating color blobs */}
+            {/* ── Subtle warm ambient blobs ── */}
             <div className="dash-blob dash-blob-1" />
             <div className="dash-blob dash-blob-2" />
             <div className="dash-blob dash-blob-3" />
             <div className="dash-blob dash-blob-4" />
 
-            {/* Subtle dot grid texture */}
+            {/* ── Warm dot grid texture ── */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(249,115,22,0.05) 1px, transparent 0)', backgroundSize: '36px 36px' }} />
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             </div>
 
             {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1240,15 +1108,22 @@ const StudentDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                  TOP NAVBAR
-               â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <header className="sticky top-0 z-40" style={{ background: 'rgba(10,10,10,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(249,115,22,0.15)', boxShadow: '0 2px 20px rgba(0,0,0,0.3)' }}>
-                {/* Shimmering bottom border */}
-                <div className="absolute bottom-0 left-0 right-0 h-[1.5px]" style={{ background: 'linear-gradient(90deg,transparent 0%,rgba(249,115,22,0.4) 30%,rgba(251,146,60,0.7) 50%,rgba(249,115,22,0.4) 70%,transparent 100%)', animation: 'shimmer-name 4s linear infinite', backgroundSize: '200% 100%' }} />
-
+            {/* ── TOP NAVBAR — Clean warm white sticky ── */}
+            <motion.header
+                className="sticky top-0 z-40"
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                style={{
+                    background: 'rgba(247,243,236,0.92)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    borderBottom: '1.5px solid #EDE8E0',
+                    boxShadow: '0 2px 16px rgba(180,120,60,0.06)',
+                }}
+            >
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-                    {/* Brand — official logo & full shining title L→R */}
+                    {/* Brand */}
                     <div className="flex items-center gap-2.5 select-none">
                         <img
                             src="/app-icon-192.png"
@@ -1256,7 +1131,7 @@ const StudentDashboard = () => {
                             className="w-7 h-7 rounded-lg object-contain shadow-sm shrink-0"
                         />
                         <span className="font-black text-base tracking-tight" style={{
-                            background: 'linear-gradient(90deg, #ea580c 0%, #f97316 15%, #fdba74 35%, #fff7ed 50%, #fdba74 65%, #f97316 85%, #ea580c 100%)',
+                            background: 'linear-gradient(90deg, #ea580c 0%, #f97316 15%, #fb923c 35%, #f97316 65%, #ea580c 100%)',
                             backgroundSize: '300% auto',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
@@ -1268,29 +1143,41 @@ const StudentDashboard = () => {
                     {/* Nav right */}
                     <div className="flex items-center gap-2">
                         {/* Notification bell */}
-                        <Link to="/student/notifications" className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200"
-                            style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.12)' }}
-                            onMouseEnter={e => { e.currentTarget.style.background='rgba(249,115,22,0.14)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background='rgba(249,115,22,0.07)'; }}>
-                            <IoNotificationsOutline size={18} style={{ color: '#f97316' }} />
+                        <Link to="/student/notifications"
+                            className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200"
+                            style={{ background: '#FFF5EE', border: '1.5px solid #EDE8E0' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#FEEBD8'; e.currentTarget.style.borderColor = '#F97316'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#FFF5EE'; e.currentTarget.style.borderColor = '#EDE8E0'; }}>
+                            <IoNotificationsOutline size={18} style={{ color: '#92400E' }} />
                             {dashboardData?.unreadNotifications > 1 && (
                                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full animate-pulse" style={{ background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.8)' }} />
                             )}
                         </Link>
 
                         {/* Profile pill */}
-                        <Link to="/student/profile" className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl transition-all duration-200"
-                            style={{ background: 'rgba(249,115,22,0.07)', border: '1px solid rgba(249,115,22,0.12)' }}
-                            onMouseEnter={e => { e.currentTarget.style.background='rgba(249,115,22,0.14)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background='rgba(249,115,22,0.07)'; }}>
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#f97316,#fb923c)' }}>
-                                <IoPersonOutline size={14} className="text-white" />
+                        <Link to="/student/profile"
+                            className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl transition-all duration-200"
+                            style={{ background: '#FFF5EE', border: '1.5px solid #EDE8E0' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#FEEBD8'; e.currentTarget.style.borderColor = '#F97316'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#FFF5EE'; e.currentTarget.style.borderColor = '#EDE8E0'; }}>
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={{ border: '1.5px solid rgba(249,115,22,0.35)' }}>
+                                <img
+                                    src={(() => {
+                                        const img = (!user?.profileImage || user.profileImage === '/uploads/avatars/avatar1.svg')
+                                            ? getDeterministicAvatar(user?._id || user?.id, user?.gender)
+                                            : user.profileImage;
+                                        return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                    })()}
+                                    alt={user.name}
+                                    className="w-full h-full object-cover"
+                                />
                             </div>
-                            <span className="text-[12px] font-bold hidden sm:block" style={{ color: '#f9fafb' }}>{user?.name?.split(' ')[0]}</span>
+                            <span className="text-[12px] font-bold hidden sm:block" style={{ color: '#78350F' }}>{user?.name?.split(' ')[0]}</span>
                         </Link>
                     </div>
                 </div>
-            </header>
+            </motion.header>
+
 
             {/* ─────────────────────────────────────────────────────────────
                   PAGE BODY
@@ -1313,50 +1200,15 @@ const StudentDashboard = () => {
                             </span>
                             
                             {/* Compact Ticker (Marquee) */}
-                            <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0 bg-orange-500/5 rounded-lg px-2 border border-orange-100/50">
-                                <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-orange-50/0 to-transparent z-10 pointer-events-none" />
-                                <div className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-orange-50/0 to-transparent z-10 pointer-events-none" />
-                                
-                                <style>{`
-                                    @keyframes refMiniTicker {
-                                        0% { transform: translate3d(0, 0, 0); }
-                                        100% { transform: translate3d(-50%, 0, 0); }
-                                    }
-                                    .animate-ref-mini-ticker {
-                                        display: inline-flex;
-                                        white-space: nowrap;
-                                        animation: refMiniTicker 24s linear infinite;
-                                    }
-                                    .animate-ref-mini-ticker:hover {
-                                        animation-play-state: paused;
-                                    }
-                                    @keyframes buttonPulse {
-                                        0% {
-                                            transform: scale(1);
-                                            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5);
-                                        }
-                                        70% {
-                                            transform: scale(1.05);
-                                            box-shadow: 0 0 0 7px rgba(236, 72, 153, 0);
-                                        }
-                                        100% {
-                                            transform: scale(1);
-                                            box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
-                                        }
-                                    }
-                                    .animate-view-pulse {
-                                        animation: buttonPulse 1.8s infinite ease-in-out;
-                                    }
-                                `}</style>
+                            <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0 rounded-lg px-2 border" style={{ background: 'rgba(249,115,22,0.04)', borderColor: 'rgba(249,115,22,0.12)' }}>
+                                <div className="absolute left-0 top-0 bottom-0 w-3 z-10 pointer-events-none" style={{ background: 'linear-gradient(90deg,#FFF8F0,transparent)' }} />
+                                <div className="absolute right-0 top-0 bottom-0 w-3 z-10 pointer-events-none" style={{ background: 'linear-gradient(270deg,#FFF8F0,transparent)' }} />
                                 <div className="animate-ref-mini-ticker text-[11px] sm:text-xs font-black text-orange-600 select-none cursor-pointer flex gap-12 whitespace-nowrap">
-                                    <span>
-                                        {language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}
-                                    </span>
-                                    <span>
-                                        {language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}
-                                    </span>
+                                    <span>{language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}</span>
+                                    <span>{language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}</span>
                                 </div>
                             </div>
+
                         </div>
                         
                         {/* Action Button */}
@@ -1375,20 +1227,22 @@ const StudentDashboard = () => {
 
                 {/* -- HERO GREETING BAR ------------------------------------------ */}
                 <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, type: 'spring', stiffness: 180 }}
+                    transition={{ duration: 0.5, type: 'spring', stiffness: 160 }}
                     className="mb-5 flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl overflow-hidden relative"
-                    style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1.5px solid rgba(249,115,22,0.2)', boxShadow: '0 4px 20px rgba(249,115,22,0.08), 0 1px 0 rgba(255,255,255,0.8) inset' }}
+                    style={{
+                        background: '#FFFFFF',
+                        border: '1.5px solid #EDE8E0',
+                        boxShadow: '0 4px 24px rgba(180,120,60,0.07)',
+                    }}
                 >
-                    {/* Subtle orange glow left */}
-                    <div className="absolute left-0 top-0 bottom-0 w-24 pointer-events-none" style={{ background: 'linear-gradient(90deg,rgba(249,115,22,0.08),transparent)' }} />
-                    {/* Top accent */}
-                    <div className="absolute top-0 left-0 right-0 h-[1.5px]" style={{ background: 'linear-gradient(90deg,transparent,rgba(249,115,22,0.6) 40%,rgba(251,146,60,0.8) 60%,transparent)' }} />
+                    {/* Warm orange left accent */}
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl" style={{ background: 'linear-gradient(180deg,#F97316,#FB923C,transparent)' }} />
 
-                    <div className="flex items-center gap-3 relative">
+                    <div className="flex items-center gap-3 relative pl-2">
                         <div className="relative shrink-0">
-                            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-lg" style={{ border: '2px solid rgba(249,115,22,0.4)' }}>
+                            <div className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center shadow-md" style={{ border: '2px solid #FDDCAE' }}>
                                 <img
                                     src={(() => {
                                         const img = (!user?.profileImage || user.profileImage === '/uploads/avatars/avatar1.svg')
@@ -1400,32 +1254,32 @@ const StudentDashboard = () => {
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#1c1917]" style={{ boxShadow: '0 0 6px rgba(52,211,153,0.8)' }} />}
+                            {isActive && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white" style={{ boxShadow: '0 0 6px rgba(52,211,153,0.8)' }} />}
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <span className="font-black text-sm" style={{ color: '#111827' }}>Hi, {user?.name?.split(" ")[0]} 👋</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-sm" style={{ color: '#1A1A1A' }}>Hi, {user?.name?.split(' ')[0]} 👋</span>
                             </div>
-                            <span className="text-[10px] font-medium" style={{ color: '#9ca3af' }}>{today}</span>
+                            <span className="text-[11px] font-medium" style={{ color: '#9B7B5A' }}>{today}</span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2 relative">
                         {isActive
-                            ? <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#059669' }}><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{t("Active")}</span>
-                            : <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>{t("Inactive")}</span>}
+                            ? <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#059669' }}><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{t('Active')}</span>
+                            : <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>{t('Inactive')}</span>}
                         {referralEnabled && (
                             <Link to="/student/wallet">
                                 <motion.span whileHover={{ scale: 1.07 }} whileTap={{ scale: 0.93 }}
-                                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-colors"
-                                    style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#6366f1' }}>
-                                    <IoWallet size={11} />
-                                    Wallet
+                                    className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full cursor-pointer"
+                                    style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.18)', color: '#6366f1' }}>
+                                    <IoWallet size={11} />Wallet
                                 </motion.span>
                             </Link>
                         )}
                     </div>
                 </motion.div>
+
 
                 {/* ── WhatsApp Group Banner ── */}
                 {import.meta.env.VITE_WHATSAPP_GROUP_URL && showWhatsAppGroup && (
@@ -1543,25 +1397,28 @@ const StudentDashboard = () => {
                 )}
                 </AnimatePresence>
 
-                {/* -- STATS ROW ---------------------------------------------------- */}
+                {/* -- STATS ROW (Seat, Attendance, Fee, Alerts) ─────────────── */}
                 <motion.div
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.45 }}
+                    transition={{ delay: 0.12, duration: 0.5 }}
                     className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
                 >
                     {/* MY SEAT */}
                     <Link to="/student/seat">
-                        <div className="group relative overflow-hidden rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                            style={{ background: 'linear-gradient(135deg,#fff7ed 0%,#ffedd5 60%,#fed7aa 100%)', border: '1.5px solid #fb923c', boxShadow: '0 4px 16px rgba(249,115,22,0.12)' }}>
-                            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle,rgba(249,115,22,0.2) 0%,transparent 70%)' }} />
-                            <div className="flex items-center gap-2 mb-3 relative z-10">
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                        <div className="group relative overflow-hidden rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 12px rgba(180,120,60,0.06)' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#FDDCAE'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(249,115,22,0.11)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(180,120,60,0.06)'; }}>
+                            {/* Top orange accent bar */}
+                            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg,#F97316,#FB923C,transparent)' }} />
+                            <div className="flex items-center gap-2 mb-3 mt-1">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                                     <IoDesktopOutline size={15} className="text-white" />
                                 </div>
-                                <span className="text-[11px] font-black uppercase tracking-wider text-orange-700">My Seat</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#92400E' }}>My Seat</span>
                             </div>
-                            <div className="relative z-10">
+                            <div>
                             {(() => {
                                 const displaySeats = [];
                                 if (dashboardData?.seat) {
@@ -1577,20 +1434,20 @@ const StudentDashboard = () => {
                                     });
                                 }
                                 if (displaySeats.length === 0) return (
-                                    <div className="mt-2">
-                                        <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none text-orange-900">--</p>
-                                        <p className="text-[11px] font-semibold text-orange-400">Not Assigned</p>
+                                    <div className="mt-1">
+                                        <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: '#C2410C' }}>--</p>
+                                        <p className="text-[11px] font-semibold" style={{ color: '#F97316' }}>Not Assigned</p>
                                     </div>
                                 );
                                 return (
                                     <div className="flex flex-col gap-2 mt-1">
                                         {displaySeats.map((s, r) => (
                                             <div key={r}>
-                                                <p className="text-2xl sm:text-3xl font-black mb-0.5 truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : '#9a3412' }} title={s.number}>{s.number}</p>
+                                                <p className="text-2xl sm:text-3xl font-black mb-0.5 truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : '#1A1A1A' }} title={s.number}>{s.number}</p>
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {s.shifts.map((m, g) => (
                                                         <span key={g} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-full"
-                                                            style={{ background: s.isTemp ? 'rgba(239,68,68,0.12)' : 'rgba(249,115,22,0.12)', border: `1px solid ${s.isTemp ? 'rgba(239,68,68,0.25)' : 'rgba(249,115,22,0.25)'}`, color: s.isTemp ? '#dc2626' : '#ea580c' }}>
+                                                            style={{ background: s.isTemp ? 'rgba(239,68,68,0.08)' : 'rgba(249,115,22,0.08)', border: `1px solid ${s.isTemp ? 'rgba(239,68,68,0.2)' : 'rgba(249,115,22,0.2)'}`, color: s.isTemp ? '#dc2626' : '#EA580C' }}>
                                                             {m.name}{m.startTime ? ` ${m.startTime}-${m.endTime}` : ''}
                                                         </span>
                                                     ))}
@@ -1606,26 +1463,23 @@ const StudentDashboard = () => {
 
                     {/* ATTENDANCE */}
                     <Link to="/student/attendance">
-                        <div className="group relative rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                            style={{
-                                background: attPct >= 75 ? 'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 60%,#bbf7d0 100%)' : attPct >= 50 ? 'linear-gradient(135deg,#fffbeb 0%,#fef3c7 60%,#fde68a 100%)' : 'linear-gradient(135deg,#fff1f2 0%,#ffe4e6 60%,#fecdd3 100%)',
-                                border: `1.5px solid ${attPct >= 75 ? '#86efac' : attPct >= 50 ? '#fcd34d' : '#fca5a5'}`,
-                                boxShadow: `0 4px 16px ${attPct >= 75 ? 'rgba(34,197,94,0.12)' : attPct >= 50 ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)'}`,
-                            }}>
-                            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full pointer-events-none"
-                                style={{ background: `radial-gradient(circle,${attPct >= 75 ? 'rgba(34,197,94,0.2)' : attPct >= 50 ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)'} 0%,transparent 70%)` }} />
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md"
+                        <div className="group relative rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1"
+                            style={{ background: '#FFFFFF', border: `1.5px solid ${attPct >= 75 ? '#BBF7D0' : attPct >= 50 ? '#FDE68A' : '#FECACA'}`, boxShadow: '0 2px 12px rgba(180,120,60,0.06)' }}
+                            onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 8px 28px ${attPct >= 75 ? 'rgba(34,197,94,0.1)' : attPct >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'}`; }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(180,120,60,0.06)'; }}>
+                            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: attPct >= 75 ? 'linear-gradient(90deg,#10B981,#34D399,transparent)' : attPct >= 50 ? 'linear-gradient(90deg,#F59E0B,#FBB024,transparent)' : 'linear-gradient(90deg,#EF4444,#F87171,transparent)' }} />
+                            <div className="flex items-center gap-2 mb-3 mt-1">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
                                     style={{ background: attPct >= 75 ? 'linear-gradient(135deg,#10b981,#34d399)' : attPct >= 50 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : 'linear-gradient(135deg,#ef4444,#f87171)' }}>
                                     <IoCalendarOutline size={15} className="text-white" />
                                 </div>
-                                <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: attPct >= 75 ? '#15803d' : attPct >= 50 ? '#b45309' : '#b91c1c' }}>Attendance</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: attPct >= 75 ? '#065F46' : attPct >= 50 ? '#92400E' : '#7F1D1D' }}>Attendance</span>
                             </div>
-                            <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: attPct >= 75 ? '#166534' : attPct >= 50 ? '#92400e' : '#991b1b' }}>{attPct}%</p>
-                            <p className="text-[11px] font-semibold" style={{ color: attPct >= 75 ? '#16a34a' : attPct >= 50 ? '#d97706' : '#dc2626' }}>
+                            <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: '#1A1A1A' }}>{attPct}%</p>
+                            <p className="text-[11px] font-semibold mb-2" style={{ color: attPct >= 75 ? '#059669' : attPct >= 50 ? '#D97706' : '#DC2626' }}>
                                 {dashboardData?.attendance?.present || 0} / {dashboardData?.attendance?.total || 0} days
                             </p>
-                            <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.08)' }}>
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#F0EDE8' }}>
                                 <div className="h-full rounded-full transition-all duration-700"
                                     style={{ width: `${Math.min(attPct, 100)}%`, background: attPct >= 75 ? 'linear-gradient(90deg,#10b981,#34d399)' : attPct >= 50 ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : 'linear-gradient(90deg,#ef4444,#f87171)' }} />
                             </div>
@@ -1634,27 +1488,26 @@ const StudentDashboard = () => {
 
                     {/* FEE STATUS */}
                     <div onClick={() => navigate('/student/fees')}
-                        className="group rounded-2xl p-4 cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                        style={{
-                            background: dashboardData?.fee?.status === 'paid' ? 'linear-gradient(135deg,#f0fdf4 0%,#dcfce7 60%,#bbf7d0 100%)' : dashboardData?.fee?.status === 'overdue' ? 'linear-gradient(135deg,#fff1f2 0%,#ffe4e6 60%,#fecdd3 100%)' : 'linear-gradient(135deg,#fffbeb 0%,#fef3c7 60%,#fde68a 100%)',
-                            border: `1.5px solid ${dashboardData?.fee?.status === 'paid' ? '#86efac' : dashboardData?.fee?.status === 'overdue' ? '#fca5a5' : '#fcd34d'}`,
-                            boxShadow: `0 4px 16px ${dashboardData?.fee?.status === 'paid' ? 'rgba(34,197,94,0.12)' : dashboardData?.fee?.status === 'overdue' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)'}`,
-                        }}>
+                        className="group rounded-2xl p-4 cursor-pointer h-full flex flex-col justify-between transition-all duration-300 hover:-translate-y-1"
+                        style={{ background: '#FFFFFF', border: `1.5px solid ${dashboardData?.fee?.status === 'paid' ? '#BBF7D0' : dashboardData?.fee?.status === 'overdue' ? '#FECACA' : '#FDE68A'}`, boxShadow: '0 2px 12px rgba(180,120,60,0.06)' }}
+                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 28px rgba(180,120,60,0.1)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(180,120,60,0.06)'; }}>
                         <div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md"
+                            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: dashboardData?.fee?.status === 'paid' ? 'linear-gradient(90deg,#10B981,#34D399,transparent)' : dashboardData?.fee?.status === 'overdue' ? 'linear-gradient(90deg,#EF4444,#F87171,transparent)' : 'linear-gradient(90deg,#F59E0B,#FBB024,transparent)' }} />
+                            <div className="flex items-center gap-2 mb-3 mt-1 relative">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
                                     style={{ background: dashboardData?.fee?.status === 'paid' ? 'linear-gradient(135deg,#10b981,#34d399)' : dashboardData?.fee?.status === 'overdue' ? 'linear-gradient(135deg,#ef4444,#f87171)' : 'linear-gradient(135deg,#f59e0b,#fbbf24)' }}>
                                     <IoCashOutline size={15} className="text-white" />
                                 </div>
-                                <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: dashboardData?.fee?.status === 'paid' ? '#15803d' : dashboardData?.fee?.status === 'overdue' ? '#b91c1c' : '#b45309' }}>Fee Status</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: dashboardData?.fee?.status === 'paid' ? '#065F46' : dashboardData?.fee?.status === 'overdue' ? '#7F1D1D' : '#92400E' }}>Fee</span>
                             </div>
-                            <p className="text-2xl sm:text-3xl font-black mb-2 leading-none" style={{ color: dashboardData?.fee?.status === 'paid' ? '#166534' : dashboardData?.fee?.status === 'overdue' ? '#991b1b' : '#92400e' }}>
+                            <p className="text-2xl sm:text-3xl font-black mb-1 leading-none" style={{ color: '#1A1A1A' }}>
                                 {dashboardData?.fee ? `₹${dashboardData.fee.status === 'partial' ? dashboardData.fee.outstanding ?? dashboardData.fee.amount : dashboardData.fee.amount}` : '--'}
                             </p>
                         </div>
                         <div className="flex items-center justify-between mt-auto">
                             {dashboardData?.fee?.status ? (
-                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit ${dashboardData.fee.status === 'paid' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : dashboardData.fee.status === 'overdue' ? 'bg-red-50 border-red-300 text-red-600' : dashboardData.fee.status === 'partial' ? 'bg-orange-50 border-orange-300 text-orange-600' : 'bg-amber-50 border-amber-300 text-amber-600'}`}>
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border w-fit ${dashboardData.fee.status === 'paid' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : dashboardData.fee.status === 'overdue' ? 'bg-red-50 border-red-200 text-red-600' : dashboardData.fee.status === 'partial' ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-amber-50 border-amber-200 text-amber-600'}`}>
                                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: dashboardData.fee.status === 'paid' ? '#34d399' : dashboardData.fee.status === 'overdue' ? '#f87171' : dashboardData.fee.status === 'partial' ? '#fb923c' : '#fbbf24' }}></span>
                                     {dashboardData.fee.status.charAt(0).toUpperCase() + dashboardData.fee.status.slice(1)}
                                 </span>
@@ -1664,25 +1517,27 @@ const StudentDashboard = () => {
                             {dashboardData?.fee?.status && dashboardData.fee.status !== 'paid' && dashboardData.onlinePaymentEnabled && (
                                 <button onClick={e => { e.stopPropagation(); navigate('/student/fees?pay=now'); }}
                                     className="px-3 py-1 text-white text-[10px] font-bold rounded-lg hover:opacity-90 transition-opacity shadow-sm"
-                                    style={{ background: '#F97316' }}>Pay Online</button>
+                                    style={{ background: '#F97316' }}>Pay</button>
                             )}
                         </div>
                     </div>
 
                     {/* ALERTS */}
                     <Link to="/student/notifications">
-                        <div className="group relative overflow-hidden rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                            style={{ background: 'linear-gradient(135deg,#fdf4ff 0%,#fae8ff 60%,#f5d0fe 100%)', border: '1.5px solid #e879f9', boxShadow: '0 4px 16px rgba(217,70,239,0.12)' }}>
-                            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle,rgba(217,70,239,0.2) 0%,transparent 70%)' }} />
-                            <div className="flex items-center gap-2 mb-3 relative z-10">
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg,#d946ef,#a855f7)' }}>
+                        <div className="group relative overflow-hidden rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 12px rgba(180,120,60,0.06)' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#D8B4FE'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(139,92,246,0.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(180,120,60,0.06)'; }}>
+                            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg,#8B5CF6,#A78BFA,transparent)' }} />
+                            <div className="flex items-center gap-2 mb-3 mt-1 relative z-10">
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)' }}>
                                     <IoNotificationsOutline size={16} className="text-white" />
                                 </div>
-                                <span className="text-[11px] font-black uppercase tracking-wider text-fuchsia-700">Alerts</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#5B21B6' }}>Alerts</span>
                             </div>
                             <div className="relative z-10">
-                                <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none text-fuchsia-900">{dashboardData?.unreadNotifications || 0}</p>
-                                <p className="text-[11px] font-semibold text-fuchsia-500">{dashboardData?.unreadNotifications > 0 ? 'Unread messages' : 'All caught up!'}</p>
+                                <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: '#1A1A1A' }}>{dashboardData?.unreadNotifications || 0}</p>
+                                <p className="text-[11px] font-semibold" style={{ color: '#7C3AED' }}>{dashboardData?.unreadNotifications > 0 ? 'Unread' : 'All clear!'}</p>
                             </div>
                             {dashboardData?.unreadNotifications > 1 && (
                                 <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full animate-pulse"
@@ -1692,30 +1547,44 @@ const StudentDashboard = () => {
                     </Link>
                 </motion.div>
 
-                {/* -- AI INSIGHT OF THE DAY ---------------------------------------------------------- */}
+
+
+                {/* -- AI INSIGHT OF THE DAY ── */}
+
                 {showAITools && visibleAiCards.length > 0 && aiInsight && (() => {
                     const scoreColors = getScoreColor(aiInsight.score);
                     return (
-                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.4 }} className="mb-4">
+                        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.4 }} className="mb-4">
                             <Link to="/student/ai/readiness-score">
                                 <div
-                                    className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 cursor-pointer group hover:shadow-md transition-all duration-200"
-                                    style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 100%)', border: '1.5px solid rgba(99,102,241,0.35)', boxShadow: '0 4px 20px rgba(99,102,241,0.15)' }}
+                                    className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 cursor-pointer group transition-all duration-200 relative overflow-hidden"
+                                    style={{
+                                        background: '#FFFFFF',
+                                        border: '1.5px solid #EDE8E0',
+                                        boxShadow: '0 4px 20px rgba(180,120,60,0.07)',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(249,115,22,0.12)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(180,120,60,0.07)'; }}
                                 >
-                                    <div className="flex items-center gap-3.5">
+                                    {/* Left orange accent */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl" style={{ background: 'linear-gradient(180deg,#6366F1,#818CF8,transparent)' }} />
+                                    <div className="flex items-center gap-3.5 pl-2">
                                         <div className={`w-12 h-12 rounded-2xl ${scoreColors.bg} flex flex-col items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform border ${scoreColors.border}`}>
                                             <span className={`text-lg font-black ${scoreColors.text} leading-none`}>{aiInsight.score}</span>
-                                            <span className="text-[8px] font-bold text-white/50 uppercase tracking-wide">/ 100</span>
+                                            <span className="text-[8px] font-bold opacity-60 uppercase tracking-wide" style={{ color: '#6B7280' }}>/ 100</span>
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-white font-black text-sm">AI Insight of the Day</span>
+                                                <span className="font-bold text-sm" style={{ color: '#1A1A1A' }}>AI Insight of the Day</span>
                                                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider ${scoreColors.badgeBg} ${scoreColors.badgeText} border ${scoreColors.badgeBorder}`}>{aiInsight.level}</span>
                                             </div>
-                                            <p className="text-indigo-200 text-xs font-medium leading-snug line-clamp-1">{aiInsight.insight}</p>
+                                            <p className="text-xs font-medium leading-snug line-clamp-1" style={{ color: '#6B6560' }}>{aiInsight.insight}</p>
                                         </div>
                                     </div>
-                                    <div className="flex-shrink-0 px-3.5 py-2 rounded-xl font-extrabold text-xs bg-white/10 text-white border border-white/15 group-hover:bg-white/20 transition-colors whitespace-nowrap">
+                                    <div className="flex-shrink-0 px-3.5 py-2 rounded-xl font-bold text-xs border whitespace-nowrap transition-colors"
+                                        style={{ background: '#FFF5EE', border: '1.5px solid #EDE8E0', color: '#EA580C' }}
+                                        onMouseEnter={e => { e.currentTarget.style.background='#FEEBD8'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background='#FFF5EE'; }}>
                                         Full Score →
                                     </div>
                                 </div>
@@ -1724,24 +1593,26 @@ const StudentDashboard = () => {
                     );
                 })()}
 
-                {/* -- AI STUDY SUITE -------------------------------------------------- */}
+
+                {/* -- AI STUDY SUITE ─────────────────────────────────────── */}
                 {showAITools && visibleAiCards.length > 0 && (
-                    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14, duration: 0.45 }} className="mb-5">
-                        <div className="rounded-2xl overflow-hidden" style={{ boxShadow: '0 8px 32px rgba(99,102,241,0.12)', border: '1.5px solid #c4b5fd' }}>
+                    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.45 }} className="mb-5">
+                        <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.06)' }}>
                             {/* Header */}
-                            <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: 'linear-gradient(135deg,#312e81 0%,#4338ca 50%,#6366f1 100%)' }}>
+                            <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: '#FFFFFF', borderBottom: '1.5px solid #EDE8E0' }}>
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                    <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                                         <IoSparklesOutline size={14} className="text-white" />
                                     </div>
-                                    <span className="text-sm font-black text-white tracking-wide">AI Study Suite</span>
+                                    <span className="text-sm font-bold tracking-wide" style={{ color: '#1A1A1A' }}>AI Study Suite</span>
                                 </div>
-                                <span className="text-[9px] font-black px-2.5 py-1 rounded-full tracking-widest uppercase" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#e0e7ff' }}>
+                                <span className="text-[9px] font-bold px-2.5 py-1 rounded-full tracking-widest uppercase" style={{ background: '#FFF5EE', border: '1.5px solid #FDDCAE', color: '#EA580C' }}>
                                     ✦ AI POWERED
                                 </span>
                             </div>
+
                             {/* Cards grid */}
-                            <div className="p-4 grid grid-cols-3 gap-3" style={{ background: '#fafafa' }}>
+                            <div className="p-4 grid grid-cols-3 gap-3" style={{ background: '#FFFAF5' }}>
                                 {visibleAiCards.map((item, i) => (
                                     <Link key={item.id} to={item.link} className="block">
                                         <motion.div
@@ -1796,28 +1667,26 @@ const StudentDashboard = () => {
                             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.18, duration: 0.45 }}
                             className="w-full rounded-2xl overflow-hidden"
-                            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)', border: '1.5px solid #e5e7eb' }}
+                            style={{ border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.06)' }}
                         >
-                            {/* Panel Header with tab switcher */}
-                            <div className="px-4 py-3 flex items-center justify-between relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#ea580c 0%,#f97316 40%,#fb7185 100%)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                                {/* Subtle shimmer sweep on header */}
-                                <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.1) 50%,transparent 60%)', backgroundSize: '200% 100%', animation: 'shimmer-name 3s linear infinite' }} />
-                                <div className="flex gap-1 p-1 rounded-xl relative" style={{ background: 'rgba(0,0,0,0.15)' }}>
+                            {/* Panel Header with tab switcher — warm white */}
+                            <div className="px-4 py-3 flex items-center justify-between relative" style={{ background: '#FFFFFF', borderBottom: '1.5px solid #EDE8E0' }}>
+                                <div className="flex gap-1 p-1 rounded-xl relative" style={{ background: '#F5F0EA' }}>
                                     {visibleQaCards.length > 0 && (
                                         <button
                                             onClick={() => setActiveLeftTab('actions')}
-                                            className="px-4 py-1.5 rounded-lg text-[11px] font-extrabold transition-all duration-200"
+                                            className="px-3.5 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200"
                                             style={activeLeftTab === 'actions'
-                                                ? { background: 'rgba(255,255,255,0.25)', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }
-                                                : { color: 'rgba(255,255,255,0.65)' }}
+                                                ? { background: '#FFFFFF', color: '#EA580C', boxShadow: '0 2px 8px rgba(180,120,60,0.12)', border: '1px solid #FDDCAE' }
+                                                : { color: '#9B7B5A' }}
                                         >Quick Actions</button>
                                     )}
                                     <button
                                         onClick={() => { setActiveLeftTab('leaderboard'); fetchLeaderboard(leaderboardSortBy); }}
-                                        className="px-4 py-1.5 rounded-lg text-[11px] font-extrabold transition-all duration-200 flex items-center gap-1.5"
+                                        className="px-3.5 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 flex items-center gap-1.5"
                                         style={activeLeftTab === 'leaderboard'
-                                            ? { background: 'rgba(255,255,255,0.25)', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }
-                                            : { color: 'rgba(255,255,255,0.65)' }}
+                                            ? { background: '#FFFFFF', color: '#EA580C', boxShadow: '0 2px 8px rgba(180,120,60,0.12)', border: '1px solid #FDDCAE' }
+                                            : { color: '#9B7B5A' }}
                                     >
                                         <IoTrophyOutline size={11} />
                                         Leaderboard
@@ -1827,19 +1696,20 @@ const StudentDashboard = () => {
                                     <select
                                         value={leaderboardSortBy}
                                         onChange={(e) => { const val = e.target.value; setLeaderboardSortBy(val); fetchLeaderboard(val); }}
-                                        className="text-[11px] font-bold rounded-xl px-2.5 py-1 focus:outline-none relative"
-                                        style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                                        className="text-[11px] font-bold rounded-xl px-2.5 py-1 focus:outline-none"
+                                        style={{ background: '#FFF5EE', border: '1.5px solid #EDE8E0', color: '#EA580C' }}
                                     >
-                                        <option value="xp" style={{ background: '#ea580c', color: '#fff' }}>By XP</option>
-                                        <option value="streak" style={{ background: '#ea580c', color: '#fff' }}>By Streak</option>
-                                        <option value="focus" style={{ background: '#ea580c', color: '#fff' }}>By Focus</option>
+                                        <option value="xp">By XP</option>
+                                        <option value="streak">By Streak</option>
+                                        <option value="focus">By Focus</option>
                                     </select>
                                 )}
                             </div>
 
+
                             {/* Panel body */}
                             {activeLeftTab === 'actions' ? (
-                                <div className="p-4 grid grid-cols-3 gap-3" style={{ background: '#fafafa' }}>
+                                <div className="p-4 grid grid-cols-3 gap-3" style={{ background: '#FFFAF5' }}>
                                     {visibleQaCards.map((item, i) => {
                                         const Card = (
                                             <motion.div
@@ -1908,16 +1778,16 @@ const StudentDashboard = () => {
                                 </div>
                             ) : (
                                 /* Leaderboard */
-                                <div className="p-4" style={{ background: '#fafafa' }}>
+                                <div className="p-4" style={{ background: '#FFFAF5' }}>
                                     {leaderboardLoading ? (
                                         <div className="flex flex-col items-center justify-center py-10 gap-3">
-                                            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-                                            <p className="text-xs font-semibold text-gray-400">Loading leaderboard...</p>
+                                            <div className="w-8 h-8 border-4 rounded-full animate-spin" style={{ borderColor: '#FDDCAE', borderTopColor: '#F97316' }} />
+                                            <p className="text-xs font-semibold" style={{ color: '#9B7B5A' }}>Loading leaderboard...</p>
                                         </div>
                                     ) : leaderboard.length === 0 ? (
                                         <div className="text-center py-10">
-                                            <IoTrophyOutline size={28} className="text-gray-200 mx-auto mb-2" />
-                                            <p className="text-sm font-bold text-gray-400">No students on the board yet.</p>
+                                            <IoTrophyOutline size={28} className="mx-auto mb-2" style={{ color: '#FDDCAE' }} />
+                                            <p className="text-sm font-bold" style={{ color: '#9B7B5A' }}>No students on the board yet.</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
@@ -1929,26 +1799,27 @@ const StudentDashboard = () => {
                                                     ? { bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.25)', text: '#475569', badge: '🥈' }
                                                     : item.rank === 3
                                                     ? { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', text: '#9a3412', badge: '🥉' }
-                                                    : { bg: 'transparent', border: '#f3f4f6', text: '#6b7280', badge: `#${item.rank}` };
+                                                    : { bg: 'transparent', border: '#EDE8E0', text: '#9B7B5A', badge: `#${item.rank}` };
                                                 return (
                                                     <div key={item.userId}
                                                         className="flex items-center justify-between p-3 rounded-xl transition-all duration-150"
-                                                        style={{ background: isCurrentUser ? 'rgba(99,102,241,0.06)' : rankTheme.bg, border: `1px solid ${isCurrentUser ? '#c4b5fd' : rankTheme.border}` }}>
+                                                        style={{ background: isCurrentUser ? 'rgba(249,115,22,0.06)' : rankTheme.bg, border: `1px solid ${isCurrentUser ? '#FDDCAE' : rankTheme.border}` }}>
                                                         <div className="flex items-center gap-3 min-w-0">
                                                             <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0"
                                                                 style={{ background: rankTheme.bg, border: `1px solid ${rankTheme.border}`, color: rankTheme.text }}>{rankTheme.badge}</div>
-                                                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] text-indigo-700 shrink-0 uppercase"
-                                                                style={{ background: 'linear-gradient(135deg,#ede9fe,#c4b5fd)', border: '1px solid #c4b5fd' }}>
+                                                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 uppercase"
+                                                                style={{ background: 'linear-gradient(135deg,#FFF0E0,#FDDCAE)', border: '1px solid #FDDCAE', color: '#92400E' }}>
                                                                 {item.name ? item.name.split(' ').map(w => w[0]).join('').slice(0, 2) : '?'}
                                                             </div>
                                                             <div className="min-w-0">
                                                                 <div className="flex items-center gap-1.5">
-                                                                    <span className={`text-xs font-bold truncate ${isCurrentUser ? 'text-indigo-900' : 'text-gray-900'}`}>{item.name}</span>
-                                                                    {isCurrentUser && <span className="text-[7px] font-black px-1 py-0.5 rounded" style={{ background: '#6366f1', color: '#fff' }}>YOU</span>}
+                                                                    <span className="text-xs font-bold truncate" style={{ color: isCurrentUser ? '#7C2D12' : '#1A1A1A' }}>{item.name}</span>
+                                                                    {isCurrentUser && <span className="text-[7px] font-black px-1 py-0.5 rounded" style={{ background: '#F97316', color: '#fff' }}>YOU</span>}
                                                                 </div>
-                                                                <p className="text-[10px] text-gray-400 font-medium">{item.studentId || 'No ID'}</p>
+                                                                <p className="text-[10px] font-medium" style={{ color: '#9B7B5A' }}>{item.studentId || 'No ID'}</p>
                                                             </div>
                                                         </div>
+
                                                         <div className="text-right shrink-0">
                                                             <span className="text-xs font-black text-gray-800 block">
                                                                 {leaderboardSortBy === 'xp' ? `${item.value || 0} XP` : leaderboardSortBy === 'streak' ? `${item.value || 0}d` : `${((item.value || 0) / 60).toFixed(1)}h`}
@@ -2028,16 +1899,16 @@ const StudentDashboard = () => {
                             transition={{ delay: 0.24, duration: 0.45 }}
                             className="lg:col-span-2 flex flex-col gap-3"
                         >
-                            {/* Learning header */}
-                            <div className="rounded-2xl overflow-hidden" style={{ boxShadow: '0 4px 20px rgba(16,185,129,0.1)', border: '1.5px solid #6ee7b7' }}>
-                                <div className="px-5 py-3.5 flex items-center gap-2.5" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 50%,#047857 100%)' }}>
-                                    <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
+                            {/* Learning header — warm white */}
+                            <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.06)' }}>
+                                <div className="px-5 py-3.5 flex items-center gap-2.5" style={{ background: '#FFFFFF', borderBottom: '1.5px solid #EDE8E0' }}>
+                                    <div className="w-7 h-7 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
                                         <IoLibraryOutline size={14} className="text-white" />
                                     </div>
-                                    <h2 className="font-black text-sm text-white tracking-wide">{t('Learning')}</h2>
+                                    <h2 className="font-bold text-sm tracking-wide" style={{ color: '#1A1A1A' }}>{t('Learning')}</h2>
                                 </div>
                                 {/* Learning cards */}
-                                <div className="p-3 flex flex-col gap-2.5" style={{ background: '#fafafa' }}>
+                                <div className="p-3 flex flex-col gap-2.5" style={{ background: '#FFFAF5' }}>
                                     {visibleLearningCards.map((item, i) => {
                                         const targetRoute = item.locked ? '/pending-allocation' : item.to;
                                         const Card = (
