@@ -348,13 +348,13 @@ const Profile = () => {
 
     return (
         <>
-        <div className="relative min-h-screen overflow-x-hidden pb-16" style={{ background: '#F8FAFC', fontFamily: "'Inter','Segoe UI',sans-serif" }}>
+        <div className="relative min-h-screen overflow-x-hidden pb-16" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter','Segoe UI',sans-serif" }}>
             <style>{`
                 @keyframes shimmerP{0%{background-position:200% center;}100%{background-position:-200% center;}}
                 .shimmer-p{background:linear-gradient(90deg,#F97316,#FB923C,#FBBF24,#FB923C,#F97316);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmerP 4s linear infinite;}
             `}</style>
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             </div>
 
             {/* ── Content ── */}
@@ -366,7 +366,7 @@ const Profile = () => {
                     <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6 gap-3">
                         <Link to="/student">
                             <motion.button whileHover={{ scale: 1.03, x: -2 }} whileTap={{ scale: 0.98 }}
-                                className="flex items-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-[20px] text-sm font-semibold hover:bg-gray-50 transition-all shadow-sm text-gray-700"
+                                className="flex items-center gap-2 px-5 py-3 rounded-[20px] text-sm font-semibold transition-all shadow-sm" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", color: "#78350F" }}
                             >
                                 <IoArrowBack size={16} /> Back to Dashboard
                             </motion.button>
@@ -394,7 +394,7 @@ const Profile = () => {
 
                     {/* ── Redesigned Premium Profile Card (Like Screenshot Mockup) ── */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                        className="bg-white border border-gray-200 relative rounded-[32px] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                        className="relative rounded-[32px] overflow-hidden" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 8px 30px rgba(180,120,60,0.08)" }}
                     >
                         {/* Orange/Yellow Gradient stripe and Motivation Quote Cover */}
                         <div className="h-32 relative overflow-hidden bg-gradient-to-br from-[#FEF6EB] to-[#FFF9F2] flex items-center px-4 sm:px-8 select-none">
@@ -524,8 +524,8 @@ const Profile = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.08 }}
-                        className="bg-white border border-gray-200 rounded-2xl p-5 mb-6 relative overflow-hidden"
-                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                        className="rounded-2xl p-5 mb-6 relative overflow-hidden"
+                        style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}
                     >
                         <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #F97316, #FBBF24, transparent)' }} />
                         <div className="flex items-center gap-2 mb-2">
@@ -719,8 +719,8 @@ const Profile = () => {
 
                     {/* Info Card */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                        className="bg-white border border-gray-200 rounded-2xl p-5 md:col-span-2 relative overflow-hidden"
-                        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                        className="rounded-2xl p-5 md:col-span-2 relative overflow-hidden"
+                        style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}
                     >
                         <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, #3B82F6, #6366F1, transparent)' }} />
                         <div className="flex items-center gap-2 mb-4">
@@ -788,10 +788,10 @@ const Profile = () => {
 
                 {/* ── Activity Stats & Achievements ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="rounded-2xl overflow-hidden bg-white border border-gray-200 mb-5"
-                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                    className="rounded-2xl overflow-hidden mb-5"
+                    style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}
                 >
-                    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                    <div className="px-5 py-4 flex items-center gap-2.5" style={{ background: "#FFFAF5", borderBottom: "1.5px solid #EDE8E0" }}>
                         <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(249,115,22,0.1)' }}>
                             <IoTime size={13} className="text-orange-500" />
                         </div>
@@ -904,10 +904,10 @@ const Profile = () => {
 
                 {/* ── Change Requests ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="rounded-2xl overflow-hidden mb-4 bg-white border border-gray-200 shadow-sm"
+                    className="rounded-2xl overflow-hidden mb-4" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}
                 >
                     {/* Panel header */}
-                    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                    <div className="px-5 py-4 flex items-center gap-2.5" style={{ background: "#FFFAF5", borderBottom: "1.5px solid #EDE8E0" }}>
                         <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-orange-50">
                             <IoSend size={12} className="text-orange-500" />
                         </div>
@@ -975,10 +975,10 @@ const Profile = () => {
 
                 {/* ── Security Settings ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                    className="rounded-2xl overflow-hidden bg-white border border-gray-200"
-                    style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                    className="rounded-2xl overflow-hidden"
+                    style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}
                 >
-                    <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                    <div className="px-5 py-4 flex items-center gap-2.5" style={{ background: "#FFFAF5", borderBottom: "1.5px solid #EDE8E0" }}>
                         <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(239,68,68,0.1)' }}>
                             <IoShieldCheckmark size={13} className="text-red-500" />
                         </div>
