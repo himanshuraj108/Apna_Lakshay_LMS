@@ -15,9 +15,9 @@ import AttendanceScanner from '../../components/student/AttendanceScanner';
 /* ─── Background ────────────────────────────────────────────────────── */
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F7F3EC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '52px 52px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
     </>
 );
 
@@ -27,8 +27,11 @@ const StatChip = ({ label, value, accentColor, icon: Icon, delay = 0 }) => (
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay, type: 'spring', stiffness: 120 }}
-        className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm"
+        className="relative flex flex-col justify-between overflow-hidden rounded-2xl"
         style={{
+            background: '#FFFFFF',
+            border: '1.5px solid #EDE8E0',
+            boxShadow: '0 4px 20px rgba(180,120,60,0.07)',
             padding: '16px',
             minHeight: '100px',
         }}
@@ -45,8 +48,8 @@ const StatChip = ({ label, value, accentColor, icon: Icon, delay = 0 }) => (
             <Icon size={15} style={{ color: accentColor }} />
         </div>
         <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5 text-gray-500">{label}</p>
-            <p className="text-xl font-black text-gray-900 leading-none">{value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: '#9B7B5A' }}>{label}</p>
+            <p className="text-xl font-black leading-none" style={{ color: '#1A1A1A' }}>{value}</p>
         </div>
     </motion.div>
 );
@@ -134,7 +137,7 @@ const Attendance = () => {
     const pctColor = pct >= 76 ? '#22c55e' : pct >= 61 ? '#3b82f6' : pct >= 41 ? '#f97316' : '#ef4444';
 
     return (
-        <div className="min-h-screen text-gray-900">
+        <div className="min-h-screen" style={{ color: '#1A1A1A', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             <PageBg />
 
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
@@ -176,14 +179,15 @@ const Attendance = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/student">
                             <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 bg-white border border-gray-200 transition-all shadow-sm">
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm"
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                                 <IoArrowBack size={15} />
                                 <span className="hidden sm:inline">Dashboard</span>
                             </motion.button>
                         </Link>
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Attendance</h1>
-                            <p className="text-gray-500 text-sm mt-0.5">Your study presence tracker</p>
+                            <h1 className="text-2xl sm:text-3xl font-black" style={{ color: '#1A1A1A' }}>Attendance</h1>
+                            <p className="text-sm mt-0.5" style={{ color: '#9B7B5A' }}>Your study presence tracker</p>
                         </div>
                     </div>
                     <div className="flex gap-2.5">
@@ -192,9 +196,9 @@ const Attendance = () => {
                             onClick={() => setShowAnalytics(!showAnalytics)}
                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
                             style={{
-                                background: showAnalytics ? '#e0e7ff' : '#ffffff',
-                                border: showAnalytics ? '1px solid #a5b4fc' : '1px solid #e2e8f0',
-                                color: showAnalytics ? '#4f46e5' : '#4b5563',
+                                background: showAnalytics ? '#FFF5EE' : '#FFFFFF',
+                                border: showAnalytics ? '1.5px solid #FDDCAE' : '1.5px solid #EDE8E0',
+                                color: showAnalytics ? '#EA580C' : '#9B7B5A',
                             }}>
                             <IoAnalytics size={15} />
                             {showAnalytics ? 'Show Logs' : 'Analytics'}
@@ -230,7 +234,7 @@ const Attendance = () => {
                 {/* ── Progress bar ─────────────────────────────────── */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
                     className="mb-5 rounded-2xl overflow-hidden"
-                    style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: '16px 20px' }}>
+                    style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)', padding: '16px 20px' }}>
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <IoFlashOutline size={14} style={{ color: pctColor }} />
@@ -241,7 +245,7 @@ const Attendance = () => {
                             <span className="text-sm font-black" style={{ color: pctColor }}>{pct}%</span>
                         </div>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#e2e8f0' }}>
+                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F0EDE8' }}>
                         <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
                             transition={{ duration: 1.1, ease: 'easeOut', delay: 0.3 }}
                             className="h-full rounded-full"
@@ -258,8 +262,8 @@ const Attendance = () => {
                         /* ── ANALYTICS ── */
                         <motion.div key="analytics" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
                             className="rounded-2xl overflow-hidden"
-                            style={{ background: 'white', border: '1px solid #e2e8f0' }}>
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                            <div className="px-5 py-4 flex items-center gap-2.5" style={{ background: '#FFFAF5', borderBottom: '1.5px solid #EDE8E0' }}>
                                 <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.15)' }}>
                                     <IoAnalytics size={13} className="text-indigo-400" />
                                 </div>
@@ -309,8 +313,8 @@ const Attendance = () => {
 
                             {/* Daily Log */}
                             <div className="rounded-2xl overflow-hidden"
-                                style={{ background: 'white', border: '1px solid #e2e8f0' }}>
-                                <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                <div className="px-5 py-4 flex items-center gap-2.5" style={{ background: '#FFFAF5', borderBottom: '1.5px solid #EDE8E0' }}>
                                     <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.12)' }}>
                                         <IoCalendar size={13} className="text-emerald-400" />
                                     </div>
@@ -332,8 +336,8 @@ const Attendance = () => {
                                             iconColor = '#f59e0b'; badgeStyle = { background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' };
                                             badgeText = holidayFestivalName.toUpperCase();
                                         } else if (record.status === 'present' || attendedOnHoliday) {
-                                            cardBg = '#f8fafc'; borderColor = '#e2e8f0';
-                                            iconColor = '#22c55e'; badgeStyle = { background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' };
+                                            cardBg = '#FFFFFF'; borderColor = '#EDE8E0';
+                                            iconColor = '#22c55e'; badgeStyle = { background: 'rgba(34,197,94,0.1)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' };
                                             badgeText = 'PRESENT';
                                         } else {
                                             cardBg = 'rgba(239,68,68,0.04)'; borderColor = 'rgba(239,68,68,0.12)';
@@ -377,7 +381,7 @@ const Attendance = () => {
                                                                 { icon: <IoHourglassOutline className="text-amber-400" />, label: 'Duration', value: record.duration ? `${Math.floor(record.duration / 60)}h ${record.duration % 60}m` : '--' },
                                                             ].map(({ icon, label, value }) => (
                                                                 <div key={label} className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] shrink-0"
-                                                                    style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                                                                    style={{ background: '#FFFAF5', border: '1px solid #EDE8E0' }}>
                                                                     {icon}
                                                                     <span className="text-gray-600 uppercase">{label}</span>
                                                                     <span className="font-mono font-bold text-gray-900">{value}</span>
@@ -408,8 +412,8 @@ const Attendance = () => {
 
                             {/* Rankings */}
                             <div className="rounded-2xl overflow-hidden"
-                                style={{ background: 'white', border: '1px solid #e2e8f0' }}>
-                                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-2.5">
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                <div className="px-5 py-4 flex items-center justify-between gap-2.5" style={{ background: '#FFFAF5', borderBottom: '1.5px solid #EDE8E0' }}>
                                     <div className="flex items-center gap-2.5">
                                         <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(234,179,8,0.12)' }}>
                                             <IoTrophyOutline size={13} className="text-yellow-400" />
@@ -428,7 +432,7 @@ const Attendance = () => {
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
-                                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                            <tr style={{ borderBottom: '1.5px solid #EDE8E0' }}>
                                                 {['Rank', 'Student', '%'].map(h => (
                                                     <th key={h} className={`px-5 py-3 text-[11px] uppercase tracking-widest font-semibold ${h === '%' ? 'text-right' : 'text-left'}`}
                                                         style={{ color: 'rgba(107,114,128,0.8)' }}>{h}</th>
@@ -452,15 +456,15 @@ const Attendance = () => {
                                                     const rc = rankColors[student.rank] || { bg: '#f8fafc', color: '#6b7280', label: `#${student.rank}` };
 
                                                     let rowBg = 'transparent';
-                                                    if (student.isMe) rowBg = '#f3f4f6';
-                                                    else if (isTop5) rowBg = '#f0fdf4';
+                                                    if (student.isMe) rowBg = '#FFF5EE';
+                                                    else if (isTop5) rowBg = '#FFFAF5';
 
                                                     return (
                                                         <tr key={student.studentId}
                                                             style={{
-                                                                borderBottom: '1px solid #e2e8f0',
+                                                                borderBottom: '1px solid #EDE8E0',
                                                                 background: rowBg,
-                                                                borderLeft: isTop5 && !student.isMe ? '3px solid rgba(34,197,94,0.35)' : student.isMe ? '3px solid rgba(124,58,237,0.4)' : '3px solid transparent',
+                                                                borderLeft: isTop5 && !student.isMe ? '3px solid #22c55e' : student.isMe ? '3px solid #F97316' : '3px solid transparent',
                                                             }}>
                                                             <td className="px-5 py-3.5">
                                                                 <div className="flex items-center gap-2">
