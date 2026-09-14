@@ -13,9 +13,9 @@ import PaymentReceipt from '../../components/admin/PaymentReceipt';
 /* ─── Background ────────────────────────────────────────────────────── */
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F7F3EC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
     </>
 );
 
