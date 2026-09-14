@@ -1,8 +1,22 @@
-# Apna Lakshay Library - Production-Grade Library Management System
+# Apna Lakshay LMS — Full Stack Learning Management System | Serving 100+ Users
 
-Live Production Deployment: https://apnalakshay.com
+**Live:** https://apnalakshay.com &nbsp;|&nbsp; **GitHub:** https://github.com/himanshuraj108/Apna_Lakshay_LMS
 
-A full-stack, production-ready MERN enterprise suite engineered for modern offline libraries, study centers, and educational hubs. The system handles end-to-end operations including interactive multi-floor seat matrices, multi-shift student allocations, GPS-verified QR and biometric check-ins, automated billing cycles with partial payment tracking, role-based sub-admin delegation, and artificial intelligence-powered academic engines. Designed for scalability, high availability, and enterprise architectural standards.
+**Apna Lakshay LMS** is a production-grade, full-stack Learning Management System that I independently designed, developed, and deployed from scratch for a competitive exam coaching institute. The application is currently live at apnalakshay.com and is actively used by **100+ students**, administrators, and sub-admins on a daily basis — handling real fee transactions, real attendance records, and real student data every single day.
+
+The entire system is built using **React.js** on the frontend and **Node.js with Express.js** on the backend, with **MongoDB** as the primary database managed through Mongoose ODM. The frontend uses **Vite** for fast builds, **Tailwind CSS** for a fully responsive mobile-first UI, and **Framer Motion** for smooth animations across 30+ screens. Every API call goes through **Axios** with centralized interceptors that attach JWT tokens and handle session expiry automatically.
+
+I implemented a complete **role-based authentication system** supporting three user roles — Super Admin, Sub-Admin, and Student. Each role has protected routes on both the frontend (React Context with code-split lazy routes) and the backend (Express.js JWT middleware that validates tokens and enforces role-level access). Passwords are hashed with **bcrypt**, and every sensitive API endpoint is locked behind role guards, making the system secure at every layer.
+
+One of the most technically complex modules I built is the **Fee Management System**. It handles full payments, partial installment payments with accumulated tracking across multiple transactions, automated monthly fee generation for all active students, and overdue detection. I wrote custom **MongoDB aggregation pipelines** using `$group`, `$cond`, and `$lookup` to compute real-time KPIs — Total Fees Collected, This Month's Revenue, Pending Dues, and Overdue Risk — served live through a dedicated REST endpoint. I also integrated the **Razorpay Payment Gateway** so students can pay fees online directly through the platform.
+
+I integrated the **GROQ AI API** to power an intelligent Doubt Board for students. The system uses GROQ's compound model with built-in web retrieval, so students can ask questions about current affairs and get accurate, real-time answers from the live web. The Doubt Board supports three languages — English, Hindi, and Hinglish — covers nine academic subjects, includes session management with pinned and renamed chats, daily credit limits, and a text-to-speech feature. Admins can enforce a "Force Doubt Board" mode that redirects students into the AI assistant immediately upon login.
+
+The **Attendance System** supports four modes — QR code scanning, PIN-based check-in, login-based attendance, and optional location-based geofencing — all configurable from the admin panel without touching a single line of code. The **Student Management** module handles enrollment, activation, reactivation with admission date tracking, printable student ID cards with QR codes, Cloudinary-powered profile photo uploads, referral tracking, and a reward points system. Students also get access to a Study Planner, Mock Tests with auto-grading, Discussion Rooms, and Notes Management — making it a truly all-in-one learning platform.
+
+This is not a tutorial clone or a college project. It is a real, deployed application serving **100+ users**. I independently made every architectural decision — database schema design, REST API structure, aggregation pipeline logic, third-party API integrations (Razorpay, GROQ, Cloudinary), and production deployment — and managed the full development lifecycle from requirements to live deployment using **Git and GitHub** throughout. The codebase spans **40+ API endpoints** and **30+ frontend screens**, and I continue to maintain, debug, and improve it based on real-world usage.
+
+**Tech Stack:** React.js · Node.js · Express.js · MongoDB · Mongoose · JWT · bcrypt · Razorpay · GROQ AI · Cloudinary · Tailwind CSS · Vite · Framer Motion · Axios · React Router v6 · Git
 
 ---
 
