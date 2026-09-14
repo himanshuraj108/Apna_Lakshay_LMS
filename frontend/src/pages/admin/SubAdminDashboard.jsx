@@ -253,13 +253,6 @@ const SubAdminDashboard = () => {
                     >
                         <IoRefreshOutline size={16} className={refreshing ? 'animate-spin text-orange-500' : ''} />
                     </button>
-                    <button
-                        onClick={() => logout()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-xl transition-all shrink-0"
-                    >
-                        <IoLogOutOutline size={14} />
-                        <span className="hidden sm:inline">Logout</span>
-                    </button>
                 </div>
             </div>
 

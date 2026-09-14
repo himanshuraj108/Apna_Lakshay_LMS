@@ -280,8 +280,8 @@ const WalletPage = () => {
                         </motion.button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "#1A1A1A" }}">Lakshay Wallet</h1>
-                        <p className="text-sm mt-0.5" style={{ color: "#9B7B5A" }}">Earn &amp; spend coins, share your referral</p>
+                        <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "#1A1A1A" }}>Lakshay Wallet</h1>
+                        <p className="text-sm mt-0.5" style={{ color: "#9B7B5A" }}>Earn &amp; spend coins, share your referral</p>
                     </div>
                 </motion.div>
 
