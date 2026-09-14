@@ -31,7 +31,20 @@ const BookCard = ({ book, delay }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay, type: 'spring', stiffness: 90 }}
-        className="rounded-2xl overflow-hidden flex flex-col group bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all">
+        className="rounded-2xl overflow-hidden flex flex-col group transition-all"
+        style={{
+            background: '#FFFFFF',
+            border: '1.5px solid #EDE8E0',
+            boxShadow: '0 4px 20px rgba(180,120,60,0.07)',
+        }}
+        onMouseEnter={e => {
+            e.currentTarget.style.borderColor = '#FDDCAE';
+            e.currentTarget.style.boxShadow = '0 8px 28px rgba(249,115,22,0.11)';
+        }}
+        onMouseLeave={e => {
+            e.currentTarget.style.borderColor = '#EDE8E0';
+            e.currentTarget.style.boxShadow = '0 4px 20px rgba(180,120,60,0.07)';
+        }}>
         {/* Cover */}
         <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
             {book.thumbnail ? (
@@ -39,7 +52,7 @@ const BookCard = ({ book, delay }) => (
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                    <IoBookOutline size={48} className="text-gray-300" />
+                    <IoBookOutline size={48} style={{ color: '#FDDCAE' }} />
                 </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -51,16 +64,17 @@ const BookCard = ({ book, delay }) => (
         </div>
         {/* Info */}
         <div className="p-4 flex flex-col flex-1 gap-2">
-            <h3 className="text-gray-900 text-sm font-bold leading-snug line-clamp-2">{book.title}</h3>
-            <p className="text-gray-400 text-xs line-clamp-1">{(book.authors || []).join(', ')}</p>
-            {book.description && <p className="text-gray-500 text-xs line-clamp-2 flex-1">{book.description}</p>}
-            <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
-                {book.pageCount && <span className="text-gray-400 text-[10px]">{book.pageCount} pages</span>}
-                {book.publishedDate && <span className="text-gray-400 text-[10px]">{book.publishedDate.slice(0, 4)}</span>}
+            <h3 className="text-sm font-bold leading-snug line-clamp-2" style={{ color: '#1A1A1A' }}>{book.title}</h3>
+            <p className="text-xs line-clamp-1" style={{ color: '#9B7B5A' }}>{(book.authors || []).join(', ')}</p>
+            {book.description && <p className="text-xs line-clamp-2 flex-1" style={{ color: '#9B7B5A' }}>{book.description}</p>}
+            <div className="flex items-center justify-between mt-auto pt-2" style={{ borderTop: '1px solid #F0EDE8' }}>
+                {book.pageCount && <span className="text-[10px]" style={{ color: '#9B7B5A' }}>{book.pageCount} pages</span>}
+                {book.publishedDate && <span className="text-[10px]" style={{ color: '#9B7B5A' }}>{book.publishedDate.slice(0, 4)}</span>}
             </div>
             {book.previewLink && (
                 <a href={book.previewLink} target="_blank" rel="noopener noreferrer"
-                    className="mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl transition-all">
+                    className="mt-2 flex items-center justify-center gap-2 px-3 py-2 text-white text-xs font-semibold rounded-xl transition-all hover:opacity-90"
+                    style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                     <IoOpenOutline size={14} /> Read Preview
                 </a>
             )}
@@ -96,45 +110,56 @@ const BooksPage = () => {
     const toggleLang = () => { const next = lang === 'en' ? 'hi' : 'en'; setLang(next); setSearch(''); };
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
+        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             <style>{BG_STYLE}</style>
+            {/* Warm dot grid overlay */}
+            <div className="pointer-events-none fixed inset-0 z-0" style={{
+                backgroundImage: 'radial-gradient(circle, rgba(180,120,60,0.07) 1.5px, transparent 1.5px)',
+                backgroundSize: '28px 28px',
+            }} />
             <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-20">
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/student">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-gray-800 transition-all shadow-sm">
+                            className="p-2.5 rounded-xl transition-all shadow-sm"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                             <IoArrowBack size={20} />
                         </motion.button>
                     </Link>
                     <div className="flex-1">
                         <h1 className="shimmer-text text-3xl font-black">Books Library</h1>
-                        <p className="text-gray-500 text-sm mt-0.5">Free preview books for government exam preparation</p>
+                        <p className="text-sm mt-0.5" style={{ color: '#9B7B5A' }}>Free preview books for government exam preparation</p>
                     </div>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={toggleLang}
                         className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${lang === 'hi'
                             ? 'bg-orange-50 border-orange-300 text-orange-600'
-                            : 'bg-white border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300 shadow-sm'}`}>
-                        <span className={lang === 'en' ? 'text-gray-900 font-black' : 'text-gray-400'}>EN</span>
-                        <span className="text-gray-300">|</span>
-                        <span className={lang === 'hi' ? 'text-gray-900 font-black' : 'text-gray-400'}>हिं</span>
+                            : 'shadow-sm'}`}
+                        style={lang !== 'hi' ? { background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#9B7B5A' } : {}}>
+                        <span style={{ color: lang === 'en' ? '#1A1A1A' : '#9B7B5A', fontWeight: lang === 'en' ? 900 : 400 }}>EN</span>
+                        <span style={{ color: '#C4B8A8' }}>|</span>
+                        <span style={{ color: lang === 'hi' ? '#1A1A1A' : '#9B7B5A', fontWeight: lang === 'hi' ? 900 : 400 }}>हिं</span>
                     </motion.button>
                 </motion.div>
 
                 {/* Search bar */}
                 <motion.form initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                     onSubmit={handleSearch} className="relative mb-6">
-                    <IoSearchOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <IoSearchOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#9B7B5A' }} />
                     <input value={search} onChange={e => setSearch(e.target.value)}
                         placeholder="Search books, authors, topics…"
-                        className="w-full pl-11 pr-24 py-3.5 bg-white border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all text-sm shadow-sm" />
+                        className="w-full pl-11 pr-24 py-3.5 rounded-2xl text-sm shadow-sm transition-all outline-none"
+                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
+                        onFocus={e => { e.target.style.borderColor = '#F97316'; e.target.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.15)'; }}
+                        onBlur={e => { e.target.style.borderColor = '#EDE8E0'; e.target.style.boxShadow = 'none'; }} />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                         {search && (
-                            <button type="button" onClick={clearSearch} className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors">
+                            <button type="button" onClick={clearSearch} className="p-1.5 transition-colors" style={{ color: '#9B7B5A' }}>
                                 <IoCloseCircle size={18} />
                             </button>
                         )}
-                        <button type="submit" className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity">
+                        <button type="submit" className="px-4 py-2 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity"
+                            style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                             Search
                         </button>
                     </div>
@@ -149,8 +174,10 @@ const BooksPage = () => {
                             whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                             className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${activeCategory === cat.key && !search && !customExam
                                 ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-md`
-                                : 'bg-white border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}
-                            style={activeCategory === cat.key && !search && !customExam ? { boxShadow: `0 4px 14px -4px ${cat.glow}` } : {}}>
+                                : ''}`}
+                            style={activeCategory === cat.key && !search && !customExam
+                                ? { boxShadow: `0 4px 14px -4px ${cat.glow}` }
+                                : { background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#9B7B5A' }}>
                             {cat.label}
                         </motion.button>
                     ))}
@@ -161,9 +188,10 @@ const BooksPage = () => {
                 {error && !loading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
                         <IoAlertCircleOutline size={36} className="text-red-400" />
-                        <p className="text-gray-500 text-sm">{error}</p>
+                        <p className="text-sm" style={{ color: '#9B7B5A' }}>{error}</p>
                         <button onClick={() => fetchBooks(search, activeCategory)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm hover:bg-gray-50 transition-all shadow-sm">
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm hover:opacity-90 transition-all shadow-sm"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                             <IoRefreshOutline size={16} /> Retry
                         </button>
                     </div>
@@ -171,8 +199,8 @@ const BooksPage = () => {
 
                 {!loading && !error && books.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <IoBookOutline size={40} className="text-gray-300" />
-                        <p className="text-gray-400 text-sm">No books found. Try a different search.</p>
+                        <IoBookOutline size={40} style={{ color: '#FDDCAE' }} />
+                        <p className="text-sm" style={{ color: '#9B7B5A' }}>No books found. Try a different search.</p>
                     </div>
                 )}
 

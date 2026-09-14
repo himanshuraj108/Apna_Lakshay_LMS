@@ -60,31 +60,34 @@ const CurrentAffairs = () => {
     const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
-        <div className="min-h-screen" style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             {/* Header */}
-            <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-md">
+            <div className="sticky top-0 z-30" style={{ background: 'rgba(247,243,236,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1.5px solid #EDE8E0' }}>
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/student" className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                    <Link to="/student" className="p-2 rounded-lg transition-all" style={{ background: '#FFFFFF', border: '1px solid #EDE8E0', color: '#78350F' }}>
                         <IoArrowBack size={18} />
                     </Link>
                     <div className="flex items-center gap-2 flex-1">
-                        <IoNewspaper size={16} className="text-yellow-500" />
-                        <h1 className="text-gray-900 font-bold text-base">Current Affairs</h1>
+                        <IoNewspaper size={16} style={{ color: '#F97316' }} />
+                        <h1 className="font-bold text-base" style={{ color: '#1A1A1A' }}>Current Affairs</h1>
                     </div>
-                    <div className="flex rounded-lg overflow-hidden border border-gray-200">
+                    <div className="flex rounded-lg overflow-hidden" style={{ border: '1.5px solid #EDE8E0' }}>
                         {['en', 'hi'].map(l => (
                             <button key={l} onClick={() => handleLangToggle(l)}
                                 className="px-3 py-1.5 text-xs font-bold transition-all"
                                 style={{
-                                    background: lang === l ? '#FACC15' : 'transparent',
-                                    color: lang === l ? '#000' : '#6b7280',
+                                    background: lang === l ? '#F97316' : 'transparent',
+                                    color: lang === l ? '#FFFFFF' : '#9B7B5A',
                                 }}>
                                 {l === 'en' ? 'EN' : 'HI'}
                             </button>
                         ))}
                     </div>
                     <button onClick={() => fetchArticles(true)} disabled={refreshing}
-                        className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all disabled:opacity-50">
+                        className="p-2 rounded-lg transition-all disabled:opacity-50"
+                        style={{ color: '#9B7B5A' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#EA580C'; e.currentTarget.style.background = '#FFF7ED'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = '#9B7B5A'; e.currentTarget.style.background = 'transparent'; }}>
                         <IoRefresh size={18} className={refreshing ? 'animate-spin' : ''} />
                     </button>
                 </div>
@@ -93,9 +96,9 @@ const CurrentAffairs = () => {
                         <button key={tab.id} onClick={() => setTab(tab.id)}
                             className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
                             style={{
-                                background: activeTab === tab.id ? '#FACC15' : '#f1f5f9',
-                                color: activeTab === tab.id ? '#000' : '#64748b',
-                                border: activeTab === tab.id ? 'none' : '1px solid #e2e8f0',
+                                background: activeTab === tab.id ? '#FFFFFF' : '#F5F0EA',
+                                color: activeTab === tab.id ? '#EA580C' : '#9B7B5A',
+                                border: activeTab === tab.id ? '1.5px solid #FDDCAE' : '1px solid transparent',
                             }}>
                             {tab.label}
                         </button>
@@ -105,14 +108,14 @@ const CurrentAffairs = () => {
 
             <div className="max-w-3xl mx-auto px-4 py-5">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1 h-4 rounded-full bg-yellow-400" />
-                    <p className="text-gray-500 text-xs font-medium">{today}</p>
-                    {!loading && <span className="ml-auto text-xs text-gray-400">{filtered.length} articles</span>}
+                    <div className="w-1 h-4 rounded-full" style={{ background: '#F97316' }} />
+                    <p className="text-xs font-medium" style={{ color: '#9B7B5A' }}>{today}</p>
+                    {!loading && <span className="ml-auto text-xs" style={{ color: '#9B7B5A' }}>{filtered.length} articles</span>}
                 </div>
 
                 {loading && (
                     <div className="flex items-center justify-center py-20">
-                        <div className="w-8 h-8 rounded-full border-2 border-yellow-300 border-t-yellow-500 animate-spin" />
+                        <div className="w-8 h-8 rounded-full border-2 animate-spin" style={{ borderColor: '#FDDCAE', borderTopColor: '#F97316' }} />
                     </div>
                 )}
 
@@ -127,31 +130,34 @@ const CurrentAffairs = () => {
                     <AnimatePresence mode="wait">
                         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid gap-3">
                             {filtered.length === 0 ? (
-                                <div className="py-16 text-center text-gray-400 text-sm">No articles in this category</div>
+                                <div className="py-16 text-center text-sm" style={{ color: '#9B7B5A' }}>No articles in this category</div>
                             ) : filtered.map((article, i) => {
                                 const c = CATEGORY_COLORS[article.category] || CATEGORY_COLORS.india;
                                 return (
                                     <motion.a key={article.id || i} href={article.link} target="_blank" rel="noopener noreferrer"
                                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                                        className="block group rounded-xl p-4 border border-gray-200 bg-white hover:border-yellow-300 hover:shadow-sm transition-all cursor-pointer">
+                                        className="block group rounded-xl p-4 transition-all cursor-pointer"
+                                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}
+                                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#FDDCAE'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(249,115,22,0.11)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(180,120,60,0.07)'; }}>
                                         <div className="flex items-start gap-3">
-                                            <div className="w-1 h-full min-h-[40px] rounded-full flex-shrink-0 mt-0.5 bg-yellow-400 opacity-70" />
+                                            <div className="w-1 h-full min-h-[40px] rounded-full flex-shrink-0 mt-0.5" style={{ background: '#F97316', opacity: 0.85 }} />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                                                         style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
                                                         {article.categoryName}
                                                     </span>
-                                                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                                    <span className="text-[10px] flex items-center gap-1" style={{ color: '#9B7B5A' }}>
                                                         <IoTimeOutline size={10} />{timeAgo(article.pubDate)}
                                                     </span>
                                                 </div>
-                                                <h3 className="text-gray-800 text-sm font-semibold leading-snug group-hover:text-yellow-600 transition-colors line-clamp-2">
+                                                <h3 className="text-sm font-semibold leading-snug line-clamp-2 transition-colors group-hover:text-orange-600" style={{ color: '#1A1A1A' }}>
                                                     {article.title}
                                                 </h3>
                                                 <div className="flex items-center justify-between mt-2">
-                                                    <p className="text-gray-400 text-[11px] truncate">{article.source}</p>
-                                                    <IoOpenOutline size={12} className="text-gray-300 group-hover:text-yellow-500 transition-colors flex-shrink-0 ml-2" />
+                                                    <p className="text-[11px] truncate" style={{ color: '#9B7B5A' }}>{article.source}</p>
+                                                    <IoOpenOutline size={12} className="transition-colors flex-shrink-0 ml-2 group-hover:text-orange-500" style={{ color: '#FDDCAE' }} />
                                                 </div>
                                             </div>
                                         </div>
