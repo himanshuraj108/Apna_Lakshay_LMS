@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -12,8 +12,8 @@ import { BooksNotesPageSkeleton } from '../../components/ui/SkeletonLoader';
 import Footer from '../../components/layout/Footer';
 
 const BG_STYLE = `
-.shimmer-text{background:linear-gradient(90deg,#7c3aed,#6366f1,#8b5cf6,#6366f1,#7c3aed);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 4s linear infinite;}
-@keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
+.shimmer-text-orange{background:linear-gradient(90deg,#f97316,#fb923c,#ea580c,#fb923c,#f97316);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-o 4s linear infinite;}
+@keyframes shimmer-o{0%{background-position:200% center;}100%{background-position:-200% center;}}
 `;
 
 const CATEGORIES = [
@@ -35,37 +35,48 @@ const CATEGORIES = [
 const NoteCard = ({ note, delay }) => (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay, type: 'spring', stiffness: 90 }}
-        className="rounded-2xl p-5 flex flex-col gap-3 group relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-violet-200 transition-all">
-        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-violet-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+        className="rounded-2xl p-5 flex flex-col gap-3 group relative overflow-hidden transition-all"
+        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 12px rgba(180,120,60,0.06)' }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor='#FDDCAE'; e.currentTarget.style.boxShadow='0 8px 28px rgba(249,115,22,0.11)'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor='#EDE8E0'; e.currentTarget.style.boxShadow='0 2px 12px rgba(180,120,60,0.06)'; }}>
+        <div className="absolute top-0 left-0 w-full h-[3px] rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: 'linear-gradient(90deg,#F97316,#EA580C,transparent)' }} />
         <div className="flex items-start gap-3">
-            <div className="shrink-0 p-2.5 rounded-xl bg-violet-50 border border-violet-100">
-                <IoDocumentTextOutline size={22} className="text-violet-500" />
+            <div className="shrink-0 p-2.5 rounded-xl" style={{ background: '#FFF5EE', border: '1px solid #FDDCAE' }}>
+                <IoDocumentTextOutline size={22} style={{ color: '#F97316' }} />
             </div>
             <div className="flex-1 min-w-0">
-                <h3 className="text-gray-900 text-sm font-bold leading-snug line-clamp-2">{note.title}</h3>
-                <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{note.author}</p>
+                <h3 className="text-sm font-bold leading-snug line-clamp-2" style={{ color: '#1A1A1A' }}>{note.title}</h3>
+                <p className="text-xs mt-0.5 line-clamp-1" style={{ color: '#9B7B5A' }}>{note.author}</p>
             </div>
         </div>
-        {note.description && <p className="text-gray-500 text-xs line-clamp-3">{note.description}</p>}
+        {note.description && <p className="text-xs line-clamp-3" style={{ color: '#6B6560' }}>{note.description}</p>}
         {note.subjects.length > 0 && (
             <div className="flex flex-wrap gap-1">
                 {note.subjects.slice(0, 3).map((s, i) => (
-                    <span key={i} className="text-[10px] px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-full text-gray-500 truncate max-w-[120px]">{s}</span>
+                    <span key={i} className="text-[10px] px-2 py-0.5 rounded-full truncate max-w-[120px]"
+                        style={{ background: '#FFF5EE', border: '1px solid #FDDCAE', color: '#EA580C' }}>{s}</span>
                 ))}
             </div>
         )}
-        <div className="flex items-center gap-3 text-[10px] text-gray-400">
+        <div className="flex items-center gap-3 text-[10px]" style={{ color: '#9B7B5A' }}>
             {note.year && <span className="flex items-center gap-1"><IoCalendarOutline size={11} /> {note.year}</span>}
             {note.downloads > 0 && <span className="flex items-center gap-1"><IoArrowDownCircleOutline size={11} /> {note.downloads.toLocaleString()}</span>}
-            {note.hasPdf && <span className="ml-auto px-1.5 py-0.5 bg-red-50 border border-red-200 text-red-500 rounded font-bold text-[9px]">PDF</span>}
+            {note.hasPdf && <span className="ml-auto px-1.5 py-0.5 rounded font-bold text-[9px]" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>PDF</span>}
         </div>
-        <div className="flex gap-2 mt-auto pt-2 border-t border-gray-100">
+        <div className="flex gap-2 mt-auto pt-2" style={{ borderTop: '1px solid #F0EDE8' }}>
             <a href={note.detailUrl} target="_blank" rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900 text-xs font-medium rounded-xl transition-all">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-all"
+                style={{ background: '#F5F0EA', border: '1px solid #EDE8E0', color: '#6B6560' }}
+                onMouseEnter={e => { e.currentTarget.style.background='#EDE8E0'; }}
+                onMouseLeave={e => { e.currentTarget.style.background='#F5F0EA'; }}>
                 <IoEyeOutline size={14} /> View
             </a>
             <a href={note.downloadUrl} target="_blank" rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white text-xs font-semibold rounded-xl transition-all">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity='0.9'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity='1'; }}>
                 <IoDownloadOutline size={14} /> Download
             </a>
         </div>
@@ -100,45 +111,53 @@ const NotesPage = () => {
     const toggleLang = () => { const next = lang === 'en' ? 'hi' : 'en'; setLang(next); setSearch(''); };
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
+        <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             <style>{BG_STYLE}</style>
+            <div className="fixed inset-0 -z-10 pointer-events-none"
+                style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8 pb-20">
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-8">
                     <Link to="/student">
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-gray-800 transition-all shadow-sm">
+                            className="p-2.5 rounded-xl transition-all"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F', boxShadow: '0 2px 8px rgba(180,120,60,0.07)' }}>
                             <IoArrowBack size={20} />
                         </motion.button>
                     </Link>
                     <div className="flex-1">
-                        <h1 className="shimmer-text text-3xl font-black">Study Notes</h1>
-                        <p className="text-gray-500 text-sm mt-0.5">Free downloadable notes for exam prep</p>
+                        <h1 className="shimmer-text-orange text-3xl font-black">Study Notes</h1>
+                        <p className="text-sm mt-0.5" style={{ color: '#9B7B5A' }}>Free downloadable notes for exam prep</p>
                     </div>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={toggleLang}
-                        className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${lang === 'hi'
-                            ? 'bg-orange-50 border-orange-300 text-orange-600'
-                            : 'bg-white border-gray-200 text-gray-500 hover:text-gray-800 shadow-sm'}`}>
-                        <span className={lang === 'en' ? 'text-gray-900 font-black' : 'text-gray-400'}>EN</span>
-                        <span className="text-gray-300">|</span>
-                        <span className={lang === 'hi' ? 'text-gray-900 font-black' : 'text-gray-400'}>हिं</span>
+                        className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all"
+                        style={lang === 'hi'
+                            ? { background: '#FFF5EE', border: '1.5px solid #FDDCAE', color: '#EA580C' }
+                            : { background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#9B7B5A', boxShadow: '0 2px 8px rgba(180,120,60,0.05)' }}>
+                        <span style={{ color: lang === 'en' ? '#1A1A1A' : '#9B7B5A', fontWeight: lang === 'en' ? '900' : '500' }}>EN</span>
+                        <span style={{ color: '#EDE8E0' }}>|</span>
+                        <span style={{ color: lang === 'hi' ? '#1A1A1A' : '#9B7B5A', fontWeight: lang === 'hi' ? '900' : '500' }}>हिं</span>
                     </motion.button>
                 </motion.div>
 
                 {/* Search */}
                 <motion.form initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                     onSubmit={handleSearch} className="relative mb-6">
-                    <IoSearchOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <IoSearchOutline size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#9B7B5A' }} />
                     <input value={search} onChange={e => setSearch(e.target.value)}
                         placeholder="Search notes, topics, subjects…"
-                        className="w-full pl-11 pr-24 py-3.5 bg-white border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all text-sm shadow-sm" />
+                        className="w-full pl-11 pr-24 py-3.5 rounded-2xl text-sm outline-none transition-all"
+                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#1A1A1A', boxShadow: '0 2px 8px rgba(180,120,60,0.05)' }}
+                        onFocus={e => { e.target.style.borderColor='#F97316'; e.target.style.boxShadow='0 0 0 3px rgba(249,115,22,0.12)'; }}
+                        onBlur={e => { e.target.style.borderColor='#EDE8E0'; e.target.style.boxShadow='0 2px 8px rgba(180,120,60,0.05)'; }} />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                         {search && (
-                            <button type="button" onClick={clearSearch} className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors">
+                            <button type="button" onClick={clearSearch} className="p-1.5 transition-colors" style={{ color: '#9B7B5A' }}>
                                 <IoCloseCircle size={18} />
                             </button>
                         )}
-                        <button type="submit" className="px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity">
+                        <button type="submit" className="px-4 py-2 rounded-xl text-white text-xs font-bold transition-opacity hover:opacity-90"
+                            style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                             Search
                         </button>
                     </div>
@@ -153,8 +172,10 @@ const NotesPage = () => {
                             whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                             className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${activeCategory === cat.key && !search && !customExam
                                 ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-md`
-                                : 'bg-white border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}
-                            style={activeCategory === cat.key && !search && !customExam ? { boxShadow: `0 4px 14px -4px ${cat.glow}` } : {}}>
+                                : ''}`}
+                            style={activeCategory === cat.key && !search && !customExam
+                                ? { boxShadow: `0 4px 14px -4px ${cat.glow}` }
+                                : { background: '#FFFFFF', borderColor: '#EDE8E0', color: '#9B7B5A' }}>
                             {cat.label}
                         </motion.button>
                     ))}
@@ -164,10 +185,11 @@ const NotesPage = () => {
 
                 {error && !loading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <IoAlertCircleOutline size={36} className="text-red-400" />
-                        <p className="text-gray-500 text-sm">{error}</p>
+                        <IoAlertCircleOutline size={36} style={{ color: '#F97316' }} />
+                        <p className="text-sm" style={{ color: '#9B7B5A' }}>{error}</p>
                         <button onClick={() => fetchNotes(search, activeCategory)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm hover:bg-gray-50 transition-all shadow-sm">
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                             <IoRefreshOutline size={16} /> Retry
                         </button>
                     </div>
@@ -175,8 +197,8 @@ const NotesPage = () => {
 
                 {!loading && !error && notes.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                        <IoDocumentTextOutline size={40} className="text-gray-300" />
-                        <p className="text-gray-400 text-sm">No notes found. Try a different search.</p>
+                        <IoDocumentTextOutline size={40} style={{ color: '#FDDCAE' }} />
+                        <p className="text-sm" style={{ color: '#9B7B5A' }}>No notes found. Try a different search.</p>
                     </div>
                 )}
 
