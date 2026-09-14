@@ -56,36 +56,37 @@ const ExamAlerts = () => {
     const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
-        <div className="min-h-screen" style={{ background: '#F8FAFC', fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             {/* Header */}
-            <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-md">
+            <div className="sticky top-0 z-30" style={{ background: 'rgba(247,243,236,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1.5px solid #EDE8E0' }}>
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/student" className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                    <Link to="/student" className="p-2 rounded-lg transition-all" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                         <IoArrowBack size={18} />
                     </Link>
                     <div className="flex items-center gap-2 flex-1">
-                        <IoAlertCircleOutline size={16} className="text-orange-500" />
-                        <h1 className="text-gray-900 font-bold text-base">Exam Alerts</h1>
+                        <IoAlertCircleOutline size={16} style={{ color: '#F97316' }} />
+                        <h1 className="font-bold text-base" style={{ color: '#1A1A1A' }}>Exam Alerts</h1>
                         <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 border border-red-200 text-red-600">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                             LIVE
                         </span>
                     </div>
                     {/* Language toggle */}
-                    <div className="flex rounded-lg overflow-hidden border border-gray-200">
+                    <div className="flex rounded-lg overflow-hidden" style={{ border: '1.5px solid #EDE8E0' }}>
                         {['en', 'hi'].map(l => (
                             <button key={l} onClick={() => handleLangToggle(l)}
                                 className="px-3 py-1.5 text-xs font-bold transition-all"
                                 style={{
-                                    background: lang === l ? '#f97316' : 'transparent',
-                                    color: lang === l ? '#fff' : '#6b7280',
+                                    background: lang === l ? '#F97316' : 'transparent',
+                                    color: lang === l ? '#fff' : '#9B7B5A',
                                 }}>
                                 {l === 'en' ? 'EN' : 'HI'}
                             </button>
                         ))}
                     </div>
                     <button onClick={() => fetchAlerts(true)} disabled={refreshing}
-                        className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all disabled:opacity-50">
+                        className="p-2 rounded-lg transition-all disabled:opacity-50"
+                        style={{ color: '#9B7B5A' }}>
                         <IoRefresh size={18} className={refreshing ? 'animate-spin' : ''} />
                     </button>
                 </div>
@@ -95,9 +96,9 @@ const ExamAlerts = () => {
                         <button key={src} onClick={() => setTab(src)}
                             className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-full transition-all"
                             style={{
-                                background: activeTab === src ? '#f97316' : '#f1f5f9',
-                                color: activeTab === src ? '#fff' : '#64748b',
-                                border: activeTab === src ? 'none' : '1px solid #e2e8f0',
+                                background: activeTab === src ? '#F97316' : '#F5F0EA',
+                                color: activeTab === src ? '#fff' : '#9B7B5A',
+                                border: activeTab === src ? 'none' : '1px solid #EDE8E0',
                             }}>
                             {src}
                         </button>
@@ -107,14 +108,14 @@ const ExamAlerts = () => {
 
             <div className="max-w-3xl mx-auto px-4 py-5">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1 h-4 rounded-full" style={{ background: '#f97316' }} />
-                    <p className="text-gray-500 text-xs font-medium">{today}</p>
-                    {!loading && <span className="ml-auto text-xs text-gray-400">{filtered.length} alerts</span>}
+                    <div className="w-1 h-4 rounded-full" style={{ background: '#F97316' }} />
+                    <p className="text-xs font-medium" style={{ color: '#9B7B5A' }}>{today}</p>
+                    {!loading && <span className="ml-auto text-xs" style={{ color: '#9B7B5A' }}>{filtered.length} alerts</span>}
                 </div>
 
                 {loading && (
                     <div className="flex items-center justify-center py-20">
-                        <div className="w-8 h-8 rounded-full border-2 border-orange-300 border-t-orange-500 animate-spin" />
+                        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: '2px solid #FDDCAE', borderTopColor: '#F97316' }} />
                     </div>
                 )}
 
@@ -130,34 +131,37 @@ const ExamAlerts = () => {
                         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid gap-3">
                             {filtered.length === 0 ? (
                                 <div className="py-16 text-center">
-                                    <IoCalendarOutline size={32} className="text-gray-300 mx-auto mb-3" />
-                                    <p className="text-gray-400 text-sm">No alerts for {activeTab}</p>
+                                    <IoCalendarOutline size={32} className="mx-auto mb-3" style={{ color: '#FDDCAE' }} />
+                                    <p className="text-sm" style={{ color: '#9B7B5A' }}>No alerts for {activeTab}</p>
                                 </div>
                             ) : filtered.map((item, i) => {
                                 const c = CATEGORY_COLORS[item.color] || CATEGORY_COLORS.orange;
                                 return (
                                     <motion.a key={i} href={item.link} target="_blank" rel="noopener noreferrer"
                                         initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                                        className="block group rounded-xl p-4 border border-gray-200 bg-white hover:border-orange-300 hover:shadow-sm transition-all cursor-pointer">
+                                        className="block group rounded-xl p-4 transition-all cursor-pointer"
+                                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}
+                                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#FDDCAE'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(249,115,22,0.11)'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(180,120,60,0.07)'; }}>
                                         <div className="flex items-start gap-3">
-                                            <div className="w-1 min-h-[40px] rounded-full flex-shrink-0 mt-0.5" style={{ background: '#f97316', opacity: 0.8 }} />
+                                            <div className="w-1 min-h-[40px] rounded-full flex-shrink-0 mt-0.5" style={{ background: '#F97316', opacity: 0.8 }} />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                                                         style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
                                                         {item.source}
                                                     </span>
-                                                    {item.category && <span className="text-[10px] text-gray-400">{item.category}</span>}
-                                                    <span className="text-[10px] text-gray-400 flex items-center gap-1 ml-auto">
+                                                    {item.category && <span className="text-[10px]" style={{ color: '#9B7B5A' }}>{item.category}</span>}
+                                                    <span className="text-[10px] flex items-center gap-1 ml-auto" style={{ color: '#9B7B5A' }}>
                                                         <IoTimeOutline size={10} />{formatDate(item.pubDate)}
                                                     </span>
                                                 </div>
-                                                <h3 className="text-gray-800 text-sm font-semibold leading-snug group-hover:text-orange-600 transition-colors line-clamp-2">
+                                                <h3 className="text-sm font-semibold leading-snug group-hover:text-orange-600 transition-colors line-clamp-2" style={{ color: '#1A1A1A' }}>
                                                     {item.title}
                                                 </h3>
-                                                {item.description && <p className="text-gray-400 text-xs mt-1 line-clamp-2">{item.description}</p>}
+                                                {item.description && <p className="text-xs mt-1 line-clamp-2" style={{ color: '#9B7B5A' }}>{item.description}</p>}
                                                 <div className="flex items-center justify-end mt-2">
-                                                    <IoOpenOutline size={12} className="text-gray-300 group-hover:text-orange-400 transition-colors" />
+                                                    <IoOpenOutline size={12} className="group-hover:text-orange-400 transition-colors" style={{ color: '#FDDCAE' }} />
                                                 </div>
                                             </div>
                                         </div>
@@ -169,7 +173,7 @@ const ExamAlerts = () => {
                 )}
 
                 {!loading && (
-                    <p className="text-center text-gray-400 text-[10px] mt-8">
+                    <p className="text-center text-[10px] mt-8" style={{ color: '#9B7B5A' }}>
                         Sourced from official RSS feeds · UPSC · SSC · IBPS · NTA · Updates every 30 min
                     </p>
                 )}

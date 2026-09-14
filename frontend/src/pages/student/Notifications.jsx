@@ -8,9 +8,9 @@ import { IoArrowBack, IoCheckmark, IoNotificationsOutline, IoCash, IoCalendar, I
 // ── Shared BG ────────────────────────────────────────────────────────────
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F7F3EC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
     </>
 );
 
@@ -20,7 +20,7 @@ const typeConfig = {
     request:      { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    icon: <IoDocumentTextOutline />, label: 'Request'    },
     announcement: { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-700',  icon: <IoMegaphoneOutline />, label: 'Notice'     },
     attendance:   { bg: 'bg-cyan-50',   border: 'border-cyan-200',   text: 'text-cyan-700',   icon: <IoCalendarOutline />, label: 'Attendance' },
-    general:      { bg: 'bg-gray-50',   border: 'border-gray-200',   text: 'text-gray-600',   icon: <IoChatbubbleOutline />, label: 'General'    },
+    general:      { bg: 'bg-orange-50',   border: 'border-orange-100',   text: 'text-orange-600',   icon: <IoChatbubbleOutline />, label: 'General'    },
 };
 
 const Notifications = () => {
@@ -66,7 +66,7 @@ const Notifications = () => {
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     return (
-        <div className="min-h-screen text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen" style={{ fontFamily: "'DM Sans','Inter',sans-serif", color: '#1A1A1A' }}>
             <PageBg />
             <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8">
 
@@ -75,25 +75,28 @@ const Notifications = () => {
                     <div className="flex items-center gap-4">
                         <Link to="/student">
                             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 hover:text-gray-900 rounded-xl text-sm font-medium transition-all shadow-sm">
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm"
+                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                                 <IoArrowBack size={16} /> Back
                             </motion.button>
                         </Link>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-black text-gray-900">Notifications</h1>
+                                <h1 className="text-3xl font-black" style={{ color: '#1A1A1A' }}>Notifications</h1>
                                 {unreadCount > 0 && (
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold animate-pulse"
+                                        style={{ background: '#FFF7ED', color: '#EA580C', border: '1.5px solid #FDDCAE' }}>
                                         {unreadCount} new
                                     </span>
                                 )}
                             </div>
-                            <p className="text-gray-500 text-sm mt-0.5">Your library updates</p>
+                            <p className="text-sm mt-0.5" style={{ color: '#9B7B5A' }}>Your library updates</p>
                         </div>
                     </div>
                     {unreadCount > 0 && (
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={markAllAsRead}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-600 hover:text-gray-900 rounded-xl text-sm font-semibold transition-all shadow-sm">
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                             <IoCheckmarkDoneOutline size={16} /> Mark All Read
                         </motion.button>
                     )}
@@ -101,16 +104,18 @@ const Notifications = () => {
 
                 {/* Filter Tabs */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                    className="flex gap-2 mb-8 p-1 bg-gray-100 rounded-2xl border border-gray-200 w-fit">
+                    className="flex gap-2 mb-8 p-1 rounded-2xl w-fit"
+                    style={{ background: '#F5F0EA', border: '1.5px solid #EDE8E0' }}>
                     {[
                         { key: 'all', label: 'All', count: notifications.length },
                         { key: 'unread', label: 'Unread', count: unreadCount },
                         { key: 'read', label: 'Read', count: notifications.length - unreadCount }
                     ].map(({ key, label, count }) => (
                         <button key={key} onClick={() => setFilter(key)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${filter === key
-                                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
-                                : 'text-gray-500 hover:text-gray-800'}`}>
+                            className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                            style={filter === key
+                                ? { background: '#FFFFFF', color: '#EA580C', border: '1.5px solid #FDDCAE', boxShadow: '0 2px 8px rgba(249,115,22,0.10)' }
+                                : { background: 'transparent', color: '#9B7B5A', border: '1.5px solid transparent' }}>
                             {label} <span className="opacity-60 ml-1">({count})</span>
                         </button>
                     ))}
@@ -119,9 +124,10 @@ const Notifications = () => {
                 {/* List */}
                 {loading ? <SkeletonLoader type="notification" count={6} /> : filtered.length === 0 ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="text-center py-20 rounded-2xl border border-gray-200 bg-white shadow-sm">
-                        <IoNotificationsOutline size={56} className="mx-auto text-gray-300 mb-4" />
-                        <p className="text-gray-500 font-medium">No notifications here</p>
+                        className="text-center py-20 rounded-2xl"
+                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                        <IoNotificationsOutline size={56} className="mx-auto mb-4" style={{ color: '#FDDCAE' }} />
+                        <p className="font-medium" style={{ color: '#9B7B5A' }}>No notifications here</p>
                     </motion.div>
                 ) : (
                     <div className="space-y-3">
@@ -130,11 +136,12 @@ const Notifications = () => {
                             return (
                                 <motion.div key={n._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
                                     onClick={() => !n.isRead && markAsRead(n._id)}
-                                    className={`relative rounded-2xl border overflow-hidden cursor-pointer transition-all duration-300 ${!n.isRead
-                                        ? 'bg-white border-orange-300 shadow-md'
-                                        : 'bg-white border-gray-200 hover:shadow-sm'}`}>
+                                    className="relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
+                                    style={!n.isRead
+                                        ? { background: '#FFFFFF', border: '1.5px solid #FDDCAE', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }
+                                        : { background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 8px rgba(180,120,60,0.04)' }}>
                                     {/* Unread bar */}
-                                    {!n.isRead && <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-orange-400 to-amber-500" />}
+                                    {!n.isRead && <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: 'linear-gradient(to bottom, #F97316, #EA580C)' }} />}
 
                                     <div className="p-5 flex gap-4">
                                         {/* Icon */}
@@ -149,17 +156,18 @@ const Notifications = () => {
                                                         {cfg.label}
                                                     </span>
                                                     {!n.isRead && (
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse"
+                                                            style={{ background: '#FFF7ED', color: '#EA580C', border: '1.5px solid #FDDCAE' }}>
                                                             NEW
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
+                                                <span className="text-xs whitespace-nowrap shrink-0" style={{ color: '#9B7B5A' }}>
                                                     {new Date(n.createdAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
-                                            <h3 className={`font-bold leading-tight mb-1.5 ${!n.isRead ? 'text-gray-900' : 'text-gray-700'}`}>{n.title}</h3>
-                                            <p className="text-gray-500 text-sm leading-relaxed">{n.message}</p>
+                                            <h3 className="font-bold leading-tight mb-1.5" style={{ color: !n.isRead ? '#1A1A1A' : '#4B3A2A' }}>{n.title}</h3>
+                                            <p className="text-sm leading-relaxed" style={{ color: '#9B7B5A' }}>{n.message}</p>
                                         </div>
                                     </div>
                                 </motion.div>
