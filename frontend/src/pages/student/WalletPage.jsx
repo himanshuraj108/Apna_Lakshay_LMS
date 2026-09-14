@@ -55,7 +55,7 @@ const statusColor = {
 };
 
 /* ── Coin chip — replaces all 🪙 occurrences ── */
-const CoinChip = ({ count, size = 'sm', color = '#6366f1' }) => (
+const CoinChip = ({ count, size = 'sm', color = '#F97316' }) => (
     <span className="inline-flex items-center gap-1 font-black" style={{ color }}>
         <IoWallet size={size === 'lg' ? 18 : 13} style={{ color }} />
         {count}
@@ -68,16 +68,16 @@ const StatCard = ({ icon: Icon, label, value, color, delay = 0 }) => (
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay, type: 'spring', stiffness: 120 }}
-        className="relative rounded-2xl bg-white border border-gray-200 p-4 overflow-hidden"
-        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+        className="relative rounded-2xl p-4 overflow-hidden"
+        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}
     >
-        <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ background: color }} />
+        <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: color }} />
         <Icon size={40} className="absolute -bottom-1 -right-1 opacity-5" style={{ color }} />
         <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-3" style={{ background: `${color}18` }}>
             <Icon size={15} style={{ color }} />
         </div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">{label}</p>
-        <p className="text-xl font-black text-gray-900 leading-none">{value}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#9B7B5A' }}>{label}</p>
+        <p className="text-xl font-black leading-none" style={{ color: '#1A1A1A' }}>{value}</p>
     </motion.div>
 );
 
@@ -201,7 +201,7 @@ const WalletPage = () => {
     // ─── loading skeleton ─────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="min-h-screen" style={{ background: '#F8FAFC', fontFamily: "'Inter',sans-serif" }}>
+            <div className="min-h-screen" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
                 <div className="max-w-4xl mx-auto px-4 py-8">
                     <div className="h-8 w-32 bg-gray-200 rounded-xl animate-pulse mb-8" />
                     <div className="grid grid-cols-3 gap-3 mb-6">
@@ -217,7 +217,7 @@ const WalletPage = () => {
 
     if (!referralEnabled) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 animate-fadeIn" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 animate-fadeIn" style={{ fontFamily: "'DM Sans','Inter',sans-serif" }}>
                 <div className="max-w-md w-full mx-auto px-6 py-12 bg-white border border-gray-200 rounded-3xl shadow-xl text-center">
                     <div className="w-16 h-16 bg-rose-50 border border-rose-100 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <IoAlert size={32} />
@@ -246,11 +246,11 @@ const WalletPage = () => {
     const visibleRefs = showAllReferrals ? refList : refList.slice(0, 5);
 
     return (
-        <div className="min-h-screen pb-20" style={{ background: '#F8FAFC', fontFamily: "'Inter',sans-serif" }}>
+        <div className="min-h-screen pb-20" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
 
             {/* ── fixed bg pattern ─ */}
             <div className="fixed inset-0 -z-10 pointer-events-none"
-                style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(0,0,0,0.04) 1px,transparent 0)', backgroundSize: '40px 40px' }} />
+                style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
 
             {/* ── Toast ─ */}
             <AnimatePresence>
@@ -275,27 +275,28 @@ const WalletPage = () => {
                 <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 mb-7">
                     <Link to="/student">
                         <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.96 }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:text-gray-900 bg-white border border-gray-200 transition-all">
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", color: "#78350F" }}>
                             <IoArrowBack size={15} /> <span className="hidden sm:inline">Dashboard</span>
                         </motion.button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Lakshay Wallet</h1>
-                        <p className="text-gray-500 text-sm mt-0.5">Earn &amp; spend coins, share your referral</p>
+                        <h1 className="text-2xl sm:text-3xl font-black" style={{ color: "#1A1A1A" }}">Lakshay Wallet</h1>
+                        <p className="text-sm mt-0.5" style={{ color: "#9B7B5A" }}">Earn &amp; spend coins, share your referral</p>
                     </div>
                 </motion.div>
 
                 {/* ── Tabs ─ */}
-                <div className="flex gap-2 mb-6 p-1 bg-white border border-gray-200 rounded-2xl w-fit shadow-sm">
+                <div className="flex gap-1.5 mb-6 p-1 rounded-2xl w-fit" style={{ background: '#F5F0EA', border: '1.5px solid #EDE8E0' }}>
                     {[
                         { key: 'wallet',   label: 'Coin Wallet', icon: IoWallet,      show: true },
                         { key: 'referral', label: 'Referral',    icon: IoPeople,      show: referral?.enabled === true },
                         { key: 'history',  label: 'History',     icon: IoTimeOutline, show: true },
                     ].filter(t => t.show).map(({ key, label, icon: Icon }) => (
                         <button key={key} onClick={() => setTab(key)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${tab === key
-                                ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
-                                : 'text-gray-500 hover:text-gray-800'}`}>
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                            style={tab === key
+                                ? { background: '#FFFFFF', color: '#EA580C', border: '1.5px solid #FDDCAE', boxShadow: '0 2px 6px rgba(249,115,22,0.1)' }
+                                : { color: '#9B7B5A', border: '1.5px solid transparent' }}>
                             <Icon size={14} /> {label}
                         </button>
                     ))}
@@ -310,7 +311,7 @@ const WalletPage = () => {
                         {/* Expiry warning */}
                         {wallet?.coinExpiresAt && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl mb-5 text-amber-700 text-sm font-medium">
+                                className="flex items-center gap-3 px-4 py-3 bg-[#FFF5EE] border border-[#FDDCAE] rounded-2xl mb-5 text-amber-700 text-sm font-medium">
                                 <IoAlert size={16} className="text-amber-500 shrink-0" />
                                 Coins expire on <strong>{fmtDate(wallet.coinExpiresAt)}</strong>. Stay active to reset expiry!
                             </motion.div>
@@ -326,7 +327,7 @@ const WalletPage = () => {
                         {/* Big balance display */}
                         <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
                             className="relative rounded-3xl overflow-hidden mb-6 text-white"
-                            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%)', boxShadow: '0 20px 60px rgba(99,102,241,0.35)' }}>
+                            style={{ background: 'linear-gradient(135deg, #EA580C 0%, #F97316 50%, #F59E0B 100%)', boxShadow: '0 20px 50px rgba(249,115,22,0.25)' }}>
                             <div className="absolute inset-0 opacity-10"
                                 style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(255,255,255,0.4) 1px,transparent 0)', backgroundSize: '24px 24px' }} />
                             <div className="relative px-6 py-7">
@@ -350,7 +351,7 @@ const WalletPage = () => {
                                 {redeemOptions.length > 0 && (wallet?.coinBalance || 0) > 0 && (
                                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                         onClick={() => setRedeemModal(true)}
-                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-white text-indigo-700 rounded-2xl font-black text-sm shadow-lg hover:shadow-xl transition-all">
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-white text-orange-600 rounded-2xl font-black text-sm shadow-lg hover:shadow-xl transition-all">
                                         <IoGift size={16} /> Redeem Coins
                                     </motion.button>
                                 )}
@@ -364,7 +365,7 @@ const WalletPage = () => {
 
                         {/* Full Bilingual Instructions */}
                         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                            className="rounded-2xl p-5" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}>
 
                             {/* Header + Language Selector */}
                             <div className="flex items-center justify-between mb-4">
@@ -430,7 +431,7 @@ const WalletPage = () => {
                                         ))}
                                     </div>
 
-                                    <div className="px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                                    <div className="px-3 py-2.5 bg-[#FFF5EE] border border-[#FDDCAE] rounded-xl flex items-start gap-2">
                                         <IoAlert size={14} className="text-amber-500 shrink-0 mt-0.5" />
                                         <p className="text-xs text-amber-700 leading-relaxed">
                                             <strong>Note:</strong> Coins have an expiry period set by the admin. Stay active to keep your coins valid. Expired coins cannot be recovered.
@@ -484,7 +485,7 @@ const WalletPage = () => {
                                         ))}
                                     </div>
 
-                                    <div className="px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                                    <div className="px-3 py-2.5 bg-[#FFF5EE] border border-[#FDDCAE] rounded-xl flex items-start gap-2">
                                         <IoAlert size={14} className="text-amber-500 shrink-0 mt-0.5" />
                                         <p className="text-xs text-amber-700 leading-relaxed">
                                             <strong>ध्यान दें:</strong> कॉइन की एक्सपायरी डेट एडमिन द्वारा तय की जाती है। एक्टिव रहें ताकि आपके कॉइन वैलिड रहें। एक्सपायर हुए कॉइन वापस नहीं मिलेंगे।
@@ -548,8 +549,8 @@ const WalletPage = () => {
                                 {/* Referral list */}
                                 {refList.length > 0 && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
-                                        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                                        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                                        className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}>
+                                        <div className="px-5 py-4 flex items-center gap-2" style={{ background: "#FFFAF5", borderBottom: "1.5px solid #EDE8E0" }}>
                                             <div className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
                                                 <IoPeople size={13} className="text-emerald-500" />
                                             </div>
@@ -598,8 +599,8 @@ const WalletPage = () => {
                 {/* ══════════════════════════ HISTORY TAB ══════════════════════════ */}
                 {tab === 'history' && (
                     <motion.div key="history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                        <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0", boxShadow: "0 4px 20px rgba(180,120,60,0.07)" }}>
+                            <div className="px-5 py-4 flex items-center justify-between" style={{ background: "#FFFAF5", borderBottom: "1.5px solid #EDE8E0" }}>
                                 <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center">
                                         <IoTimeOutline size={13} className="text-indigo-500" />
@@ -737,7 +738,7 @@ const WalletPage = () => {
                         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={handleRedeem}
                             disabled={redeemLoading || !redeemType || !redeemCoins}
-                            className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-black text-sm shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            className="w-full py-3.5 text-white rounded-2xl font-black text-sm shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}>
                             {redeemLoading ? 'Processing...' : 'Confirm Redemption'}
                         </motion.button>
                     </motion.div>
