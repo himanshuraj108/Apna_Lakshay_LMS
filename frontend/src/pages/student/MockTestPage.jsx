@@ -363,11 +363,12 @@ const ExamSelect = ({ onSelect, onViewHistory }) => {
     }, [isLocked]);
 
     return (
-        <div style={{ background: '#f1f5f9', minHeight: '100vh' }}>
+        <div style={{ background: '#F7F3EC', minHeight: '100vh', fontFamily: "'DM Sans','Inter',sans-serif" }}>
+            <div className="fixed inset-0 -z-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             <style>{MOBILE_CSS}</style>
             <InstructionsModal isOpen={showInstructionsModal} onClose={() => setShowInstructionsModal(false)} type="credits" />
 
-            <div className="exam-header sticky top-0 z-50 px-4 pt-4 pb-4 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between shadow-sm">
+            <div className="exam-header sticky top-0 z-50 px-4 pt-4 pb-4 flex items-center justify-between shadow-sm" style={{ background: "rgba(247,243,236,0.92)", backdropFilter: "blur(16px)", borderBottom: "1.5px solid #EDE8E0" }}>
                 <div className="flex-shrink-0">
                     <div className="font-extrabold text-xl tracking-tight text-gray-900 flex items-center gap-2">
                         <span className="bg-orange-500 text-white p-1.5 rounded-lg shadow-sm"><IoSparklesOutline size={18} /></span>
@@ -411,14 +412,14 @@ const ExamSelect = ({ onSelect, onViewHistory }) => {
 
                             <div style={isLocked ? { opacity: 0.6, pointerEvents: 'none', filter: 'grayscale(100%)' } : {}}>
                         {EXAM_GROUPS.map(grp => (
-                            <div key={grp.id} style={{ marginBottom: '24px', background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0' }}>
+                            <div key={grp.id} style={{ marginBottom: '24px', background: '#FFFFFF', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 20px rgba(180,120,60,0.07)', border: '1.5px solid #EDE8E0' }}>
                                 <div style={{ fontWeight: '800', fontSize: '14px', color: grp.color, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>{grp.name}</div>
                                 <div className="exam-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                                     {grp.exams.map(exam => (
                                         <button key={exam.code} onClick={() => onSelect(exam.code)}
                                             style={{
                                                 textAlign: 'left', padding: '14px 16px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
-                                                border: '1px solid #e2e8f0', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                                                border: '1.5px solid #EDE8E0', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                                             }}
                                             onMouseOver={(e) => { e.currentTarget.style.borderColor = grp.color; e.currentTarget.style.background = grp.bg; e.currentTarget.style.transform = 'translateY(-2px)'; }}
                                             onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fafafa'; e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -488,7 +489,8 @@ const ExamInfoPage = ({ examCode, onStart, onBack }) => {
     );
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '60px' }}>
+        <div style={{ background: '#F7F3EC', minHeight: '100vh', paddingBottom: '60px', fontFamily: "'DM Sans','Inter',sans-serif" }}>
+            <div className="fixed inset-0 -z-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             <style>{MOBILE_CSS}</style>
             {/* Header */}
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-10 relative overflow-hidden">
@@ -1040,7 +1042,7 @@ const TestSession = ({ initialQuestions, pattern, config, attemptId, sectionQuot
     const btnStyle = (bg, c = 'white') => ({ background: bg, color: c, border: `1px solid ${bg === 'white' ? '#cbd5e1' : bg}`, borderRadius: '6px', padding: '10px 16px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' });
 
     return (
-        <div style={{ background: '#f1f5f9', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+        <div style={{ background: '#F7F3EC', minHeight: '100vh', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             <style>{MOBILE_CSS}</style>
             {/* Top Bar */}
             <div className="test-topbar bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-3 flex items-center justify-between gap-3 flex-wrap shadow-md">
