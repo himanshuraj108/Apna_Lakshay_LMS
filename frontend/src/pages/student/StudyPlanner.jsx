@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -16,20 +16,18 @@ import {
     IoFlameOutline, IoLockClosed, IoBookOutline
 } from 'react-icons/io5';
 
-// ── Background ───────────────────────────────────────────────────────────
 const PageBg = () => (
     <>
-        <div className="fixed inset-0 -z-10" style={{ background: '#F8FAFC' }} />
+        <div className="fixed inset-0 -z-10" style={{ background: '#F7F3EC' }} />
         <div className="fixed inset-0 -z-10 pointer-events-none"
-            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0,0,0,0.04) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
     </>
 );
 
-// ── Priority config ──────────────────────────────────────────────────────
 const priorityCfg = {
-    high: { label: 'High', badge: 'bg-red-50 text-red-600 border-red-200', glow: 'hover:border-red-200 hover:shadow-red-100' },
+    high:   { label: 'High',   badge: 'bg-red-50 text-red-600 border-red-200',       glow: 'hover:border-red-200'    },
     medium: { label: 'Medium', badge: 'bg-yellow-50 text-yellow-700 border-yellow-200', glow: 'hover:border-yellow-200' },
-    low: { label: 'Low', badge: 'bg-green-50 text-green-700 border-green-200', glow: 'hover:border-green-200' },
+    low:    { label: 'Low',    badge: 'bg-green-50 text-green-700 border-green-200',  glow: 'hover:border-green-200'  },
 };
 
 const StudyPlanner = () => {
@@ -78,9 +76,7 @@ const StudyPlanner = () => {
             }
             setShowModal(false);
             resetForm();
-        } catch (error) {
-            console.error('Task save error:', error);
-        }
+        } catch (error) { console.error('Task save error:', error); }
     };
 
     const toggleComplete = async (task) => {
@@ -124,22 +120,24 @@ const StudyPlanner = () => {
     const pendingTasks = tasks.length - completedTasks;
     const xpPct = ((stats?.totalXP || 0) % 1000) / 10;
 
-    // ── Access Control ──────────────────────────────────────────────────
     if (user && !user.isActive) return (
-        <div className="min-h-screen flex items-center justify-center text-gray-900" style={{ background: '#F8FAFC' }}>
+        <div className="min-h-screen flex items-center justify-center" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                className="max-w-md w-full text-center p-8 rounded-2xl border border-red-200 bg-white shadow-xl mx-4">
-                <div className="w-20 h-20 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <IoLockClosed size={38} className="text-red-500" />
+                className="max-w-md w-full text-center p-8 rounded-2xl mx-4"
+                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                    style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <IoLockClosed size={38} style={{ color: '#ef4444' }} />
                 </div>
-                <h1 className="text-2xl font-black mb-2 text-gray-900">Access Restricted</h1>
-                <p className="text-gray-500 mb-6">Your library membership is currently inactive. Please renew to access premium study tools.</p>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-amber-700 text-sm">
+                <h1 className="text-2xl font-black mb-2" style={{ color: '#1A1A1A' }}>Access Restricted</h1>
+                <p className="mb-6" style={{ color: '#9B7B5A' }}>Your library membership is currently inactive. Please renew to access premium study tools.</p>
+                <div className="rounded-xl p-4 mb-6 text-sm" style={{ background: '#FFF5EE', border: '1px solid #FDDCAE', color: '#92400E' }}>
                     Contact the admin or visit the library office to reactivate your account.
                 </div>
                 <Link to="/student">
                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                        className="w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 border border-gray-200 font-semibold text-gray-700 transition-all">
+                        className="w-full py-3 rounded-xl font-semibold transition-all"
+                        style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F' }}>
                         Back to Dashboard
                     </motion.button>
                 </Link>
@@ -147,34 +145,29 @@ const StudyPlanner = () => {
         </div>
     );
 
-    // ── Main ────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen text-gray-900 pb-16" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen pb-16" style={{ fontFamily: "'DM Sans','Inter',sans-serif", color: '#1A1A1A' }}>
             <PageBg />
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8">
-
-                {/* ── Header ─────────────────────────────────────────── */}
                 <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 mb-5">
-                        {/* Title */}
                         <div className="flex items-center gap-4">
                             <Link to="/student">
                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 hover:text-gray-900 rounded-xl text-sm font-medium transition-all shadow-sm">
+                                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                                    style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#78350F', boxShadow: '0 2px 8px rgba(180,120,60,0.06)' }}>
                                     <IoArrowBack size={16} /> Back
                                 </motion.button>
                             </Link>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <IoRocket className="text-yellow-400" size={22} />
-                                    <h1 className="text-3xl font-black bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
-                                        Study Base
-                                    </h1>
+                                    <IoRocket style={{ color: '#F97316' }} size={22} />
+                                    <h1 className="text-3xl font-black" style={{ color: '#1A1A1A' }}>Study Base</h1>
                                 </div>
-                                <p className="text-gray-500 text-sm mt-0.5">
-                                    Level <strong className="text-orange-500">{stats?.level || 1}</strong> &nbsp;·&nbsp; {stats?.totalXP || 0} XP
+                                <p className="text-sm mt-0.5" style={{ color: '#9B7B5A' }}>
+                                    Level <strong style={{ color: '#EA580C' }}>{stats?.level || 1}</strong> &nbsp;·&nbsp; {stats?.totalXP || 0} XP
                                     {stats?.currentStreak > 0 && (
-                                        <span className="ml-2 inline-flex items-center gap-1 text-orange-400">
+                                        <span className="ml-2 inline-flex items-center gap-1" style={{ color: '#F97316' }}>
                                             <IoFlameOutline size={13} /> {stats.currentStreak}d streak
                                         </span>
                                     )}
@@ -183,130 +176,126 @@ const StudyPlanner = () => {
                         </div>
 
                         {/* View Toggle */}
-                        <div className="flex gap-1 p-1 bg-gray-100 border border-gray-200 rounded-2xl w-fit">
+                        <div className="flex gap-1 p-1 rounded-2xl w-fit" style={{ background: '#F5F0EA', border: '1px solid #EDE8E0' }}>
                             {[
-                                { key: 'tasks', label: 'Tasks', icon: IoList, active: 'from-blue-600 to-indigo-600' },
-                                { key: 'calendar', label: 'Calendar', icon: IoCalendar, active: 'from-pink-600 to-rose-600' },
-                                { key: 'analytics', label: 'Analytics', icon: IoStatsChart, active: 'from-purple-600 to-violet-600' },
-                            ].map(({ key, label, icon: Icon, active }) => (
+                                { key: 'tasks',     label: 'Tasks',     icon: IoList      },
+                                { key: 'calendar',  label: 'Calendar',  icon: IoCalendar  },
+                                { key: 'analytics', label: 'Analytics', icon: IoStatsChart },
+                            ].map(({ key, label, icon: Icon }) => (
                                 <button key={key} onClick={() => setView(key)}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${view === key
-                                        ? `bg-gradient-to-r ${active} text-white shadow-md`
-                                        : 'text-gray-500 hover:text-gray-800'}`}>
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                                    style={view === key
+                                        ? { background: '#FFFFFF', color: '#EA580C', border: '1.5px solid #FDDCAE', boxShadow: '0 2px 6px rgba(249,115,22,0.1)' }
+                                        : { color: '#9B7B5A', border: '1.5px solid transparent' }}>
                                     <Icon size={15} /> {label}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* XP Progress Bar */}
-                    <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${xpPct}%` }}
+                    {/* XP Bar */}
+                    <div className="relative h-2 rounded-full overflow-hidden" style={{ background: '#F0EDE8' }}>
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${xpPct}%` }}
                             transition={{ duration: 1.2, ease: 'easeOut' }}
-                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"
-                        />
+                            className="absolute top-0 left-0 h-full rounded-full"
+                            style={{ background: 'linear-gradient(90deg,#F97316,#EA580C)' }} />
                     </div>
-                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <div className="flex justify-between text-xs mt-1" style={{ color: '#9B7B5A' }}>
                         <span>{(stats?.totalXP || 0) % 1000} XP</span>
                         <span>Next level: 1000 XP</span>
                     </div>
                 </motion.div>
 
-                {/* ── Body Grid ──────────────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                    {/* Left: Main Content (2/3) */}
                     <div className="lg:col-span-2 space-y-5 order-1">
                         <AnimatePresence mode="wait">
 
-                            {/* ── TASKS VIEW ── */}
                             {view === 'tasks' && (
                                 <motion.div key="tasks" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-4">
-                                    {/* New Task CTA — top */}
                                     <motion.button
                                         onClick={() => { resetForm(); setShowModal(true); }}
-                                        animate={{ boxShadow: ["0 0 0 rgba(249,115,22,0)", "0 0 30px rgba(249,115,22,0.5)", "0 0 0 rgba(249,115,22,0)"] }}
+                                        animate={{ boxShadow: ["0 0 0 rgba(249,115,22,0)", "0 0 30px rgba(249,115,22,0.4)", "0 0 0 rgba(249,115,22,0)"] }}
                                         transition={{ boxShadow: { duration: 2.5, repeat: Infinity } }}
                                         whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                        className="relative group w-full rounded-2xl overflow-hidden bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center gap-2 text-white shadow-lg shadow-orange-500/20 cursor-pointer py-3 px-5"
-                                    >
+                                        className="relative group w-full rounded-2xl overflow-hidden flex items-center justify-center gap-2 text-white cursor-pointer py-3 px-5"
+                                        style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)', boxShadow: '0 4px 20px rgba(249,115,22,0.25)' }}>
                                         <div className="absolute inset-0 bg-white/15 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                                         <IoAdd size={20} className="relative" />
                                         <span className="relative text-sm font-black tracking-wider">NEW TASK</span>
                                     </motion.button>
 
-                                    {/* Quick Stats */}
                                     <div className="grid grid-cols-2 gap-4">
                                         {[
-                                            { label: 'Pending', value: pendingTasks, color: 'from-blue-500 to-cyan-400' },
+                                            { label: 'Pending',   value: pendingTasks,   color: 'from-blue-500 to-cyan-400'   },
                                             { label: 'Completed', value: completedTasks, color: 'from-green-500 to-emerald-400' },
                                         ].map(({ label, value, color }) => (
-                                            <motion.div key={label}
-                                                whileHover={{ scale: 1.02 }}
-                                                className="relative group rounded-2xl p-4 border border-gray-200 bg-white shadow-sm overflow-hidden">
-                                                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${color}`} />
+                                            <motion.div key={label} whileHover={{ scale: 1.02 }}
+                                                className="relative rounded-2xl p-4 overflow-hidden"
+                                                style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 8px rgba(180,120,60,0.05)' }}>
+                                                <div className={`absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r ${color} rounded-t-2xl`} />
                                                 <p className={`text-xs uppercase tracking-widest font-bold bg-gradient-to-r ${color} bg-clip-text text-transparent`}>{label}</p>
-                                                <p className="text-3xl font-black text-gray-900">{value}</p>
+                                                <p className="text-3xl font-black" style={{ color: '#1A1A1A' }}>{value}</p>
                                             </motion.div>
                                         ))}
                                     </div>
 
-                                    {/* Task List */}
                                     <div className="space-y-3">
                                         {tasks.length === 0 ? (
-                                            <div className="text-center py-20 rounded-2xl border border-dashed border-gray-300 bg-white">
-                                                <IoBookOutline size={44} className="mx-auto text-gray-300 mb-3" />
-                                                <p className="text-gray-400 font-medium">No active tasks. Time to plan your success!</p>
+                                            <div className="text-center py-20 rounded-2xl border-2 border-dashed"
+                                                style={{ borderColor: '#EDE8E0', background: '#FFFFFF' }}>
+                                                <IoBookOutline size={44} className="mx-auto mb-3" style={{ color: '#FDDCAE' }} />
+                                                <p className="font-medium" style={{ color: '#9B7B5A' }}>No active tasks. Time to plan your success!</p>
                                             </div>
                                         ) : tasks.map((task, idx) => {
                                             const pCfg = priorityCfg[task.priority] || priorityCfg.medium;
                                             return (
                                                 <motion.div key={task._id}
                                                     initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.04 }}
-                                                    className={`group relative rounded-2xl border transition-all duration-300 p-4 overflow-hidden
-                                                        ${task.completed
-                                                            ? 'opacity-50 grayscale bg-gray-50 border-gray-200'
-                                                            : `bg-white border-gray-200 hover:shadow-md ${pCfg.glow}`}`}>
-                                                    {/* Priority top border */}
+                                                    className="group relative rounded-2xl p-4 overflow-hidden transition-all"
+                                                    style={task.completed
+                                                        ? { opacity: 0.5, filter: 'grayscale(1)', background: '#FFFAF5', border: '1.5px solid #EDE8E0' }
+                                                        : { background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 8px rgba(180,120,60,0.05)' }}
+                                                    onMouseEnter={e => { if (!task.completed) e.currentTarget.style.borderColor = '#FDDCAE'; }}
+                                                    onMouseLeave={e => { if (!task.completed) e.currentTarget.style.borderColor = '#EDE8E0'; }}>
                                                     {!task.completed && (
                                                         <div className={`absolute top-0 left-0 w-1 h-full rounded-l-2xl ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`} />
                                                     )}
                                                     <div className="flex items-start gap-4 pl-2">
-                                                        {/* Checkbox */}
                                                         <button onClick={() => toggleComplete(task)}
-                                                            className={`mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${task.completed
-                                                                ? 'bg-green-500 border-green-500'
-                                                                : 'border-gray-300 hover:border-blue-400'}`}>
+                                                            className="mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all"
+                                                            style={task.completed
+                                                                ? { background: '#10b981', borderColor: '#10b981' }
+                                                                : { borderColor: '#EDE8E0' }}>
                                                             {task.completed && <IoCheckmark size={13} className="text-white" />}
                                                         </button>
-
                                                         <div className="flex-1 min-w-0">
-                                                            <h3 className={`font-bold text-gray-900 truncate ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</h3>
-                                                            {task.description && <p className="text-gray-500 text-sm line-clamp-1 mt-0.5">{task.description}</p>}
+                                                            <h3 className={`font-bold truncate ${task.completed ? 'line-through' : ''}`}
+                                                                style={{ color: task.completed ? '#9B7B5A' : '#1A1A1A' }}>{task.title}</h3>
+                                                            {task.description && <p className="text-sm line-clamp-1 mt-0.5" style={{ color: '#9B7B5A' }}>{task.description}</p>}
                                                             <div className="flex flex-wrap items-center gap-2 mt-2">
                                                                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${pCfg.badge}`}>{pCfg.label}</span>
                                                                 {task.dueDate && (
-                                                                    <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
-                                                                        <IoCalendar size={11} className="text-gray-400" />
+                                                                    <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                                                                        style={{ color: '#9B7B5A', background: '#F5F0EA', border: '1px solid #EDE8E0' }}>
+                                                                        <IoCalendar size={11} style={{ color: '#9B7B5A' }} />
                                                                         {new Date(task.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                                                     </span>
                                                                 )}
-                                                                <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
-                                                                    <IoTimer size={11} className="text-gray-400" /> {task.estimatedTime}m
+                                                                <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                                                                    style={{ color: '#9B7B5A', background: '#F5F0EA', border: '1px solid #EDE8E0' }}>
+                                                                    <IoTimer size={11} style={{ color: '#9B7B5A' }} /> {task.estimatedTime}m
                                                                 </span>
                                                             </div>
                                                         </div>
-
-                                                        {/* Actions */}
                                                         <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                                             <button onClick={() => openEditModal(task)}
-                                                                className="p-1.5 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/30 transition-colors">
+                                                                className="p-1.5 rounded-lg transition-colors"
+                                                                style={{ background: 'rgba(249,115,22,0.1)', color: '#EA580C' }}>
                                                                 <IoCreateOutline size={15} />
                                                             </button>
                                                             <button onClick={() => deleteTask(task._id)}
-                                                                className="p-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors">
+                                                                className="p-1.5 rounded-lg transition-colors"
+                                                                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
                                                                 <IoTrash size={15} />
                                                             </button>
                                                         </div>
@@ -318,19 +307,17 @@ const StudyPlanner = () => {
                                 </motion.div>
                             )}
 
-                            {/* ── CALENDAR VIEW ── */}
                             {view === 'calendar' && (
                                 <motion.div key="calendar" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                                     <CalendarView tasks={tasks} exams={exams} />
                                 </motion.div>
                             )}
 
-                            {/* ── ANALYTICS VIEW ── */}
                             {view === 'analytics' && (
                                 <motion.div key="analytics" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                                     <StudyAnalytics stats={stats} />
-                                    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6">
-                                        <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                                    <div className="rounded-2xl p-6" style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.07)' }}>
+                                        <h3 className="text-xl font-bold mb-5 flex items-center gap-2" style={{ color: '#1A1A1A' }}>
                                             🏆 Achievements
                                         </h3>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -345,20 +332,19 @@ const StudyPlanner = () => {
                         </AnimatePresence>
                     </div>
 
-                    {/* Right: Sidebar (1/3) - sticky widgets */}
+                    {/* Sidebar */}
                     <div className="lg:col-span-1 space-y-5 order-2">
                         <div className="lg:sticky lg:top-6 space-y-5">
                             <ExamCountdown />
                             <PomodoroTimer onSessionComplete={fetchData} />
-
-                            {/* Pro Tip */}
                             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                                className="relative rounded-2xl border border-indigo-200 bg-indigo-50 p-5 overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-t-2xl" />
-                                <h3 className="font-bold mb-2 flex items-center gap-2 text-indigo-700">
-                                    <IoRocket size={16} className="text-indigo-500" /> Pro Tip
+                                className="relative rounded-2xl p-5 overflow-hidden"
+                                style={{ background: '#FFF5EE', border: '1.5px solid #FDDCAE' }}>
+                                <div className="absolute top-0 left-0 w-full h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg,#F97316,#EA580C,transparent)' }} />
+                                <h3 className="font-bold mb-2 flex items-center gap-2" style={{ color: '#92400E' }}>
+                                    <IoRocket size={16} style={{ color: '#F97316' }} /> Pro Tip
                                 </h3>
-                                <p className="text-sm text-indigo-600 leading-relaxed">
+                                <p className="text-sm leading-relaxed" style={{ color: '#78350F' }}>
                                     "The Pomodoro Technique optimizes your focus by breaking work into productive intervals separated by short breaks — training your brain to stay fresh and agile."
                                 </p>
                             </motion.div>
@@ -367,56 +353,66 @@ const StudyPlanner = () => {
                 </div>
             </div>
 
-            {/* ── Task Modal ──────────────────────────────────────────── */}
             <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editMode ? 'Edit Mission' : 'New Mission'}>
                 <form onSubmit={handleTaskSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-semibold mb-1.5 text-gray-700">Title</label>
+                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#6B6560' }}>Title</label>
                         <input type="text" value={formData.title}
                             onChange={e => setFormData({ ...formData, title: e.target.value })}
-                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all"
+                            className="w-full rounded-xl px-4 py-2.5 outline-none transition-all"
+                            style={{ background: '#FFFAF5', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
+                            onFocus={e => { e.target.style.borderColor='#F97316'; e.target.style.boxShadow='0 0 0 3px rgba(249,115,22,0.1)'; }}
+                            onBlur={e => { e.target.style.borderColor='#EDE8E0'; e.target.style.boxShadow='none'; }}
                             placeholder="What do you want to accomplish?" required />
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold mb-1.5 text-gray-700">Description</label>
+                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#6B6560' }}>Description</label>
                         <textarea value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 outline-none h-24 resize-none transition-all"
+                            className="w-full rounded-xl px-4 py-2.5 outline-none h-24 resize-none transition-all"
+                            style={{ background: '#FFFAF5', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
+                            onFocus={e => { e.target.style.borderColor='#F97316'; e.target.style.boxShadow='0 0 0 3px rgba(249,115,22,0.1)'; }}
+                            onBlur={e => { e.target.style.borderColor='#EDE8E0'; e.target.style.boxShadow='none'; }}
                             placeholder="Add details..." />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-semibold mb-1.5 text-gray-700">Priority</label>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#6B6560' }}>Priority</label>
                             <select value={formData.priority}
                                 onChange={e => setFormData({ ...formData, priority: e.target.value })}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
+                                className="w-full rounded-xl px-4 py-2.5 outline-none transition-all"
+                                style={{ background: '#FFFAF5', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}>
                                 <option value="low">Low Priority</option>
                                 <option value="medium">Medium Priority</option>
                                 <option value="high">High Priority</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold mb-1.5 text-gray-700">Est. Minutes</label>
+                            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#6B6560' }}>Est. Minutes</label>
                             <input type="number" value={formData.estimatedTime}
                                 onChange={e => setFormData({ ...formData, estimatedTime: parseInt(e.target.value) })}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                className="w-full rounded-xl px-4 py-2.5 outline-none transition-all"
+                                style={{ background: '#FFFAF5', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }}
                                 min="5" step="5" />
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold mb-1.5 text-gray-700">Due Date</label>
+                        <label className="block text-sm font-semibold mb-1.5" style={{ color: '#6B6560' }}>Due Date</label>
                         <input type="date" value={formData.dueDate}
                             onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
-                            className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" />
+                            className="w-full rounded-xl px-4 py-2.5 outline-none transition-all"
+                            style={{ background: '#FFFAF5', border: '1.5px solid #EDE8E0', color: '#1A1A1A' }} />
                     </div>
                     <div className="flex gap-3 pt-2">
                         <motion.button type="submit" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all">
+                            className="flex-1 py-2.5 rounded-xl text-white font-semibold transition-all"
+                            style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
                             {editMode ? 'Update Mission' : 'Create Task'}
                         </motion.button>
                         <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                             onClick={() => setShowModal(false)}
-                            className="flex-1 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-semibold transition-all">
+                            className="flex-1 py-2.5 rounded-xl font-semibold transition-all"
+                            style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#6B6560' }}>
                             Cancel
                         </motion.button>
                     </div>
