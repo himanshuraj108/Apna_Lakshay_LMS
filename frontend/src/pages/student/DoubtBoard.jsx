@@ -882,8 +882,8 @@ const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename
     const itemProps = { activeId, menuId, editId, editVal, isDark, onSelect, onRename, onPin, onDelete, setMenuId, setEditId, setEditVal };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isDark ? '#121215' : '#fafafa', borderRight: isDark ? '1px solid #27272a' : '1px solid #f1f5f9' }}>
-            <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isDark ? '1px solid #27272a' : '1px solid #f1f5f9' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isDark ? '#121215' : '#FFFFFF', borderRight: isDark ? '1px solid #27272a' : '1.5px solid #EDE8E0' }}>
+            <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isDark ? '1px solid #27272a' : '1.5px solid #EDE8E0' }}>
                 <span style={{ fontSize: 14, fontWeight: 800, color: isDark ? '#fff' : '#0f172a' }}>{t.history}</span>
                 <button
                     onClick={onNew}
@@ -920,11 +920,11 @@ const DrawerSidebar = ({ sessions, activeId, onSelect, onNew, onDelete, onRename
 
 // Clean Minimalist Language Selection Screen shown firstly
 const LanguageSelectionScreen = ({ onSelect, onClose, forceMode, isDark }) => {
-    const bg = isDark ? '#09090b' : '#ffffff';
-    const textPrimary = isDark ? '#ffffff' : '#0f172a';
-    const textSecondary = isDark ? '#a1a1aa' : '#64748b';
-    const cardBg = isDark ? '#18181b' : '#f8fafc';
-    const cardBorder = isDark ? '#27272a' : '#e2e8f0';
+    const bg = isDark ? '#09090b' : '#F7F3EC';
+    const textPrimary = isDark ? '#ffffff' : '#1A1A1A';
+    const textSecondary = isDark ? '#a1a1aa' : '#9B7B5A';
+    const cardBg = isDark ? '#18181b' : '#FFFFFF';
+    const cardBorder = isDark ? '#27272a' : '#EDE8E0';
 
     const langs = [
         { code: 'en', title: 'English', desc: 'Step-by-step solutions & explanations in English' },
@@ -933,7 +933,7 @@ const LanguageSelectionScreen = ({ onSelect, onClose, forceMode, isDark }) => {
     ];
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', background: bg, position: 'relative', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', background: bg, position: 'relative', fontFamily: "'DM Sans','Inter',sans-serif" }}>
             {/* Highly Visible Red Cross Button on top right */}
             <button
                 onClick={onClose}
@@ -1393,14 +1393,14 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
         });
     };
 
-    const pageBg = isDark ? '#09090b' : '#ffffff';
-    const textPrimary = isDark ? '#ffffff' : '#0f172a';
-    const textSecondary = isDark ? '#a1a1aa' : '#64748b';
-    const inputBg = isDark ? '#18181b' : '#f4f4f5';
-    const borderColor = isDark ? '#27272a' : '#f1f5f9';
+    const pageBg = isDark ? '#09090b' : '#F7F3EC';
+    const textPrimary = isDark ? '#ffffff' : '#1A1A1A';
+    const textSecondary = isDark ? '#a1a1aa' : '#9B7B5A';
+    const inputBg = isDark ? '#18181b' : '#FFFFFF';
+    const borderColor = isDark ? '#27272a' : '#EDE8E0';
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: pageBg, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+        <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden', background: pageBg, fontFamily: "'DM Sans','Inter',sans-serif" }}>
             <style>{`
                 @keyframes blinkC {
                     0%, 100% { opacity: 1; }
@@ -1637,8 +1637,9 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                                                 maxWidth: '85%',
                                                 padding: '12px 18px',
                                                 borderRadius: '20px 20px 4px 20px',
-                                                background: isDark ? '#27272a' : '#f1f5f9',
-                                                color: textPrimary,
+                                                background: isDark ? '#27272a' : '#FFF5EE',
+                                                border: isDark ? 'none' : '1.5px solid #FDDCAE',
+                                                color: isDark ? textPrimary : '#1A1A1A',
                                                 fontSize: 15,
                                                 lineHeight: 1.6,
                                                 fontWeight: 500,
