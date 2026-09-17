@@ -30,7 +30,7 @@ const PageLoader = () => {
         <div
             className="fixed inset-0 flex flex-col items-center justify-center z-50 select-none"
             style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.45)',
+                backgroundColor: 'rgba(250, 246, 240, 0.65)',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
                 fontFamily: "'DM Sans', 'Inter', sans-serif",

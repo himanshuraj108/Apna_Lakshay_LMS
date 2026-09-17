@@ -7,10 +7,11 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    // Default to 'dark' if no preference saved
-    const [theme, setTheme] = useState(
-        localStorage.getItem('theme') || 'dark'
-    );
+    // Default to 'light' (warm LMS design system)
+    const [theme, setTheme] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        return saved === 'dark' ? 'light' : (saved || 'light');
+    });
 
     useEffect(() => {
         const root = document.documentElement;
