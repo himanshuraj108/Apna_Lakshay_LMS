@@ -40,6 +40,7 @@ const {
     clearActionHistory,
     getPasswordActivity,
     resetStudentPassword,
+    getStudentActivityHistory,
     bulkUpdateStudentFees,
     bulkResetPasswordsToMobile,
     getArchivedStudents,
@@ -140,6 +141,7 @@ router.route('/students/:id')
     .delete(deleteStudent);
 
 router.post('/students/:id/reset-password', resetStudentPassword);
+router.get('/students/:id/activity-history', getStudentActivityHistory);
 router.get('/students/:id/mock-tests', getStudentMockTests);
 
 // Floor/Room/Seat management

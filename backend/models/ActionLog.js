@@ -16,11 +16,16 @@ const actionLogSchema = new mongoose.Schema({
         enum: [
             'student_created',
             'student_updated',
+            'student_activated',
+            'student_deactivated',
             'student_deleted_soft',
             'student_deleted_hard',
             'seat_assigned',
             'seat_freed',
             'fee_marked_paid',
+            'fee_partial_paid',
+            'fee_updated',
+            'visibility_changed',
             'request_approved',
             'request_rejected',
             'notification_sent',
@@ -32,7 +37,8 @@ const actionLogSchema = new mongoose.Schema({
             'delete_shift',
             'password_reset',
             'bulk_password_reset',
-            'generate_qr'
+            'generate_qr',
+            'update_student'
         ]
     },
     targetModel: {

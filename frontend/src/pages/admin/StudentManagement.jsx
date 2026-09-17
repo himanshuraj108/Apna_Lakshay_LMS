@@ -139,6 +139,13 @@ const StudentManagement = () => {
     const [splitPairs, setSplitPairs] = useState([{ seatId: '', shiftId: '', price: '' }, { seatId: '', shiftId: '', price: '' }]);
     const [splitLoading, setSplitLoading] = useState(false);
 
+    // Scholar Activity & Status History Modal States
+    const [showActivityModal, setShowActivityModal] = useState(false);
+    const [activityStudent, setActivityStudent] = useState(null);
+    const [activityTimeline, setActivityTimeline] = useState([]);
+    const [activityLoading, setActivityLoading] = useState(false);
+    const [activityCategoryFilter, setActivityCategoryFilter] = useState('all');
+
     const getStatusHistoryTooltip = (student) => {
         const effectiveAdmission = student.admissionDate || student.createdAt;
         const lines = [];
@@ -557,6 +564,27 @@ const StudentManagement = () => {
     const openIdCardModal = (student) => {
         setSelectedStudent(student);
         setShowIdCardModal(true);
+    };
+
+    // ─── Scholar Activity & Status History Handler ───────────────────────────
+    const openActivityHistoryModal = async (student) => {
+        setActivityStudent(student);
+        setActivityCategoryFilter('all');
+        setShowActivityModal(true);
+        setActivityLoading(true);
+        try {
+            const res = await api.get(`/admin/students/${student._id}/activity-history`);
+            if (res.data?.success) {
+                setActivityTimeline(res.data.timeline || []);
+                if (res.data.student) {
+                    setActivityStudent(prev => ({ ...prev, ...res.data.student }));
+                }
+            }
+        } catch (err) {
+            console.error('Failed to load activity history:', err);
+        } finally {
+            setActivityLoading(false);
+        }
     };
 
     // ─── Temp Seat Handlers ──────────────────────────────────────────────────
@@ -2104,9 +2132,15 @@ const StudentManagement = () => {
                                                                                 </span>
                                                                             )}
                                                                         </div>
-                                                                        <p className="text-[10px] text-slate-500 truncate mt-0.5" title={getStatusHistoryTooltip(student)}>
-                                                                            Joined {new Date(student.admissionDate || student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                                                                        </p>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => { e.stopPropagation(); openActivityHistoryModal(student); }}
+                                                                            className="text-[10px] text-slate-500 hover:text-orange-600 truncate mt-0.5 flex items-center gap-1 group/hist transition-colors"
+                                                                            title="Click to view full Activity & Status History"
+                                                                        >
+                                                                            <IoTimeOutline size={11} className="text-slate-400 group-hover/hist:text-orange-500 shrink-0" />
+                                                                            <span>Joined {new Date(student.admissionDate || student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                                                                        </button>
                                                                     </div>
                                                                 </div>
 
@@ -2177,6 +2211,14 @@ const StudentManagement = () => {
                                                                             className="p-2 text-slate-600 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-xl transition-all"
                                                                             title="Temporary Seat Allocation"
                                                                         >
+                                                                            <IoWarningOutline size={15} />
+                                                                        </button>
+
+                                                                        <button
+                                                                            onClick={() => openActivityHistoryModal(student)}
+                                                                            className="p-2 text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 rounded-xl transition-all"
+                                                                            title="Scholar Activity & Status History"
+                                                                        >
                                                                             <IoTimeOutline size={15} />
                                                                         </button>
 
@@ -2212,6 +2254,13 @@ const StudentManagement = () => {
                                                                         >
                                                                             <IoRefresh size={14} />
                                                                             <span>Reactivate Scholar</span>
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => openActivityHistoryModal(student)}
+                                                                            className="p-2 text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 rounded-xl transition-all"
+                                                                            title="Scholar Activity & Status History"
+                                                                        >
+                                                                            <IoTimeOutline size={15} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => openEditModal(student)}
@@ -2449,9 +2498,15 @@ const StudentManagement = () => {
 
                                                             {/* Admission Date */}
                                                             <td className="px-4 py-3.5 text-xs text-slate-600 font-medium">
-                                                                <span title={getStatusHistoryTooltip(student)} className="cursor-help underline decoration-dotted decoration-slate-300">
-                                                                    {new Date(student.admissionDate || student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openActivityHistoryModal(student)}
+                                                                    title="Click to view full Activity & Status History"
+                                                                    className="hover:text-orange-600 cursor-pointer underline decoration-dotted decoration-slate-300 hover:decoration-orange-400 text-left transition-colors flex items-center gap-1 group/tblhist"
+                                                                >
+                                                                    <IoTimeOutline size={12} className="text-slate-400 group-hover/tblhist:text-orange-500 shrink-0" />
+                                                                    <span>{new Date(student.admissionDate || student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                                                </button>
                                                             </td>
 
                                                             {/* Fee Rate */}
@@ -2513,6 +2568,13 @@ const StudentManagement = () => {
                                                                                 <IoWarningOutline size={16} />
                                                                             </button>
                                                                             <button
+                                                                                onClick={() => openActivityHistoryModal(student)}
+                                                                                className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                                                title="Scholar Activity & Status History"
+                                                                            >
+                                                                                <IoTimeOutline size={16} />
+                                                                            </button>
+                                                                            <button
                                                                                 onClick={() => openResetPasswordModal(student)}
                                                                                 className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                                                                                 title="Reset Password"
@@ -2528,13 +2590,22 @@ const StudentManagement = () => {
                                                                             </button>
                                                                         </>
                                                                     ) : (
-                                                                        <button
-                                                                            onClick={() => handleReactivate(student)}
-                                                                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                                            title="Reactivate Scholar"
-                                                                        >
-                                                                            <IoRefresh size={16} />
-                                                                        </button>
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => handleReactivate(student)}
+                                                                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                                                title="Reactivate Scholar"
+                                                                            >
+                                                                                <IoRefresh size={16} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => openActivityHistoryModal(student)}
+                                                                                className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                                                title="Scholar Activity & Status History"
+                                                                            >
+                                                                                <IoTimeOutline size={16} />
+                                                                            </button>
+                                                                        </>
                                                                     )}
                                                                     <button
                                                                         onClick={() => openDeleteModal(student)}
@@ -4481,6 +4552,231 @@ const StudentManagement = () => {
                             </button>
                         </div>
                     </form>
+                )}
+            </Modal>
+
+            {/* ─── Scholar Activity & Status History Modal ─────────────────── */}
+            <Modal
+                theme="light"
+                isOpen={showActivityModal}
+                onClose={() => {
+                    setShowActivityModal(false);
+                    setActivityStudent(null);
+                    setActivityTimeline([]);
+                }}
+                title="Scholar Activity & Status History"
+                maxWidth="max-w-2xl"
+                accentColor="from-orange-500 via-amber-500 to-indigo-600"
+            >
+                {activityStudent && (
+                    <div className="space-y-4">
+                        {/* Scholar Summary Card */}
+                        <div className="bg-gradient-to-br from-slate-50 to-orange-50/40 border border-slate-200/90 rounded-2xl p-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="relative w-12 h-12 rounded-2xl bg-white border border-slate-200 overflow-hidden shrink-0 shadow-xs">
+                                        <img
+                                            src={(() => {
+                                                const img = (!activityStudent.profileImage || activityStudent.profileImage === '/uploads/avatars/avatar1.svg')
+                                                    ? getDeterministicAvatar(activityStudent._id, activityStudent.gender)
+                                                    : activityStudent.profileImage;
+                                                return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                                            })()}
+                                            alt={activityStudent.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h3 className="font-extrabold text-base text-slate-900 truncate">
+                                                {activityStudent.name}
+                                            </h3>
+                                            {activityStudent.isActive ? (
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    <span>Active Scholar</span>
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                                                    <span>Inactive Scholar</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                                            <span>{activityStudent.email || 'No email registered'}</span>
+                                            <span>•</span>
+                                            <span>{activityStudent.mobile || 'No mobile number'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Meta Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-200/70 text-xs">
+                                <div className="bg-white/90 p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Admission</span>
+                                    <span className="font-bold text-slate-800">
+                                        {new Date(activityStudent.admissionDate || activityStudent.createdAt || activityStudent.joinedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    </span>
+                                </div>
+                                <div className="bg-white/90 p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Desk Seat</span>
+                                    <span className="font-bold text-slate-800">
+                                        {getStudentSeatDetails(activityStudent._id)?.seatNumber ? `Desk ${getStudentSeatDetails(activityStudent._id).seatNumber}` : 'Unallocated'}
+                                    </span>
+                                </div>
+                                <div className="bg-white/90 p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Fee Rate</span>
+                                    <span className="font-bold text-emerald-600">
+                                        {getStudentFee(activityStudent)}
+                                    </span>
+                                </div>
+                                <div className="bg-white/90 p-2 rounded-xl border border-slate-200/60 shadow-2xs">
+                                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Ledger Status</span>
+                                    <span className={`font-bold ${activityStudent.showInFeeManagement !== false ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                        {activityStudent.showInFeeManagement !== false ? 'Ledger Visible' : 'Ledger Hidden'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Category Filter Tabs */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                            {[
+                                { key: 'all', label: 'All History', count: activityTimeline.length },
+                                { key: 'Status', label: 'Status & Lifecycle', count: activityTimeline.filter(t => t.category === 'Status' || t.category === 'Lifecycle').length },
+                                { key: 'Payment', label: 'Fee Payments', count: activityTimeline.filter(t => t.category === 'Payment').length },
+                                { key: 'Fee', label: 'Fee Adjustments', count: activityTimeline.filter(t => t.category === 'Fee').length },
+                                { key: 'Desk', label: 'Desk Changes', count: activityTimeline.filter(t => t.category === 'Desk').length }
+                            ].map(tab => (
+                                <button
+                                    key={tab.key}
+                                    type="button"
+                                    onClick={() => setActivityCategoryFilter(tab.key)}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                                        activityCategoryFilter === tab.key
+                                            ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/80'
+                                    }`}
+                                >
+                                    <span>{tab.label}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                                        activityCategoryFilter === tab.key
+                                            ? 'bg-white/25 text-white'
+                                            : 'bg-slate-200 text-slate-700'
+                                    }`}>
+                                        {tab.count}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Timeline Body */}
+                        {activityLoading ? (
+                            <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-400">
+                                <div className="w-8 h-8 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                                <p className="text-xs font-semibold">Loading scholar timeline records...</p>
+                            </div>
+                        ) : activityTimeline.length === 0 ? (
+                            <div className="py-14 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                                    <IoTimeOutline size={24} />
+                                </div>
+                                <h4 className="font-bold text-sm text-slate-800">No Activity Recorded</h4>
+                                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                                    There are no activity logs or status transitions recorded for this scholar yet.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="relative pl-6 space-y-4 max-h-[50vh] overflow-y-auto pr-1 before:absolute before:top-2 before:bottom-2 before:left-2.5 before:w-0.5 before:bg-slate-200">
+                                {activityTimeline
+                                    .filter(item => {
+                                        if (activityCategoryFilter === 'all') return true;
+                                        if (activityCategoryFilter === 'Status') return item.category === 'Status' || item.category === 'Lifecycle';
+                                        return item.category === activityCategoryFilter;
+                                    })
+                                    .map((item, idx) => (
+                                        <div key={item.id || idx} className="relative group/timeline flex items-start gap-3">
+                                            {/* Node Icon */}
+                                            <div className={`relative z-10 w-6 h-6 rounded-full border-2 border-white shadow-xs flex items-center justify-center shrink-0 mt-1 ${
+                                                item.category === 'Status'
+                                                    ? (item.action.includes('deactivated') || item.action.includes('deleted') ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white')
+                                                    : item.category === 'Payment'
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : item.category === 'Fee'
+                                                            ? 'bg-amber-500 text-white'
+                                                            : item.category === 'Desk'
+                                                                ? 'bg-indigo-500 text-white'
+                                                                : 'bg-blue-500 text-white'
+                                            }`}>
+                                                {item.category === 'Status' ? (
+                                                    item.action.includes('deactivated') || item.action.includes('deleted') ? <IoTrashOutline size={12} /> : <IoCheckmarkCircle size={12} />
+                                                ) : item.category === 'Payment' ? (
+                                                    <IoCashOutline size={12} />
+                                                ) : item.category === 'Fee' ? (
+                                                    <IoReceiptOutline size={12} />
+                                                ) : item.category === 'Desk' ? (
+                                                    <IoBedOutline size={12} />
+                                                ) : (
+                                                    <IoTimeOutline size={12} />
+                                                )}
+                                            </div>
+
+                                            {/* Card Content */}
+                                            <div className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs group-hover/timeline:border-orange-300 transition-all">
+                                                <div className="flex items-start justify-between gap-2 flex-wrap">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full border ${item.badge || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                                                            {item.category}
+                                                        </span>
+                                                        <h4 className="font-bold text-xs text-slate-900">
+                                                            {item.title}
+                                                        </h4>
+                                                    </div>
+                                                    <span className="text-[11px] font-semibold text-slate-400">
+                                                        {new Date(item.timestamp).toLocaleString('en-IN', {
+                                                            day: '2-digit',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            hour12: true
+                                                        })}
+                                                    </span>
+                                                </div>
+
+                                                {item.details && (
+                                                    <p className="text-xs text-slate-600 mt-2 leading-relaxed bg-slate-50/80 rounded-xl p-2.5 border border-slate-100 font-medium">
+                                                        {item.details}
+                                                    </p>
+                                                )}
+
+                                                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-400">
+                                                    <span>Admin: <strong className="text-slate-600">{item.adminName || 'Admin / System'}</strong></span>
+                                                    <span className="text-slate-300 font-mono text-[9px] uppercase">{item.action}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                        )}
+
+                        {/* Modal Footer */}
+                        <div className="flex justify-end pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowActivityModal(false);
+                                    setActivityStudent(null);
+                                    setActivityTimeline([]);
+                                }}
+                                className={BTN_SECONDARY}
+                            >
+                                Close History
+                            </button>
+                        </div>
+                    </div>
                 )}
             </Modal>
         </>

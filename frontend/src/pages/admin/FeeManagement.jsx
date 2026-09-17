@@ -327,15 +327,8 @@ const FeeManagement = () => {
         return activeStudentFees.filter(f => f.student?.showInFeeManagement !== false);
     }, [activeStudentFees]);
 
-    // Fees hidden from ledger by admin decision (showInFeeManagement === false)
-    const hiddenFees = useMemo(() => {
-        return activeStudentFees.filter(f => f.student?.showInFeeManagement === false);
-    }, [activeStudentFees]);
-
-    // Base roster currently under display (either normal visible ledger or hidden scholars)
-    const baseFees = useMemo(() => {
-        return filter === 'hidden' ? hiddenFees : visibleFees;
-    }, [filter, hiddenFees, visibleFees]);
+    // Base roster currently under display in Fee Management
+    const baseFees = visibleFees;
 
     // Financial KPI Metrics calculated across visible ledger roster
     const metrics = useMemo(() => {
@@ -392,12 +385,11 @@ const FeeManagement = () => {
             online: visibleFees.filter(f => f.razorpayOrderId).length,
             pending: visibleFees.filter(f => f.status === 'pending' || f.status === 'partial').length,
             overdue: visibleFees.filter(f => f.status === 'overdue').length,
-            cancelled: visibleFees.filter(f => f.status === 'cancelled').length,
-            hidden: hiddenFees.length
+            cancelled: visibleFees.filter(f => f.status === 'cancelled').length
         };
 
         return { totalRevenue, todayRevenue, monthlyRevenue, monthName, totalPending, totalOverdue, onlineVolume, counts };
-    }, [visibleFees, hiddenFees]);
+    }, [visibleFees]);
 
 
     // Filtered & Searched & Sorted records
@@ -407,7 +399,6 @@ const FeeManagement = () => {
 
         return baseFees
             .filter(fee => {
-                if (filter === 'hidden') return true;
                 if (monthlyFilter) {
                     if (!fee.paidDate) return false;
                     const pd = new Date(fee.paidDate);
@@ -451,12 +442,11 @@ const FeeManagement = () => {
         ...(onlinePaymentEnabled ? [{ key: 'online', label: 'Online Gateway', count: metrics.counts.online }] : []),
         { key: 'pending',   label: 'Pending Dues', count: metrics.counts.pending },
         { key: 'overdue',   label: 'Overdue Risk', count: metrics.counts.overdue },
-        { key: 'cancelled', label: 'Void Cancelled', count: metrics.counts.cancelled },
-        { key: 'hidden',    label: 'Hidden Scholars', count: metrics.counts.hidden }
+        { key: 'cancelled', label: 'Void Cancelled', count: metrics.counts.cancelled }
     ];
 
     useEffect(() => {
-        if (isSubAdmin && (filter === 'all' || filter === 'online' || filter === 'overdue' || filter === 'cancelled' || filter === 'hidden')) {
+        if (isSubAdmin && (filter === 'all' || filter === 'online' || filter === 'overdue' || filter === 'cancelled')) {
             setFilter('pending');
         } else if (!onlinePaymentEnabled && filter === 'online') {
             setFilter('all');
@@ -971,16 +961,11 @@ const FeeManagement = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Status Badge + Hidden indicator */}
+                                            {/* Status Badge */}
                                             <div className="flex flex-col items-end gap-1 shrink-0">
                                                 <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${theme.badge}`}>
                                                     {theme.label}
                                                 </span>
-                                                {fee.student?.showInFeeManagement === false && (
-                                                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
-                                                        Hidden
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
 
@@ -1190,11 +1175,6 @@ const FeeManagement = () => {
                                                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${theme.badge}`}>
                                                             {theme.label}
                                                         </span>
-                                                        {fee.student?.showInFeeManagement === false && (
-                                                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                                                                Hidden
-                                                            </span>
-                                                        )}
                                                         {fee.razorpayOrderId && (
                                                             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                                                                 {fee.status === 'paid' && fee.razorpayPaymentId ? 'Online Settled' : 'Online Order'}

@@ -1364,7 +1364,40 @@ exports.updateStudent = async (req, res) => {
         }
 
         // Log action
-        await logAction(req, 'student_updated', 'User', student._id, student.name, `Updated student details. Active: ${isActive}`);
+        if (statusChanged) {
+            await logAction(
+                req,
+                isActive ? 'student_activated' : 'student_deactivated',
+                'User',
+                student._id,
+                student.name,
+                `Scholar status changed to ${isActive ? 'Active (Reactivated)' : 'Inactive (Deactivated)'}`
+            );
+        } else {
+            await logAction(req, 'student_updated', 'User', student._id, student.name, `Updated scholar profile: ${student.name}`);
+        }
+
+        if (req.body.showInFeeManagement !== undefined) {
+            await logAction(
+                req,
+                'visibility_changed',
+                'User',
+                student._id,
+                student.name,
+                `Fee Management visibility set to ${req.body.showInFeeManagement ? 'Visible in Ledger' : 'Hidden from Ledger'}`
+            );
+        }
+
+        if (negotiatedPrice !== undefined && negotiatedPrice !== '') {
+            await logAction(
+                req,
+                'fee_updated',
+                'User',
+                student._id,
+                student.name,
+                `Monthly fee rate set to ₹${newPrice}`
+            );
+        }
 
 
         // Send Profile Update Email if requested
@@ -1452,10 +1485,15 @@ exports.deleteStudent = async (req, res) => {
         if (student.isActive && !forceDelete) {
             // Soft delete - Mark student as inactive
             student.isActive = false;
+            if (!student.statusHistory) student.statusHistory = [];
+            student.statusHistory.push({
+                status: 'inactive',
+                date: new Date()
+            });
             await student.save();
 
             // Log action
-            await logAction(req, 'student_deleted_soft', 'User', student._id, student.name, 'Soft deleted (marked inactive)');
+            await logAction(req, 'student_deactivated', 'User', student._id, student.name, 'Marked inactive (deactivated) and desk seat freed');
 
             res.status(200).json({
                 success: true,
@@ -3524,6 +3562,160 @@ exports.getPasswordActivity = async (req, res) => {
         res.status(200).json({
             success: true,
             logs: filteredLogs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get detailed activity & status history for a specific student
+// @route   GET /api/admin/students/:id/activity-history
+exports.getStudentActivityHistory = async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
+        // 1. Fetch action logs related to this student
+        const actionLogs = await ActionLog.find({
+            $or: [
+                { targetId: student._id },
+                { targetName: student.name },
+                { details: { $regex: student.name, $options: 'i' } }
+            ]
+        }).sort({ createdAt: -1 }).limit(100);
+
+        // 2. Fetch fee records
+        const fees = await Fee.find({ student: student._id }).sort({ year: -1, month: -1 });
+
+        const formatItem = (action, details) => {
+            switch (action) {
+                case 'student_created':
+                    return { category: 'Lifecycle', title: 'Scholar Account Created', badge: 'bg-blue-50 text-blue-700 border-blue-200' };
+                case 'student_activated':
+                    return { category: 'Status', title: 'Scholar Activated / Reactivated', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+                case 'student_deactivated':
+                case 'student_deleted_soft':
+                    return { category: 'Status', title: 'Scholar Deactivated (Marked Inactive)', badge: 'bg-rose-50 text-rose-700 border-rose-200' };
+                case 'student_updated':
+                    return { category: 'Profile', title: 'Profile Updated', badge: 'bg-slate-100 text-slate-700 border-slate-200' };
+                case 'fee_updated':
+                    return { category: 'Fee', title: 'Fee Rate Adjusted', badge: 'bg-amber-50 text-amber-800 border-amber-200' };
+                case 'visibility_changed':
+                    return { category: 'Fee', title: 'Fee Management Visibility Changed', badge: 'bg-purple-50 text-purple-700 border-purple-200' };
+                case 'seat_assigned':
+                    return { category: 'Desk', title: 'Desk Seat Assigned', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+                case 'seat_freed':
+                    return { category: 'Desk', title: 'Desk Seat Freed', badge: 'bg-amber-50 text-amber-700 border-amber-200' };
+                case 'fee_marked_paid':
+                    return { category: 'Payment', title: 'Fee Payment Received (Paid)', badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+                case 'fee_partial_paid':
+                    return { category: 'Payment', title: 'Partial Fee Installment Paid', badge: 'bg-amber-50 text-amber-800 border-amber-200' };
+                case 'password_reset':
+                    return { category: 'Security', title: 'Password Reset', badge: 'bg-cyan-50 text-cyan-700 border-cyan-200' };
+                default:
+                    return { category: 'Activity', title: (action || 'activity').replace(/_/g, ' ').toUpperCase(), badge: 'bg-slate-100 text-slate-700 border-slate-200' };
+            }
+        };
+
+        const timeline = [];
+
+        // Add action logs
+        actionLogs.forEach(log => {
+            const info = formatItem(log.action, log.details);
+            timeline.push({
+                id: log._id.toString(),
+                type: 'log',
+                action: log.action,
+                category: info.category,
+                title: info.title,
+                details: log.details || '',
+                adminName: log.adminName || 'Admin',
+                timestamp: log.createdAt,
+                badge: info.badge
+            });
+        });
+
+        // Add statusHistory records
+        (student.statusHistory || []).forEach((sh, idx) => {
+            const isFirst = idx === 0;
+            timeline.push({
+                id: `sh_${idx}_${new Date(sh.date).getTime()}`,
+                type: 'statusHistory',
+                action: sh.status === 'active' ? 'student_activated' : 'student_deactivated',
+                category: 'Status',
+                title: isFirst ? 'Initial Admission (Joined)' : (sh.status === 'active' ? 'Status: Active (Reactivated)' : 'Status: Inactive (Deactivated)'),
+                details: sh.admissionDate ? `Effective Admission Date: ${new Date(sh.admissionDate).toLocaleDateString('en-IN')}` : `Status transitioned to ${sh.status}`,
+                adminName: 'Admin / System',
+                timestamp: sh.date,
+                badge: sh.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+            });
+        });
+
+        // Add fee payments
+        fees.forEach(f => {
+            if (f.paidDate) {
+                timeline.push({
+                    id: `fee_${f._id.toString()}`,
+                    type: 'fee',
+                    action: f.status === 'paid' ? 'fee_marked_paid' : 'fee_partial_paid',
+                    category: 'Payment',
+                    title: `Fee Payment Settled: Month ${f.month}/${f.year}`,
+                    details: `Amount: ₹${f.status === 'partial' ? f.partialPaid : f.amount} ${f.status === 'partial' ? `(Remaining due: ₹${f.outstanding})` : 'Full Settlement'}`,
+                    adminName: 'Admin',
+                    timestamp: f.paidDate,
+                    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                });
+            }
+        });
+
+        // Initial enrollment event
+        const enrollDate = student.admissionDate || student.createdAt;
+        timeline.push({
+            id: 'enrollment_init',
+            type: 'enrollment',
+            action: 'student_created',
+            category: 'Lifecycle',
+            title: 'Scholar Account Created',
+            details: `Registered in LMS on ${new Date(student.createdAt).toLocaleDateString('en-IN')}. Initial Admission Date: ${new Date(enrollDate).toLocaleDateString('en-IN')}`,
+            adminName: 'System',
+            timestamp: student.createdAt,
+            badge: 'bg-blue-50 text-blue-700 border-blue-200'
+        });
+
+        // Sort descending
+        timeline.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // Deduplicate events that share very close timestamp and identical title/details
+        const uniqueTimeline = [];
+        const seenKeys = new Set();
+        for (const item of timeline) {
+            const timeKey = `${new Date(item.timestamp).toDateString()}_${item.category}_${item.action}`;
+            if (!seenKeys.has(timeKey)) {
+                seenKeys.add(timeKey);
+                uniqueTimeline.push(item);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            student: {
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                mobile: student.mobile,
+                isActive: student.isActive,
+                joinedAt: student.createdAt,
+                admissionDate: student.admissionDate || student.createdAt,
+                showInFeeManagement: student.showInFeeManagement !== false,
+                statusHistory: student.statusHistory || []
+            },
+            timeline: uniqueTimeline
         });
     } catch (error) {
         res.status(500).json({
