@@ -1140,13 +1140,13 @@ const StudentManagement = () => {
                             ? assignment.student._id
                             : assignment.student;
 
-                        if (assignedStudentId === studentId) {
+                        if (String(assignedStudentId) === String(studentId)) {
                             // Check if assignment has the matching shift
                             const assignmentShiftId = typeof assignment.shift === 'object'
                                 ? assignment.shift._id
                                 : assignment.shift;
 
-                            if (assignmentShiftId === shiftId) {
+                            if (String(assignmentShiftId) === String(shiftId)) {
                                 return true;
                             }
                         }
@@ -1177,12 +1177,20 @@ const StudentManagement = () => {
                             ? assignment.student._id
                             : assignment.student;
 
-                        if (assignedStudentId === studentId) {
-                            // Get shift name
-                            if (assignment.shift && typeof assignment.shift === 'object') {
+                        if (String(assignedStudentId) === String(studentId)) {
+                            // Get shift name — handle populated object, unpopulated ID, or legacy types
+                            if (assignment.shift && typeof assignment.shift === 'object' && assignment.shift.name) {
                                 assignedShifts.push(assignment.shift.name);
+                            } else if (assignment.shift && typeof assignment.shift === 'string') {
+                                // Shift is an unpopulated ObjectId string — look up from shifts list
+                                const found = shifts.find(s => s.id === assignment.shift || String(s._id) === assignment.shift);
+                                assignedShifts.push(found ? found.name : 'Custom Shift');
                             } else if (assignment.type === 'full_day' || assignment.legacyShift === 'full') {
                                 assignedShifts.push('Full Day');
+                            } else if (assignment.legacyShift === 'day') {
+                                assignedShifts.push('Day');
+                            } else if (assignment.legacyShift === 'night') {
+                                assignedShifts.push('Night');
                             }
                         }
                     }
