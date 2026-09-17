@@ -30,7 +30,9 @@ const PageLoader = () => {
         <div
             className="fixed inset-0 flex flex-col items-center justify-center z-50 select-none"
             style={{
-                background: '#FFFBF7',
+                backgroundColor: 'rgba(255, 255, 255, 0.45)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 fontFamily: "'DM Sans', 'Inter', sans-serif",
             }}
         >
@@ -48,54 +50,10 @@ const PageLoader = () => {
                     50% { transform: translateX(50%); }
                     100% { transform: translateX(200%); }
                 }
-                @keyframes orbSlow1 {
-                    0%, 100% { transform: translate(0, 0) scale(1); }
-                    50% { transform: translate(30px, -40px) scale(1.1); }
-                }
-                @keyframes orbSlow2 {
-                    0%, 100% { transform: translate(0, 0) scale(1); }
-                    50% { transform: translate(-30px, 30px) scale(1.08); }
-                }
             `}</style>
 
-            {/* Ambient Background Blobs */}
-            <div
-                className="fixed -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
-                style={{
-                    background: 'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)',
-                    filter: 'blur(80px)',
-                    animation: 'orbSlow1 18s ease-in-out infinite',
-                }}
-            />
-            <div
-                className="fixed -bottom-24 -right-24 w-96 h-96 rounded-full pointer-events-none"
-                style={{
-                    background: 'radial-gradient(circle, rgba(251,146,60,0.07) 0%, transparent 70%)',
-                    filter: 'blur(80px)',
-                    animation: 'orbSlow2 22s ease-in-out infinite',
-                }}
-            />
-
-            {/* Dot Grid */}
-            <div
-                className="fixed inset-0 pointer-events-none"
-                style={{
-                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
-                    backgroundSize: '28px 28px',
-                }}
-            />
-
-            {/* Central Glassmorphic Loader Card */}
-            <div
-                className="relative flex flex-col items-center gap-5 p-8 sm:p-10 rounded-3xl z-10"
-                style={{
-                    background: 'rgba(255, 255, 255, 0.90)',
-                    backdropFilter: 'blur(16px)',
-                    border: '1.5px solid #EDE8E0',
-                    boxShadow: '0 20px 60px -10px rgba(180, 120, 60, 0.10), 0 0 30px -5px rgba(249, 115, 22, 0.12)',
-                    minWidth: '280px',
-                }}
-            >
+            {/* Seamless Frameless Loader Content */}
+            <div className="relative flex flex-col items-center gap-5 z-10 text-center">
                 {/* Logo with Orbiting Glowing Ring */}
                 <div className="relative w-24 h-24 flex items-center justify-center">
                     {/* Outer Rotating Energy Ring */}
