@@ -967,7 +967,7 @@ exports.createStudent = async (req, res) => {
 
 exports.bulkUpdateStudentFees = async (req, res) => {
     try {
-        const { studentIds, amount, operation } = req.body;
+        const { studentIds, amount, operation, sendEmail = false, excludedFromFeeManagementIds = [] } = req.body;
 
         if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
             return res.status(400).json({ success: false, message: 'Please select at least one student.' });
@@ -982,23 +982,48 @@ exports.bulkUpdateStudentFees = async (req, res) => {
         }
 
         let updateCount = 0;
+        const updatedDetails = [];
 
         for (const studentId of studentIds) {
             const student = await User.findById(studentId);
-            if (!student || !student.seat) continue;
+            if (!student) continue;
 
-            const seat = await Seat.findById(student.seat);
+            // Update showInFeeManagement preference if specified in bulk
+            const shouldShowInFee = !excludedFromFeeManagementIds.includes(student._id.toString());
+            if (student.showInFeeManagement !== shouldShowInFee) {
+                student.showInFeeManagement = shouldShowInFee;
+                await student.save();
+            }
+
+            // Find their assigned seat
+            let seat = null;
+            if (student.seat) {
+                seat = await Seat.findById(student.seat);
+            }
+            if (!seat) {
+                seat = await Seat.findOne({
+                    'assignments.student': student._id,
+                    'assignments.status': 'active'
+                });
+            }
             if (!seat) continue;
 
-            // Find their active assignment
+            // Find their active assignment on the seat
             const assignmentIndex = seat.assignments.findIndex(
-                a => a.student.toString() === student._id.toString() && a.status === 'active'
+                a => a.student && a.student.toString() === student._id.toString() && a.status === 'active'
             );
 
             if (assignmentIndex !== -1) {
-                const currentPrice = seat.assignments[assignmentIndex].price || 0;
-                let newPrice = currentPrice;
+                let currentPrice = seat.assignments[assignmentIndex].price;
+                if (currentPrice == null || currentPrice === 0) {
+                    if (seat.assignments[assignmentIndex].type === 'full_day' || seat.assignments[assignmentIndex].legacyShift === 'full') {
+                        currentPrice = seat.basePrices?.full || 1200;
+                    } else {
+                        currentPrice = seat.basePrices?.day || 800;
+                    }
+                }
 
+                let newPrice = currentPrice;
                 if (operation === 'increase') {
                     newPrice = currentPrice + amount;
                 } else if (operation === 'decrease') {
@@ -1010,27 +1035,77 @@ exports.bulkUpdateStudentFees = async (req, res) => {
                     await seat.save();
                     updateCount++;
 
-                    // Update any existing pending fees for this student to reflect the new price
+                    // 1. Update any existing pending and overdue fees for this student
                     await Fee.updateMany(
-                        { student: student._id, status: 'pending' },
+                        { student: student._id, status: { $in: ['pending', 'overdue'] } },
                         { $set: { amount: newPrice } }
                     );
 
-                    // Send email notification to user about the updated fee
-                    try {
-                        await emailService.sendFeeUpdateEmail(student, currentPrice, newPrice);
-                    } catch (emailErr) {
-                        console.error('Failed to send fee update email:', emailErr);
+                    // 2. Update any partial fee records: recalculate outstanding
+                    const partialFees = await Fee.find({ student: student._id, status: 'partial' });
+                    for (const pFee of partialFees) {
+                        pFee.amount = newPrice;
+                        pFee.outstanding = Math.max(0, newPrice - (pFee.partialPaid || 0));
+                        await pFee.save();
                     }
 
-                    // Log action dynamically if required
+                    // 3. Ensure current month pending fee record exists so it reflects in Fee Management immediately
+                    const now = new Date();
+                    const feeMonth = now.getMonth() + 1;
+                    const feeYear = now.getFullYear();
+
+                    const currentFeeRecord = await Fee.findOne({
+                        student: student._id,
+                        month: feeMonth,
+                        year: feeYear
+                    });
+
+                    if (!currentFeeRecord) {
+                        const dueDate = new Date(feeYear, feeMonth - 1, 10);
+                        await Fee.create({
+                            student: student._id,
+                            month: feeMonth,
+                            year: feeYear,
+                            amount: newPrice,
+                            dueDate,
+                            status: 'pending'
+                        });
+                    } else if (currentFeeRecord.status === 'pending' || currentFeeRecord.status === 'overdue') {
+                        currentFeeRecord.amount = newPrice;
+                        await currentFeeRecord.save();
+                    }
+
+                    // 4. Send email notification if explicitly requested (default: false / not sent)
+                    let emailSent = false;
+                    if (sendEmail && student.email && emailService?.sendFeeUpdateEmail) {
+                        try {
+                            await emailService.sendFeeUpdateEmail(student, currentPrice, newPrice);
+                            emailSent = true;
+                        } catch (emailErr) {
+                            console.error(`Failed to send fee update email to ${student.email}:`, emailErr);
+                        }
+                    }
+
+                    updatedDetails.push({
+                        studentId: student._id,
+                        name: student.name,
+                        email: student.email || '',
+                        seatNumber: seat.number,
+                        beforeFee: currentPrice,
+                        newFee: newPrice,
+                        diff: newPrice - currentPrice,
+                        emailSent,
+                        showInFeeManagement: shouldShowInFee
+                    });
+
+                    // Log action dynamically
                     await logAction(
                         req,
                         'update_student',
                         'User',
                         student._id,
                         `Fee Bulk Override (${operation})`,
-                        `Fee for ${student.name} changed from ₹${currentPrice} to ₹${newPrice}`
+                        `Fee for ${student.name} changed from ₹${currentPrice} to ₹${newPrice}${sendEmail ? (emailSent ? ' (Email sent)' : ' (Email failed)') : ' (No email sent)'}`
                     );
                 }
             }
@@ -1039,7 +1114,9 @@ exports.bulkUpdateStudentFees = async (req, res) => {
         res.status(200).json({
             success: true,
             message: `Successfully updated fees for ${updateCount} students.`,
-            updateCount
+            updateCount,
+            sendEmail: !!sendEmail,
+            students: updatedDetails
         });
     } catch (error) {
         console.error('Bulk fee update error:', error);
@@ -1051,7 +1128,8 @@ exports.updateStudent = async (req, res) => {
     try {
         const {
             name, email, mobile, address, isActive, studentId, joinedAt, password, gender,
-            fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee
+            fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee,
+            showInFeeManagement
         } = req.body;
 
         const updateData = { 
@@ -1064,6 +1142,7 @@ exports.updateStudent = async (req, res) => {
             gender
         };
 
+        if (showInFeeManagement !== undefined) updateData.showInFeeManagement = !!showInFeeManagement;
         if (fatherName !== undefined) updateData.fatherName = fatherName;
         if (guardianName !== undefined) updateData.guardianName = guardianName;
         if (guardianPhone !== undefined) updateData.guardianPhone = guardianPhone;
@@ -2787,7 +2866,7 @@ exports.getFees = async (req, res) => {
 
         const STUDENT_POPULATE = {
             path: 'student',
-            select: 'name email mobile address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate isActive',
+            select: 'name email mobile address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate isActive showInFeeManagement',
             populate: {
                 path: 'seat',
                 select: 'number'
