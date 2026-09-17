@@ -144,6 +144,10 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    showInFeeManagement: {
+        type: Boolean,
+        default: true
+    },
     isDisabled: {
         type: Boolean,
         default: false
