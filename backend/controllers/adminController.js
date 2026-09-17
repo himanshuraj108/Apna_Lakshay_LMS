@@ -1366,24 +1366,30 @@ exports.updateStudent = async (req, res) => {
 
         // ─── Update shift on active seat assignment (if shift field sent) ─
         if (newShift !== undefined && newShift !== '' && mongoose.Types.ObjectId.isValid(newShift)) {
-            const shiftUpdateResult = await Seat.updateOne(
-                {
-                    'assignments.student': student._id,
-                    'assignments.status': 'active'
-                },
-                {
-                    $set: {
-                        'assignments.$[elem].shift': new mongoose.Types.ObjectId(newShift),
-                        'assignments.$[elem].legacyShift': null
-                    }
-                },
-                {
-                    arrayFilters: [
-                        { 'elem.student': student._id, 'elem.status': 'active' }
-                    ]
-                }
-            );
-            console.log(`Shift updated to '${newShift}' for student ${student.name}. Seat modified: ${shiftUpdateResult.modifiedCount > 0}`);
+            // Find the student's own seat directly (faster + more reliable than searching all seats)
+            const studentSeatId = student.seat;
+            let shiftUpdateResult;
+            if (studentSeatId) {
+                shiftUpdateResult = await Seat.updateOne(
+                    { _id: studentSeatId, 'assignments.student': student._id, 'assignments.status': 'active' },
+                    {
+                        $set: { 'assignments.$[elem].shift': new mongoose.Types.ObjectId(newShift) },
+                        $unset: { 'assignments.$[elem].legacyShift': '' }
+                    },
+                    { arrayFilters: [{ 'elem.student': student._id, 'elem.status': 'active' }] }
+                );
+            } else {
+                // Fallback: search all seats
+                shiftUpdateResult = await Seat.updateOne(
+                    { 'assignments.student': student._id, 'assignments.status': 'active' },
+                    {
+                        $set: { 'assignments.$[elem].shift': new mongoose.Types.ObjectId(newShift) },
+                        $unset: { 'assignments.$[elem].legacyShift': '' }
+                    },
+                    { arrayFilters: [{ 'elem.student': student._id, 'elem.status': 'active' }] }
+                );
+            }
+            console.log(`Shift updated to '${newShift}' for student ${student.name}. Seat modified: ${shiftUpdateResult?.modifiedCount > 0}. SeatId: ${studentSeatId}`);
         }
 
         // Log action
