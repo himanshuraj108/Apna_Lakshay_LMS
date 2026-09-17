@@ -977,8 +977,8 @@ exports.bulkUpdateStudentFees = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Amount must be a positive number.' });
         }
 
-        if (!['increase', 'decrease'].includes(operation)) {
-            return res.status(400).json({ success: false, message: 'Invalid operation. Use increase or decrease.' });
+        if (!['increase', 'decrease', 'set'].includes(operation)) {
+            return res.status(400).json({ success: false, message: 'Invalid operation. Use increase, decrease, or set.' });
         }
 
         let updateCount = 0;
@@ -1049,6 +1049,8 @@ exports.bulkUpdateStudentFees = async (req, res) => {
                 newPrice = currentPrice + amount;
             } else if (operation === 'decrease') {
                 newPrice = Math.max(0, currentPrice - amount);
+            } else if (operation === 'set') {
+                newPrice = Math.max(0, amount);
             }
 
             if (newPrice !== currentPrice) {
@@ -1076,7 +1078,11 @@ exports.bulkUpdateStudentFees = async (req, res) => {
                 const partialFees = await Fee.find({ student: student._id, status: 'partial' });
                 for (const pFee of partialFees) {
                     pFee.amount = newPrice;
-                    pFee.outstanding = Math.max(0, newPrice - (pFee.partialPaid || 0));
+                    const remaining = Math.max(0, newPrice - (pFee.partialPaid || 0));
+                    pFee.outstanding = remaining;
+                    if (remaining === 0 && (pFee.partialPaid || 0) >= newPrice) {
+                        pFee.status = 'paid';
+                    }
                     await pFee.save();
                 }
 
@@ -1104,13 +1110,24 @@ exports.bulkUpdateStudentFees = async (req, res) => {
                 } else if (currentFeeRecord.status === 'paid') {
                     // IF student already paid for this month and fee is INCREASED:
                     // Only the increased difference (diff) will be shown in pending status!
-                    if (operation === 'increase' && diff > 0) {
+                    if (diff > 0) {
                         currentFeeRecord.amount = newPrice;
                         currentFeeRecord.partialPaid = currentPrice;
                         currentFeeRecord.outstanding = diff; // ONLY increased fee is due
                         currentFeeRecord.status = 'partial'; // Shows in Pending Dues!
                         await currentFeeRecord.save();
+                    } else {
+                        currentFeeRecord.amount = newPrice;
+                        await currentFeeRecord.save();
                     }
+                } else if (currentFeeRecord.status === 'partial') {
+                    const remaining = Math.max(0, newPrice - (currentFeeRecord.partialPaid || 0));
+                    currentFeeRecord.amount = newPrice;
+                    currentFeeRecord.outstanding = remaining;
+                    if (remaining === 0 && (currentFeeRecord.partialPaid || 0) >= newPrice) {
+                        currentFeeRecord.status = 'paid';
+                    }
+                    await currentFeeRecord.save();
                 } else if (currentFeeRecord.status === 'pending' || currentFeeRecord.status === 'overdue') {
                     currentFeeRecord.amount = newPrice;
                     currentFeeRecord.outstanding = newPrice;

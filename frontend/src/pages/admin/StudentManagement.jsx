@@ -3833,7 +3833,11 @@ const StudentManagement = () => {
                                                 {selectedStudentIds.length} Student{selectedStudentIds.length !== 1 ? 's' : ''} Selected
                                             </span>
                                             <p className="text-orange-800 mt-0.5">
-                                                Review before and increased fee rates for each scholar below.
+                                                {bulkFeeOperation === 'increase'
+                                                    ? 'Review before and increased fee rates for each scholar below.'
+                                                    : bulkFeeOperation === 'decrease'
+                                                    ? 'Review before and discounted fee rates for each scholar below.'
+                                                    : 'Review before and fixed fee rates for each scholar below.'}
                                             </p>
                                         </div>
                                     </div>
@@ -3853,12 +3857,17 @@ const StudentManagement = () => {
                                         >
                                             <option value="increase">Increase Monthly Fee (+)</option>
                                             <option value="decrease">Decrease Monthly Fee (-)</option>
+                                            <option value="set">Set Exact Fixed Fee (=)</option>
                                         </select>
                                     </div>
 
                                     <div>
                                         <label className={LABEL}>
-                                            Amount to {bulkFeeOperation === 'increase' ? 'Add' : 'Subtract'} (₹) *
+                                            {bulkFeeOperation === 'increase'
+                                                ? 'Amount to Add (₹) *'
+                                                : bulkFeeOperation === 'decrease'
+                                                ? 'Amount to Subtract (₹) *'
+                                                : 'Exact Fixed Fee to Set (₹) *'}
                                         </label>
                                         <input
                                             type="number"
@@ -3867,7 +3876,7 @@ const StudentManagement = () => {
                                             value={bulkFeeAmount}
                                             onChange={(e) => setBulkFeeAmount(e.target.value)}
                                             className={INPUT}
-                                            placeholder="e.g. 200"
+                                            placeholder={bulkFeeOperation === 'set' ? 'e.g. 350' : 'e.g. 200'}
                                         />
                                     </div>
                                 </div>
@@ -3911,7 +3920,13 @@ const StudentManagement = () => {
                                             </span>
                                         </div>
                                         <span className="text-[11px] font-medium text-slate-500">
-                                            {bulkFeeAmount ? `Rate change: ${bulkFeeOperation === 'increase' ? '+' : '-'}₹${bulkFeeAmount}` : 'Enter amount above to preview new fee'}
+                                            {bulkFeeAmount
+                                                ? (bulkFeeOperation === 'increase'
+                                                    ? `Rate change: +₹${bulkFeeAmount}`
+                                                    : bulkFeeOperation === 'decrease'
+                                                    ? `Rate change: -₹${bulkFeeAmount}`
+                                                    : `Fixed rate: ₹${bulkFeeAmount}`)
+                                                : 'Enter amount above to preview new fee'}
                                         </span>
                                     </div>
 
@@ -3934,7 +3949,11 @@ const StudentManagement = () => {
                                                             <th className="px-3 py-2.5">Desk / Shift</th>
                                                             <th className="px-3 py-2.5 text-right">Before Fee</th>
                                                             <th className="px-3 py-2.5 text-right">
-                                                                {bulkFeeOperation === 'increase' ? 'Increased Fee' : 'New Fee'}
+                                                                {bulkFeeOperation === 'increase'
+                                                                    ? 'Increased Fee'
+                                                                    : bulkFeeOperation === 'decrease'
+                                                                    ? 'Decreased Fee'
+                                                                    : 'Fixed Fee'}
                                                             </th>
                                                             <th className="px-3 py-2.5 text-center">
                                                                 <button
@@ -3962,7 +3981,9 @@ const StudentManagement = () => {
                                                             const amountNum = parseInt(bulkFeeAmount, 10) || 0;
                                                             const newFee = bulkFeeOperation === 'increase'
                                                                 ? beforeFee + amountNum
-                                                                : Math.max(0, beforeFee - amountNum);
+                                                                : bulkFeeOperation === 'decrease'
+                                                                ? Math.max(0, beforeFee - amountNum)
+                                                                : amountNum;
                                                             const seatDetails = getStudentSeatDetails(s._id);
                                                             const shiftsDisplay = getStudentShifts(s._id);
                                                             const isExcludedFromFees = excludedFeeManagementIds.includes(s._id);
@@ -3986,10 +4007,14 @@ const StudentManagement = () => {
                                                                     </td>
                                                                     <td className="px-3 py-2.5 text-right font-bold tabular-nums">
                                                                         {bulkFeeAmount ? (
-                                                                            <span className={bulkFeeOperation === 'increase' ? 'text-orange-600' : 'text-blue-600'}>
+                                                                            <span className={bulkFeeOperation === 'increase' ? 'text-orange-600' : bulkFeeOperation === 'decrease' ? 'text-blue-600' : 'text-emerald-700'}>
                                                                                 ₹{newFee}
                                                                                 <span className="text-[10px] font-normal text-slate-400 ml-1">
-                                                                                    ({bulkFeeOperation === 'increase' ? '+' : '-'}₹{amountNum})
+                                                                                    ({bulkFeeOperation === 'increase'
+                                                                                        ? `+₹${amountNum}`
+                                                                                        : bulkFeeOperation === 'decrease'
+                                                                                        ? `-₹${amountNum}`
+                                                                                        : 'fixed'})
                                                                                 </span>
                                                                             </span>
                                                                         ) : (
@@ -4056,7 +4081,7 @@ const StudentManagement = () => {
                                     <div>
                                         <span className="font-bold">Instant Pending Fee Sync in Fee Management:</span>
                                         <p className="text-emerald-800 text-[11px] mt-0.5 leading-relaxed">
-                                            When applied, pending and overdue fee records for these students will instantly update to the new fee rate. The increased fee will immediately display in Fee Management.
+                                            When applied, pending and overdue fee records for these students will instantly update to the new fee rate. If a student already paid and the fee is increased, only the increased due will display in Fee Management. If decreased, any overpayment is automatically cleared.
                                         </p>
                                     </div>
                                 </div>
@@ -4082,7 +4107,7 @@ const StudentManagement = () => {
                                                 <span>Applying Fee Adjustments...</span>
                                             </>
                                         ) : (
-                                            `Apply ${bulkFeeOperation === 'increase' ? 'Increase' : 'Adjustment'} to ${selectedStudentIds.length} Scholar${selectedStudentIds.length !== 1 ? 's' : ''}`
+                                            `Apply ${bulkFeeOperation === 'increase' ? 'Increase' : bulkFeeOperation === 'decrease' ? 'Discount' : 'New Fee'} to ${selectedStudentIds.length} Scholar${selectedStudentIds.length !== 1 ? 's' : ''}`
                                         )}
                                     </button>
                                 </div>
