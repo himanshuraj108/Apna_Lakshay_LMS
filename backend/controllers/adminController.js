@@ -1365,19 +1365,18 @@ exports.updateStudent = async (req, res) => {
         }
 
         // ─── Update shift on active seat assignment (if shift field sent) ─
-        if (newShift !== undefined && newShift !== '') {
-            // Determine if it's a custom shift (ObjectId) or legacy 'full'
-            const isObjectId = mongoose.Types.ObjectId.isValid(newShift);
-            const shiftUpdateFields = isObjectId
-                ? { 'assignments.$[elem].shift': new mongoose.Types.ObjectId(newShift), 'assignments.$[elem].legacyShift': null }
-                : { 'assignments.$[elem].shift': null, 'assignments.$[elem].legacyShift': newShift };
-
+        if (newShift !== undefined && newShift !== '' && mongoose.Types.ObjectId.isValid(newShift)) {
             const shiftUpdateResult = await Seat.updateOne(
                 {
                     'assignments.student': student._id,
                     'assignments.status': 'active'
                 },
-                { $set: shiftUpdateFields },
+                {
+                    $set: {
+                        'assignments.$[elem].shift': new mongoose.Types.ObjectId(newShift),
+                        'assignments.$[elem].legacyShift': null
+                    }
+                },
                 {
                     arrayFilters: [
                         { 'elem.student': student._id, 'elem.status': 'active' }

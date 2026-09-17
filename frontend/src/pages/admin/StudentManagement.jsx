@@ -526,8 +526,6 @@ const StudentManagement = () => {
             );
             if (assignment && assignment.shift) {
                 shiftId = typeof assignment.shift === 'object' ? assignment.shift._id : assignment.shift;
-            } else if (assignment && assignment.legacyShift === 'full' || assignment?.type === 'full_day') {
-                shiftId = 'full';
             }
             // The backend stores the fee as 'price' on the assignment, not 'negotiatedPrice'
             if (assignment && assignment.price !== undefined && assignment.price !== null) {
@@ -1178,19 +1176,13 @@ const StudentManagement = () => {
                             : assignment.student;
 
                         if (String(assignedStudentId) === String(studentId)) {
-                            // Get shift name — handle populated object, unpopulated ID, or legacy types
+                            // Only show admin-created custom shift names
                             if (assignment.shift && typeof assignment.shift === 'object' && assignment.shift.name) {
                                 assignedShifts.push(assignment.shift.name);
                             } else if (assignment.shift && typeof assignment.shift === 'string') {
-                                // Shift is an unpopulated ObjectId string — look up from shifts list
+                                // Unpopulated ObjectId string — look up from shifts list
                                 const found = shifts.find(s => s.id === assignment.shift || String(s._id) === assignment.shift);
-                                assignedShifts.push(found ? found.name : 'Custom Shift');
-                            } else if (assignment.type === 'full_day' || assignment.legacyShift === 'full') {
-                                assignedShifts.push('Full Day');
-                            } else if (assignment.legacyShift === 'day') {
-                                assignedShifts.push('Day');
-                            } else if (assignment.legacyShift === 'night') {
-                                assignedShifts.push('Night');
+                                if (found) assignedShifts.push(found.name);
                             }
                         }
                     }
@@ -3242,9 +3234,6 @@ const StudentManagement = () => {
                                                         {shift.name} ({getShiftTimeRange(shift)})
                                                     </option>
                                                 ))}
-                                                {!isCustom && !shifts.some(s => s.id === 'full') && (
-                                                    <option value="full">Full Day (9 AM - 9 PM)</option>
-                                                )}
                                             </select>
                                         </div>
                                         <div>
