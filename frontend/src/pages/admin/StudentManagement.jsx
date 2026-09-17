@@ -12,7 +12,7 @@ import {
     IoCheckmarkDoneOutline, IoEyeOutline, IoMailOutline, IoCallOutline,
     IoWarningOutline, IoTrashOutline, IoGridOutline, IoListOutline,
     IoLockClosedOutline, IoPersonOutline, IoCalendarOutline, IoShuffleOutline,
-    IoPhonePortraitOutline, IoReceiptOutline, IoCardOutline, IoCashOutline
+    IoPhonePortraitOutline, IoReceiptOutline, IoCardOutline, IoCashOutline, IoArrowForwardOutline, IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
@@ -113,6 +113,9 @@ const StudentManagement = () => {
     const [bulkFeeAmount, setBulkFeeAmount] = useState('');
     const [bulkFeeOperation, setBulkFeeOperation] = useState('increase');
     const [bulkFeeLoading, setBulkFeeLoading] = useState(false);
+    const [bulkFeeSendEmail, setBulkFeeSendEmail] = useState(false);
+    const [bulkFeeResult, setBulkFeeResult] = useState(null);
+    const [excludedFeeManagementIds, setExcludedFeeManagementIds] = useState([]);
     const [idCardSearchSeat, setIdCardSearchSeat] = useState('');
 
     // Settings gear dropdown
@@ -237,7 +240,7 @@ const StudentManagement = () => {
     };
 
     const handleBulkFeeUpdate = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!bulkFeeAmount || selectedStudentIds.length === 0) return;
 
         setError('');
@@ -246,15 +249,16 @@ const StudentManagement = () => {
         try {
             const response = await api.put('/admin/students/bulk-fee-update', {
                 studentIds: selectedStudentIds,
-                amount: parseInt(bulkFeeAmount),
-                operation: bulkFeeOperation
+                amount: parseInt(bulkFeeAmount, 10),
+                operation: bulkFeeOperation,
+                sendEmail: bulkFeeSendEmail,
+                excludedFromFeeManagementIds: excludedFeeManagementIds
             });
             setSuccess(response.data.message || 'Fees updated successfully!');
-            setShowBulkFeeModal(false);
-            setBulkFeeAmount('');
-            setSelectedStudentIds([]); // Clear selection after bulk acting
+            setBulkFeeResult(response.data);
             await fetchStudents();
-            setTimeout(() => setSuccess(''), 5000);
+            await fetchFloors();
+            setTimeout(() => setSuccess(''), 6000);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update fees in bulk');
         } finally {
@@ -348,7 +352,8 @@ const StudentManagement = () => {
                     joinedAt: formData.joinedAt,
                     password: formData.password,
                     negotiatedPrice: formData.negotiatedPrice !== '' ? formData.negotiatedPrice : undefined,
-                    sendMail: formData.sendMail
+                    sendMail: formData.sendMail,
+                    showInFeeManagement: formData.showInFeeManagement !== undefined ? formData.showInFeeManagement : true
                 });
                 setSuccess('Student updated successfully');
             } else {
@@ -537,7 +542,8 @@ const StudentManagement = () => {
             shift: shiftId,
             negotiatedPrice: negotiatedPrice,
             seatId: getStudentSeat(student._id) ? student.seat._id : '', // Needed for assignSeat
-            sendMail: false
+            sendMail: false,
+            showInFeeManagement: student.showInFeeManagement !== false
         });
         setShowModal(true);
     };
@@ -740,6 +746,14 @@ const StudentManagement = () => {
         }
 
         return 'N/A';
+    };
+
+    const getStudentNumericFee = (student) => {
+        if (!student) return 0;
+        const feeStr = getStudentFee(student);
+        if (!feeStr || feeStr === 'N/A') return 0;
+        const match = feeStr.match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
     };
 
     const generateStudentTablePDF = () => {
@@ -1670,10 +1684,18 @@ const StudentManagement = () => {
                                     Cancel
                                 </button>
                                 <button
-                                    onClick={() => setShowBulkFeeModal(true)}
-                                    className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+                                    onClick={() => {
+                                        setBulkFeeResult(null);
+                                        setBulkFeeSendEmail(false);
+                                        setBulkFeeAmount('');
+                                        setBulkFeeOperation('increase');
+                                        setExcludedFeeManagementIds([]);
+                                        setShowBulkFeeModal(true);
+                                    }}
+                                    className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                                 >
-                                    Adjust Fees in Bulk
+                                    <IoCashOutline size={14} />
+                                    <span>Adjust Fees in Bulk</span>
                                 </button>
                             </div>
                         </motion.div>
@@ -2072,9 +2094,16 @@ const StudentManagement = () => {
                                                                         <span>Fee Rate</span>
                                                                     </div>
                                                                     <div className="mt-1.5">
-                                                                        <p className="font-black text-sm text-emerald-600">
-                                                                            {getStudentFee(student)}
-                                                                        </p>
+                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                            <p className="font-black text-sm text-emerald-600">
+                                                                                {getStudentFee(student)}
+                                                                            </p>
+                                                                            {student.showInFeeManagement === false && (
+                                                                                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.2 rounded" title="Hidden from Fee Management ledger">
+                                                                                    Fees Hidden
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                         <p className="text-[10px] text-slate-500 truncate mt-0.5" title={getStatusHistoryTooltip(student)}>
                                                                             Joined {new Date(student.admissionDate || student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                                                                         </p>
@@ -2426,8 +2455,13 @@ const StudentManagement = () => {
                                                             </td>
 
                                                             {/* Fee Rate */}
-                                                            <td className="px-4 py-3.5 text-xs font-bold text-emerald-600 tabular-nums">
-                                                                {getStudentFee(student)}
+                                                            <td className="px-4 py-3.5 text-xs font-bold tabular-nums">
+                                                                <div className="text-emerald-600">{getStudentFee(student)}</div>
+                                                                {student.showInFeeManagement === false && (
+                                                                    <span className="inline-flex items-center text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.2 rounded mt-0.5" title="Hidden from Fee Management ledger">
+                                                                        Fees Hidden
+                                                                    </span>
+                                                                )}
                                                             </td>
 
                                                             {/* Status */}
@@ -3163,6 +3197,29 @@ const StudentManagement = () => {
                                 </label>
                             )}
 
+                            {/* Show in Fee Management Toggle */}
+                            {editMode && (
+                                <label className="flex items-start gap-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100/70 transition-colors">
+                                    <input
+                                        type="checkbox"
+                                        id="showInFeeManagement"
+                                        checked={formData.showInFeeManagement !== false}
+                                        onChange={(e) => setFormData({ ...formData, showInFeeManagement: e.target.checked })}
+                                        className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer mt-0.5"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-bold text-slate-800">
+                                            Show in Fee Management
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 mt-0.5">
+                                            {formData.showInFeeManagement !== false
+                                                ? 'Active in Fee Management ledger, pending sync, and payment tracking.'
+                                                : 'Hidden from Fee Management. This student will be excluded from the main fee ledger.'}
+                                        </p>
+                                    </div>
+                                </label>
+                            )}
+
                             {/* Status & Reactivation History */}
                             {editMode && selectedStudent?.statusHistory && selectedStudent.statusHistory.length > 0 && (
                                 <div className="border-t border-slate-200 pt-3.5 space-y-2.5">
@@ -3641,59 +3698,396 @@ const StudentManagement = () => {
                     </Modal>
 
                     {/* Bulk Edit Fees Modal */}
-                    <Modal theme="light" isOpen={showBulkFeeModal} onClose={() => setShowBulkFeeModal(false)} title="Bulk Modify Active Desk Fees">
-                        <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
-                            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3.5 flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-600 font-bold shrink-0">
-                                    <IoPeopleOutline size={20} />
+                    <Modal
+                        theme="light"
+                        isOpen={showBulkFeeModal}
+                        onClose={() => {
+                            if (!bulkFeeLoading) {
+                                setShowBulkFeeModal(false);
+                                setBulkFeeResult(null);
+                            }
+                        }}
+                        maxWidth="max-w-3xl"
+                        title="Bulk Fee Rate Adjustment"
+                    >
+                        {bulkFeeResult ? (
+                            /* ─── Result Summary Screen ─── */
+                            <div className="space-y-4">
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3.5">
+                                    <div className="w-11 h-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                                        <IoCheckmarkDoneOutline size={24} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-black text-sm text-emerald-950">Bulk Fee Adjustment Complete!</h4>
+                                        <p className="text-xs text-emerald-800 mt-0.5">
+                                            Successfully updated active fee rates for <span className="font-bold">{bulkFeeResult.updateCount} scholars</span>. Pending fees are now synchronized in Fee Management.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-orange-950">
-                                    <span className="font-bold">{selectedStudentIds.length} students selected</span>
-                                    <p className="text-orange-800 mt-0.5">This adjustment will instantly update the current active monthly seat price across all selected students.</p>
+
+                                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                                        <span className="font-bold text-xs text-slate-800">Updated Scholars Summary</span>
+                                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                            Pending Fees Synced Instantly
+                                        </span>
+                                    </div>
+
+                                    <div className="max-h-64 overflow-y-auto">
+                                        <table className="w-full text-left text-xs">
+                                            <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 sticky top-0">
+                                                <tr>
+                                                    <th className="px-4 py-2.5">Student Name</th>
+                                                    <th className="px-3 py-2.5 text-right">Before Fee</th>
+                                                    <th className="px-3 py-2.5 text-right">Updated Fee</th>
+                                                    <th className="px-3 py-2.5 text-center">Fee Management</th>
+                                                    <th className="px-3 py-2.5 text-center">Pending Fee Status</th>
+                                                    <th className="px-3 py-2.5 text-center">Email Notification</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 font-medium">
+                                                {(bulkFeeResult.students || []).map((item) => (
+                                                    <tr key={item.studentId} className="hover:bg-slate-50/70 transition-colors">
+                                                        <td className="px-4 py-2.5">
+                                                            <div className="font-bold text-slate-900">{item.name}</div>
+                                                            <div className="text-[10px] text-slate-400">
+                                                                {item.seatNumber ? `Desk ${item.seatNumber}` : 'Assigned Desk'}
+                                                                {item.email ? ` · ${item.email}` : ''}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-right font-bold text-slate-500 tabular-nums">
+                                                            ₹{item.beforeFee}
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-right font-bold text-orange-600 tabular-nums">
+                                                            ₹{item.newFee}
+                                                            <span className="text-[10px] font-normal text-slate-400 ml-1">
+                                                                ({item.diff >= 0 ? `+₹${item.diff}` : `-₹${Math.abs(item.diff)}`})
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-center">
+                                                            {item.showInFeeManagement ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                                    <IoCheckmarkCircle size={12} className="text-emerald-600" />
+                                                                    <span>Visible (Synced)</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                                                    <span>Hidden from Fees</span>
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-center">
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                                <IoCheckmarkCircle size={12} className="text-emerald-600" />
+                                                                <span>Live in Fee Management</span>
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-3 py-2.5 text-center">
+                                                            {item.emailSent ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                                                    <span>Email Sent</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                                                    <span>Not Sent (Default)</span>
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2.5 pt-2">
+                                    <Link
+                                        to="/admin/fees"
+                                        className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-center text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 transition-colors flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>Open Fee Management</span>
+                                        <IoArrowForwardOutline size={14} />
+                                    </Link>
+                                    <button
+                                        onClick={() => {
+                                            setShowBulkFeeModal(false);
+                                            setSelectedStudentIds([]);
+                                            setBulkFeeResult(null);
+                                        }}
+                                        className={BTN_PRIMARY + ' flex-1'}
+                                    >
+                                        Done
+                                    </button>
                                 </div>
                             </div>
+                        ) : (
+                            /* ─── Adjustment Config & Live Preview Screen ─── */
+                            <form onSubmit={handleBulkFeeUpdate} className="space-y-4">
+                                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-11 h-11 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-600 font-bold shrink-0">
+                                            <IoPeopleOutline size={22} />
+                                        </div>
+                                        <div className="text-xs text-orange-950">
+                                            <span className="font-bold text-sm text-orange-950">
+                                                {selectedStudentIds.length} Student{selectedStudentIds.length !== 1 ? 's' : ''} Selected
+                                            </span>
+                                            <p className="text-orange-800 mt-0.5">
+                                                Review before and increased fee rates for each scholar below.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="px-3 py-1 bg-orange-500 text-white font-black text-xs rounded-xl shrink-0 shadow-xs">
+                                        {selectedStudentIds.length} Selected
+                                    </span>
+                                </div>
 
-                            <div>
-                                <label className={LABEL}>Adjustment Type</label>
-                                <select
-                                    value={bulkFeeOperation}
-                                    onChange={(e) => setBulkFeeOperation(e.target.value)}
-                                    className={INPUT}
-                                >
-                                    <option value="increase">Increase Monthly Fee (+)</option>
-                                    <option value="decrease">Decrease Monthly Fee (-)</option>
-                                </select>
-                            </div>
+                                {/* Controls: Adjustment Type & Amount */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <div>
+                                        <label className={LABEL}>Adjustment Type</label>
+                                        <select
+                                            value={bulkFeeOperation}
+                                            onChange={(e) => setBulkFeeOperation(e.target.value)}
+                                            className={INPUT}
+                                        >
+                                            <option value="increase">Increase Monthly Fee (+)</option>
+                                            <option value="decrease">Decrease Monthly Fee (-)</option>
+                                        </select>
+                                    </div>
 
-                            <div>
-                                <label className={LABEL}>
-                                    Amount to {bulkFeeOperation === 'increase' ? 'Add' : 'Subtract'} (₹) *
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="1"
-                                    value={bulkFeeAmount}
-                                    onChange={(e) => setBulkFeeAmount(e.target.value)}
-                                    className={INPUT}
-                                    placeholder="e.g. 200"
-                                />
-                            </div>
+                                    <div>
+                                        <label className={LABEL}>
+                                            Amount to {bulkFeeOperation === 'increase' ? 'Add' : 'Subtract'} (₹) *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            required
+                                            min="1"
+                                            value={bulkFeeAmount}
+                                            onChange={(e) => setBulkFeeAmount(e.target.value)}
+                                            className={INPUT}
+                                            placeholder="e.g. 200"
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="flex gap-2.5 pt-2">
-                                <button type="button" onClick={() => setShowBulkFeeModal(false)} className={BTN_SECONDARY + ' flex-1'}>Cancel</button>
-                                <button type="submit" disabled={bulkFeeLoading || !bulkFeeAmount} className={BTN_PRIMARY + ' flex-1'}>
-                                    {bulkFeeLoading ? (
-                                        <>
-                                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Applying...</span>
-                                        </>
-                                    ) : (
-                                        'Apply Rate Adjustments'
-                                    )}
-                                </button>
-                            </div>
-                        </form>
+                                {/* Send Email Checkbox Option (Default: false / NOT sent) */}
+                                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={bulkFeeSendEmail}
+                                            onChange={(e) => setBulkFeeSendEmail(e.target.checked)}
+                                            className="mt-0.5 w-4 h-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+                                        />
+                                        <div className="flex-1 text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-slate-900">Send Email Notification to Students</span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    bulkFeeSendEmail
+                                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                        : 'bg-slate-200/80 text-slate-600 border border-slate-300'
+                                                }`}>
+                                                    {bulkFeeSendEmail ? 'Email Will Be Sent' : 'Default: No Email'}
+                                                </span>
+                                            </div>
+                                            <p className="text-slate-500 text-[11px] mt-0.5">
+                                                {bulkFeeSendEmail
+                                                    ? 'An email notice detailing the fee adjustment will be sent to students who have a registered email address.'
+                                                    : 'Default is OFF. No emails will be sent to scholars unless you check this box.'}
+                                            </p>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {/* Selected Scholars Table with Before Fee and Increased Fee */}
+                                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                                    <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-xs text-slate-800">Selected Scholars & Fee Breakdown</span>
+                                            <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-md">
+                                                {selectedStudentIds.length} Total
+                                            </span>
+                                        </div>
+                                        <span className="text-[11px] font-medium text-slate-500">
+                                            {bulkFeeAmount ? `Rate change: ${bulkFeeOperation === 'increase' ? '+' : '-'}₹${bulkFeeAmount}` : 'Enter amount above to preview new fee'}
+                                        </span>
+                                    </div>
+
+                                    <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+                                        {(() => {
+                                            const selectedList = students.filter(s => selectedStudentIds.includes(s._id));
+                                            if (selectedList.length === 0) {
+                                                return (
+                                                    <div className="p-6 text-center text-xs text-slate-400">
+                                                        No scholars currently selected.
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <table className="w-full text-left text-xs">
+                                                    <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500 sticky top-0">
+                                                        <tr>
+                                                            <th className="px-4 py-2.5">Student Name</th>
+                                                            <th className="px-3 py-2.5">Desk / Shift</th>
+                                                            <th className="px-3 py-2.5 text-right">Before Fee</th>
+                                                            <th className="px-3 py-2.5 text-right">
+                                                                {bulkFeeOperation === 'increase' ? 'Increased Fee' : 'New Fee'}
+                                                            </th>
+                                                            <th className="px-3 py-2.5 text-center">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (excludedFeeManagementIds.length === selectedStudentIds.length) {
+                                                                            setExcludedFeeManagementIds([]);
+                                                                        } else {
+                                                                            setExcludedFeeManagementIds([...selectedStudentIds]);
+                                                                        }
+                                                                    }}
+                                                                    className="hover:text-orange-600 underline cursor-pointer"
+                                                                    title="Click to toggle all in/out of Fee Management"
+                                                                >
+                                                                    In Fee Mgmt?
+                                                                </button>
+                                                            </th>
+                                                            <th className="px-3 py-2.5 text-center">Email</th>
+                                                            <th className="px-2 py-2.5 text-center"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 font-medium">
+                                                        {selectedList.map((s) => {
+                                                            const beforeFee = getStudentNumericFee(s);
+                                                            const amountNum = parseInt(bulkFeeAmount, 10) || 0;
+                                                            const newFee = bulkFeeOperation === 'increase'
+                                                                ? beforeFee + amountNum
+                                                                : Math.max(0, beforeFee - amountNum);
+                                                            const seatDetails = getStudentSeatDetails(s._id);
+                                                            const shiftsDisplay = getStudentShifts(s._id);
+                                                            const isExcludedFromFees = excludedFeeManagementIds.includes(s._id);
+
+                                                            return (
+                                                                <tr key={s._id} className="hover:bg-slate-50/80 transition-colors">
+                                                                    <td className="px-4 py-2.5">
+                                                                        <div className="font-bold text-slate-900">{s.name}</div>
+                                                                        <div className="text-[10px] text-slate-400 truncate max-w-[150px]">{s.email || 'No email'}</div>
+                                                                    </td>
+                                                                    <td className="px-3 py-2.5">
+                                                                        <div className="text-slate-700 font-semibold text-[11px]">
+                                                                            {seatDetails ? `Desk ${seatDetails.seatNumber}` : 'No Desk'}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-slate-400 truncate max-w-[120px]">
+                                                                            {shiftsDisplay || '—'}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-3 py-2.5 text-right font-bold text-slate-700">
+                                                                        ₹{beforeFee}
+                                                                    </td>
+                                                                    <td className="px-3 py-2.5 text-right font-bold tabular-nums">
+                                                                        {bulkFeeAmount ? (
+                                                                            <span className={bulkFeeOperation === 'increase' ? 'text-orange-600' : 'text-blue-600'}>
+                                                                                ₹{newFee}
+                                                                                <span className="text-[10px] font-normal text-slate-400 ml-1">
+                                                                                    ({bulkFeeOperation === 'increase' ? '+' : '-'}₹{amountNum})
+                                                                                </span>
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="text-slate-400 italic text-[11px]">—</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-3 py-2.5 text-center">
+                                                                        <label className="inline-flex items-center justify-center gap-1 cursor-pointer" title="Include in Fee Management">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={!isExcludedFromFees}
+                                                                                onChange={() => {
+                                                                                    setExcludedFeeManagementIds(prev =>
+                                                                                        prev.includes(s._id) ? prev.filter(id => id !== s._id) : [...prev, s._id]
+                                                                                    );
+                                                                                }}
+                                                                                className="w-3.5 h-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                                                                            />
+                                                                            <span className={`text-[10px] font-bold ${!isExcludedFromFees ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                                                {!isExcludedFromFees ? 'Show' : 'Hide'}
+                                                                            </span>
+                                                                        </label>
+                                                                    </td>
+                                                                    <td className="px-3 py-2.5 text-center">
+                                                                        {bulkFeeSendEmail ? (
+                                                                            s.email ? (
+                                                                                <span className="inline-flex items-center text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                                                                    Will Send
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                                                    No Email
+                                                                                </span>
+                                                                            )
+                                                                        ) : (
+                                                                            <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                                                                Not Sent (Default)
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-2 py-2.5 text-center">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setSelectedStudentIds(prev => prev.filter(id => id !== s._id))}
+                                                                            className="text-slate-400 hover:text-red-600 p-1 rounded transition-colors"
+                                                                            title="Remove student from bulk selection"
+                                                                        >
+                                                                            <IoClose size={14} />
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+
+                                {/* Instant Pending Fee Synchronization Notice */}
+                                <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex items-start gap-2.5 text-xs text-emerald-950">
+                                    <IoCheckmarkCircleOutline className="text-emerald-600 text-base shrink-0 mt-0.5" />
+                                    <div>
+                                        <span className="font-bold">Instant Pending Fee Sync in Fee Management:</span>
+                                        <p className="text-emerald-800 text-[11px] mt-0.5 leading-relaxed">
+                                            When applied, pending and overdue fee records for these students will instantly update to the new fee rate. The increased fee will immediately display in Fee Management.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2.5 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowBulkFeeModal(false)}
+                                        disabled={bulkFeeLoading}
+                                        className={BTN_SECONDARY + ' flex-1'}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={bulkFeeLoading || !bulkFeeAmount || selectedStudentIds.length === 0}
+                                        className={BTN_PRIMARY + ' flex-1'}
+                                    >
+                                        {bulkFeeLoading ? (
+                                            <>
+                                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                <span>Applying Fee Adjustments...</span>
+                                            </>
+                                        ) : (
+                                            `Apply ${bulkFeeOperation === 'increase' ? 'Increase' : 'Adjustment'} to ${selectedStudentIds.length} Scholar${selectedStudentIds.length !== 1 ? 's' : ''}`
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
                     </Modal>
 
                     {/* Bulk Reset Passwords to Mobile Modal */}
