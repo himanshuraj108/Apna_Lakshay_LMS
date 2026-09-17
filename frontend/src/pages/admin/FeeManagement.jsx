@@ -26,7 +26,9 @@ import {
     IoLockClosedOutline,
     IoCalendarOutline,
     IoSaveOutline,
-    IoCreateOutline
+    IoCreateOutline,
+    IoEyeOffOutline,
+    IoEyeOutline
 } from 'react-icons/io5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -317,13 +319,52 @@ const FeeManagement = () => {
         }
     };
 
-    // Base active filter — inactive students are ALWAYS excluded (never shown in fee management)
-    const baseFees = useMemo(() => {
+    // Active enrolled students
+    const activeStudentFees = useMemo(() => {
         return fees.filter(f => f.student?.isActive === true);
     }, [fees]);
 
+    // Fees visible in normal ledger (showInFeeManagement !== false)
+    const visibleFees = useMemo(() => {
+        return activeStudentFees.filter(f => f.student?.showInFeeManagement !== false);
+    }, [activeStudentFees]);
 
-    // Financial KPI Metrics calculated across base roster
+    // Fees hidden from ledger by admin decision (showInFeeManagement === false)
+    const hiddenFees = useMemo(() => {
+        return activeStudentFees.filter(f => f.student?.showInFeeManagement === false);
+    }, [activeStudentFees]);
+
+    // Base roster currently under display (either normal visible ledger or hidden scholars)
+    const baseFees = useMemo(() => {
+        return filter === 'hidden' ? hiddenFees : visibleFees;
+    }, [filter, hiddenFees, visibleFees]);
+
+    // Quick toggle for student fee management visibility
+    const toggleStudentFeeVisibility = async (studentId, currentVal) => {
+        try {
+            const nextVal = !currentVal;
+            await api.put(`/admin/students/${studentId}`, { showInFeeManagement: nextVal });
+            setFees(prev => prev.map(f => {
+                if (f.student?._id === studentId) {
+                    return {
+                        ...f,
+                        student: {
+                            ...f.student,
+                            showInFeeManagement: nextVal
+                        }
+                    };
+                }
+                return f;
+            }));
+            setSuccess(nextVal ? 'Scholar restored to Fee Management ledger!' : 'Scholar hidden from Fee Management ledger.');
+            setTimeout(() => setSuccess(''), 3500);
+        } catch (err) {
+            setError('Failed to update student fee visibility.');
+            setTimeout(() => setError(''), 3500);
+        }
+    };
+
+    // Financial KPI Metrics calculated across visible ledger roster
     const metrics = useMemo(() => {
         const now = new Date();
         const today = new Date(now);
@@ -334,13 +375,13 @@ const FeeManagement = () => {
         // Month name for subtext
         const monthName = now.toLocaleString('en-IN', { month: 'long' });
 
-        const totalRevenue = baseFees.reduce((sum, f) => {
+        const totalRevenue = visibleFees.reduce((sum, f) => {
             if (f.status === 'paid') return sum + (f.amount || 0);
             if (f.status === 'partial') return sum + (f.partialPaid || 0);
             return sum;
         }, 0);
 
-        const todayRevenue = baseFees.reduce((sum, f) => {
+        const todayRevenue = visibleFees.reduce((sum, f) => {
             if (!f.paidDate) return sum;
             const pd = new Date(f.paidDate);
             if (pd < today) return sum;
@@ -349,7 +390,7 @@ const FeeManagement = () => {
             return sum;
         }, 0);
 
-        const monthlyRevenue = baseFees.reduce((sum, f) => {
+        const monthlyRevenue = visibleFees.reduce((sum, f) => {
             if (!f.paidDate) return sum;
             const pd = new Date(f.paidDate);
             if (pd < startOfMonth) return sum;
@@ -358,31 +399,32 @@ const FeeManagement = () => {
             return sum;
         }, 0);
 
-        const totalPending = baseFees.reduce((sum, f) => {
+        const totalPending = visibleFees.reduce((sum, f) => {
             if (f.status === 'pending') return sum + (f.amount || 0);
             if (f.status === 'partial') return sum + (f.outstanding || (f.amount - (f.partialPaid || 0)));
             return sum;
         }, 0);
 
-        const totalOverdue = baseFees
+        const totalOverdue = visibleFees
             .filter(f => f.status === 'overdue')
             .reduce((sum, f) => sum + (f.amount || 0), 0);
 
-        const onlineVolume = baseFees
+        const onlineVolume = visibleFees
             .filter(f => f.razorpayPaymentId && f.status === 'paid')
             .reduce((sum, f) => sum + (f.amount || 0), 0);
 
         const counts = {
-            all: baseFees.length,
-            paid: baseFees.filter(f => f.status === 'paid').length,
-            online: baseFees.filter(f => f.razorpayOrderId).length,
-            pending: baseFees.filter(f => f.status === 'pending' || f.status === 'partial').length,
-            overdue: baseFees.filter(f => f.status === 'overdue').length,
-            cancelled: baseFees.filter(f => f.status === 'cancelled').length
+            all: visibleFees.length,
+            paid: visibleFees.filter(f => f.status === 'paid').length,
+            online: visibleFees.filter(f => f.razorpayOrderId).length,
+            pending: visibleFees.filter(f => f.status === 'pending' || f.status === 'partial').length,
+            overdue: visibleFees.filter(f => f.status === 'overdue').length,
+            cancelled: visibleFees.filter(f => f.status === 'cancelled').length,
+            hidden: hiddenFees.length
         };
 
         return { totalRevenue, todayRevenue, monthlyRevenue, monthName, totalPending, totalOverdue, onlineVolume, counts };
-    }, [baseFees]);
+    }, [visibleFees, hiddenFees]);
 
 
     // Filtered & Searched & Sorted records
@@ -392,6 +434,7 @@ const FeeManagement = () => {
 
         return baseFees
             .filter(fee => {
+                if (filter === 'hidden') return true;
                 if (monthlyFilter) {
                     if (!fee.paidDate) return false;
                     const pd = new Date(fee.paidDate);
@@ -436,10 +479,11 @@ const FeeManagement = () => {
         { key: 'pending',   label: 'Pending Dues', count: metrics.counts.pending },
         { key: 'overdue',   label: 'Overdue Risk', count: metrics.counts.overdue },
         { key: 'cancelled', label: 'Void Cancelled', count: metrics.counts.cancelled },
+        { key: 'hidden',    label: 'Hidden Scholars', count: metrics.counts.hidden }
     ];
 
     useEffect(() => {
-        if (isSubAdmin && (filter === 'all' || filter === 'online' || filter === 'overdue' || filter === 'cancelled')) {
+        if (isSubAdmin && (filter === 'all' || filter === 'online' || filter === 'overdue' || filter === 'cancelled' || filter === 'hidden')) {
             setFilter('pending');
         } else if (!onlinePaymentEnabled && filter === 'online') {
             setFilter('all');
@@ -954,10 +998,17 @@ const FeeManagement = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Status Badge */}
-                                            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${theme.badge}`}>
-                                                {theme.label}
-                                            </span>
+                                            {/* Status Badge + Hidden indicator */}
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${theme.badge}`}>
+                                                    {theme.label}
+                                                </span>
+                                                {fee.student?.showInFeeManagement === false && (
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800">
+                                                        Hidden
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Card Middle: 4 Data Quadrants */}
@@ -1045,6 +1096,21 @@ const FeeManagement = () => {
                                             >
                                                 <IoReceiptOutline size={15} />
                                                 <span>Receipt Slip</span>
+                                            </button>
+                                        )}
+
+                                        {/* Visibility Toggle Button (Admin Only) */}
+                                        {!isSubAdmin && student?._id && (
+                                            <button
+                                                onClick={() => toggleStudentFeeVisibility(student._id, fee.student?.showInFeeManagement !== false)}
+                                                className={`p-2 rounded-xl text-xs font-bold transition-all ${
+                                                    fee.student?.showInFeeManagement === false
+                                                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
+                                                        : 'bg-slate-100 hover:bg-slate-200/80 text-slate-400 hover:text-slate-700'
+                                                }`}
+                                                title={fee.student?.showInFeeManagement === false ? 'Restore scholar to Fee Management' : 'Hide scholar from Fee Management'}
+                                            >
+                                                {fee.student?.showInFeeManagement === false ? <IoEyeOutline size={15} /> : <IoEyeOffOutline size={15} />}
                                             </button>
                                         )}
 
@@ -1154,6 +1220,11 @@ const FeeManagement = () => {
                                                         <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${theme.badge}`}>
                                                             {theme.label}
                                                         </span>
+                                                        {fee.student?.showInFeeManagement === false && (
+                                                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                                                                Hidden
+                                                            </span>
+                                                        )}
                                                         {fee.razorpayOrderId && (
                                                             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                                                                 {fee.status === 'paid' && fee.razorpayPaymentId ? 'Online Settled' : 'Online Order'}
@@ -1172,6 +1243,20 @@ const FeeManagement = () => {
                                                                 title="Print / Download Receipt Slip"
                                                             >
                                                                 <IoReceiptOutline size={15} />
+                                                            </button>
+                                                        )}
+
+                                                        {!isSubAdmin && student?._id && (
+                                                            <button
+                                                                onClick={() => toggleStudentFeeVisibility(student._id, fee.student?.showInFeeManagement !== false)}
+                                                                className={`p-2 rounded-xl transition-all ${
+                                                                    fee.student?.showInFeeManagement === false
+                                                                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
+                                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                                                                }`}
+                                                                title={fee.student?.showInFeeManagement === false ? 'Restore scholar to Fee Management' : 'Hide scholar from Fee Management'}
+                                                            >
+                                                                {fee.student?.showInFeeManagement === false ? <IoEyeOutline size={15} /> : <IoEyeOffOutline size={15} />}
                                                             </button>
                                                         )}
 
