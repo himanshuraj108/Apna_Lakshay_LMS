@@ -1,13 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { IoBedOutline, IoSnowOutline } from 'react-icons/io5';
+import {
+    IoBedOutline, IoSnowOutline, IoLogInOutline,
+    IoCheckmarkCircle, IoTimeOutline, IoCloseCircle
+} from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 
 const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupied = false }) => {
     const doorPosition = room.doorPosition || 'south';
     const { shifts } = useShifts();
 
-    // Group seats by wall
+    // Group seats by wall and sort by position index
     const northSeats = room.seats.filter(s => s.position?.wall === 'north').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
     const eastSeats = room.seats.filter(s => s.position?.wall === 'east').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
     const southSeats = room.seats.filter(s => s.position?.wall === 'south').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
@@ -17,108 +20,140 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
     const hasAc = room.hasAc || false;
     const acPosition = room.acPosition || 'north';
 
-    // ── Realistic AC machine mounted on the wall ──────────────────────────
+    // ── Realistic Wall-Mounted AC Unit ──────────────────────────────────────
     const AcMachine = ({ wall }) => {
         if (!hasAc || acPosition !== wall) return null;
         const isH = wall === 'north' || wall === 'south';
         const fromStart = wall === 'north' || wall === 'west';
-        const W = isH ? 140 : 28;
-        const H = isH ? 30 : 100;
+        const W = isH ? 130 : 26;
+        const H = isH ? 26 : 90;
+
         const pos = {
-            north: { position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%) scale(1.5)', transformOrigin: 'top center', zIndex: 40 },
-            south: { position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%) scale(1.5)', transformOrigin: 'bottom center', zIndex: 40 },
-            east:  { position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%) scale(1.5)', transformOrigin: 'center right', zIndex: 40 },
-            west:  { position: 'absolute', left: 4,  top: '50%', transform: 'translateY(-50%) scale(1.5)', transformOrigin: 'center left', zIndex: 40 },
+            north: { position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 40 },
+            south: { position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)', zIndex: 40 },
+            east:  { position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', zIndex: 40 },
+            west:  { position: 'absolute', left: 6,  top: '50%', transform: 'translateY(-50%)', zIndex: 40 },
         }[wall];
+
         return (
             <div style={{ ...pos, pointerEvents: 'none' }}>
-                <div style={{ width: W, height: H, background: 'linear-gradient(175deg,#f0f8ff 0%,#d0e8f2 35%,#b8d4e8 70%,#9ec0d8 100%)', borderRadius: 6, border: '1.5px solid rgba(140,190,215,0.95)', boxShadow: '0 0 16px 4px rgba(34,211,238,0.4),0 2px 8px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.7)', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: isH ? 7 : 4, background: 'linear-gradient(180deg,rgba(255,255,255,0.75) 0%,rgba(255,255,255,0.1) 100%)', borderRadius: '6px 6px 0 0' }} />
-                    <div style={{ position: 'absolute', ...(isH ? { bottom: 0, left: 10, right: 34, top: 9 } : { top: 14, left: 0, right: 0, bottom: 10 }), overflow: 'hidden' }}>
-                        {[...Array(isH ? 5 : 9)].map((_, vi) => (<div key={vi} style={{ position: 'absolute', background: 'rgba(60,120,160,0.3)', borderRadius: 1, ...(isH ? { left: 0, right: 0, height: 1.5, top: 2 + vi * 4 } : { top: 0, bottom: 0, width: 1.5, left: 2 + vi * 3.2 }) }} />))}
+                <div
+                    style={{
+                        width: W,
+                        height: H,
+                        background: 'linear-gradient(175deg, #F0F9FF 0%, #E0F2FE 40%, #BAE6FD 100%)',
+                        borderRadius: 6,
+                        border: '1.5px solid #7DD3FC',
+                        boxShadow: '0 2px 10px rgba(14, 165, 233, 0.25), inset 0 1px 1px rgba(255,255,255,0.8)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    {/* Grille lines */}
+                    <div style={{ position: 'absolute', inset: '4px 8px', display: 'flex', flexDirection: isH ? 'column' : 'row', gap: 2, opacity: 0.35 }}>
+                        {[...Array(isH ? 3 : 5)].map((_, i) => (
+                            <div key={i} style={{ flex: 1, background: '#0284C7', borderRadius: 1 }} />
+                        ))}
                     </div>
-                    {isH && <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,30,60,0.7)', borderRadius: 3, padding: '1px 4px', fontFamily: 'monospace', fontSize: 7, fontWeight: 900, color: '#00e5ff', letterSpacing: 0.5, textShadow: '0 0 4px #00e5ff', border: '0.5px solid rgba(0,229,255,0.3)' }}>18°C</div>}
-                    <motion.div style={{ position: 'absolute', background: 'rgba(80,160,200,0.6)', borderRadius: 2, ...(isH ? { bottom: 2, left: 10, right: 34, height: 2.5 } : { right: 2, top: 14, bottom: 10, width: 2.5 }) }} animate={isH ? { rotateX: [0, 15, 0] } : { rotateY: [0, 15, 0] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }} />
-                    <motion.div style={{ position: 'absolute', width: 5, height: 5, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px 2px #22c55e', ...(isH ? { left: 6, top: '50%', marginTop: -2.5 } : { top: 6, left: '50%', marginLeft: -2.5 }) }} animate={{ opacity: [1, 0.2, 1] }} transition={{ repeat: Infinity, duration: 1.8 }} />
+
+                    {/* Status LED & Temp */}
+                    <div className="flex items-center gap-1.5 z-10 px-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-xs" />
+                        {isH && (
+                            <span className="text-[9px] font-black font-mono text-sky-900 tracking-wider">
+                                18°C
+                            </span>
+                        )}
+                    </div>
                 </div>
-                {[0, 1, 2, 3].map(i => {
-                    const driftPx = (i + 1) * 14;
-                    const arcStyle = isH ? { position: 'absolute', left: '0%', right: '20%', height: 3, top: fromStart ? H + 2 : 'auto', bottom: fromStart ? 'auto' : H + 2, background: 'linear-gradient(90deg,transparent,rgba(200,240,255,0.55) 20%,rgba(220,248,255,0.7) 50%,rgba(200,240,255,0.55) 80%,transparent)', borderRadius: 4, transformOrigin: 'center top' } : { position: 'absolute', top: '10%', bottom: '10%', width: 3, left: fromStart ? 'auto' : H + 2, right: fromStart ? H + 2 : 'auto', background: 'linear-gradient(180deg,transparent,rgba(200,240,255,0.55) 20%,rgba(220,248,255,0.7) 50%,rgba(200,240,255,0.55) 80%,transparent)', borderRadius: 4, transformOrigin: 'top center' };
-                    const arcAnim = isH ? { y: fromStart ? [0, driftPx, driftPx + 8] : [0, -driftPx, -driftPx - 8], scaleX: [0.6, 1.4 + i * 0.5, 2 + i * 0.6], opacity: [0, 0.7, 0] } : { x: fromStart ? [0, -driftPx, -driftPx - 8] : [0, driftPx, driftPx + 8], scaleY: [0.6, 1.4 + i * 0.5, 2 + i * 0.6], opacity: [0, 0.7, 0] };
-                    return <motion.div key={i} style={arcStyle} animate={arcAnim} transition={{ repeat: Infinity, duration: 1.4, delay: i * 0.32, ease: 'easeOut' }} />;
+
+                {/* Gentle cold air waves */}
+                {[0, 1].map(i => {
+                    const drift = (i + 1) * 16;
+                    const anim = isH
+                        ? { y: fromStart ? [0, drift] : [0, -drift], opacity: [0.5, 0] }
+                        : { x: fromStart ? [0, -drift] : [0, drift], opacity: [0.5, 0] };
+                    return (
+                        <motion.div
+                            key={i}
+                            style={{
+                                position: 'absolute',
+                                ...(isH
+                                    ? { left: '15%', right: '15%', height: 2, top: fromStart ? H + 2 : 'auto', bottom: fromStart ? 'auto' : H + 2 }
+                                    : { top: '15%', bottom: '15%', width: 2, left: fromStart ? 'auto' : H + 2, right: fromStart ? H + 2 : 'auto' }),
+                                background: 'linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent)',
+                                borderRadius: 4,
+                            }}
+                            animate={anim}
+                            transition={{ repeat: Infinity, duration: 1.6, delay: i * 0.6, ease: 'easeOut' }}
+                        />
+                    );
                 })}
             </div>
         );
     };
 
-    // ═══ CEILING FAN OVERLAY ════════════════════════════════
+    // ── Ceiling Fan Overlay ──────────────────────────────────────────────────
     const CeilingFan = () => {
         if (!room.hasFan) return null;
 
         return (
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.25] mix-blend-multiply z-20">
-                {/* Fast spinning blades */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-[0.28] mix-blend-multiply z-20">
                 <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 0.25, ease: 'linear' }}
-                    className="relative w-32 h-32 flex items-center justify-center"
+                    transition={{ repeat: Infinity, duration: 0.28, ease: 'linear' }}
+                    className="relative w-28 h-28 flex items-center justify-center"
                 >
                     {/* Center motor */}
-                    <div className="absolute w-6 h-6 rounded-full bg-gray-500/80 border border-gray-600/50 z-10 shadow-[0_0_15px_rgba(0,0,0,0.2)] inset-0 m-auto" />
-                    
-                    {/* 3 Blades (perfect center pivot) */}
+                    <div className="absolute w-5 h-5 rounded-full bg-slate-700 border border-slate-900 z-10 shadow-md inset-0 m-auto" />
+
+                    {/* 3 Blades */}
                     {[0, 120, 240].map((deg) => (
-                        <div key={deg} className="absolute left-[calc(50%-4px)] bottom-1/2 w-2 h-[56px] origin-bottom" 
-                             style={{ transform: `rotate(${deg}deg)` }}>
-                            <div className="w-[32px] h-[56px] -ml-[12px] bg-gradient-to-t from-gray-500/60 to-gray-400/20 
-                                          rounded-t-[100%] rounded-b-[40%] backdrop-blur-[2px]" />
+                        <div
+                            key={deg}
+                            className="absolute left-[calc(50%-3px)] bottom-1/2 w-1.5 h-[50px] origin-bottom"
+                            style={{ transform: `rotate(${deg}deg)` }}
+                        >
+                            <div className="w-[28px] h-[50px] -ml-[11px] bg-gradient-to-t from-slate-600/70 to-slate-400/20 rounded-t-[100%] rounded-b-[40%]" />
                         </div>
                     ))}
                 </motion.div>
-                
-                {/* Fast motion blur ring */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full border-[12px] border-gray-400/20 blur-[3px]" />
+                {/* Soft fan shadow */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full border-[8px] border-slate-400/15 blur-[2px]" />
             </div>
         );
     };
 
-    // ── Whole-room air wisps ───────────────────────────────────────────────
+    // ── Whole-Room Air Flow Overlay ─────────────────────────────────────────
     const AcAirFlow = () => {
         if (!hasAc) return null;
-        const isH = acPosition === 'north' || acPosition === 'south';
-        const fromStart = acPosition === 'north' || acPosition === 'west';
-        const wisps = [...Array(22)].map((_, i) => ({ id: i, pct: i * 4.6, delay: i * 0.13, dur: 1.8 + (i % 6) * 0.18, size: 8 + (i % 4) * 3 }));
-        const wispGrad = isH
-            ? `linear-gradient(${fromStart ? '180deg' : '0deg'},transparent 0%,rgba(255,255,255,0.09) 40%,rgba(255,255,255,0.12) 50%,rgba(255,255,255,0.09) 60%,transparent 100%)`
-            : `linear-gradient(${fromStart ? '90deg' : '270deg'},transparent 0%,rgba(255,255,255,0.09) 40%,rgba(255,255,255,0.12) 50%,rgba(255,255,255,0.09) 60%,transparent 100%)`;
-        const ambientGrad = { north: 'linear-gradient(180deg,rgba(200,240,255,0.04) 0%,transparent 60%)', south: 'linear-gradient(0deg,rgba(200,240,255,0.04) 0%,transparent 60%)', east: 'linear-gradient(270deg,rgba(200,240,255,0.04) 0%,transparent 60%)', west: 'linear-gradient(90deg,rgba(200,240,255,0.04) 0%,transparent 60%)' }[acPosition];
         return (
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 15, borderRadius: 'inherit' }}>
-                <div style={{ position: 'absolute', inset: 0, background: ambientGrad }} />
-                {wisps.map(w => {
-                    const style = isH ? { left: `${w.pct}%`, width: w.size, top: fromStart ? '-25%' : '125%', height: '30%', background: wispGrad, filter: 'blur(1.5px)', borderRadius: 20 } : { top: `${w.pct}%`, height: w.size, left: fromStart ? '-25%' : '125%', width: '30%', background: wispGrad, filter: 'blur(1.5px)', borderRadius: 20 };
-                    const anim = isH ? { top: fromStart ? '125%' : '-25%', opacity: [0, 0.7, 0.7, 0] } : { left: fromStart ? '125%' : '-25%', opacity: [0, 0.7, 0.7, 0] };
-                    return <motion.div key={w.id} style={{ position: 'absolute', ...style }} animate={anim} transition={{ repeat: Infinity, duration: w.dur, delay: w.delay, ease: 'linear', times: [0, 0.12, 0.88, 1] }} />;
-                })}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-15 rounded-[22px]">
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: 'radial-gradient(ellipse at center top, rgba(224, 242, 254, 0.25) 0%, transparent 70%)',
+                    }}
+                />
             </div>
         );
     };
 
+    // ── Seat Card Component ─────────────────────────────────────────────────
     const SeatCard = ({ seat }) => {
         const isHighlighted = seat._id === highlightSeatId;
 
-        // Use displayOccupied if filtering by shift, otherwise use normal logic
+        // Status determination logic (preserved 100%)
         let statusColor = 'green';
 
         if (useDisplayOccupied) {
-            // Simple check for shift-filtered view
             statusColor = seat.displayOccupied ? 'red' : 'green';
         } else {
-            // Determine if seat is FULLY occupied (all shifts unavailable)
             if (shifts && shifts.length > 0) {
-                // Check if ALL shifts are unavailable
                 const isFullyOccupied = shifts.every(shift => {
-                    // 1. Time Overlap Logic
                     const doTimeRangesOverlap = (start1, end1, start2, end2) => {
                         if (!start1 || !end1 || !start2 || !end2) return false;
                         const timeToMinutes = (time) => {
@@ -132,7 +167,6 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
                         return s1 < e2 && s2 < e1;
                     };
 
-                    // 2. Check overlap with any active assignment
                     const isOverlapOccupied = seat.assignments?.some(assignment => {
                         if (assignment.status !== 'active' || !assignment.shift) return false;
                         return doTimeRangesOverlap(
@@ -143,17 +177,14 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
                         );
                     });
 
-                    // 3. Direct checks
                     const isFullDay = shift.id === 'full' ||
                         shift.legacyName === 'full_day' ||
                         (shift.name && shift.name.toLowerCase().includes('full'));
 
                     const isPartiallyBooked = seat.assignments && seat.assignments.length > 0;
-
                     const isDirectlyBooked = seat.isFullyBlocked ||
                         (seat.activeShifts && seat.activeShifts.some(s => s === shift.id || s === shift.legacyName));
 
-                    // Shift is unavailable if occupied OR (it's full day and partial shifts exist)
                     return isDirectlyBooked || isOverlapOccupied || (isFullDay && isPartiallyBooked);
                 });
 
@@ -163,208 +194,324 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
             }
         }
 
-        const colorClasses = {
-            green: 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100',
-            red: 'bg-red-50 border-red-400 text-red-700 hover:bg-red-100',
-            orange: 'bg-amber-50 border-amber-400 text-amber-700 hover:bg-amber-100'
-        };
+        const styles = {
+            green: {
+                bg: '#F0FDF4',
+                border: '#86EFAC',
+                text: '#15803D',
+                dot: '#22C55E',
+                hoverBg: '#DCFCE7',
+                hoverBorder: '#4ADE80',
+            },
+            orange: {
+                bg: '#FFFBEB',
+                border: '#FCD34D',
+                text: '#B45309',
+                dot: '#F59E0B',
+                hoverBg: '#FEF3C7',
+                hoverBorder: '#FBBF24',
+            },
+            red: {
+                bg: '#FEF2F2',
+                border: '#FECACA',
+                text: '#B91C1C',
+                dot: '#EF4444',
+                hoverBg: '#FEE2E2',
+                hoverBorder: '#F87171',
+            },
+        }[statusColor];
 
         return (
-            <motion.div
-                whileHover={{ scale: 1.08 }}
+            <motion.button
+                whileHover={{ scale: 1.07, y: -2 }}
+                whileTap={{ scale: 0.94 }}
                 onClick={() => onSeatClick && onSeatClick(seat)}
-                className={`relative p-2 rounded-lg border-2 transition-all cursor-pointer min-w-[50px] ${isHighlighted
-                    ? 'bg-orange-50 border-orange-400 shadow-lg shadow-orange-500/30 scale-110 z-10 ring-2 ring-orange-400 ring-offset-2 ring-offset-white text-orange-600'
-                    : colorClasses[statusColor]
-                    }`}
+                className={`relative px-2.5 py-2 rounded-xl transition-all cursor-pointer min-w-[54px] flex flex-col items-center justify-center gap-0.5 shadow-2xs border ${
+                    isHighlighted
+                        ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-white shadow-md'
+                        : ''
+                }`}
+                style={
+                    isHighlighted
+                        ? {
+                              background: '#FFF7ED',
+                              borderColor: '#F97316',
+                              color: '#EA580C',
+                              boxShadow: '0 4px 14px rgba(249,115,22,0.3)',
+                          }
+                        : {
+                              background: styles.bg,
+                              borderColor: styles.border,
+                              color: styles.text,
+                          }
+                }
             >
-                <div className="flex items-center gap-1 justify-center">
-                    <IoBedOutline size={14} className={isHighlighted ? 'text-orange-500' : ''} />
-                    <span className={`font-bold text-xs ${isHighlighted ? 'text-orange-600' : ''}`}>{seat.number}</span>
+                {/* Desk Icon + Number */}
+                <div className="flex items-center gap-1">
+                    <IoBedOutline size={13} className="shrink-0 opacity-80" />
+                    <span className="font-extrabold text-xs tracking-tight">
+                        {seat.number}
+                    </span>
                 </div>
+
                 {/* Status Dot */}
-                {statusColor !== 'green' && !isHighlighted && (
-                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-gray-900 ${statusColor === 'red' ? 'bg-red-600' : 'bg-orange-500'}`}></div>
-                )}
+                <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: isHighlighted ? '#EA580C' : styles.dot }}
+                />
+
+                {/* Highlight Pulse */}
                 {isHighlighted && (
-                    <div className="absolute -top-2 -right-2">
-                        <span className="relative flex h-4 w-4">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500"></span>
-                        </span>
-                    </div>
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500" />
+                    </span>
                 )}
-            </motion.div>
+            </motion.button>
         );
     };
 
+    // ── Architectural Door Threshold ────────────────────────────────────────
+    const DoorOpening = ({ label = 'ENTRY / EXIT', orientation = 'horizontal' }) => {
+        return (
+            <div
+                className={`flex items-center justify-center select-none ${
+                    orientation === 'horizontal' ? 'px-4 py-1.5' : 'py-4 px-1.5'
+                }`}
+            >
+                <div
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-full border shadow-2xs"
+                    style={{
+                        background: '#FFFBEB',
+                        borderColor: '#FDE68A',
+                        color: '#92400E',
+                    }}
+                >
+                    <IoLogInOutline size={13} className="text-amber-600 shrink-0" />
+                    <span className="text-[10px] font-black tracking-widest uppercase whitespace-nowrap">
+                        {label}
+                    </span>
+                </div>
+            </div>
+        );
+    };
+
+    // Count states for legend
+    const availableCount = room.seats.filter(s => {
+        if (useDisplayOccupied) return !s.displayOccupied;
+        return !s.isOccupied;
+    }).length;
+
     return (
-        <div className="space-y-6">
-            {/* Box Room Layout */}
-            <div className="relative bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                {/* Room Title */}
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-50 px-5 py-2 rounded-lg border border-gray-200 z-20 shadow-sm whitespace-nowrap">
-                    <p className="text-sm font-bold text-gray-700">{room.name} ({totalSeats} Seats)</p>
-                </div>
+        <div className="space-y-4" style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}>
+            {/* ── Main Architectural Room Container ── */}
+            <div
+                className="relative w-full max-w-4xl mx-auto rounded-3xl p-5 sm:p-7 border"
+                style={{
+                    background: '#FCFBF9',
+                    borderColor: '#E2DCD5',
+                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.02), 0 6px 24px rgba(180,120,60,0.06)',
+                }}
+            >
+                {/* Floor Blueprint Grid Texture */}
+                <div
+                    className="absolute inset-0 pointer-events-none rounded-3xl"
+                    style={{
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(140,110,80,0.05) 1px, transparent 0)',
+                        backgroundSize: '24px 24px',
+                    }}
+                />
 
+                {/* Whole room AC cool air */}
+                {hasAc && <AcAirFlow />}
 
+                {/* Wall-Mounted AC Units */}
+                <AcMachine wall="north" />
+                <AcMachine wall="south" />
+                <AcMachine wall="east" />
+                <AcMachine wall="west" />
 
+                {/* Ceiling Fan in Room Center */}
+                {room.hasFan && <CeilingFan />}
 
-                {/* Fitted Box Room Container */}
-                <div className="relative w-full max-w-3xl mx-auto mt-10" style={{ aspectRatio: '3/2' }}>
-                    {/* AC airflow overlay — whole room */}
-                    {hasAc && <AcAirFlow />}
-                    {/* AC machine on its wall */}
-                    <AcMachine wall="north" />
-                    <AcMachine wall="south" />
-                    <AcMachine wall="east" />
-                    <AcMachine wall="west" />
-                    {/* North Wall */}
-                    <div className="absolute top-0 left-0 right-0 h-[80px]">
+                {/* ── Outer Perimeter Box Wall ── */}
+                <div
+                    className="relative w-full min-h-[380px] sm:min-h-[440px] rounded-2xl flex flex-col justify-between border-[2.5px] p-3 sm:p-4 overflow-hidden"
+                    style={{
+                        borderColor: '#CBD5E1',
+                        background: '#FFFFFF',
+                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.8), 0 2px 10px rgba(0,0,0,0.03)',
+                    }}
+                >
+                    {/* ═══ 1. NORTH WALL (TOP) ═══ */}
+                    <div className="w-full min-h-[64px] flex items-center justify-center px-4 py-2 border-b border-slate-100 relative z-30">
                         {doorPosition === 'north' ? (
-                            <>
-                                <div className="absolute top-0 left-0 w-[40%] h-full border-t-4 border-l-4 border-gray-300 rounded-tl-2xl bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
-                                        {northSeats.slice(0, Math.ceil(northSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
+                            <div className="w-full flex items-center justify-between gap-4 flex-wrap">
+                                {/* Left seats */}
+                                <div className="flex items-center gap-2 flex-wrap justify-start flex-1">
+                                    {northSeats.slice(0, Math.ceil(northSeats.length / 2)).map(seat => (
+                                        <SeatCard key={seat._id} seat={seat} />
+                                    ))}
                                 </div>
-                                <div className="absolute top-0 left-[40%] w-[20%] h-full flex items-center justify-center z-20">
-                                    <div className="bg-amber-100 px-3 py-1 rounded border-2 border-amber-400 shadow-sm flex items-center justify-center">
-                                        <span className="text-[10px] tracking-widest text-amber-700 font-black whitespace-nowrap">DOOR</span>
-                                    </div>
+                                {/* Center Door */}
+                                <DoorOpening />
+                                {/* Right seats */}
+                                <div className="flex items-center gap-2 flex-wrap justify-end flex-1">
+                                    {northSeats.slice(Math.ceil(northSeats.length / 2)).map(seat => (
+                                        <SeatCard key={seat._id} seat={seat} />
+                                    ))}
                                 </div>
-                                <div className="absolute top-0 right-0 w-[40%] h-full border-t-4 border-r-4 border-gray-300 rounded-tr-2xl bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
-                                        {northSeats.slice(Math.ceil(northSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
-                                </div>
-                            </>
+                            </div>
                         ) : (
-                            <div className="w-full h-full border-t-4 border-l-4 border-r-4 border-gray-300 rounded-t-2xl bg-gray-100 p-2 z-10 relative">
-                                <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
-                                    {northSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                </div>
+                            <div className="w-full flex items-center justify-center gap-2.5 flex-wrap">
+                                {northSeats.length > 0 ? (
+                                    northSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)
+                                ) : (
+                                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                        North Wall
+                                    </span>
+                                )}
                             </div>
                         )}
                     </div>
 
-                    {/* West Wall */}
-                    <div className="absolute top-0 left-0 bottom-0 w-[80px]">
-                        {doorPosition === 'west' ? (
-                            <>
-                                <div className="absolute top-0 left-0 w-full h-[40%] border-l-4 border-gray-300 bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
-                                        {westSeats.slice(0, Math.ceil(westSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
+                    {/* ═══ 2. MIDDLE ZONE: WEST WALL, CENTER AISLE, EAST WALL ═══ */}
+                    <div className="w-full flex-1 flex items-stretch justify-between my-2 relative z-25 min-h-[220px]">
+                        {/* West Wall (Left) */}
+                        <div
+                            className="w-[74px] sm:w-[84px] border-r border-slate-100 flex flex-col items-center justify-center p-1.5 relative"
+                            style={{ background: 'rgba(248, 250, 252, 0.4)' }}
+                        >
+                            {doorPosition === 'west' ? (
+                                <div className="h-full flex flex-col items-center justify-between py-2 gap-2">
+                                    <div className="flex flex-col gap-2 items-center">
+                                        {westSeats.slice(0, Math.ceil(westSeats.length / 2)).map(seat => (
+                                            <SeatCard key={seat._id} seat={seat} />
+                                        ))}
+                                    </div>
+                                    <DoorOpening orientation="vertical" />
+                                    <div className="flex flex-col gap-2 items-center">
+                                        {westSeats.slice(Math.ceil(westSeats.length / 2)).map(seat => (
+                                            <SeatCard key={seat._id} seat={seat} />
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="absolute left-0 top-[40%] w-full h-[20%] flex items-center justify-center z-20">
-                                    <div className="bg-amber-100 px-3 py-1 rounded border-2 border-amber-400 shadow-sm flex items-center justify-center">
-                                        <span className="text-[10px] tracking-widest text-amber-700 font-black whitespace-nowrap">DOOR</span>
-                                    </div>
+                            ) : (
+                                <div className="h-full flex flex-col gap-2 items-center justify-center overflow-y-auto scrollbar-none py-1">
+                                    {westSeats.length > 0 ? (
+                                        westSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">
+                                            West Wall
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="absolute bottom-0 left-0 w-full h-[40%] border-l-4 border-gray-300 bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
-                                        {westSeats.slice(Math.ceil(westSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="w-full h-full border-l-4 border-gray-300 bg-gray-100 p-2 z-10 relative">
-                                <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
-                                    {westSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* East Wall */}
-                    <div className="absolute top-0 right-0 bottom-0 w-[80px]">
-                        {doorPosition === 'east' ? (
-                            <>
-                                <div className="absolute top-0 right-0 w-full h-[40%] border-r-4 border-gray-300 bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
-                                        {eastSeats.slice(0, Math.ceil(eastSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
-                                </div>
-                                <div className="absolute right-0 top-[40%] w-full h-[20%] flex items-center justify-center z-20">
-                                    <div className="bg-amber-100 px-3 py-1 rounded border-2 border-amber-400 shadow-sm flex items-center justify-center">
-                                        <span className="text-[10px] tracking-widest text-amber-700 font-black whitespace-nowrap">DOOR</span>
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-0 right-0 w-full h-[40%] border-r-4 border-gray-300 bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
-                                        {eastSeats.slice(Math.ceil(eastSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="w-full h-full border-r-4 border-gray-300 bg-gray-100 p-2 z-10 relative">
-                                <div className="flex flex-col gap-1.5 items-center h-full justify-center overflow-auto scrollbar-hide">
-                                    {eastSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* South Wall */}
-                    <div className="absolute bottom-0 left-0 right-0 h-[80px]">
-                        {doorPosition === 'south' ? (
-                            <>
-                                <div className="absolute bottom-0 left-0 w-[40%] h-full border-b-4 border-l-4 border-gray-300 rounded-bl-2xl bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
-                                        {southSeats.slice(0, Math.ceil(southSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-0 left-[40%] w-[20%] h-full flex items-center justify-center z-20">
-                                    <div className="bg-amber-100 px-3 py-1 rounded border-2 border-amber-400 shadow-sm flex items-center justify-center">
-                                        <span className="text-[10px] tracking-widest text-amber-700 font-black whitespace-nowrap">DOOR</span>
-                                    </div>
-                                </div>
-                                <div className="absolute bottom-0 right-0 w-[40%] h-full border-b-4 border-r-4 border-gray-300 rounded-br-2xl bg-gray-100 p-2 z-10 relative">
-                                    <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
-                                        {southSeats.slice(Math.ceil(southSeats.length / 2)).map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <div className="w-full h-full border-b-4 border-l-4 border-r-4 border-gray-300 rounded-b-2xl bg-gray-100 p-2 z-10 relative">
-                                <div className="flex gap-1.5 justify-center flex-wrap h-full items-center overflow-auto scrollbar-hide">
-                                    {southSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Room Interior / Fan */}
-                    {room.hasFan && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-                            <CeilingFan />
+                            )}
                         </div>
-                    )}
+
+                        {/* Central Aisle / Open Study Space */}
+                        <div className="flex-1 flex flex-col items-center justify-center p-4 relative pointer-events-none">
+                            <div
+                                className="px-3.5 py-1.5 rounded-full border text-[11px] font-semibold text-slate-400 select-none flex items-center gap-2"
+                                style={{
+                                    background: 'rgba(248, 250, 252, 0.7)',
+                                    borderColor: '#E2E8F0',
+                                }}
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                <span>Quiet Study Area · Walking Aisle</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            </div>
+                        </div>
+
+                        {/* East Wall (Right) */}
+                        <div
+                            className="w-[74px] sm:w-[84px] border-l border-slate-100 flex flex-col items-center justify-center p-1.5 relative"
+                            style={{ background: 'rgba(248, 250, 252, 0.4)' }}
+                        >
+                            {doorPosition === 'east' ? (
+                                <div className="h-full flex flex-col items-center justify-between py-2 gap-2">
+                                    <div className="flex flex-col gap-2 items-center">
+                                        {eastSeats.slice(0, Math.ceil(eastSeats.length / 2)).map(seat => (
+                                            <SeatCard key={seat._id} seat={seat} />
+                                        ))}
+                                    </div>
+                                    <DoorOpening orientation="vertical" />
+                                    <div className="flex flex-col gap-2 items-center">
+                                        {eastSeats.slice(Math.ceil(eastSeats.length / 2)).map(seat => (
+                                            <SeatCard key={seat._id} seat={seat} />
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col gap-2 items-center justify-center overflow-y-auto scrollbar-none py-1">
+                                    {eastSeats.length > 0 ? (
+                                        eastSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest [writing-mode:vertical-lr]">
+                                            East Wall
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ═══ 3. SOUTH WALL (BOTTOM) — Seamless & Clean ═══ */}
+                    <div className="w-full min-h-[64px] flex items-center justify-center px-4 py-2 border-t border-slate-100 relative z-30">
+                        {doorPosition === 'south' ? (
+                            <div className="w-full flex items-center justify-between gap-4 flex-wrap">
+                                {/* Left seats (if any) */}
+                                <div className="flex items-center gap-2 flex-wrap justify-start flex-1">
+                                    {southSeats.slice(0, Math.ceil(southSeats.length / 2)).map(seat => (
+                                        <SeatCard key={seat._id} seat={seat} />
+                                    ))}
+                                </div>
+                                {/* Center Door Opening */}
+                                <DoorOpening />
+                                {/* Right seats (if any) */}
+                                <div className="flex items-center gap-2 flex-wrap justify-end flex-1">
+                                    {southSeats.slice(Math.ceil(southSeats.length / 2)).map(seat => (
+                                        <SeatCard key={seat._id} seat={seat} />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-full flex items-center justify-center gap-2.5 flex-wrap">
+                                {southSeats.length > 0 ? (
+                                    southSeats.map(seat => <SeatCard key={seat._id} seat={seat} />)
+                                ) : (
+                                    <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                                        South Wall
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Legend */}
-                <div className="mt-6 flex gap-4 justify-center text-xs flex-wrap">
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-green-50 border-2 border-green-400 rounded"></div>
-                        <span className="text-gray-600 font-medium">Available</span>
+                {/* ── Interactive Modern Legend ── */}
+                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-center gap-3 sm:gap-6 flex-wrap text-xs">
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" />
+                        <span className="font-bold">Available ({availableCount})</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-amber-50 border-2 border-amber-400 rounded"></div>
-                        <span className="text-gray-600 font-medium">Partially Occupied</span>
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-2xs" />
+                        <span className="font-bold">Partially Booked</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-red-50 border-2 border-red-400 rounded"></div>
-                        <span className="text-gray-600 font-medium">Fully Occupied</span>
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-800">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-2xs" />
+                        <span className="font-bold">Occupied ({totalSeats - availableCount})</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-amber-500 font-black">DOOR</span>
-                        <span className="text-gray-600 font-medium">Entry/Exit</span>
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                        <span className="text-amber-600 font-extrabold text-[10px]">DOOR</span>
+                        <span className="font-medium">Entry / Exit</span>
                     </div>
                     {hasAc && (
-                        <div className="flex items-center gap-2">
-                            <IoSnowOutline size={14} className="text-cyan-400" />
-                            <span className="text-cyan-400">AC • {acPosition.charAt(0).toUpperCase() + acPosition.slice(1)} wall</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800">
+                            <IoSnowOutline size={14} className="text-sky-600" />
+                            <span className="font-semibold">AC • {acPosition.toUpperCase()}</span>
                         </div>
                     )}
                 </div>

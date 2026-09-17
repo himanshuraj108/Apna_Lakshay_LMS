@@ -1,17 +1,26 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoGridOutline, IoDownload, IoClose, IoFlash, IoCloudOffline, IoPhonePortrait } from 'react-icons/io5';
+import {
+    IoGridOutline, IoDownload, IoClose,
+    IoFlashOutline, IoCloudOfflineOutline, IoPhonePortraitOutline,
+    IoSparkles, IoInformationCircleOutline
+} from 'react-icons/io5';
 
 const PwaInstallBanner = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(window.deferredPwaPrompt || null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
+    const [hint, setHint] = useState('');
 
     useEffect(() => {
-        // If it was captured synchronously before React mounted, show immediately
-        if (window.deferredPwaPrompt) {
-            setDeferredPrompt(window.deferredPwaPrompt);
-            setShowInstallBanner(true);
+        // Do not show if already in standalone / installed PWA mode
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            return;
         }
+
+        // Show on every refresh!
+        const timer = setTimeout(() => {
+            setShowInstallBanner(true);
+        }, 800);
 
         const handleBeforeInstallPrompt = (e) => {
             e.preventDefault();
@@ -26,71 +35,160 @@ const PwaInstallBanner = () => {
             window.deferredPwaPrompt = null;
         };
 
-        // Even though we captured it globally in main.jsx, we also listen here
-        // in case it fires while the app is already running
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.addEventListener('appinstalled', handleAppInstalled);
 
-        // Optional: If they already installed it or are in standalone mode, hide.
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            setShowInstallBanner(false);
-        }
-
         return () => {
+            clearTimeout(timer);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
         };
     }, []);
 
-    const handleInstallClick = async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User response to the install prompt: ${outcome}`);
-        setDeferredPrompt(null);
-        window.deferredPwaPrompt = null;
+    const dismissPrompt = () => {
         setShowInstallBanner(false);
+    };
+
+    const handleInstallClick = async () => {
+        const promptToUse = deferredPrompt || window.deferredPwaPrompt;
+        if (promptToUse) {
+            promptToUse.prompt();
+            try {
+                const { outcome } = await promptToUse.userChoice;
+                if (outcome === 'accepted') {
+                    setShowInstallBanner(false);
+                }
+            } catch (err) {
+                console.error('PWA install error:', err);
+            }
+            setDeferredPrompt(null);
+            window.deferredPwaPrompt = null;
+        } else {
+            // If browser doesn't expose beforeinstallprompt directly (e.g. desktop Chrome already showed address bar icon, or iOS)
+            setHint('Click the install icon (⬇️) in your browser address bar or menu (⋮) to install.');
+            setTimeout(() => setHint(''), 6000);
+        }
     };
 
     return (
         <AnimatePresence>
             {showInstallBanner && (
                 <motion.div
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 100, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="fixed bottom-0 sm:bottom-6 left-0 sm:left-6 w-full sm:w-[380px] z-[9999] p-4 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
+                    initial={{ y: 80, opacity: 0, scale: 0.95 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: 80, opacity: 0, scale: 0.95 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+                    className="fixed bottom-4 sm:bottom-6 left-0 sm:left-6 w-full sm:w-[390px] z-[9999] p-3 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
+                    style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}
                 >
-                    <div className="bg-gradient-to-br from-orange-600 to-red-600 rounded-3xl p-6 shadow-2xl shadow-orange-500/30 relative overflow-hidden w-full max-w-sm mx-auto border border-white/15 pointer-events-auto">
-                        <button onClick={() => setShowInstallBanner(false)}
-                            className="absolute top-4 right-4 p-1.5 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors">
-                            <IoClose size={18} />
+                    <div
+                        className="relative overflow-hidden w-full max-w-sm mx-auto rounded-3xl p-5 pointer-events-auto border"
+                        style={{
+                            background: 'linear-gradient(145deg, #1C150E 0%, #2A1D13 60%, #1A120C 100%)',
+                            borderColor: 'rgba(249,115,22,0.35)',
+                            boxShadow: '0 20px 50px -10px rgba(0,0,0,0.5), 0 0 35px -5px rgba(249,115,22,0.25)',
+                        }}
+                    >
+                        {/* Top subtle orange accent strip */}
+                        <div
+                            className="absolute top-0 left-0 right-0 h-[3px]"
+                            style={{ background: 'linear-gradient(90deg, #F97316, #FB923C, #FDBA74)' }}
+                        />
+
+                        {/* Ambient warm glow in top-right */}
+                        <div
+                            className="absolute -top-12 -right-12 w-32 h-32 rounded-full pointer-events-none"
+                            style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%)', filter: 'blur(20px)' }}
+                        />
+
+                        {/* Close button */}
+                        <button
+                            onClick={dismissPrompt}
+                            aria-label="Close"
+                            className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer text-orange-200/70 hover:text-white"
+                            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}
+                        >
+                            <IoClose size={17} />
                         </button>
-                        <div className="flex gap-4 mb-5">
-                            <div className="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center shrink-0">
-                                <IoGridOutline className="text-white text-2xl" />
-                            </div>
-                            <div className="pt-0.5">
-                                <h3 className="text-lg font-bold text-white mb-1">Install Apna Lakshay</h3>
-                                <p className="text-orange-100 text-xs leading-relaxed">Faster loading, offline access, full app experience.</p>
+
+                        {/* Header: Icon + Title */}
+                        <div className="flex items-center gap-3.5 mb-4 pr-7">
+                            <img
+                                src="/app-icon-192.png"
+                                alt="Apna Lakshay"
+                                className="w-12 h-12 rounded-2xl object-cover shrink-0"
+                                style={{
+                                    boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
+                                }}
+                            />
+                            <div>
+                                <div className="flex items-center gap-1.5">
+                                    <h3 className="text-[15px] font-black text-white leading-snug tracking-tight">
+                                        Install Apna Lakshay
+                                    </h3>
+                                    <IoSparkles className="text-amber-400 text-xs shrink-0" />
+                                </div>
+                                <p className="text-xs text-orange-200/80 leading-snug mt-0.5 font-medium">
+                                    Faster loading, offline access, full app experience.
+                                </p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 mb-5">
-                            {[[<IoFlash size={18} />, 'Fast'], [<IoCloudOffline size={18} />, 'Offline'], [<IoPhonePortrait size={18} />, 'Native']].map(([icon, label]) => (
-                                <div key={label} className="bg-white/10 rounded-xl p-2.5 flex flex-col items-center gap-1.5 text-center">
-                                    <div className="text-white/90">{icon}</div>
-                                    <span className="text-[10px] font-semibold text-white uppercase tracking-wider">{label}</span>
+
+                        {/* Benefit chips */}
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                            {[
+                                { icon: <IoFlashOutline size={16} />, label: 'Fast' },
+                                { icon: <IoCloudOfflineOutline size={16} />, label: 'Offline' },
+                                { icon: <IoPhonePortraitOutline size={16} />, label: 'Native' },
+                            ].map(({ icon, label }) => (
+                                <div
+                                    key={label}
+                                    className="rounded-xl p-2 flex flex-col items-center gap-1 text-center"
+                                    style={{
+                                        background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(249,115,22,0.12)',
+                                    }}
+                                >
+                                    <div className="text-orange-400">{icon}</div>
+                                    <span className="text-[10px] font-bold text-orange-100 uppercase tracking-wider">
+                                        {label}
+                                    </span>
                                 </div>
                             ))}
                         </div>
-                        <div className="flex items-center gap-3">
-                            <button onClick={handleInstallClick}
-                                className="flex-1 bg-white text-red-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-sm shadow-lg active:scale-95 transition-transform">
-                                <IoDownload size={18} /> Install App
+
+                        {/* Hint notice if browser needs manual menu click */}
+                        {hint && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mb-3 p-2.5 rounded-xl text-xs text-amber-200 flex items-center gap-2"
+                                style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}
+                            >
+                                <IoInformationCircleOutline size={16} className="shrink-0 text-amber-400" />
+                                <span>{hint}</span>
+                            </motion.div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2.5">
+                            <button
+                                onClick={handleInstallClick}
+                                className="flex-1 py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-sm text-white transition-all cursor-pointer active:scale-95"
+                                style={{
+                                    background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                                    boxShadow: '0 4px 18px rgba(249,115,22,0.38)',
+                                }}
+                            >
+                                <IoDownload size={16} />
+                                <span>Install App</span>
                             </button>
-                            <button onClick={() => setShowInstallBanner(false)}
-                                className="px-4 py-3 text-white/80 font-semibold hover:bg-white/10 rounded-xl transition-colors text-sm">
+                            <button
+                                onClick={dismissPrompt}
+                                className="px-3.5 py-2.5 text-xs font-semibold text-orange-200/70 hover:text-white rounded-xl transition-colors cursor-pointer"
+                                style={{ background: 'rgba(255,255,255,0.04)' }}
+                            >
                                 Later
                             </button>
                         </div>
