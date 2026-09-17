@@ -1006,97 +1006,139 @@ exports.bulkUpdateStudentFees = async (req, res) => {
                     'assignments.status': 'active'
                 });
             }
-            if (!seat) continue;
+            if (!seat) {
+                seat = await Seat.findOne({
+                    $or: [
+                        { assignedTo: student._id },
+                        { 'assignments.student': student._id }
+                    ]
+                });
+            }
 
-            // Find their active assignment on the seat
-            const assignmentIndex = seat.assignments.findIndex(
-                a => a.student && a.student.toString() === student._id.toString() && a.status === 'active'
-            );
+            // Determine active assignment & current price
+            let assignmentIndex = -1;
+            let currentPrice = null;
 
-            if (assignmentIndex !== -1) {
-                let currentPrice = seat.assignments[assignmentIndex].price;
-                if (currentPrice == null || currentPrice === 0) {
-                    if (seat.assignments[assignmentIndex].type === 'full_day' || seat.assignments[assignmentIndex].legacyShift === 'full') {
-                        currentPrice = seat.basePrices?.full || 1200;
-                    } else {
-                        currentPrice = seat.basePrices?.day || 800;
-                    }
+            if (seat && Array.isArray(seat.assignments)) {
+                assignmentIndex = seat.assignments.findIndex(
+                    a => a.student && a.student.toString() === student._id.toString() && a.status === 'active'
+                );
+                if (assignmentIndex === -1) {
+                    assignmentIndex = seat.assignments.findIndex(
+                        a => a.student && a.student.toString() === student._id.toString()
+                    );
                 }
-
-                let newPrice = currentPrice;
-                if (operation === 'increase') {
-                    newPrice = currentPrice + amount;
-                } else if (operation === 'decrease') {
-                    newPrice = Math.max(0, currentPrice - amount);
+                if (assignmentIndex !== -1) {
+                    currentPrice = seat.assignments[assignmentIndex].price;
                 }
+            }
 
-                if (newPrice !== currentPrice) {
+            if (currentPrice == null || currentPrice === 0) {
+                if (seat) {
+                    currentPrice = seat.basePrices?.full || 1200;
+                } else if (student.currentFee) {
+                    currentPrice = student.currentFee;
+                } else {
+                    const latestFee = await Fee.findOne({ student: student._id }).sort({ year: -1, month: -1 });
+                    currentPrice = latestFee ? latestFee.amount : 1000;
+                }
+            }
+
+            let newPrice = currentPrice;
+            if (operation === 'increase') {
+                newPrice = currentPrice + amount;
+            } else if (operation === 'decrease') {
+                newPrice = Math.max(0, currentPrice - amount);
+            }
+
+            if (newPrice !== currentPrice) {
+                if (seat && assignmentIndex !== -1) {
                     seat.assignments[assignmentIndex].price = newPrice;
                     await seat.save();
-                    updateCount++;
+                }
 
-                    // 1. Update any existing pending and overdue fees for this student
-                    await Fee.updateMany(
-                        { student: student._id, status: { $in: ['pending', 'overdue'] } },
-                        { $set: { amount: newPrice } }
-                    );
+                student.currentFee = newPrice;
+                await student.save();
+                updateCount++;
 
-                    // 2. Update any partial fee records: recalculate outstanding
-                    const partialFees = await Fee.find({ student: student._id, status: 'partial' });
-                    for (const pFee of partialFees) {
-                        pFee.amount = newPrice;
-                        pFee.outstanding = Math.max(0, newPrice - (pFee.partialPaid || 0));
-                        await pFee.save();
-                    }
+                const now = new Date();
+                const feeMonth = now.getMonth() + 1;
+                const feeYear = now.getFullYear();
+                const diff = newPrice - currentPrice;
 
-                    // 3. Ensure current month pending fee record exists so it reflects in Fee Management immediately
-                    const now = new Date();
-                    const feeMonth = now.getMonth() + 1;
-                    const feeYear = now.getFullYear();
+                // 1. Update any existing pending and overdue fees for this student
+                await Fee.updateMany(
+                    { student: student._id, status: { $in: ['pending', 'overdue'] } },
+                    { $set: { amount: newPrice, outstanding: newPrice } }
+                );
 
-                    const currentFeeRecord = await Fee.findOne({
+                // 2. Update existing partial fee records: recalculate outstanding
+                const partialFees = await Fee.find({ student: student._id, status: 'partial' });
+                for (const pFee of partialFees) {
+                    pFee.amount = newPrice;
+                    pFee.outstanding = Math.max(0, newPrice - (pFee.partialPaid || 0));
+                    await pFee.save();
+                }
+
+                // 3. Current month fee handling
+                const currentFeeRecord = await Fee.findOne({
+                    student: student._id,
+                    month: feeMonth,
+                    year: feeYear
+                });
+
+                if (!currentFeeRecord) {
+                    // No fee record exists for current month: create a new pending fee
+                    const joinedDate = new Date(student.admissionDate || student.createdAt || now);
+                    const billingDay = joinedDate.getDate() || 10;
+                    const dueDate = new Date(feeYear, feeMonth - 1, billingDay);
+                    await Fee.create({
                         student: student._id,
                         month: feeMonth,
-                        year: feeYear
+                        year: feeYear,
+                        amount: newPrice,
+                        outstanding: newPrice,
+                        dueDate,
+                        status: 'pending'
                     });
-
-                    if (!currentFeeRecord) {
-                        const dueDate = new Date(feeYear, feeMonth - 1, 10);
-                        await Fee.create({
-                            student: student._id,
-                            month: feeMonth,
-                            year: feeYear,
-                            amount: newPrice,
-                            dueDate,
-                            status: 'pending'
-                        });
-                    } else if (currentFeeRecord.status === 'pending' || currentFeeRecord.status === 'overdue') {
+                } else if (currentFeeRecord.status === 'paid') {
+                    // IF student already paid for this month and fee is INCREASED:
+                    // Only the increased difference (diff) will be shown in pending status!
+                    if (operation === 'increase' && diff > 0) {
                         currentFeeRecord.amount = newPrice;
+                        currentFeeRecord.partialPaid = currentPrice;
+                        currentFeeRecord.outstanding = diff; // ONLY increased fee is due
+                        currentFeeRecord.status = 'partial'; // Shows in Pending Dues!
                         await currentFeeRecord.save();
                     }
+                } else if (currentFeeRecord.status === 'pending' || currentFeeRecord.status === 'overdue') {
+                    currentFeeRecord.amount = newPrice;
+                    currentFeeRecord.outstanding = newPrice;
+                    await currentFeeRecord.save();
+                }
 
-                    // 4. Send email notification if explicitly requested (default: false / not sent)
-                    let emailSent = false;
-                    if (sendEmail && student.email && emailService?.sendFeeUpdateEmail) {
-                        try {
-                            await emailService.sendFeeUpdateEmail(student, currentPrice, newPrice);
-                            emailSent = true;
-                        } catch (emailErr) {
-                            console.error(`Failed to send fee update email to ${student.email}:`, emailErr);
-                        }
+                // 4. Send email notification if explicitly requested (default: false / not sent)
+                let emailSent = false;
+                if (sendEmail && student.email && emailService?.sendFeeUpdateEmail) {
+                    try {
+                        await emailService.sendFeeUpdateEmail(student, currentPrice, newPrice);
+                        emailSent = true;
+                    } catch (emailErr) {
+                        console.error(`Failed to send fee update email to ${student.email}:`, emailErr);
                     }
+                }
 
-                    updatedDetails.push({
-                        studentId: student._id,
-                        name: student.name,
-                        email: student.email || '',
-                        seatNumber: seat.number,
-                        beforeFee: currentPrice,
-                        newFee: newPrice,
-                        diff: newPrice - currentPrice,
-                        emailSent,
-                        showInFeeManagement: shouldShowInFee
-                    });
+                updatedDetails.push({
+                    studentId: student._id,
+                    name: student.name,
+                    email: student.email || '',
+                    seatNumber: seat?.number || 'Desk',
+                    beforeFee: currentPrice,
+                    newFee: newPrice,
+                    diff,
+                    emailSent,
+                    showInFeeManagement: shouldShowInFee
+                });
 
                     // Log action dynamically
                     await logAction(
@@ -1109,9 +1151,8 @@ exports.bulkUpdateStudentFees = async (req, res) => {
                     );
                 }
             }
-        }
 
-        res.status(200).json({
+            res.status(200).json({
             success: true,
             message: `Successfully updated fees for ${updateCount} students.`,
             updateCount,
@@ -3023,7 +3064,10 @@ exports.markFeePaid = async (req, res) => {
             });
         }
 
+        const settledAmount = (fee.status === 'partial' && fee.outstanding > 0) ? fee.outstanding : fee.amount;
         fee.status = 'paid';
+        fee.partialPaid = fee.amount;
+        fee.outstanding = 0;
         fee.paidDate = new Date();
         fee.markedBy = req.user.id;
         await fee.save();
@@ -3031,20 +3075,20 @@ exports.markFeePaid = async (req, res) => {
         await Notification.create({
             recipient: fee.student._id,
             title: 'Fee Payment Confirmed',
-            message: `Your fee of ₹${fee.amount} has been confirmed.`,
+            message: `Your fee payment of ₹${settledAmount} has been confirmed.`,
             type: 'fee',
             createdBy: req.user.id
         });
 
         // Send fee confirmation email
         try {
-            await emailService.sendFeeConfirmationEmail(fee.student, fee.amount, fee.month, fee.year, fee._id, fee.paidDate);
+            await emailService.sendFeeConfirmationEmail(fee.student, settledAmount, fee.month, fee.year, fee._id, fee.paidDate);
         } catch (emailError) {
             console.error('Fee email failed:', emailError.message);
         }
 
         // Log action
-        await logAction(req, 'fee_marked_paid', 'Fee', fee._id, `Fee: ₹${fee.amount}`, `Marked as paid for student ${fee.student.name}`);
+        await logAction(req, 'fee_marked_paid', 'Fee', fee._id, `Fee: ₹${settledAmount}`, `Marked as paid for student ${fee.student.name}`);
 
         res.status(200).json({
             success: true,

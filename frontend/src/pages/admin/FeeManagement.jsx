@@ -26,9 +26,7 @@ import {
     IoLockClosedOutline,
     IoCalendarOutline,
     IoSaveOutline,
-    IoCreateOutline,
-    IoEyeOffOutline,
-    IoEyeOutline
+    IoCreateOutline
 } from 'react-icons/io5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -321,7 +319,7 @@ const FeeManagement = () => {
 
     // Active enrolled students
     const activeStudentFees = useMemo(() => {
-        return fees.filter(f => f.student?.isActive === true);
+        return fees.filter(f => f.student && f.student.isActive !== false);
     }, [fees]);
 
     // Fees visible in normal ledger (showInFeeManagement !== false)
@@ -338,31 +336,6 @@ const FeeManagement = () => {
     const baseFees = useMemo(() => {
         return filter === 'hidden' ? hiddenFees : visibleFees;
     }, [filter, hiddenFees, visibleFees]);
-
-    // Quick toggle for student fee management visibility
-    const toggleStudentFeeVisibility = async (studentId, currentVal) => {
-        try {
-            const nextVal = !currentVal;
-            await api.put(`/admin/students/${studentId}`, { showInFeeManagement: nextVal });
-            setFees(prev => prev.map(f => {
-                if (f.student?._id === studentId) {
-                    return {
-                        ...f,
-                        student: {
-                            ...f.student,
-                            showInFeeManagement: nextVal
-                        }
-                    };
-                }
-                return f;
-            }));
-            setSuccess(nextVal ? 'Scholar restored to Fee Management ledger!' : 'Scholar hidden from Fee Management ledger.');
-            setTimeout(() => setSuccess(''), 3500);
-        } catch (err) {
-            setError('Failed to update student fee visibility.');
-            setTimeout(() => setError(''), 3500);
-        }
-    };
 
     // Financial KPI Metrics calculated across visible ledger roster
     const metrics = useMemo(() => {
@@ -1021,10 +994,17 @@ const FeeManagement = () => {
                                                     </span>
                                                 </div>
                                                 <div className="text-right">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Invoice Total</span>
-                                                    <span className="text-sm font-black text-slate-900">
-                                                        ₹{fee.amount}
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                                        {fee.status === 'partial' ? 'Increased Due' : 'Invoice Total'}
                                                     </span>
+                                                    <span className={`text-sm font-black ${fee.status === 'partial' ? 'text-amber-900' : 'text-slate-900'}`}>
+                                                        ₹{fee.status === 'partial' ? outstanding : fee.amount}
+                                                    </span>
+                                                    {fee.status === 'partial' && (
+                                                        <span className="block text-[10px] text-slate-500 font-medium">
+                                                            Total ₹{fee.amount} · ₹{fee.partialPaid || 0} Paid
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1056,7 +1036,7 @@ const FeeManagement = () => {
                                                             <span className="text-xs font-black text-emerald-800 tabular-nums">₹{fee.partialPaid || 0}</span>
                                                         </div>
                                                         <div className="bg-amber-50 border border-amber-300 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
-                                                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Remaining Due</span>
+                                                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Increased Due</span>
                                                             <span className="text-xs font-black text-amber-900 tabular-nums">₹{outstanding}</span>
                                                         </div>
                                                     </div>
@@ -1099,21 +1079,6 @@ const FeeManagement = () => {
                                             </button>
                                         )}
 
-                                        {/* Visibility Toggle Button (Admin Only) */}
-                                        {!isSubAdmin && student?._id && (
-                                            <button
-                                                onClick={() => toggleStudentFeeVisibility(student._id, fee.student?.showInFeeManagement !== false)}
-                                                className={`p-2 rounded-xl text-xs font-bold transition-all ${
-                                                    fee.student?.showInFeeManagement === false
-                                                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
-                                                        : 'bg-slate-100 hover:bg-slate-200/80 text-slate-400 hover:text-slate-700'
-                                                }`}
-                                                title={fee.student?.showInFeeManagement === false ? 'Restore scholar to Fee Management' : 'Hide scholar from Fee Management'}
-                                            >
-                                                {fee.student?.showInFeeManagement === false ? <IoEyeOutline size={15} /> : <IoEyeOffOutline size={15} />}
-                                            </button>
-                                        )}
-
                                         {/* Pay / Settle Button */}
                                         {fee.status === 'paid' ? (
                                             <div className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold">
@@ -1132,7 +1097,7 @@ const FeeManagement = () => {
                                                 className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition-all"
                                             >
                                                 <IoWalletOutline size={15} />
-                                                <span>Collect Fee</span>
+                                                <span>{fee.status === 'partial' ? `Pay Increased Fee (₹${outstanding})` : 'Collect Fee'}</span>
                                             </motion.button>
                                         )}
                                     </div>
@@ -1196,16 +1161,21 @@ const FeeManagement = () => {
 
                                                 {/* Amount */}
                                                 <td className="px-5 py-4 text-right">
-                                                    <div className="font-black text-slate-900 text-sm">₹{fee.amount}</div>
-                                                    {fee.status === 'partial' && (
-                                                        <div className="flex items-center justify-end gap-1.5 mt-1">
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold tabular-nums">
-                                                                ₹{fee.partialPaid} Paid
-                                                            </span>
-                                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-extrabold tabular-nums">
-                                                                ₹{fee.outstanding} Due
-                                                            </span>
+                                                    {fee.status === 'partial' ? (
+                                                        <div>
+                                                            <div className="font-black text-amber-900 text-sm">₹{fee.outstanding}</div>
+                                                            <div className="text-[10px] font-bold text-amber-700">Increased Due</div>
+                                                            <div className="flex items-center justify-end gap-1.5 mt-1">
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold tabular-nums">
+                                                                    ₹{fee.partialPaid} Paid
+                                                                </span>
+                                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-semibold tabular-nums">
+                                                                    Total ₹{fee.amount}
+                                                                </span>
+                                                            </div>
                                                         </div>
+                                                    ) : (
+                                                        <div className="font-black text-slate-900 text-sm">₹{fee.amount}</div>
                                                     )}
                                                 </td>
 
@@ -1246,20 +1216,6 @@ const FeeManagement = () => {
                                                             </button>
                                                         )}
 
-                                                        {!isSubAdmin && student?._id && (
-                                                            <button
-                                                                onClick={() => toggleStudentFeeVisibility(student._id, fee.student?.showInFeeManagement !== false)}
-                                                                className={`p-2 rounded-xl transition-all ${
-                                                                    fee.student?.showInFeeManagement === false
-                                                                        ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200'
-                                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700'
-                                                                }`}
-                                                                title={fee.student?.showInFeeManagement === false ? 'Restore scholar to Fee Management' : 'Hide scholar from Fee Management'}
-                                                            >
-                                                                {fee.student?.showInFeeManagement === false ? <IoEyeOutline size={15} /> : <IoEyeOffOutline size={15} />}
-                                                            </button>
-                                                        )}
-
                                                         {fee.status === 'paid' ? (
                                                             <span className="text-[11px] font-bold text-emerald-600 px-2 py-1">
                                                                 Paid
@@ -1274,7 +1230,7 @@ const FeeManagement = () => {
                                                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all"
                                                             >
                                                                 <IoWalletOutline size={14} />
-                                                                <span>Collect Fee</span>
+                                                                <span>{fee.status === 'partial' ? `Pay ₹${fee.outstanding}` : 'Collect Fee'}</span>
                                                             </button>
                                                         )}
                                                     </div>
@@ -1308,17 +1264,26 @@ const FeeManagement = () => {
                                     <h4 className="text-sm font-bold text-slate-900">{payModal.student?.name}</h4>
                                     <p className="text-[11px] text-slate-500">{payModal.student?.email || payModal.student?.mobile}</p>
                                 </div>
-                                <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700">
-                                    Total ₹{payModal.amount}
-                                </span>
+                                <div className="text-right">
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700 block">
+                                        {payModal.status === 'partial'
+                                            ? `Increased Due: ₹${payModal.outstanding || (payModal.amount - (payModal.partialPaid || 0))}`
+                                            : `Total ₹${payModal.amount}`}
+                                    </span>
+                                    {payModal.status === 'partial' && (
+                                        <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                                            Total ₹{payModal.amount} · ₹{payModal.partialPaid || 0} Paid
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             {payModal.partialPaid > 0 && (
                                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-200">
                                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                        Received: ₹{payModal.partialPaid}
+                                        Already Paid: ₹{payModal.partialPaid}
                                     </span>
                                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-300">
-                                        Balance Due: ₹{payModal.outstanding || (payModal.amount - payModal.partialPaid)}
+                                        Remaining Due: ₹{payModal.outstanding || (payModal.amount - payModal.partialPaid)}
                                     </span>
                                 </div>
                             )}
@@ -1413,7 +1378,9 @@ const FeeManagement = () => {
                                     {payLoading
                                         ? 'Recording...'
                                         : payType === 'full'
-                                        ? 'Mark 100% Paid'
+                                        ? (payModal.status === 'partial'
+                                            ? `Pay Increased Fee (₹${payModal.outstanding || (payModal.amount - (payModal.partialPaid || 0))})`
+                                            : 'Mark 100% Paid')
                                         : payType === 'cancel'
                                         ? 'Confirm Void'
                                         : 'Record Installment'}
