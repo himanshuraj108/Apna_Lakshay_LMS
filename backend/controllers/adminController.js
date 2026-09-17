@@ -1325,11 +1325,12 @@ exports.updateStudent = async (req, res) => {
                 { $set: { admissionDate: admissionDateToWrite } }
             );
         }
-        const { negotiatedPrice } = req.body;
+        const { negotiatedPrice, shift: newShift } = req.body;
+        let newPrice; // declared here so it's accessible in the log section below
 
         // ─── Update negotiated price on active seat assignment ───────────
         if (negotiatedPrice !== undefined && negotiatedPrice !== '' && !isNaN(Number(negotiatedPrice))) {
-            const newPrice = Number(negotiatedPrice);
+            newPrice = Number(negotiatedPrice);
 
             // Use direct MongoDB update to safely patch nested array subdocuments
             // (avoids Mongoose markModified issues with deeply nested paths)
@@ -1363,6 +1364,29 @@ exports.updateStudent = async (req, res) => {
             console.log(`Negotiated price updated to ₹${newPrice} for student ${student.name}. Seat updated: ${seatUpdateResult.modifiedCount > 0}`);
         }
 
+        // ─── Update shift on active seat assignment (if shift field sent) ─
+        if (newShift !== undefined && newShift !== '') {
+            // Determine if it's a custom shift (ObjectId) or legacy 'full'
+            const isObjectId = mongoose.Types.ObjectId.isValid(newShift);
+            const shiftUpdateFields = isObjectId
+                ? { 'assignments.$[elem].shift': new mongoose.Types.ObjectId(newShift), 'assignments.$[elem].legacyShift': null }
+                : { 'assignments.$[elem].shift': null, 'assignments.$[elem].legacyShift': newShift };
+
+            const shiftUpdateResult = await Seat.updateOne(
+                {
+                    'assignments.student': student._id,
+                    'assignments.status': 'active'
+                },
+                { $set: shiftUpdateFields },
+                {
+                    arrayFilters: [
+                        { 'elem.student': student._id, 'elem.status': 'active' }
+                    ]
+                }
+            );
+            console.log(`Shift updated to '${newShift}' for student ${student.name}. Seat modified: ${shiftUpdateResult.modifiedCount > 0}`);
+        }
+
         // Log action
         if (statusChanged) {
             await logAction(
@@ -1388,7 +1412,7 @@ exports.updateStudent = async (req, res) => {
             );
         }
 
-        if (negotiatedPrice !== undefined && negotiatedPrice !== '') {
+        if (negotiatedPrice !== undefined && negotiatedPrice !== '' && newPrice !== undefined) {
             await logAction(
                 req,
                 'fee_updated',

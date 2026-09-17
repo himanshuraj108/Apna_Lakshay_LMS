@@ -359,8 +359,9 @@ const StudentManagement = () => {
                     joinedAt: formData.joinedAt,
                     password: formData.password,
                     negotiatedPrice: formData.negotiatedPrice !== '' ? formData.negotiatedPrice : undefined,
+                    shift: formData.shift || undefined,
                     sendMail: formData.sendMail,
-                    showInFeeManagement: formData.showInFeeManagement !== undefined ? formData.showInFeeManagement : true
+                    showInFeeManagement: formData.showInFeeManagement === true
                 });
                 setSuccess('Student updated successfully');
             } else {
