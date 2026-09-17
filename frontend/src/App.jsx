@@ -14,12 +14,11 @@ import ForcedDoubtOverlay from './components/ForcedDoubtOverlay';
 // from ~800KB to <200KB
 // ==========================================
 
-// Loading Fallback Component
+// Loading Fallback Component (High Production Grade)
 const PageLoader = () => {
     const barRef = useRef(null);
 
     useEffect(() => {
-        // Inject top progress bar
         const bar = document.createElement('div');
         bar.className = 'page-progress-bar';
         document.body.appendChild(bar);
@@ -28,50 +27,167 @@ const PageLoader = () => {
     }, []);
 
     return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center z-50"
-            style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(249,115,22,0.15) 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, rgba(239,68,68,0.1) 0%, transparent 60%), #f8fafc' }}>
-            {/* Logo card */}
-            <div className="relative flex flex-col items-center gap-6">
-                {/* Spinning ring */}
-                <div className="relative w-24 h-24">
-                    <svg className="loader-ring absolute inset-0 w-full h-full" viewBox="0 0 96 96" fill="none">
-                        <circle cx="48" cy="48" r="44" stroke="rgba(249,115,22,0.15)" strokeWidth="4" />
-                        <circle cx="48" cy="48" r="44"
-                            stroke="url(#loaderGrad)" strokeWidth="4"
+        <div
+            className="fixed inset-0 flex flex-col items-center justify-center z-50 select-none"
+            style={{
+                background: '#FFFBF7',
+                fontFamily: "'DM Sans', 'Inter', sans-serif",
+            }}
+        >
+            <style>{`
+                @keyframes orbitSpin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                @keyframes pulseLogo {
+                    0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 14px rgba(249,115,22,0.25)); }
+                    50% { transform: scale(1.04); filter: drop-shadow(0 8px 22px rgba(249,115,22,0.45)); }
+                }
+                @keyframes liquidBar {
+                    0% { transform: translateX(-100%); }
+                    50% { transform: translateX(50%); }
+                    100% { transform: translateX(200%); }
+                }
+                @keyframes orbSlow1 {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50% { transform: translate(30px, -40px) scale(1.1); }
+                }
+                @keyframes orbSlow2 {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50% { transform: translate(-30px, 30px) scale(1.08); }
+                }
+            `}</style>
+
+            {/* Ambient Background Blobs */}
+            <div
+                className="fixed -top-24 -left-24 w-96 h-96 rounded-full pointer-events-none"
+                style={{
+                    background: 'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)',
+                    filter: 'blur(80px)',
+                    animation: 'orbSlow1 18s ease-in-out infinite',
+                }}
+            />
+            <div
+                className="fixed -bottom-24 -right-24 w-96 h-96 rounded-full pointer-events-none"
+                style={{
+                    background: 'radial-gradient(circle, rgba(251,146,60,0.07) 0%, transparent 70%)',
+                    filter: 'blur(80px)',
+                    animation: 'orbSlow2 22s ease-in-out infinite',
+                }}
+            />
+
+            {/* Dot Grid */}
+            <div
+                className="fixed inset-0 pointer-events-none"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px',
+                }}
+            />
+
+            {/* Central Glassmorphic Loader Card */}
+            <div
+                className="relative flex flex-col items-center gap-5 p-8 sm:p-10 rounded-3xl z-10"
+                style={{
+                    background: 'rgba(255, 255, 255, 0.90)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1.5px solid #EDE8E0',
+                    boxShadow: '0 20px 60px -10px rgba(180, 120, 60, 0.10), 0 0 30px -5px rgba(249, 115, 22, 0.12)',
+                    minWidth: '280px',
+                }}
+            >
+                {/* Logo with Orbiting Glowing Ring */}
+                <div className="relative w-24 h-24 flex items-center justify-center">
+                    {/* Outer Rotating Energy Ring */}
+                    <svg
+                        className="absolute inset-0 w-full h-full"
+                        viewBox="0 0 100 100"
+                        style={{ animation: 'orbitSpin 1.8s linear infinite' }}
+                    >
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            stroke="rgba(249, 115, 22, 0.12)"
+                            strokeWidth="3"
+                            fill="none"
+                        />
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            stroke="url(#alOrangeGrad)"
+                            strokeWidth="3.5"
                             strokeLinecap="round"
-                            strokeDasharray="138 138"
-                            strokeDashoffset="104" />
+                            strokeDasharray="90 190"
+                            fill="none"
+                        />
                         <defs>
-                            <linearGradient id="loaderGrad" x1="0" y1="0" x2="1" y2="1">
-                                <stop offset="0%" stopColor="#f97316" />
-                                <stop offset="100%" stopColor="#ef4444" />
+                            <linearGradient id="alOrangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stopColor="#F97316" />
+                                <stop offset="100%" stopColor="#EA580C" />
                             </linearGradient>
                         </defs>
                     </svg>
-                    {/* Icon in centre */}
-                    <div className="loader-logo absolute inset-0 flex items-center justify-center">
-                        <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-2xl shadow-orange-500/40">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                            </svg>
-                        </div>
-                    </div>
+
+                    {/* Official AL Logo inside */}
+                    <img
+                        src="/app-icon-192.png"
+                        alt="Apna Lakshay"
+                        className="w-14 h-14 rounded-2xl object-cover relative z-10"
+                        style={{
+                            boxShadow: '0 4px 16px rgba(249,115,22,0.3)',
+                            animation: 'pulseLogo 2.4s ease-in-out infinite',
+                        }}
+                    />
                 </div>
 
-                {/* Text */}
-                <div className="loader-text flex flex-col items-center gap-2">
-                    <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent tracking-wide">
-                        Study Portal
+                {/* Brand Titles */}
+                <div className="flex flex-col items-center gap-1 text-center">
+                    <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight">
+                        Apna <span style={{ color: '#F97316' }}>Lakshay</span>
                     </h2>
-                    <p className="text-gray-600 text-sm">Loading, please wait…</p>
+                    <span
+                        className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full"
+                        style={{
+                            background: 'rgba(249, 115, 22, 0.08)',
+                            color: '#EA580C',
+                            border: '1px solid rgba(249, 115, 22, 0.2)',
+                        }}
+                    >
+                        Library Management System
+                    </span>
+                </div>
 
-                    {/* Inline dots */}
-                    <div className="flex gap-1.5 mt-1">
+                {/* Sleek Liquid Progress Bar */}
+                <div
+                    className="w-36 h-1 rounded-full overflow-hidden relative"
+                    style={{ background: '#F0EDE8' }}
+                >
+                    <div
+                        className="absolute inset-y-0 w-20 rounded-full"
+                        style={{
+                            background: 'linear-gradient(90deg, #F97316, #FB923C, #F97316)',
+                            boxShadow: '0 0 10px rgba(249, 115, 22, 0.6)',
+                            animation: 'liquidBar 1.6s ease-in-out infinite',
+                        }}
+                    />
+                </div>
+
+                {/* Status Text with Animated Dots */}
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                    <span>Loading workspace</span>
+                    <span className="flex gap-1 items-center">
                         {[0, 1, 2].map(i => (
-                            <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-500/60"
-                                style={{ animation: `logo-pulse 1.2s ease ${i * 0.2}s infinite` }} />
+                            <span
+                                key={i}
+                                className="w-1 h-1 rounded-full bg-orange-500"
+                                style={{
+                                    animation: `pulseLogo 1.2s ease-in-out ${i * 0.2}s infinite`,
+                                }}
+                            />
                         ))}
-                    </div>
+                    </span>
                 </div>
             </div>
         </div>

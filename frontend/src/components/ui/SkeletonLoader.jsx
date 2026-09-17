@@ -702,111 +702,129 @@ const ChatSkeleton = () => (
 // 11. PUBLIC SEAT VIEW SKELETON  (/public-seats)
 // ─────────────────────────────────────────────────────────────────────────────
 export const PublicSeatViewSkeleton = () => (
-    <div className="min-h-screen p-6 min-w-[1280px] overflow-x-auto dark relative">
-        {/* Fixed full-screen background — blocks body CSS blobs */}
-        <div className="fixed inset-0 -z-10" style={{ background: 'radial-gradient(ellipse at 20% 15%, rgba(249,115,22,0.09) 0%, transparent 55%), radial-gradient(ellipse at 80% 85%, rgba(239,68,68,0.07) 0%, transparent 55%), #f9fafb' }} />
-        {/* Ambient blob */}
-        <div className="fixed top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-400/10 blur-[140px] pointer-events-none -z-10" />
+    <div
+        className="min-h-screen p-4 sm:p-6 sm:pb-12 relative"
+        style={{ background: '#FFFBF7', fontFamily: "'DM Sans', 'Inter', sans-serif" }}
+    >
+        {/* Fixed full-screen warm dot grid */}
+        <div
+            className="fixed inset-0 -z-10 pointer-events-none"
+            style={{
+                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                backgroundSize: '28px 28px',
+            }}
+        />
 
-        {/* Floating login button placeholder */}
-        <div className="fixed top-8 right-8 z-50">
-            <Sk className="h-12 w-32 rounded-full" />
-        </div>
+        {/* Ambient warm glow */}
+        <div
+            className="fixed top-0 right-0 w-96 h-96 pointer-events-none -z-10"
+            style={{
+                background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)',
+                filter: 'blur(80px)',
+            }}
+        />
 
-        <div className="max-w-7xl mx-auto">
-            {/* Branded header */}
-            <div className="text-center mb-10 space-y-3">
-                <Sk className="h-10 w-52 mx-auto rounded-xl" />
-                <Sk className="h-3.5 w-44 mx-auto" />
-                <div className="h-px w-24 bg-gradient-to-r from-transparent via-orange-500/20 to-transparent mx-auto" />
-                <Sk className="h-6 w-64 mx-auto" />
+        <div className="max-w-7xl mx-auto space-y-6">
+            {/* Top Navbar Skeleton */}
+            <div
+                className="flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white border"
+                style={{ borderColor: '#EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.06)' }}
+            >
+                <div className="flex items-center gap-3">
+                    <Sk className="w-10 h-10 rounded-xl flex-shrink-0" />
+                    <div className="space-y-1.5">
+                        <Sk className="h-4.5 w-32 rounded-md" />
+                        <Sk className="h-3 w-44 rounded-md opacity-60" />
+                    </div>
+                </div>
+                <Sk className="h-9 w-32 rounded-xl" />
             </div>
 
-            {/* Floor tab pills */}
-            <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
-                {[100, 110, 95, 105].map((w, i) => (
-                    <Sk key={i} className={`h-9 rounded-xl flex-shrink-0 ${i === 0 ? 'opacity-100' : 'opacity-50'}`} style={{ width: w }} />
+            {/* Floor selector tabs */}
+            <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+                {[130, 110, 120].map((w, i) => (
+                    <Sk
+                        key={i}
+                        className={`h-10 rounded-xl flex-shrink-0 ${i === 0 ? 'opacity-100' : 'opacity-50'}`}
+                        style={{ width: w }}
+                    />
                 ))}
             </div>
 
-            {/* Room card 1 — bigger grid */}
-            <div className="space-y-6">
-                <div className="bg-white shadow-sm backdrop-blur-xl border border-gray-200 rounded-2xl p-6">
-                    {/* Room header */}
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="space-y-2">
-                            <Sk className="h-5 w-32" />
-                            <Sk className="h-3.5 w-48" />
-                        </div>
-                        <div className="flex gap-3">
-                            <Sk className="h-6 w-20 rounded-full" />
-                            <Sk className="h-6 w-20 rounded-full" />
-                            <Sk className="h-6 w-20 rounded-full" />
-                        </div>
+            {/* Room Box Container Skeleton */}
+            <div
+                className="rounded-3xl overflow-hidden bg-white border"
+                style={{ borderColor: '#EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.06)' }}
+            >
+                {/* Room title header */}
+                <div className="px-5 py-3.5 border-b flex items-center justify-between" style={{ background: '#FFFBF7', borderColor: '#EDE8E0' }}>
+                    <div className="flex items-center gap-2.5">
+                        <Sk className="w-2.5 h-2.5 rounded-full" />
+                        <Sk className="h-4 w-36 rounded-md" />
                     </div>
-                    {/* Seat grid */}
-                    <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
-                        {[...Array(64)].map((_, i) => (
-                            <Sk
-                                key={i}
-                                className={`rounded-md ${i % 7 === 0 ? 'opacity-40' : i % 5 === 0 ? 'opacity-20' : ''}`}
-                                style={{ aspectRatio: '1 / 1' }}
-                            />
-                        ))}
-                    </div>
+                    <Sk className="h-3.5 w-40 rounded-md opacity-60" />
                 </div>
 
-                {/* Room card 2 — smaller grid */}
-                <div className="bg-white shadow-sm backdrop-blur-xl border border-gray-200 rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="space-y-2">
-                            <Sk className="h-5 w-28" />
-                            <Sk className="h-3.5 w-44" />
-                        </div>
-                        <div className="flex gap-3">
-                            <Sk className="h-6 w-20 rounded-full" />
-                            <Sk className="h-6 w-20 rounded-full" />
-                            <Sk className="h-6 w-20 rounded-full" />
-                        </div>
-                    </div>
-                    <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(16, 1fr)' }}>
-                        {[...Array(48)].map((_, i) => (
-                            <Sk
-                                key={i}
-                                className={`rounded-md ${i % 9 === 0 ? 'opacity-30' : i % 4 === 0 ? 'opacity-15' : ''}`}
-                                style={{ aspectRatio: '1 / 1' }}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                {/* Floor Summary */}
-                <div className="bg-white shadow-sm backdrop-blur-xl border border-gray-200 rounded-2xl p-6">
-                    <Sk className="h-5 w-32 mb-5" />
-                    <div className="grid grid-cols-3 gap-4">
-                        {['from-gray-100 to-gray-50', 'from-red-500/15 to-red-400/5', 'from-green-500/15 to-green-400/5'].map((grad, i) => (
-                            <div
-                                key={i}
-                                className="rounded-xl p-4 text-center border border-gray-200"
-                                style={{ background: `linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to))` }}
-                            >
-                                <Sk className="h-3 w-20 mx-auto mb-3" />
-                                <Sk className="h-9 w-14 mx-auto" />
+                {/* Architectural Room Area Skeleton */}
+                <div className="p-4 sm:p-7">
+                    <div
+                        className="rounded-2xl border-[2.5px] p-4 flex flex-col justify-between"
+                        style={{ borderColor: '#E2DCD5', minHeight: '380px', background: '#FCFBF9' }}
+                    >
+                        {/* Top wall desks */}
+                        <div className="flex justify-between items-center px-4 py-2 border-b border-slate-100">
+                            <div className="flex gap-2">
+                                {[...Array(3)].map((_, i) => (
+                                    <Sk key={i} className="w-14 h-12 rounded-xl" />
+                                ))}
                             </div>
-                        ))}
+                            <Sk className="w-24 h-7 rounded-full" />
+                            <div className="flex gap-2">
+                                {[...Array(3)].map((_, i) => (
+                                    <Sk key={i} className="w-14 h-12 rounded-xl" />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Middle aisle */}
+                        <div className="flex justify-between items-center my-4 min-h-[160px]">
+                            <div className="flex flex-col gap-2">
+                                {[...Array(3)].map((_, i) => (
+                                    <Sk key={i} className="w-14 h-12 rounded-xl" />
+                                ))}
+                            </div>
+                            <Sk className="w-56 h-8 rounded-full opacity-40" />
+                            <div className="flex flex-col gap-2">
+                                {[...Array(3)].map((_, i) => (
+                                    <Sk key={i} className="w-14 h-12 rounded-xl" />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Bottom wall */}
+                        <div className="flex justify-center items-center px-4 py-2 border-t border-slate-100">
+                            <Sk className="w-28 h-7 rounded-full" />
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Seat legend */}
-                <div className="flex items-center justify-center gap-6 py-2">
-                    {[
-                        { color: 'bg-green-500/30 border border-green-500/40', label: 'Available' },
-                        { color: 'bg-red-500/30 border border-red-500/40', label: 'Occupied' },
-                        { color: 'bg-white/10 border border-gray-200', label: 'Your Seat' },
-                    ].map(({ color, label }, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <div className={`w-5 h-5 rounded-md ${color}`} />
-                            <Sk className="h-3 w-16" />
+            {/* 3 Summary Statistics Cards */}
+            <div
+                className="bg-white rounded-3xl p-5 sm:p-6 border"
+                style={{ borderColor: '#EDE8E0', boxShadow: '0 4px 20px rgba(180,120,60,0.06)' }}
+            >
+                <Sk className="h-4 w-48 rounded-md mb-4" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    {[0, 1, 2].map((i) => (
+                        <div
+                            key={i}
+                            className="rounded-2xl p-4 text-center border space-y-2"
+                            style={{ background: '#FFFBF7', borderColor: '#EDE8E0' }}
+                        >
+                            <Sk className="h-3 w-20 mx-auto rounded" />
+                            <Sk className="h-8 w-14 mx-auto rounded-lg" />
+                            <Sk className="h-2.5 w-28 mx-auto rounded opacity-60" />
                         </div>
                     ))}
                 </div>
