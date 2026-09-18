@@ -3,10 +3,10 @@ const dotenv = require('dotenv');
 const path = require('path');
 
 // Load env vars
-dotenv.config({ path: path.join(__dirname, '../backend/.env') });
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const User = require('../backend/models/User');
-const Seat = require('../backend/models/Seat');
+const User = require('../models/User');
+const Seat = require('../models/Seat');
 
 const fixSeatOccupancy = async () => {
     try {
