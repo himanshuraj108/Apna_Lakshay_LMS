@@ -749,7 +749,7 @@ const AdminDashboard = () => {
         },
         {
             title: 'Pending Dues',
-            value: (metrics.pendingRequests || 0).toLocaleString(),
+            value: `₹${(metrics.pendingFeesAmount || 0).toLocaleString('en-IN')}`,
             sub: `${metrics.pendingFeesCount || 0} student fee dues`,
             badge: metrics.pendingFeesCount > 0 ? `${metrics.pendingFeesCount} Dues` : 'All Clear',
             badgeColor: metrics.pendingFeesCount > 0 ? 'bg-rose-50 text-rose-700 border-rose-200/80' : 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
