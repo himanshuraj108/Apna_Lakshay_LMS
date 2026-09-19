@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -17,11 +17,81 @@ import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/700.css';
 import '@fontsource/dm-sans/800.css';
 
-const STATS = [
-    { value: '100+', label: 'Students' },
-    { value: '95%', label: 'Satisfaction' },
-    { value: '24/7', label: 'Access' },
+/* ─── Stat definitions: num=numeric target, suffix=display suffix, label ─── */
+const STATS_CONFIG = [
+    { num: 100, suffix: '+', label: 'Students' },
+    { num: 95,  suffix: '%', label: 'Satisfaction' },
+    { num: 24,  suffix: '/7', label: 'Access' },
 ];
+
+/* ─── Smooth count-up hook (0 → target, easeOut, duration ms) ─── */
+function useCountUp(target, duration = 1800, start = false) {
+    const [count, setCount] = useState(0);
+    const raf = useRef(null);
+    useEffect(() => {
+        if (!start || !target) return;
+        setCount(0);
+        const startTime = performance.now();
+        const tick = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            // easeOut cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.round(eased * target));
+            if (progress < 1) raf.current = requestAnimationFrame(tick);
+        };
+        raf.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf.current);
+    }, [target, duration, start]);
+    return count;
+}
+
+/* ─── Single animated stat cell ─── */
+function StatCell({ num, suffix, label, delay = 0 }) {
+    const [started, setStarted] = useState(false);
+    const displayed = useCountUp(num, 1800, started);
+    useEffect(() => {
+        const t = setTimeout(() => setStarted(true), delay);
+        return () => clearTimeout(t);
+    }, [delay]);
+    return (
+        <div>
+            <p style={{ fontSize: '24px', fontWeight: 900, color: '#111827', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                {displayed}{suffix}
+            </p>
+            <p style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 600, margin: '2px 0 0' }}>{label}</p>
+        </div>
+    );
+}
+
+/* ─── Animated visitor/views counter ─── */
+function ViewsCell({ count }) {
+    const [started, setStarted] = useState(false);
+    const displayed = useCountUp(count, 2200, started);
+    useEffect(() => {
+        const t = setTimeout(() => setStarted(true), 200);
+        return () => clearTimeout(t);
+    }, []);
+    return (
+        <div>
+            <p style={{ fontSize: '24px', fontWeight: 900, color: '#111827', margin: 0, fontVariantNumeric: 'tabular-nums' }}>
+                {displayed.toLocaleString('en-IN')}
+            </p>
+            <p style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 600, margin: '2px 0 0' }}>Total Views</p>
+        </div>
+    );
+}
+
+/* ─── Compact badge count-up (for the visitor pill) ─── */
+function ViewsBadge({ count }) {
+    const [started, setStarted] = useState(false);
+    const displayed = useCountUp(count, 1600, started);
+    useEffect(() => {
+        const t = setTimeout(() => setStarted(true), 300);
+        return () => clearTimeout(t);
+    }, []);
+    return <strong style={{ color: '#374151', fontVariantNumeric: 'tabular-nums' }}>{displayed.toLocaleString('en-IN')}</strong>;
+}
 
 const FEATURES = [
     'Smart seat booking with real-time availability',
@@ -504,7 +574,7 @@ export default function Login() {
                         A complete library management platform built for serious students — seat booking, attendance, fees, and AI-powered exam preparation.
                     </motion.p>
 
-                    {/* Stats */}
+                    {/* Stats — animated count-up */}
                     <div
                         style={{
                             display: 'flex',
@@ -512,14 +582,13 @@ export default function Login() {
                             paddingBottom: 'clamp(14px, 2vh, 22px)',
                             marginBottom: 'clamp(14px, 2vh, 22px)',
                             borderBottom: '1.5px solid #EDE8E0',
+                            flexWrap: 'wrap',
                         }}
                     >
-                        {STATS.map((s, i) => (
-                            <div key={i}>
-                                <p style={{ fontSize: '24px', fontWeight: 900, color: '#111827', margin: 0 }}>{s.value}</p>
-                                <p style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 600, margin: '2px 0 0' }}>{s.label}</p>
-                            </div>
+                        {STATS_CONFIG.map((s, i) => (
+                            <StatCell key={i} num={s.num} suffix={s.suffix} label={s.label} delay={i * 120} />
                         ))}
+                        {visitorCount && <ViewsCell count={visitorCount} />}
                     </div>
 
                     {/* Features */}
@@ -559,19 +628,20 @@ export default function Login() {
                 }}
             >
                 {/* Visitor Counter */}
+                {/* Visitor counter pill — animated count-up */}
                 {visitorCount !== null && (
                     <div style={{ position: 'absolute', top: 14, left: 18, zIndex: 10 }}>
                         <span
                             style={{
-                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
                                 background: '#fff', border: '1.5px solid #EDE8E0',
-                                borderRadius: 20, padding: '5px 12px',
+                                borderRadius: 20, padding: '5px 14px',
                                 fontSize: 11.5, color: '#6B7280',
                                 boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
                             }}
                         >
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
-                            <strong style={{ color: '#374151' }}>{visitorCount.toLocaleString('en-IN')}</strong>&nbsp;visitors
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block', animation: 'spin 2s linear infinite', boxShadow: '0 0 6px rgba(34,197,94,0.7)' }} />
+                            <ViewsBadge count={visitorCount} /> <span style={{ color: '#9CA3AF' }}>visitors</span>
                         </span>
                     </div>
                 )}
