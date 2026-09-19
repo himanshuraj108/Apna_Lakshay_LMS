@@ -198,7 +198,7 @@ const SubAdminDashboard = () => {
     if (loadingStats) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-                style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif" }}>
+                style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
                 <div className="fixed inset-0 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
                 <div className="relative flex flex-col items-center gap-5">
                     <div className="relative w-20 h-20">
@@ -217,10 +217,10 @@ const SubAdminDashboard = () => {
                         </div>
                     </div>
                     <div className="flex flex-col items-center gap-1 text-center">
-                        <h3 className="text-base font-black" style={{ color: '#1A1A1A' }}>
+                        <h3 className="text-base font-black text-stone-900">
                             Sub-Admin Portal
                         </h3>
-                        <p className="text-xs font-medium" style={{ color: '#9B7B5A' }}>Loading module permissions & stats...</p>
+                        <p className="text-xs font-medium text-stone-400">Loading module permissions & stats...</p>
                     </div>
                 </div>
             </div>
@@ -228,12 +228,12 @@ const SubAdminDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen relative" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif", color: '#1A1A1A' }}>
+        <div className="min-h-screen relative" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif", color: '#0F172A' }}>
             {/* ─── Dot Grid Background ─── */}
             <div className="fixed inset-0 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
 
             {/* ─── Sticky Header ─── */}
-            <div className="sticky top-0 z-40 backdrop-blur-xl shadow-xs" style={{ background: 'rgba(247,243,236,0.92)', borderBottom: '1.5px solid #EDE8E0' }}>
+            <div className="sticky top-0 z-40 backdrop-blur-xl shadow-2xs" style={{ background: 'rgba(250,246,240,0.92)', borderBottom: '1.5px solid #EDE8E0' }}>
                 <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
                     <img
                         src="/app-icon-192.png"

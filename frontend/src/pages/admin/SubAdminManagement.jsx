@@ -106,13 +106,21 @@ const SubAdminManagement = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen relative" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
+
             {/* Toast */}
             <AnimatePresence>
                 {toast && (
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-bold shadow-xl border ${
-                            toast.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
+                        className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-bold shadow-xl border ${
+                            toast.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'
                         }`}>
                         {toast.type === 'success' ? <IoCheckmarkCircle size={16} /> : <IoCloseCircle size={16} />}
                         {toast.msg}
@@ -121,98 +129,107 @@ const SubAdminManagement = () => {
             </AnimatePresence>
 
             {/* Header */}
-            <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+            <div className="sticky top-0 z-30 bg-white border-b border-[#EDE8E0] shadow-2xs">
                 <div className="max-w-5xl mx-auto px-4 h-16 flex items-center gap-3">
-                    <Link to="/admin" className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all">
+                    <Link to="/admin" className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-[#FAF6F0] border border-transparent hover:border-[#EDE8E0] transition-all">
                         <IoArrowBack size={18} />
                     </Link>
-                    <div className="p-2 bg-gradient-to-br from-slate-600 to-gray-700 rounded-xl">
-                        <IoShieldCheckmarkOutline size={16} className="text-white" />
+                    <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600">
+                        <IoShieldCheckmarkOutline size={16} />
                     </div>
-                    <div className="flex-1">
-                        <h1 className="text-gray-900 font-black text-lg">Sub Admin Management</h1>
-                        <p className="text-gray-500 text-xs">Create and manage restricted admin accounts</p>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-stone-900 font-bold text-base">Sub Admin Management</h1>
+                        <p className="text-stone-400 text-xs font-medium">Create and manage restricted delegated admin accounts</p>
                     </div>
                     <button onClick={openCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md transition-all">
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer">
                         <IoAddOutline size={16} /> New Sub-Admin
                     </button>
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 py-8">
+            <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 pb-24">
 
                 {/* Info banner */}
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 text-sm text-blue-700">
-                    <strong>What is a Sub-Admin?</strong> Sub-admins have limited access to the admin panel.
-                    They can only use features you explicitly grant them. They cannot reset passwords, manage seats,
-                    view finances in full, or access system settings.
+                <div className="bg-white border border-[#EDE8E0] rounded-2xl p-4 mb-6 text-xs text-stone-600 shadow-2xs leading-relaxed flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
+                        <IoShieldCheckmarkOutline size={16} />
+                    </div>
+                    <div>
+                        <strong className="text-stone-800 font-bold">What is a Sub-Admin?</strong> Sub-admins have limited access to the admin panel.
+                        They can only use features you explicitly grant them. They cannot reset passwords, manage seats,
+                        view finances in full, or access system settings.
+                    </div>
                 </div>
 
                 {/* List */}
                 {loading ? (
                     <div className="flex justify-center py-16">
-                        <div className="w-8 h-8 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+                        <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
                     </div>
                 ) : subAdmins.length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-2xl p-16 text-center shadow-sm">
-                        <IoShieldCheckmarkOutline size={40} className="text-gray-300 mx-auto mb-3" />
-                        <p className="text-gray-500 font-medium">No sub-admins yet</p>
-                        <p className="text-gray-400 text-sm mt-1">Click "New Sub-Admin" to create one</p>
+                    <div className="bg-white border border-[#EDE8E0] rounded-2xl p-16 text-center shadow-xs">
+                        <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-500">
+                            <IoShieldCheckmarkOutline size={28} />
+                        </div>
+                        <p className="text-stone-800 font-bold text-sm">No sub-admins configured yet</p>
+                        <p className="text-stone-400 text-xs mt-1">Click "New Sub-Admin" above to delegate restricted access</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
                         {subAdmins.map(sub => (
                             <motion.div key={sub._id} layout
                                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                                className={`bg-white border rounded-2xl p-5 shadow-sm flex items-start gap-4 ${sub.isActive ? 'border-gray-200' : 'border-red-100 opacity-60'}`}>
+                                className={`bg-white border rounded-2xl p-5 shadow-xs flex items-start gap-4 transition-all ${sub.isActive ? 'border-[#EDE8E0] hover:border-orange-200' : 'border-stone-200 bg-stone-50/60 opacity-60'}`}>
 
                                 {/* Avatar */}
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0 ${sub.isActive ? 'bg-gradient-to-br from-indigo-500 to-purple-600' : 'bg-gray-400'}`}>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-xs ${sub.isActive ? 'bg-gradient-to-br from-orange-500 to-amber-600' : 'bg-stone-400'}`}>
                                     {sub.name.charAt(0).toUpperCase()}
                                 </div>
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="font-black text-gray-900">{sub.name}</p>
-                                        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">@{sub.username}</span>
-                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${sub.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <p className="font-bold text-stone-900 text-sm">{sub.name}</p>
+                                        <span className="text-xs font-mono bg-[#FAF6F0] border border-[#EDE8E0] text-stone-600 px-2 py-0.5 rounded-md">@{sub.username}</span>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sub.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                                             {sub.isActive ? 'ACTIVE' : 'INACTIVE'}
                                         </span>
                                     </div>
                                     {/* Permissions */}
-                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                    <div className="flex flex-wrap gap-1.5 mt-2.5">
                                         {sub.permissions.length === 0 ? (
-                                            <span className="text-xs text-gray-400 italic">No permissions assigned</span>
+                                            <span className="text-xs text-stone-400 italic">No permissions assigned</span>
                                         ) : sub.permissions.map(p => {
                                             const perm = ALL_PERMISSIONS.find(x => x.key === p);
                                             return (
-                                                <span key={p} className="text-[11px] font-semibold bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-full">
+                                                <span key={p} className="text-[11px] font-bold bg-orange-50 border border-orange-200/60 text-orange-700 px-2.5 py-0.5 rounded-md">
                                                     {perm?.label || p}
                                                 </span>
                                             );
                                         })}
                                     </div>
-                                    <p className="text-[11px] text-gray-400 mt-1">
+                                    <p className="text-[11px] text-stone-400 font-medium mt-2">
                                         Created {new Date(sub.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                     </p>
                                 </div>
 
                                 {/* Actions */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
                                     <button onClick={() => toggleActive(sub)}
                                         title={sub.isActive ? 'Deactivate' : 'Activate'}
-                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${sub.isActive ? 'border-red-200 text-red-600 hover:bg-red-50' : 'border-green-200 text-green-600 hover:bg-green-50'}`}>
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${sub.isActive ? 'border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100' : 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'}`}>
                                         {sub.isActive ? 'Deactivate' : 'Activate'}
                                     </button>
                                     <button onClick={() => openEdit(sub)}
-                                        className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
-                                        <IoPencilOutline size={16} />
+                                        className="p-2 text-stone-500 hover:text-orange-600 hover:bg-orange-50 border border-[#EDE8E0] rounded-xl transition-all cursor-pointer"
+                                        title="Edit Sub-Admin">
+                                        <IoPencilOutline size={15} />
                                     </button>
                                     <button onClick={() => handleDelete(sub._id, sub.name)}
-                                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                                        <IoTrashOutline size={16} />
+                                        className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-rose-200/60 rounded-xl transition-all cursor-pointer"
+                                        title="Delete Sub-Admin">
+                                        <IoTrashOutline size={15} />
                                     </button>
                                 </div>
                             </motion.div>
@@ -225,19 +242,21 @@ const SubAdminManagement = () => {
             <AnimatePresence>
                 {showForm && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                         onClick={e => e.target === e.currentTarget && setShowForm(false)}>
-                        <motion.div initial={{ scale: 0.93, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 20 }}
-                            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
+                        <motion.div initial={{ scale: 0.95, y: 15 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 15 }}
+                            className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EDE8E0]">
 
                             {/* Modal header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-1.5 bg-indigo-100 rounded-lg"><IoShieldCheckmarkOutline size={16} className="text-indigo-600" /></div>
-                                    <h2 className="font-black text-gray-900">{editTarget ? 'Edit Sub-Admin' : 'Create Sub-Admin'}</h2>
+                            <div className="flex items-center justify-between px-6 py-4.5 border-b border-[#EDE8E0] bg-[#FAF6F0]">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600">
+                                        <IoShieldCheckmarkOutline size={16} />
+                                    </div>
+                                    <h2 className="font-bold text-stone-900 text-base">{editTarget ? 'Edit Sub-Admin' : 'Create Sub-Admin'}</h2>
                                 </div>
-                                <button onClick={() => setShowForm(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
-                                    <IoClose size={18} className="text-gray-500" />
+                                <button onClick={() => setShowForm(false)} className="p-1.5 hover:bg-stone-200 rounded-lg text-stone-400 hover:text-stone-700 transition-all cursor-pointer">
+                                    <IoClose size={18} />
                                 </button>
                             </div>
 
@@ -245,32 +264,32 @@ const SubAdminManagement = () => {
 
                                 {/* Name */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Full Name</label>
+                                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">Full Name</label>
                                     <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                                         placeholder="e.g. Rahul Sharma"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-indigo-400 transition-all" />
+                                        className="w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-xs text-stone-900 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all shadow-2xs font-medium" />
                                 </div>
 
                                 {/* Username */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Username (for login)</label>
+                                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">Username (for login)</label>
                                     <input value={form.username} onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
                                         placeholder="e.g. rahul_admin"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-indigo-400 transition-all font-mono" />
+                                        className="w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-xs text-stone-900 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all font-mono shadow-2xs" />
                                 </div>
 
                                 {/* Password */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                                        Password {editTarget && <span className="font-normal text-gray-400">(leave blank to keep current)</span>}
+                                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                                        Password {editTarget && <span className="font-normal text-stone-400">(leave blank to keep current)</span>}
                                     </label>
                                     <div className="relative">
                                         <input type={showPwd ? 'text' : 'password'} value={form.password}
                                             onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                                             placeholder="Min. 6 characters"
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-indigo-400 transition-all pr-10" />
+                                            className="w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-xs text-stone-900 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all pr-10 shadow-2xs font-medium" />
                                         <button type="button" onClick={() => setShowPwd(p => !p)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer">
                                             {showPwd ? <IoEyeOffOutline size={16} /> : <IoEyeOutline size={16} />}
                                         </button>
                                     </div>
@@ -278,36 +297,36 @@ const SubAdminManagement = () => {
 
                                 {/* PIN */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">
-                                        Access PIN (4 Digits) {editTarget && <span className="font-normal text-gray-400">(leave blank to keep current)</span>}
+                                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                                        Access PIN (4 Digits) {editTarget && <span className="font-normal text-stone-400">(leave blank to keep current)</span>}
                                     </label>
                                     <input type="text" inputMode="numeric" pattern="\d*" maxLength="4" value={form.pin}
                                         onChange={e => setForm(p => ({ ...p, pin: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
                                         placeholder="e.g. 1234"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 outline-none focus:border-indigo-400 transition-all font-mono" />
+                                        className="w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-xs text-stone-900 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 transition-all font-mono shadow-2xs" />
                                 </div>
 
                                 {/* Permissions */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">
-                                        Allowed Permissions <span className="text-gray-400 font-normal normal-case">(select what this sub-admin can access)</span>
+                                    <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">
+                                        Allowed Permissions <span className="text-stone-400 font-normal normal-case">(select features this sub-admin can access)</span>
                                     </label>
                                     <div className="space-y-2">
                                         {ALL_PERMISSIONS.map(perm => {
                                             const checked = form.permissions.includes(perm.key);
                                             return (
                                                 <button key={perm.key} type="button" onClick={() => togglePerm(perm.key)}
-                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
-                                                        checked ? 'bg-indigo-50 border-indigo-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                                                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                                                        checked ? 'bg-orange-50/80 border-orange-300 shadow-2xs' : 'bg-white border-[#EDE8E0] hover:border-orange-200 hover:bg-[#FAF6F0]'
                                                     }`}>
                                                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                                        checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'
+                                                        checked ? 'bg-orange-500 border-orange-500' : 'border-stone-300'
                                                     }`}>
                                                         {checked && <IoCheckmarkCircle size={14} className="text-white" />}
                                                     </div>
                                                     <div>
-                                                        <p className={`text-sm font-bold ${checked ? 'text-indigo-700' : 'text-gray-700'}`}>{perm.label}</p>
-                                                        <p className="text-[11px] text-gray-400">{perm.desc}</p>
+                                                        <p className={`text-xs font-bold ${checked ? 'text-orange-700' : 'text-stone-800'}`}>{perm.label}</p>
+                                                        <p className="text-[10px] text-stone-400 font-medium">{perm.desc}</p>
                                                     </div>
                                                 </button>
                                             );
@@ -317,13 +336,13 @@ const SubAdminManagement = () => {
 
                                 {/* Active status (only in edit mode) */}
                                 {editTarget && (
-                                    <div className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                                    <div className="flex items-center justify-between bg-[#FAF6F0] border border-[#EDE8E0] rounded-2xl px-4 py-3">
                                         <div>
-                                            <p className="text-sm font-bold text-gray-700">Account Status</p>
-                                            <p className="text-xs text-gray-400">Inactive accounts cannot log in</p>
+                                            <p className="text-xs font-bold text-stone-800">Account Status</p>
+                                            <p className="text-[10px] text-stone-400 font-medium">Inactive accounts cannot log in</p>
                                         </div>
                                         <button onClick={() => setForm(p => ({ ...p, isActive: !p.isActive }))}
-                                            className={`relative inline-flex h-6 w-11 rounded-full transition-colors ${form.isActive ? 'bg-green-500' : 'bg-gray-300'}`}>
+                                            className={`relative inline-flex h-6 w-11 rounded-full transition-colors cursor-pointer ${form.isActive ? 'bg-gradient-to-r from-orange-500 to-amber-500' : 'bg-stone-300'}`}>
                                             <span className={`inline-block h-5 w-5 mt-0.5 rounded-full bg-white shadow transition-transform ${form.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
                                         </button>
                                     </div>
@@ -331,13 +350,13 @@ const SubAdminManagement = () => {
                             </div>
 
                             {/* Modal footer */}
-                            <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+                            <div className="flex items-center gap-3 px-6 py-4 border-t border-[#EDE8E0] bg-[#FAF6F0]">
                                 <button onClick={() => setShowForm(false)}
-                                    className="flex-1 py-2.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition-all">
+                                    className="flex-1 py-2.5 text-xs font-bold text-stone-700 bg-white border border-[#EDE8E0] rounded-xl hover:bg-[#FAF6F0] shadow-2xs transition-all cursor-pointer">
                                     Cancel
                                 </button>
                                 <button onClick={handleSave} disabled={saving}
-                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all disabled:opacity-50 shadow-md shadow-indigo-500/25">
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 rounded-xl transition-all disabled:opacity-50 shadow-md shadow-orange-500/20 cursor-pointer">
                                     <IoSave size={15} /> {saving ? 'Saving…' : editTarget ? 'Update Sub-Admin' : 'Create Sub-Admin'}
                                 </button>
                             </div>

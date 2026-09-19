@@ -11,19 +11,19 @@ import useShifts from '../../hooks/useShifts';
 import useBackPath from '../../hooks/useBackPath';
 import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
-const PAGE_BG = { background: '#F8FAFC' };
+const PAGE_BG = { background: '#FAF6F0' };
 
 const TYPE_META = {
-    seat: { label: 'Seat Change', icon: IoSwapHorizontalOutline, color: 'from-blue-500 to-indigo-500' },
-    seat_change: { label: 'Seat Change', icon: IoSwapHorizontalOutline, color: 'from-blue-500 to-indigo-500' },
-    shift: { label: 'Shift Change', icon: IoTimeOutline, color: 'from-purple-500 to-violet-500' },
-    support: { label: 'Support Ticket', icon: IoHelpCircleOutline, color: 'from-amber-500 to-orange-500' },
+    seat: { label: 'Seat Change', icon: IoSwapHorizontalOutline, color: 'from-orange-500 to-amber-500' },
+    seat_change: { label: 'Seat Change', icon: IoSwapHorizontalOutline, color: 'from-orange-500 to-amber-500' },
+    shift: { label: 'Shift Change', icon: IoTimeOutline, color: 'from-amber-500 to-orange-500' },
+    support: { label: 'Support Ticket', icon: IoHelpCircleOutline, color: 'from-stone-700 to-stone-900' },
 };
 
 const STATUS_COLORS = {
-    pending: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20',
-    approved: 'text-green-400 bg-green-500/10 border-green-500/20',
-    rejected: 'text-red-400 bg-red-500/10 border-red-500/20',
+    pending: 'text-amber-700 bg-amber-50 border-amber-200',
+    approved: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+    rejected: 'text-rose-700 bg-rose-50 border-rose-200',
 };
 
 const RequestManagement = () => {
@@ -88,44 +88,47 @@ const RequestManagement = () => {
 
     return (
         <div className="relative min-h-screen" style={PAGE_BG}>
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-6%] w-[500px] h-[500px] rounded-full bg-indigo-600/6 blur-3xl" />
-                <div className="absolute bottom-[5%] right-[-8%] w-[400px] h-[400px] rounded-full bg-purple-600/6 blur-3xl" />
-            </div>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
 
             <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8 flex-wrap">
                     <Link to={backPath}>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                            <IoArrowBack size={16} /> <span className="hidden sm:inline">Back</span>
+                        <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                            className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                            <IoArrowBack size={15} /> <span>Back</span>
                         </motion.button>
                     </Link>
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                            <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg">
-                                <IoDocumentTextOutline size={14} className="text-gray-900" />
+                            <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600">
+                                <IoDocumentTextOutline size={14} />
                             </div>
-                            <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Admin</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-orange-600">Admin Operations</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Student Requests</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A]">Student Requests</h1>
                     </div>
                 </motion.div>
 
                 {/* Toasts */}
                 <AnimatePresence>
-                    {success && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl mb-5 text-sm"><IoCheckmarkCircle size={18} />{success}</motion.div>}
-                    {error && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl mb-5 text-sm"><IoCloseCircle size={18} />{error}</motion.div>}
+                    {success && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl mb-5 text-xs font-bold shadow-2xs"><IoCheckmarkCircle size={18} />{success}</motion.div>}
+                    {error && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl mb-5 text-xs font-bold shadow-2xs"><IoCloseCircle size={18} />{error}</motion.div>}
                 </AnimatePresence>
 
                 {/* Filter Tabs */}
                 <div className="flex gap-2 mb-5 flex-wrap">
                     {TABS.map(t => (
                         <button key={t.key} onClick={() => setFilter(t.key)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${filter === t.key
-                                ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
-                                : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'}`}>
+                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${filter === t.key
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                                : 'bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700'}`}>
                             {t.label} <span className="opacity-70">({t.count})</span>
                         </button>
                     ))}
@@ -135,77 +138,77 @@ const RequestManagement = () => {
                 {loading ? (
                     <PrimaryLogoLoader text="Loading Requests..." />
                 ) : filteredRequests.length === 0 ? (
-                    <div className="bg-white/3 border border-white/8 rounded-2xl p-10 text-center">
-                        <IoDocumentTextOutline size={40} className="text-gray-600 mx-auto mb-3" />
-                        <p className="text-gray-600">No requests found</p>
+                    <div className="bg-white border border-[#EDE8E0] rounded-2xl p-10 text-center shadow-xs">
+                        <IoDocumentTextOutline size={40} className="text-stone-400 mx-auto mb-3" />
+                        <p className="text-stone-600 font-bold text-sm">No requests found</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
                         {filteredRequests.map((req, i) => {
-                            const meta = TYPE_META[req.type] || { label: req.type, icon: IoDocumentTextOutline, color: 'from-gray-500 to-slate-500' };
+                            const meta = TYPE_META[req.type] || { label: req.type, icon: IoDocumentTextOutline, color: 'from-orange-500 to-amber-500' };
                             const MetaIcon = meta.icon;
                             return (
                                 <motion.div key={req._id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
-                                    <div className={`h-px w-full bg-gradient-to-r ${meta.color} opacity-60`} />
+                                    className="bg-white border border-[#EDE8E0] hover:border-[#E2B08A] rounded-2xl overflow-hidden shadow-xs transition-all">
+                                    <div className={`h-[2px] w-full bg-gradient-to-r ${meta.color}`} />
                                     <div className="p-5">
                                         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3 flex-wrap mb-1">
-                                                    <div className={`p-1.5 rounded-lg bg-gradient-to-br ${meta.color}`}><MetaIcon size={14} className="text-gray-900" /></div>
-                                                    <h3 className="font-bold text-gray-900">{req.student?.name}</h3>
+                                                    <div className={`p-1.5 rounded-lg bg-gradient-to-br ${meta.color} text-white`}><MetaIcon size={14} /></div>
+                                                    <h3 className="font-bold text-[#0F172A]">{req.student?.name}</h3>
                                                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${STATUS_COLORS[req.status] || ''}`}>
                                                         {req.status === 'approved' && req.type === 'support' ? 'Solved' : req.status}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">{meta.label}</span>
+                                                    <span className="text-xs text-stone-500 font-medium">{meta.label}</span>
                                                 </div>
-                                                <p className="text-xs text-gray-500 mb-3">{req.student?.email}</p>
+                                                <p className="text-xs text-stone-500 mb-3 font-mono">{req.student?.email}</p>
                                                 {req.description && (
-                                                    <p className="text-sm text-gray-700 bg-gray-50 border border-white/8 px-3 py-2 rounded-xl italic mb-3">"{req.description}"</p>
+                                                    <p className="text-xs text-stone-700 bg-[#FAF6F0] border border-[#EDE8E0] px-3 py-2 rounded-xl italic mb-3">"{req.description}"</p>
                                                 )}
                                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                                     {[
-                                                        { title: 'Current', data: req.currentData, color: 'text-gray-300' },
-                                                        { title: 'Requested', data: req.requestedData, color: 'text-green-400' },
+                                                        { title: 'Current', data: req.currentData, color: 'text-stone-700' },
+                                                        { title: 'Requested', data: req.requestedData, color: 'text-orange-600' },
                                                     ].map(({ title, data, color }) => (
-                                                        <div key={title} className="bg-gray-50 border border-white/8 rounded-xl p-3">
-                                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">{title}</p>
-                                                            {req.type === 'seat_change' && <p className={`text-sm font-semibold ${color}`}>{data?.seatNumber || 'N/A'}<br /><span className="text-xs text-gray-500">{data?.floor} – {data?.room}</span></p>}
-                                                            {(req.type === 'seat' || req.type === 'shift') && <p className={`text-sm font-semibold ${color}`}>Seat: {data?.seatNumber || 'N/A'}<br />Shift: {getShiftName(data?.shift || data?.requestedShift)}</p>}
-                                                            {req.type === 'support' && (title === 'Current' ? <p className="text-xs text-gray-500 italic">New Ticket</p> : <div><p className={`text-xs font-semibold ${color} capitalize mb-1`}>{data?.category}</p><p className="text-xs text-gray-700">{data?.message}</p></div>)}
+                                                        <div key={title} className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-xl p-3">
+                                                            <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider mb-1">{title}</p>
+                                                            {req.type === 'seat_change' && <p className={`text-xs font-bold ${color}`}>{data?.seatNumber || 'N/A'}<br /><span className="text-[11px] text-stone-500 font-normal">{data?.floor} – {data?.room}</span></p>}
+                                                            {(req.type === 'seat' || req.type === 'shift') && <p className={`text-xs font-bold ${color}`}>Seat: {data?.seatNumber || 'N/A'}<br /><span className="text-[11px] text-stone-500 font-normal">Shift: {getShiftName(data?.shift || data?.requestedShift)}</span></p>}
+                                                            {req.type === 'support' && (title === 'Current' ? <p className="text-xs text-stone-500 italic">New Ticket</p> : <div><p className={`text-xs font-bold ${color} capitalize mb-1`}>{data?.category}</p><p className="text-xs text-stone-700">{data?.message}</p></div>)}
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <p className="text-xs text-gray-600">Submitted: {new Date(req.createdAt).toLocaleString('en-IN')}</p>
+                                                <p className="text-xs text-stone-500">Submitted: {new Date(req.createdAt).toLocaleString('en-IN')}</p>
                                                 {req.adminResponse && (
-                                                    <div className="mt-3 p-3 bg-blue-500/8 border border-blue-500/20 rounded-xl">
-                                                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Admin Response</p>
-                                                        <p className="text-sm text-gray-700">{req.adminResponse}</p>
+                                                    <div className="mt-3 p-3 bg-orange-500/5 border border-orange-500/15 rounded-xl">
+                                                        <p className="text-[10px] text-orange-700 font-bold uppercase tracking-wider mb-1">Admin Response</p>
+                                                        <p className="text-xs text-stone-700">{req.adminResponse}</p>
                                                     </div>
                                                 )}
                                                 {req.rating && (
-                                                    <div className="mt-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
+                                                    <div className="mt-3 p-3 bg-amber-500/5 border border-amber-500/15 rounded-xl">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Student Feedback</p>
+                                                            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Student Feedback</p>
                                                             <div className="flex gap-0.5">
-                                                                {[...Array(5)].map((_, idx) => <IoStar key={idx} size={10} className={idx < req.rating ? "text-amber-400" : "text-gray-700"} />)}
+                                                                {[...Array(5)].map((_, idx) => <IoStar key={idx} size={11} className={idx < req.rating ? "text-amber-500" : "text-stone-300"} />)}
                                                             </div>
                                                         </div>
-                                                        {req.ratingFeedback && <p className="text-sm text-gray-700 italic">"{req.ratingFeedback}"</p>}
+                                                        {req.ratingFeedback && <p className="text-xs text-stone-700 italic">"{req.ratingFeedback}"</p>}
                                                     </div>
                                                 )}
                                             </div>
                                             {req.status === 'pending' && (
                                                 <div className="flex sm:flex-col gap-2 shrink-0">
-                                                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                                         onClick={() => openReviewModal(req, 'approved')}
-                                                        className="flex items-center gap-1.5 px-4 py-2 bg-green-500/15 hover:bg-green-500/25 border border-green-500/25 text-green-400 rounded-xl text-sm font-semibold transition-all">
-                                                        <IoCheckmarkCircle size={16} /> {req.type === 'support' ? 'Solve' : 'Approve'}
+                                                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                                        <IoCheckmarkCircle size={15} /> {req.type === 'support' ? 'Solve' : 'Approve'}
                                                     </motion.button>
-                                                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                                         onClick={() => openReviewModal(req, 'rejected')}
-                                                        className="flex items-center gap-1.5 px-4 py-2 bg-red-500/15 hover:bg-red-500/25 border border-red-500/25 text-red-400 rounded-xl text-sm font-semibold transition-all">
-                                                        <IoCloseCircle size={16} /> Reject
+                                                        className="flex items-center gap-1.5 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                                        <IoCloseCircle size={15} /> Reject
                                                     </motion.button>
                                                 </div>
                                             )}
@@ -221,25 +224,25 @@ const RequestManagement = () => {
                 <AnimatePresence>
                     {showModal && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                                className="bg-gray-950 border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-2xl">
-                                <div className={`h-px w-full bg-gradient-to-r ${actionType === 'approved' ? 'from-green-500 to-teal-500' : 'from-red-500 to-rose-500'} mb-5`} />
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">{actionType === 'approved' ? 'Approve' : 'Reject'} Request</h2>
-                                <div className="bg-gray-50 border border-white/8 rounded-xl p-4 mb-4">
-                                    <p className="text-sm text-gray-600">Student: <span className="text-gray-900 font-medium">{selectedRequest?.student?.name}</span></p>
-                                    <p className="text-sm text-gray-600 mt-1">Type: <span className="text-gray-900 font-medium capitalize">{selectedRequest?.type}</span></p>
+                                className="bg-white border border-[#EDE8E0] rounded-3xl p-6 max-w-md w-full shadow-2xl relative overflow-hidden">
+                                <div className={`h-[3px] w-full bg-gradient-to-r ${actionType === 'approved' ? 'from-emerald-500 to-teal-500' : 'from-rose-500 to-red-500'} -mt-6 -mx-6 mb-5`} />
+                                <h2 className="text-xl font-black text-[#0F172A] mb-4">{actionType === 'approved' ? 'Approve' : 'Reject'} Request</h2>
+                                <div className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-2xl p-4 mb-4">
+                                    <p className="text-xs text-stone-600">Student: <span className="text-[#0F172A] font-bold">{selectedRequest?.student?.name}</span></p>
+                                    <p className="text-xs text-stone-600 mt-1">Type: <span className="text-[#0F172A] font-bold capitalize">{selectedRequest?.type}</span></p>
                                     
                                     {(selectedRequest?.type === 'seat_change' || selectedRequest?.type === 'shift') && actionType === 'approved' && (
-                                        <div className="mt-4 pt-4 border-t border-gray-200">
-                                            <p className="text-sm font-semibold text-gray-900 mb-3">Fee Management</p>
-                                            <p className="text-xs text-gray-600 mb-3 bg-gray-50 p-2 rounded">
+                                        <div className="mt-4 pt-4 border-t border-[#EDE8E0]">
+                                            <p className="text-xs font-bold text-[#0F172A] mb-2 uppercase tracking-wider">Fee Management</p>
+                                            <p className="text-[11px] text-stone-500 mb-3 bg-white border border-[#EDE8E0] p-2 rounded-xl">
                                                 By default, the student's original fee is maintained during a change.
                                             </p>
                                             
-                                            <p className="text-sm text-gray-600 mb-3">Original Fee: <span className="text-gray-900 font-medium">₹{selectedRequest?.studentPrice ?? 'Unknown'}</span></p>
+                                            <p className="text-xs text-stone-600 mb-3">Original Fee: <span className="text-[#0F172A] font-bold">₹{selectedRequest?.studentPrice ?? 'Unknown'}</span></p>
 
-                                            <label className="flex items-center gap-2 text-sm text-gray-700 mb-4 cursor-pointer">
+                                            <label className="flex items-center gap-2 text-xs text-stone-700 font-medium mb-3 cursor-pointer">
                                                 <input 
                                                     type="checkbox" 
                                                     checked={useBaseFee} 
@@ -247,24 +250,24 @@ const RequestManagement = () => {
                                                         setUseBaseFee(e.target.checked); 
                                                         if(e.target.checked) setUpdatedFee(''); 
                                                     }} 
-                                                    className="w-4 h-4 rounded bg-white border-white/20 text-indigo-500 focus:ring-indigo-500/50" 
+                                                    className="w-4 h-4 rounded border-[#E2DBD2] text-orange-500 focus:ring-orange-500/20" 
                                                 />
                                                 Update to new Base Fee
                                             </label>
 
                                             {!useBaseFee && (
                                                 <div className="mb-2">
-                                                    <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">
+                                                    <label className="block text-[11px] text-stone-500 font-bold uppercase tracking-wider mb-1.5">
                                                         Custom Fee Override (Leave blank for original fee)
                                                     </label>
                                                     <div className="relative">
-                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600">₹</span>
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">₹</span>
                                                         <input 
                                                             type="number" 
                                                             value={updatedFee} 
                                                             onChange={e => setUpdatedFee(e.target.value)} 
                                                             placeholder="e.g. 1500" 
-                                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-4 py-3 text-gray-900 text-sm focus:border-indigo-500/50 outline-none transition-all" 
+                                                            className="w-full bg-white border border-[#E2DBD2] rounded-xl pl-8 pr-4 py-2.5 text-[#0F172A] text-xs font-bold focus:border-orange-500 outline-none transition-all" 
                                                         />
                                                     </div>
                                                 </div>
@@ -272,22 +275,22 @@ const RequestManagement = () => {
                                         </div>
                                     )}
                                 </div>
-                                <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">
-                                    Admin Response {actionType === 'rejected' && <span className="text-red-400">(Required)</span>}
+                                <label className="block text-[11px] text-stone-500 font-bold uppercase tracking-wider mb-1.5">
+                                    Admin Response {actionType === 'rejected' && <span className="text-rose-600">(Required)</span>}
                                 </label>
                                 <textarea value={adminResponse} onChange={e => setAdminResponse(e.target.value)} rows={3}
                                     placeholder={actionType === 'approved' ? 'Optional message…' : 'Reason for rejection…'}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 text-sm focus:border-indigo-500/50 outline-none resize-none mb-4 transition-all" />
+                                    className="w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-[#0F172A] text-xs focus:border-orange-500 outline-none resize-none mb-4 transition-all" />
                                 <div className="flex gap-3">
-                                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                                        onClick={handleAction} disabled={processing || (actionType === 'rejected' && !adminResponse.trim())}
-                                        className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50 ${actionType === 'approved' ? 'bg-green-500 text-white shadow-lg shadow-green-500/25' : 'bg-red-500 text-white shadow-lg shadow-red-500/25'}`}>
-                                        {processing ? 'Processing…' : `Confirm ${actionType === 'approved' ? 'Approval' : 'Rejection'}`}
-                                    </motion.button>
                                     <button onClick={() => setShowModal(false)}
-                                        className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
+                                        className="flex-1 py-2.5 bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
                                         Cancel
                                     </button>
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={handleAction} disabled={processing || (actionType === 'rejected' && !adminResponse.trim())}
+                                        className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all disabled:opacity-50 cursor-pointer ${actionType === 'approved' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/25' : 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md shadow-rose-500/25'}`}>
+                                        {processing ? 'Processing…' : `Confirm ${actionType === 'approved' ? 'Approval' : 'Rejection'}`}
+                                    </motion.button>
                                 </div>
                             </motion.div>
                         </motion.div>

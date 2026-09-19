@@ -6,7 +6,7 @@ import { IoRefresh, IoDownload, IoArrowBack, IoWifiOutline, IoTimeOutline } from
 import { motion } from 'framer-motion';
 import html2canvas from 'html2canvas';
 
-const PAGE_BG = { background: '#F8FAFC' };
+const PAGE_BG = { background: '#FAF6F0' };
 
 const QrKiosk = () => {
     const [qrData, setQrData] = useState(null);
@@ -228,29 +228,28 @@ const QrKiosk = () => {
 
     return (
         <div className="relative min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden" style={PAGE_BG}>
-            {/* Animated background orbs */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.2, 0.12] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute w-[600px] h-[600px] rounded-full bg-blue-600 blur-[130px] top-[-15%] left-[-10%]" />
-                <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.18, 0.1] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-                    className="absolute w-[500px] h-[500px] rounded-full bg-purple-600 blur-[130px] bottom-[-15%] right-[-10%]" />
-            </div>
+            {/* Unified Warm 28px Dot Grid */}
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
 
             {/* Back button */}
             <div className="absolute top-6 left-6 z-20">
                 <Link to="/admin">
-                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium backdrop-blur-md transition-all">
-                        <IoArrowBack size={16} /> Back
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                        <IoArrowBack size={15} /> Back
                     </motion.button>
                 </Link>
             </div>
 
             {/* Kiosk ID footer */}
             <div className="absolute bottom-5 text-center z-10">
-                <p className="text-gray-700 text-xs font-mono tracking-widest">
+                <p className="text-stone-500 text-[11px] font-mono tracking-widest uppercase">
                     KIOSK ID: {import.meta.env.VITE_KIOSK_ID || 'SYS-01'}
                 </p>
             </div>
@@ -260,30 +259,30 @@ const QrKiosk = () => {
                 transition={{ duration: 0.5, type: 'spring' }}
                 className="relative z-10 w-full max-w-sm">
 
-                {/* Glass card */}
-                <div className="bg-white/3 border border-gray-200 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
+                {/* Warm Card */}
+                <div className="bg-white border border-[#EDE8E0] rounded-3xl overflow-hidden shadow-xl">
                     {/* Gradient header bar */}
-                    <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+                    <div className="h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600" />
 
                     <div className="p-8 text-center">
                         {/* Header */}
                         <div className="mb-6">
-                            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-4">
-                                <IoWifiOutline size={13} className="text-blue-400" />
-                                <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Live Kiosk</span>
+                            <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 mb-4">
+                                <IoWifiOutline size={13} className="text-orange-600" />
+                                <span className="text-[11px] font-bold text-orange-600 uppercase tracking-widest">Live Kiosk</span>
                             </div>
-                            <h1 className="text-2xl font-black text-gray-900 mb-1.5">Attendance Kiosk</h1>
-                            <p className="text-gray-500 text-sm">Scan QR code with your student app to mark attendance</p>
+                            <h1 className="text-2xl font-black text-[#0F172A] mb-1.5">Attendance Kiosk</h1>
+                            <p className="text-stone-500 text-xs font-medium">Scan QR code with your student app to mark attendance</p>
                         </div>
 
                         {/* QR Code */}
                         <div className="relative inline-block mb-6">
                             {/* Outer glow ring */}
-                            <div className="absolute inset-[-8px] rounded-3xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 blur-lg" />
-                            <div className="relative bg-white p-4 rounded-2xl shadow-2xl">
+                            <div className="absolute inset-[-8px] rounded-3xl bg-gradient-to-br from-orange-500/15 to-amber-500/15 blur-lg" />
+                            <div className="relative bg-white p-4 rounded-2xl shadow-sm border border-[#EDE8E0]">
                                 {loading ? (
                                     <div className="w-[200px] h-[200px] flex items-center justify-center">
-                                        <IoRefresh className="animate-spin text-4xl text-gray-700" />
+                                        <IoRefresh className="animate-spin text-4xl text-orange-500" />
                                     </div>
                                 ) : qrData ? (
                                     <QRCodeCanvas
@@ -300,7 +299,7 @@ const QrKiosk = () => {
                                         }}
                                     />
                                 ) : (
-                                    <div className="w-[200px] h-[200px] flex items-center justify-center text-red-400 text-sm">
+                                    <div className="w-[200px] h-[200px] flex items-center justify-center text-rose-500 text-xs font-bold">
                                         Failed to load QR
                                     </div>
                                 )}
@@ -308,14 +307,14 @@ const QrKiosk = () => {
                             {/* Active indicator */}
                             <div className="absolute -top-1.5 -right-1.5">
                                 <span className="relative flex h-4 w-4">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500" />
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500" />
                                 </span>
                             </div>
                         </div>
 
                         {/* Last updated */}
-                        <div className="flex items-center justify-center gap-1.5 text-xs text-gray-600 mb-5">
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-stone-500 mb-5 font-medium">
                             <IoTimeOutline size={13} />
                             <span>Updated {lastUpdated.toLocaleTimeString()}</span>
                         </div>
@@ -323,28 +322,28 @@ const QrKiosk = () => {
                         {/* Action buttons */}
                         <div className="flex flex-col gap-3">
                             <div className="grid grid-cols-2 gap-3">
-                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                     onClick={() => handleDownload('en')}
                                     disabled={loading || !qrData}
-                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 transition-all disabled:opacity-40">
-                                    <IoDownload size={16} /> PDF (EN)
+                                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 transition-all disabled:opacity-40 cursor-pointer shadow-2xs">
+                                    <IoDownload size={15} /> PDF (EN)
                                 </motion.button>
-                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                     onClick={() => handleDownload('hi')}
                                     disabled={loading || !qrData}
-                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 transition-all disabled:opacity-40">
-                                    <IoDownload size={16} /> PDF (HI)
+                                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 transition-all disabled:opacity-40 cursor-pointer shadow-2xs">
+                                    <IoDownload size={15} /> PDF (HI)
                                 </motion.button>
                             </div>
-                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                 onClick={() => fetchQrToken(true)}
                                 disabled={loading}
-                                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 transition-all disabled:opacity-40">
-                                <IoRefresh size={16} className={loading ? 'animate-spin' : ''} /> Refresh QR
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/25 transition-all disabled:opacity-40 cursor-pointer">
+                                <IoRefresh size={15} className={loading ? 'animate-spin' : ''} /> Refresh QR
                             </motion.button>
                         </div>
 
-                        <p className="text-xs text-gray-700 mt-4">Manual refresh only • QR stays valid until refreshed</p>
+                        <p className="text-[11px] text-stone-400 mt-4">Manual refresh only • QR stays valid until refreshed</p>
                     </div>
                 </div>
             </motion.div>
