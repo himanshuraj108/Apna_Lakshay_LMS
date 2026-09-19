@@ -14,7 +14,7 @@ import { IoDownloadOutline, IoDocumentTextOutline, IoPrintOutline } from 'react-
                              due?, lockerNo? }
      slNo     – serial number (e.g. 205)
    ───────────────────────────────────────────────────────────── */
-const PaymentReceipt = ({ student, fee, slNo = 1, customData = null }) => {
+const PaymentReceipt = ({ student, fee, slNo = 1, customData = null, showActions = true }) => {
     const receiptRef = useRef(null);
 
     /* ── Derived values (supports customData override) ── */
@@ -138,20 +138,22 @@ const PaymentReceipt = ({ student, fee, slNo = 1, customData = null }) => {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
 
             {/* ── Action Buttons ── */}
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={downloadPDF}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl text-sm font-bold shadow-lg">
-                    <IoDocumentTextOutline size={15} /> Download PDF
-                </motion.button>
-                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={downloadPNG}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-bold shadow-lg">
-                    <IoDownloadOutline size={15} /> Download Image
-                </motion.button>
-                <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handlePrint}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-white/15 border border-white/15 text-gray-700 rounded-xl text-sm font-semibold">
-                    <IoPrintOutline size={15} /> Print
-                </motion.button>
-            </div>
+            {showActions && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={downloadPDF}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl text-sm font-bold shadow-lg">
+                        <IoDocumentTextOutline size={15} /> Download PDF
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={downloadPNG}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl text-sm font-bold shadow-lg">
+                        <IoDownloadOutline size={15} /> Download Image
+                    </motion.button>
+                    <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handlePrint}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-white/15 border border-white/15 text-gray-700 rounded-xl text-sm font-semibold">
+                        <IoPrintOutline size={15} /> Print
+                    </motion.button>
+                </div>
+            )}
 
             {/* ════════════════════════════
                 RECEIPT (matches physical)

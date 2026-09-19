@@ -311,6 +311,16 @@ const FeeStatus = () => {
                                             ) : fee.status === 'partial' ? (
                                                 <div className="flex flex-col items-end gap-2">
                                                     <StatusBadge status="partial" />
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.06 }}
+                                                        whileTap={{ scale: 0.93 }}
+                                                        onClick={() => handleDownloadReceipt(fee)}
+                                                        title="Download Partial Receipt"
+                                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[11px] font-bold transition-all"
+                                                        style={{ background: '#FEF3C7', border: 'none', color: '#92400E' }}
+                                                    >
+                                                        <IoDownloadOutline size={11} /><span>Receipt</span>
+                                                    </motion.button>
                                                     {onlinePaymentEnabled && (
                                                         <motion.button
                                                             whileHover={{ scale: 1.04 }}

@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import html2canvas from 'html2canvas';
 import api from '../../utils/api';
 import {
     IoArrowBack,
@@ -26,7 +27,9 @@ import {
     IoLockClosedOutline,
     IoCalendarOutline,
     IoSaveOutline,
-    IoCreateOutline
+    IoCreateOutline,
+    IoDocumentTextOutline,
+    IoPrintOutline
 } from 'react-icons/io5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -84,6 +87,24 @@ const FeeManagement = () => {
 
     // PDF Export Modal state
     const [pdfModalOpen, setPdfModalOpen] = useState(false);
+
+    // Bulk Receipt Download Modal state
+    const [bulkReceiptOpen, setBulkReceiptOpen] = useState(false);
+    const [bulkFilter, setBulkFilter] = useState({
+        mode: 'month', // 'month' | 'year' | 'range' | 'student'
+        month: String(new Date().getMonth() + 1),
+        year: String(new Date().getFullYear()),
+        dateFrom: '',
+        dateTo: '',
+        studentId: 'all',
+        statusFilter: 'paid', // 'paid' | 'partial' | 'both'
+    });
+    const [bulkGenerating, setBulkGenerating] = useState(false);
+    const [bulkRenderList, setBulkRenderList] = useState([]); // receipts waiting to be html2canvas'd
+    const bulkReceiptRefs = useRef([]);
+    // Quick per-card download (PDF / PNG / Print) without opening modal
+    const [quickDlFee, setQuickDlFee] = useState(null); // { fee, action:'pdf'|'png'|'print', customData }
+    const quickDlRef = useRef(null);
     const [selectedColumns, setSelectedColumns] = useState({
         name: true,
         email: true,
@@ -383,7 +404,8 @@ const FeeManagement = () => {
             all: visibleFees.length,
             paid: visibleFees.filter(f => f.status === 'paid').length,
             online: visibleFees.filter(f => f.razorpayOrderId).length,
-            pending: visibleFees.filter(f => f.status === 'pending' || f.status === 'partial').length,
+            pending: visibleFees.filter(f => f.status === 'pending').length,
+            partial: visibleFees.filter(f => f.status === 'partial').length,
             overdue: visibleFees.filter(f => f.status === 'overdue').length,
             cancelled: visibleFees.filter(f => f.status === 'cancelled').length
         };
@@ -406,7 +428,8 @@ const FeeManagement = () => {
                 }
                 if (filter === 'paid') return fee.status === 'paid';
                 if (filter === 'online') return !!fee.razorpayOrderId;
-                if (filter === 'pending') return fee.status === 'pending' || fee.status === 'partial';
+                if (filter === 'partial') return fee.status === 'partial';
+                if (filter === 'pending') return fee.status === 'pending';
                 if (filter === 'overdue') return fee.status === 'overdue';
                 if (filter === 'cancelled') return fee.status === 'cancelled';
                 return true;
@@ -434,14 +457,16 @@ const FeeManagement = () => {
 
 
     const TABS = isSubAdmin ? [
-        { key: 'pending',   label: 'Pending Dues', count: metrics.counts.pending },
-        { key: 'paid',      label: 'Settled Paid', count: metrics.counts.paid },
+        { key: 'pending',   label: 'Pending Dues',  count: metrics.counts.pending },
+        { key: 'partial',   label: 'Partial Pay',   count: metrics.counts.partial },
+        { key: 'paid',      label: 'Settled Paid',  count: metrics.counts.paid },
     ] : [
-        { key: 'all',       label: 'All Invoices', count: metrics.counts.all },
-        { key: 'paid',      label: 'Settled Paid', count: metrics.counts.paid },
+        { key: 'all',       label: 'All Invoices',  count: metrics.counts.all },
+        { key: 'paid',      label: 'Settled Paid',  count: metrics.counts.paid },
         ...(onlinePaymentEnabled ? [{ key: 'online', label: 'Online Gateway', count: metrics.counts.online }] : []),
-        { key: 'pending',   label: 'Pending Dues', count: metrics.counts.pending },
-        { key: 'overdue',   label: 'Overdue Risk', count: metrics.counts.overdue },
+        { key: 'pending',   label: 'Pending Dues',  count: metrics.counts.pending },
+        { key: 'partial',   label: 'Partial Pay',   count: metrics.counts.partial },
+        { key: 'overdue',   label: 'Overdue Risk',  count: metrics.counts.overdue },
         { key: 'cancelled', label: 'Void Cancelled', count: metrics.counts.cancelled }
     ];
 
@@ -553,6 +578,200 @@ const FeeManagement = () => {
         doc.save(`Fee_Ledger_${filter}_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
+    // ── Bulk Receipt Download — filter & prepare render list ──────────
+    const generateBulkReceiptsPDF = () => {
+        // 1. Filter fees by status
+        let toDownload = fees.filter(f => f.student && f.student.isActive !== false);
+        if (bulkFilter.statusFilter === 'paid') toDownload = toDownload.filter(f => f.status === 'paid');
+        else if (bulkFilter.statusFilter === 'partial') toDownload = toDownload.filter(f => f.status === 'partial');
+        else toDownload = toDownload.filter(f => f.status === 'paid' || f.status === 'partial');
+
+        // 2. Date/student filter
+        if (bulkFilter.mode === 'month') {
+            toDownload = toDownload.filter(f => String(f.month) === String(bulkFilter.month) && String(f.year) === String(bulkFilter.year));
+        } else if (bulkFilter.mode === 'year') {
+            toDownload = toDownload.filter(f => String(f.year) === String(bulkFilter.year));
+        } else if (bulkFilter.mode === 'range') {
+            const from = bulkFilter.dateFrom ? new Date(bulkFilter.dateFrom) : null;
+            const to = bulkFilter.dateTo ? new Date(bulkFilter.dateTo + 'T23:59:59') : null;
+            toDownload = toDownload.filter(f => {
+                const pd = new Date(f.paidDate || f.updatedAt);
+                if (from && pd < from) return false;
+                if (to && pd > to) return false;
+                return true;
+            });
+        }
+        if (bulkFilter.studentId !== 'all') {
+            toDownload = toDownload.filter(f => f.student?._id === bulkFilter.studentId);
+        }
+
+        if (toDownload.length === 0) { alert('No receipts match the selected filters.'); return; }
+
+        // 3. Build customData for each receipt (same logic as openReceiptModal)
+        const list = toDownload.map((fee, idx) => {
+            const student = fee.student || {};
+            const seatInfo = getStudentSeatInfo(student);
+            const defaultDate = fee.paidDate
+                ? new Date(fee.paidDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            const defaultDob = student.dob
+                ? new Date(student.dob).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                : '';
+            const regFee = fee.registrationFee || student.registrationFee || 0;
+            const dueAmt = fee.due || (fee.status === 'partial' ? (fee.outstanding || (fee.amount - (fee.partialPaid || 0))) : 0);
+            const monthly = fee.amount || 0;
+            return {
+                fee,
+                student,
+                slNo: 101 + idx,
+                customData: {
+                    name: student.name || '',
+                    fatherName: student.fatherName || student.guardianName || '',
+                    dob: defaultDob,
+                    seatNo: seatInfo.seatNumber,
+                    shiftName: seatInfo.shiftName,
+                    mobile: student.mobile || '',
+                    aadharNo: student.aadharNo || student.idNumber || '',
+                    address: student.address || '',
+                    registrationFee: regFee,
+                    lockerNo: fee.lockerNo || student.lockerNo || '',
+                    monthlyFee: monthly,
+                    due: dueAmt,
+                    total: monthly + regFee - dueAmt,
+                    slNo: 101 + idx,
+                    paidDate: defaultDate,
+                },
+            };
+        });
+
+        bulkReceiptRefs.current = [];
+        setBulkRenderList(list);   // triggers useEffect below
+        setBulkGenerating(true);
+    };
+
+    // ── useEffect: capture rendered PaymentReceipt nodes → combine into PDF
+    useEffect(() => {
+        if (bulkRenderList.length === 0) return;
+
+        const captureAll = async () => {
+            try {
+                // Wait a tick for React to paint the off-screen receipts
+                await new Promise(r => setTimeout(r, 600));
+
+                const MONTHS = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                // Receipt is portrait ~ 90x150mm; use A5 portrait so it fits nicely
+                const doc = new jsPDF('portrait', 'mm', [104, 148]);
+                const PW = 104, PH = 148;
+
+                for (let i = 0; i < bulkRenderList.length; i++) {
+                    const el = bulkReceiptRefs.current[i];
+                    if (!el) continue;
+                    if (i > 0) doc.addPage([104, 148], 'portrait');
+
+                    const canvas = await html2canvas(el, {
+                        scale: 3,
+                        useCORS: true,
+                        backgroundColor: '#fef9f0',
+                        logging: false,
+                    });
+                    const imgData = canvas.toDataURL('image/png');
+                    // Fit image to page maintaining aspect ratio
+                    const ratio = canvas.height / canvas.width;
+                    const imgW = PW;
+                    const imgH = imgW * ratio;
+                    const yOffset = Math.max(0, (PH - imgH) / 2);
+                    doc.addImage(imgData, 'PNG', 0, yOffset, imgW, Math.min(imgH, PH));
+                }
+
+                const filterTag = bulkFilter.mode === 'month'
+                    ? `${MONTHS[Number(bulkFilter.month)]}_${bulkFilter.year}`
+                    : bulkFilter.mode === 'year' ? bulkFilter.year
+                    : bulkFilter.mode === 'range' ? `${bulkFilter.dateFrom}_to_${bulkFilter.dateTo}`
+                    : 'student';
+
+                doc.save(`Apna_Lakshya_Receipts_${filterTag}_${new Date().toISOString().split('T')[0]}.pdf`);
+                setBulkReceiptOpen(false);
+            } catch (err) {
+                console.error('Bulk PDF error:', err);
+                alert('Failed to generate PDF. Please try again.');
+            } finally {
+                setBulkRenderList([]);
+                setBulkGenerating(false);
+            }
+        };
+
+        captureAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bulkRenderList]);
+
+    // ── Helper: build receipt customData for a fee (mirrors openReceiptModal) ─
+    const buildCustomData = (fee, index) => {
+        const student = fee.student || {};
+        const seatInfo = getStudentSeatInfo(student);
+        const defaultDate = fee.paidDate
+            ? new Date(fee.paidDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })
+            : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        const regFee = fee.registrationFee || student.registrationFee || 0;
+        const dueAmt = fee.due || (fee.status === 'partial' ? (fee.outstanding || (fee.amount - (fee.partialPaid || 0))) : 0);
+        const monthly = fee.amount || 0;
+        return {
+            name: student.name || '',
+            fatherName: student.fatherName || student.guardianName || '',
+            dob: student.dob ? new Date(student.dob).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '',
+            seatNo: seatInfo.seatNumber,
+            shiftName: seatInfo.shiftName,
+            mobile: student.mobile || '',
+            aadharNo: student.aadharNo || student.idNumber || '',
+            address: student.address || '',
+            registrationFee: regFee,
+            lockerNo: fee.lockerNo || student.lockerNo || '',
+            monthlyFee: monthly,
+            due: dueAmt,
+            total: monthly + regFee - dueAmt,
+            slNo: 101 + (index || 0),
+            paidDate: defaultDate,
+        };
+    };
+
+    // ── Quick per-card download useEffect ────────────────────────────
+    useEffect(() => {
+        if (!quickDlFee) return;
+        const { action, customData: cd } = quickDlFee;
+        const capture = async () => {
+            try {
+                await new Promise(r => setTimeout(r, 400));
+                const el = quickDlRef.current;
+                if (!el) return;
+                if (action === 'print') {
+                    const win = window.open('', '', 'width=700,height=520');
+                    win.document.write(`<html><head><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Georgia,serif;background:#fef9f0;padding:8px;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>${el.innerHTML}</body></html>`);
+                    win.document.close(); win.focus();
+                    setTimeout(() => { win.print(); win.close(); }, 350);
+                } else {
+                    const canvas = await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#fef9f0', logging: false });
+                    const safeName = (cd?.name || 'Receipt').replace(/\s+/g, '_');
+                    const slNo = cd?.slNo || 101;
+                    if (action === 'pdf') {
+                        const doc = new jsPDF('landscape', 'mm', [90, 56]);
+                        doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 90, 56);
+                        doc.save(`Receipt_${slNo}_${safeName}.pdf`);
+                    } else {
+                        const link = document.createElement('a');
+                        link.download = `Receipt_${slNo}_${safeName}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    }
+                }
+            } catch (err) {
+                console.error('Quick download error:', err);
+            } finally {
+                setQuickDlFee(null);
+            }
+        };
+        capture();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quickDlFee]);
+
     return (
         <div className="min-h-screen relative text-[#0F172A] pb-20" style={{ background: '#FAF6F0' }}>
             <div
@@ -649,18 +868,31 @@ const FeeManagement = () => {
                             </button>
                         </div>
 
-                        {/* PDF Export Button (Super Admin Only) */}
+                        {/* PDF Export + Bulk Receipts Buttons (Super Admin Only) */}
                         {!isSubAdmin && (
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setPdfModalOpen(true)}
-                                disabled={processedFees.length === 0}
-                                className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <IoDownloadOutline size={16} />
-                                <span>Export PDF</span>
-                            </motion.button>
+                            <div className="flex items-center gap-2">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setPdfModalOpen(true)}
+                                    disabled={processedFees.length === 0}
+                                    className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <IoDownloadOutline size={16} />
+                                    <span>Export PDF</span>
+                                </motion.button>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setBulkReceiptOpen(true)}
+                                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
+                                    style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', color: '#EA580C', boxShadow: '0 2px 8px rgba(180,120,60,0.08)' }}
+                                    title="Download all receipts as PDF"
+                                >
+                                    <IoDocumentTextOutline size={16} />
+                                    <span className="hidden sm:inline">Bulk Receipts</span>
+                                </motion.button>
+                            </div>
                         )}
                     </div>
                 </motion.div>
@@ -1060,15 +1292,48 @@ const FeeManagement = () => {
                                     {/* Card Footer: Action Buttons */}
                                     <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
                                         {/* Physical Receipt Button (Admin Only) */}
+                                        {/* Inline Download Row (Admin Only) */}
                                         {!isSubAdmin && (
-                                            <button
-                                                onClick={() => openReceiptModal(fee, student, index + 101)}
-                                                className="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all"
-                                                title="View / Print Physical Receipt Slip"
-                                            >
-                                                <IoReceiptOutline size={15} />
-                                                <span>Receipt Slip</span>
-                                            </button>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <button
+                                                    onClick={() => openReceiptModal(fee, student, index + 101)}
+                                                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                                                    title="View / Edit Receipt"
+                                                >
+                                                    <IoReceiptOutline size={13} />
+                                                    <span>View</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setQuickDlFee({ fee, action: 'pdf', customData: buildCustomData(fee, index) })}
+                                                    disabled={!!quickDlFee}
+                                                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                                                    style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', color: '#DC2626' }}
+                                                    title="Download Receipt PDF"
+                                                >
+                                                    <IoDocumentTextOutline size={13} />
+                                                    <span>PDF</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setQuickDlFee({ fee, action: 'png', customData: buildCustomData(fee, index) })}
+                                                    disabled={!!quickDlFee}
+                                                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                                                    style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', color: '#1D4ED8' }}
+                                                    title="Download Receipt Image"
+                                                >
+                                                    <IoDownloadOutline size={13} />
+                                                    <span>Image</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setQuickDlFee({ fee, action: 'print', customData: buildCustomData(fee, index) })}
+                                                    disabled={!!quickDlFee}
+                                                    className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-40"
+                                                    style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB', color: '#374151' }}
+                                                    title="Print Receipt"
+                                                >
+                                                    <IoPrintOutline size={13} />
+                                                    <span>Print</span>
+                                                </button>
+                                            </div>
                                         )}
 
                                         {/* Pay / Settle Button */}
@@ -1415,6 +1680,29 @@ const FeeManagement = () => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
+                        {/* Invoice Quick-Details Banner */}
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                            {[
+                                { label: 'Student', value: receiptModal.student?.name || '—' },
+                                { label: 'Amount', value: `₹${receiptModal.fee?.amount || 0}` },
+                                { label: 'Status', value: (receiptModal.fee?.status || '').toUpperCase() },
+                                { label: 'Period', value: (() => {
+                                    const f = receiptModal.fee;
+                                    if (!f) return '—';
+                                    return f.cycleStart
+                                        ? `${new Date(f.cycleStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} – ${new Date(f.cycleEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}`
+                                        : `${f.month}/${f.year}`;
+                                })() },
+                                { label: 'Paid On', value: receiptModal.fee?.paidDate ? new Date(receiptModal.fee.paidDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—' },
+                                { label: 'Seat', value: (() => { const si = getStudentSeatInfo(receiptModal.student); return si.seatNumber ? `#${si.seatNumber}` : '—'; })() },
+                            ].map(({ label, value }) => (
+                                <div key={label} className="px-3 py-2 rounded-xl text-center" style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0' }}>
+                                    <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: '#786D62' }}>{label}</p>
+                                    <p className="text-xs font-black truncate" style={{ color: '#0F172A' }} title={value}>{value}</p>
+                                </div>
+                            ))}
+                        </div>
 
                         {/* Studio Grid: Live Form Inputs on Left, Physical Slip Preview on Right */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -1767,6 +2055,262 @@ const FeeManagement = () => {
                         >
                             <IoDownloadOutline size={16} />
                             <span>Export PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            {/* ── Hidden quick per-card receipt renderer ── */}
+            {quickDlFee && (
+                <div
+                    aria-hidden="true"
+                    style={{ position: 'fixed', top: -99999, left: -99999, zIndex: -1, width: 480, pointerEvents: 'none' }}
+                >
+                    <div ref={el => { quickDlRef.current = el; }}>
+                        <PaymentReceipt
+                            student={quickDlFee.fee.student}
+                            fee={quickDlFee.fee}
+                            slNo={quickDlFee.customData.slNo}
+                            customData={quickDlFee.customData}
+                            showActions={false}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* ── Hidden off-screen bulk receipt render area (for html2canvas) ── */}
+            {bulkRenderList.length > 0 && (
+                <div
+                    aria-hidden="true"
+                    style={{ position: 'fixed', top: -99999, left: -99999, zIndex: -1, width: 480, pointerEvents: 'none' }}
+                >
+                    {bulkRenderList.map((item, i) => (
+                        <div
+                            key={i}
+                            ref={el => { bulkReceiptRefs.current[i] = el; }}
+                            style={{ marginBottom: 8 }}
+                        >
+                            <PaymentReceipt
+                                student={item.student}
+                                fee={item.fee}
+                                slNo={item.customData.slNo}
+                                customData={item.customData}
+                                showActions={false}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* ═════════════════════════════════════════════════════════
+                MODAL 4: BULK RECEIPT DOWNLOAD MODAL
+            ═════════════════════════════════════════════════════════ */}
+            <Modal
+                isOpen={bulkReceiptOpen}
+                onClose={() => setBulkReceiptOpen(false)}
+                title="Bulk Receipt Download"
+                maxWidth="max-w-lg"
+                theme="light"
+            >
+                <div className="space-y-4">
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                        Download all payment receipts as a single PDF. Filter by month, year, date range, or individual student.
+                    </p>
+
+                    {/* Status Filter */}
+                    <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#574E45' }}>Include Receipts</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {[
+                                { val: 'paid', label: '✓ Paid Only' },
+                                { val: 'partial', label: '◑ Partial Only' },
+                                { val: 'both', label: 'Both' },
+                            ].map(opt => (
+                                <button
+                                    key={opt.val}
+                                    onClick={() => setBulkFilter(p => ({ ...p, statusFilter: opt.val }))}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                                    style={{
+                                        background: bulkFilter.statusFilter === opt.val ? 'linear-gradient(135deg,#F97316,#EA580C)' : '#FAF6F0',
+                                        color: bulkFilter.statusFilter === opt.val ? '#fff' : '#574E45',
+                                        border: bulkFilter.statusFilter === opt.val ? 'none' : '1.5px solid #EDE8E0',
+                                    }}
+                                >{opt.label}</button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Mode Selector */}
+                    <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: '#574E45' }}>Filter By</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {[
+                                { val: 'month', label: 'Month' },
+                                { val: 'year',  label: 'Year' },
+                                { val: 'range', label: 'Date Range' },
+                                { val: 'student', label: 'Student' },
+                            ].map(m => (
+                                <button
+                                    key={m.val}
+                                    onClick={() => setBulkFilter(p => ({ ...p, mode: m.val }))}
+                                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                                    style={{
+                                        background: bulkFilter.mode === m.val ? '#0F172A' : '#FAF6F0',
+                                        color: bulkFilter.mode === m.val ? '#fff' : '#574E45',
+                                        border: bulkFilter.mode === m.val ? 'none' : '1.5px solid #EDE8E0',
+                                    }}
+                                >{m.label}</button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Month + Year */}
+                    {bulkFilter.mode === 'month' && (
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-[11px] font-bold mb-1" style={{ color: '#574E45' }}>Month</label>
+                                <select
+                                    value={bulkFilter.month}
+                                    onChange={e => setBulkFilter(p => ({ ...p, month: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#0F172A' }}
+                                >
+                                    {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) => (
+                                        <option key={i+1} value={String(i+1)}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-[11px] font-bold mb-1" style={{ color: '#574E45' }}>Year</label>
+                                <select
+                                    value={bulkFilter.year}
+                                    onChange={e => setBulkFilter(p => ({ ...p, year: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#0F172A' }}
+                                >
+                                    {[2023,2024,2025,2026,2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Year Only */}
+                    {bulkFilter.mode === 'year' && (
+                        <div>
+                            <label className="block text-[11px] font-bold mb-1" style={{ color: '#574E45' }}>Year</label>
+                            <select
+                                value={bulkFilter.year}
+                                onChange={e => setBulkFilter(p => ({ ...p, year: e.target.value }))}
+                                className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#0F172A' }}
+                            >
+                                {[2023,2024,2025,2026,2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Date Range */}
+                    {bulkFilter.mode === 'range' && (
+                        <div className="flex gap-3">
+                            <div className="flex-1">
+                                <label className="block text-[11px] font-bold mb-1" style={{ color: '#574E45' }}>From Date</label>
+                                <input
+                                    type="date"
+                                    value={bulkFilter.dateFrom}
+                                    onChange={e => setBulkFilter(p => ({ ...p, dateFrom: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#0F172A' }}
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-[11px] font-bold mb-1" style={{ color: '#574E45' }}>To Date</label>
+                                <input
+                                    type="date"
+                                    value={bulkFilter.dateTo}
+                                    onChange={e => setBulkFilter(p => ({ ...p, dateTo: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#0F172A' }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Student Picker */}
+                    {bulkFilter.mode === 'student' && (
+                        <div>
+                            <label className="block text-[11px] font-bold mb-1" style={{ color: '#574E45' }}>Select Student</label>
+                            <select
+                                value={bulkFilter.studentId}
+                                onChange={e => setBulkFilter(p => ({ ...p, studentId: e.target.value }))}
+                                className="w-full px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#0F172A' }}
+                            >
+                                <option value="all">All Students</option>
+                                {[...new Map(fees.filter(f => f.student?._id).map(f => [f.student._id, f.student])).values()]
+                                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                                    .map(s => <option key={s._id} value={s._id}>{s.name} — {s.mobile || s.email || ''}</option>)
+                                }
+                            </select>
+                        </div>
+                    )}
+
+                    {/* Preview count */}
+                    {(() => {
+                        let preview = fees.filter(f => f.student && f.student.isActive !== false);
+                        if (bulkFilter.statusFilter === 'paid') preview = preview.filter(f => f.status === 'paid');
+                        else if (bulkFilter.statusFilter === 'partial') preview = preview.filter(f => f.status === 'partial');
+                        else preview = preview.filter(f => f.status === 'paid' || f.status === 'partial');
+
+                        if (bulkFilter.mode === 'month') preview = preview.filter(f => String(f.month) === String(bulkFilter.month) && String(f.year) === String(bulkFilter.year));
+                        else if (bulkFilter.mode === 'year') preview = preview.filter(f => String(f.year) === String(bulkFilter.year));
+                        else if (bulkFilter.mode === 'range') {
+                            const from = bulkFilter.dateFrom ? new Date(bulkFilter.dateFrom) : null;
+                            const to = bulkFilter.dateTo ? new Date(bulkFilter.dateTo + 'T23:59:59') : null;
+                            preview = preview.filter(f => {
+                                const pd = new Date(f.paidDate || f.updatedAt);
+                                if (from && pd < from) return false;
+                                if (to && pd > to) return false;
+                                return true;
+                            });
+                        }
+                        if (bulkFilter.studentId !== 'all') preview = preview.filter(f => f.student?._id === bulkFilter.studentId);
+
+                        return (
+                            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl" style={{ background: preview.length > 0 ? '#F0FDF4' : '#FEF2F2', border: `1.5px solid ${preview.length > 0 ? '#BBF7D0' : '#FECACA'}` }}>
+                                <span className="text-xs font-bold" style={{ color: preview.length > 0 ? '#15803D' : '#B91C1C' }}>
+                                    {preview.length > 0 ? `${preview.length} receipt${preview.length !== 1 ? 's' : ''} will be included in the PDF` : 'No receipts match this filter — adjust selection'}
+                                </span>
+                            </div>
+                        );
+                    })()}
+
+                    {/* Actions */}
+                    <div className="flex gap-2.5 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => setBulkReceiptOpen(false)}
+                            className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
+                            style={{ background: '#FAF6F0', border: '1.5px solid #EDE8E0', color: '#574E45' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={generateBulkReceiptsPDF}
+                            disabled={bulkGenerating}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', boxShadow: '0 4px 14px rgba(249,115,22,0.30)' }}
+                        >
+                            {bulkGenerating ? (
+                                <>
+                                    <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    Generating…
+                                </>
+                            ) : (
+                                <>
+                                    <IoDownloadOutline size={15} />
+                                    Download PDF
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
