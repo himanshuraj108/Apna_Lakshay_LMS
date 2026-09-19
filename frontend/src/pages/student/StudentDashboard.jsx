@@ -18,6 +18,7 @@ import {
     IoLogOutOutline as IoLogoutIcon, IoChevronForward, IoGridOutline, IoMapOutline,
     IoMenuOutline, IoCloseOutline, IoKeypadOutline,
     IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline,
+    IoCheckmarkDoneOutline,
     IoLanguageOutline, IoWallet,
     IoTrophyOutline, IoDesktopOutline
 } from 'react-icons/io5';
@@ -30,6 +31,7 @@ import NewspaperModal from '../../components/student/NewspaperModal';
 import InactiveScreen from '../../components/student/InactiveScreen';
 import AccessDeniedPending from '../../pages/public/AccessDeniedPending';
 import Footer from '../../components/layout/Footer';
+import FormattedQuizText from '../../components/common/QuizTextFormatter';
 import { useLenis } from '../../hooks/useLenis';
 import { useGsapReveal, useGsapCountUp } from '../../hooks/useGsapReveal';
 import '@fontsource/dm-sans/400.css';
@@ -112,23 +114,15 @@ const DASH_STYLE = `
 @keyframes orb3{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(25px,40px) scale(1.05);}}
 @keyframes shimmer-name{0%{background-position:200% center;}100%{background-position:-200% center;}}
 @keyframes shimmer-ltr{0%{background-position:0% center;}100%{background-position:-200% center;}}
-@keyframes blink-new{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(250,204,21,0.5);}50%{opacity:0.7;box-shadow:0 0 8px 3px rgba(250,204,21,0.35);}}}
-@keyframes blink-green{0%,100%{opacity:1;text-shadow:0 0 8px rgba(34,197,94,0.9);}50%{opacity:0.7;text-shadow:0 0 16px rgba(34,197,94,0.5);}}
-@keyframes blink-red{0%,100%{opacity:1;text-shadow:0 0 8px rgba(239,68,68,0.9);}50%{opacity:0.7;text-shadow:0 0 16px rgba(239,68,68,0.5);}}
 @keyframes refMiniTicker{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(-50%,0,0);}}
-@keyframes buttonPulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(249,115,22,0.5);}70%{transform:scale(1.05);box-shadow:0 0 0 7px rgba(236,72,153,0);}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(249,115,22,0);}}
 @keyframes card-shimmer-bg{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
 @keyframes holo-rotate{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 @keyframes ticker-sweep{0%{transform:translate3d(0,0,0);}100%{transform:translate3d(-50%,0,0);}}
 
 /* ── Utility classes ── */
-.shimmer-text{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer-name 4s linear infinite;}
-.new-badge-blink{animation:blink-new 1.4s ease-in-out infinite;}
-.label-blink-green{animation:blink-green 1.1s ease-in-out infinite;color:#22c55e;font-weight:800;}
-.label-blink-red{animation:blink-red 1.1s ease-in-out infinite;color:#ef4444;font-weight:800;}
+.shimmer-text{background:linear-gradient(90deg,#a78bfa,#60a5fa,#34d399,#60a5fa,#a78bfa);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .animate-ref-mini-ticker{display:inline-flex;white-space:nowrap;animation:refMiniTicker 24s linear infinite;}
 .animate-ref-mini-ticker:hover{animation-play-state:paused;}
-.animate-view-pulse{animation:buttonPulse 1.8s infinite ease-in-out;}
 
 /* ── Warm ambient blobs (subtle — 6% opacity max) ── */
 .dash-blob{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
@@ -203,18 +197,18 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
             key: 'manual',
             icon: <NoCameraIcon size={32} />,
             label: 'Without Camera',
-            labelClass: 'label-blink-red',
+            labelClass: 'font-black text-rose-600',
             bgBtn: '#ffffff',
-            shadow: 'rgba(239,68,68,0.35)',
+            shadow: 'rgba(239,68,68,0.2)',
             onClick: doManual,
         },
         {
             key: 'camera',
             icon: <IoCameraOutline size={32} color="#111" />,
             label: 'With Camera',
-            labelClass: 'label-blink-green',
+            labelClass: 'font-black text-emerald-600',
             bgBtn: '#ffffff',
-            shadow: 'rgba(34,197,94,0.35)',
+            shadow: 'rgba(34,197,94,0.2)',
             onClick: doCamera,
         },
     ].filter(Boolean);
@@ -305,10 +299,6 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                         fontWeight: 700,
                     }}
                 >
-                    {/* Shimmer sweep on button */}
-                    {!open && !loading && (
-                        <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.18) 50%,transparent 65%)', backgroundSize: '200% 100%', animation: 'shimmer-name 2.5s linear infinite' }} />
-                    )}
 
                     {open ? (
                         <motion.div key="close-icon" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
@@ -544,6 +534,8 @@ const StudentDashboard = () => {
     const [dailyQuizAttempt, setDailyQuizAttempt]     = useState(null);
     const quizCompletedRef                            = useRef(null);
     const [showQuizModal, setShowQuizModal]           = useState(false);
+    const [showQuizResultModal, setShowQuizResultModal] = useState(false);
+    const [showSolutionsBelow, setShowSolutionsBelow] = useState(true);
     const [showReferralModal, setShowReferralModal]   = useState(false);
     const [activeUpdate, setActiveUpdate]             = useState(null);
     const [showUpdateModal, setShowUpdateModal]       = useState(false);
@@ -977,34 +969,48 @@ const StudentDashboard = () => {
 
                 {/* ── Manual Attendance Modal (PIN or Direct) ── */}
                 {showPinModal && (
-                    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}>
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
                         <motion.div
-                            initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 40 }}
-                            className="w-full max-w-sm rounded-2xl p-6 shadow-2xl relative"
-                            style={{ background: '#ffffff', border: '1px solid #fde68a' }}
+                            initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+                            className="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden border border-gray-100"
                         >
-                            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-t-2xl" />
-                            <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-2 bg-amber-500/10 rounded-xl"><IoKeypadOutline size={18} className="text-amber-400" /></div>
+                            {/* Accent top gradient bar */}
+                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600" />
+                            <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-orange-100/50 blur-2xl pointer-events-none" />
+
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3 mb-5 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src="/app-icon-192.png"
+                                        alt="Apna Lakshay Logo"
+                                        className="w-12 h-12 rounded-2xl object-contain p-1 border border-orange-200/80 bg-gradient-to-br from-orange-50 to-amber-50 shadow-md shrink-0"
+                                    />
                                     <div>
-                                        <h3 className="text-gray-900 font-bold text-base">Manual Attendance</h3>
-                                        <p className="text-gray-600 text-xs">
-                                            {pinEnabled ? 'Enter the daily PIN from your admin' : 'Click below to mark your attendance'}
+                                        <h3 className="text-gray-900 font-black text-lg tracking-tight">Manual Attendance</h3>
+                                        <p className="text-gray-500 text-xs font-semibold mt-0.5">
+                                            {pinEnabled ? 'Enter daily security PIN' : 'Instant check-in without scan'}
                                         </p>
                                     </div>
                                 </div>
-                                <button onClick={() => { setShowPinModal(false); setPinValue(''); setPinError(''); }}
-                                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-800 transition-colors">
-                                    <IoCloseCircle size={20} />
+                                <button
+                                    onClick={() => { setShowPinModal(false); setPinValue(''); setPinError(''); }}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0"
+                                    aria-label="Close"
+                                >
+                                    <IoCloseOutline size={20} />
                                 </button>
                             </div>
 
                             {/* PIN input — only shown when PIN mode is ON */}
                             {pinEnabled && (
-                                <div className="flex gap-2 mb-3">
+                                <div className="space-y-2 mb-4 relative z-10">
+                                    <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 block">
+                                        Security PIN
+                                    </label>
                                     <input
                                         type="text"
                                         inputMode="numeric"
@@ -1014,32 +1020,58 @@ const StudentDashboard = () => {
                                         onKeyDown={e => e.key === 'Enter' && handlePinAttendance()}
                                         placeholder="Enter PIN"
                                         autoFocus
-                                        className="flex-1 bg-gray-50 border border-gray-200 focus:border-amber-400 text-gray-900 text-lg font-bold tracking-widest rounded-xl px-4 py-3 outline-none placeholder-gray-400 text-center"
+                                        className="w-full bg-gray-50 border border-gray-200 focus:border-orange-500 focus:bg-white text-gray-900 text-xl font-black tracking-widest rounded-2xl px-4 py-3 outline-none transition-all text-center shadow-inner"
                                     />
+                                    <p className="text-[11px] text-gray-500 font-medium text-center">
+                                        Ask your library admin for today's PIN
+                                    </p>
                                 </div>
                             )}
 
                             {/* Direct mode info — shown when PIN is OFF */}
                             {!pinEnabled && (
-                                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-                                    <IoFlashOutline size={18} className="text-amber-500 shrink-0" />
-                                    <p className="text-amber-700 text-sm">Your attendance will be marked instantly without a PIN.</p>
+                                <div className="rounded-2xl p-4 mb-5 border border-orange-200/70 bg-gradient-to-br from-orange-50/70 via-amber-50/30 to-white relative z-10">
+                                    <div className="flex items-center gap-1.5 mb-1 text-orange-800">
+                                        <IoCheckmarkCircleOutline size={16} className="text-orange-600" />
+                                        <span className="text-xs font-black uppercase tracking-wider">Ready to Check In</span>
+                                    </div>
+                                    <p className="text-xs text-orange-950 font-medium leading-relaxed">
+                                        Your attendance will be logged instantly for your current shift without requiring a PIN or camera scan.
+                                    </p>
                                 </div>
                             )}
 
-                            {pinError && <p className="text-red-600 text-xs text-center mb-3">{pinError}</p>}
+                            {/* Error notification */}
+                            {pinError && (
+                                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold text-center mb-3 relative z-10">
+                                    {pinError}
+                                </div>
+                            )}
 
-                            <button
-                                onClick={pinEnabled ? handlePinAttendance : handleDirectMark}
-                                disabled={pinEnabled ? (pinLoading || !pinValue) : directMarkLoading}
-                                className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-40"
-                                style={{ background: 'linear-gradient(135deg,#f59e0b,#ef4444)', color: '#000' }}
-                            >
-                                {(pinEnabled ? pinLoading : directMarkLoading)
-                                    ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />Marking…</span>
-                                    : '✓ Mark Attendance'
-                                }
-                            </button>
+                            {/* Action Button */}
+                            <div className="relative z-10">
+                                <button
+                                    onClick={pinEnabled ? handlePinAttendance : handleDirectMark}
+                                    disabled={pinEnabled ? (pinLoading || !pinValue) : directMarkLoading}
+                                    className="w-full py-3.5 px-5 rounded-2xl font-extrabold text-sm text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                                        boxShadow: '0 8px 20px -4px rgba(249,115,22,0.45)'
+                                    }}
+                                >
+                                    {(pinEnabled ? pinLoading : directMarkLoading) ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Marking Attendance...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <IoCheckmarkDoneOutline size={18} />
+                                            <span>Mark Attendance</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
@@ -1132,7 +1164,7 @@ const StudentDashboard = () => {
                             onMouseLeave={e => { e.currentTarget.style.background = '#FFF5EE'; e.currentTarget.style.borderColor = '#EDE8E0'; }}>
                             <IoNotificationsOutline size={18} style={{ color: '#92400E' }} />
                             {dashboardData?.unreadNotifications > 1 && (
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full animate-pulse" style={{ background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.8)' }} />
+                                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: '#22c55e', boxShadow: '0 0 4px rgba(34,197,94,0.5)' }} />
                             )}
                         </Link>
 
@@ -1240,7 +1272,7 @@ const StudentDashboard = () => {
                         </div>
                         <div>
                             <div className="flex items-center gap-1.5">
-                                <span className="font-bold text-sm" style={{ color: '#1A1A1A' }}>Hi, {user?.name?.split(' ')[0]} 👋</span>
+                                <span className="font-bold text-sm" style={{ color: '#1A1A1A' }}>Hi, {user?.name?.split(' ')[0]}</span>
                             </div>
                             <span className="text-[11px] font-medium" style={{ color: '#9B7B5A' }}>{today}</span>
                         </div>
@@ -1248,7 +1280,7 @@ const StudentDashboard = () => {
 
                     <div className="flex items-center gap-2 relative">
                         {isActive
-                            ? <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#059669' }}><span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />{t('Active')}</span>
+                            ? <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#059669' }}><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />{t('Active')}</span>
                             : <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', color: '#dc2626' }}>{t('Inactive')}</span>}
                         {referralEnabled && (
                             <Link to="/student/wallet">
@@ -1282,12 +1314,6 @@ const StudentDashboard = () => {
                             textDecoration: 'none',
                         }}
                     >
-                        {/* shimmer sweep */}
-                        <div className="absolute inset-0 pointer-events-none" style={{
-                            background: 'linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.45) 50%, transparent 70%)',
-                            backgroundSize: '200% 100%',
-                            animation: 'shimmer-name 3s linear infinite',
-                        }} />
                         {/* icon */}
                         <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-md" style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)' }}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
@@ -1299,9 +1325,9 @@ const StudentDashboard = () => {
                             <p className="text-[13px] font-black text-green-900">Join our WhatsApp Group</p>
                             <p className="text-[11px] text-green-700 font-medium mt-0.5">Stay updated with notices &amp; announcements</p>
                         </div>
-                        {/* pulse + arrow */}
+                        {/* arrow */}
                         <div className="flex items-center gap-2 shrink-0">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="w-2 h-2 rounded-full bg-green-500" />
                             <div className="w-7 h-7 rounded-xl bg-white/60 flex items-center justify-center" style={{ border: '1px solid rgba(34,197,94,0.35)' }}>
                                 <IoArrowForward size={13} className="text-green-700" />
                             </div>
@@ -1322,13 +1348,11 @@ const StudentDashboard = () => {
                     >
                         <div className="rounded-2xl overflow-hidden relative"
                             style={{ background: 'linear-gradient(135deg,#7c2d12 0%,#c2410c 40%,#ea580c 70%,#f97316 100%)', boxShadow: '0 8px 32px rgba(249,115,22,0.35)', border: '1.5px solid rgba(249,115,22,0.4)' }}>
-                            {/* Shimmer sweep */}
-                            <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.08) 50%,transparent 65%)', backgroundSize: '200% 100%', animation: 'shimmer-name 3s linear infinite' }} />
                             {/* Top badge strip */}
                             <div className="px-5 pt-4 pb-0 flex flex-wrap items-center gap-2">
                                 <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
                                     style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff' }}>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />{t("Today's Task")}
+                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-300" />{t("Today's Task")}
                                 </span>
                                 <span className="text-[9px] font-semibold" style={{ color: 'rgba(255,255,255,0.65)' }}>{t("Complete before midnight")}</span>
                             </div>
@@ -1522,8 +1546,8 @@ const StudentDashboard = () => {
                                 <p className="text-[11px] font-semibold" style={{ color: '#7C3AED' }}>{dashboardData?.unreadNotifications > 0 ? 'Unread' : 'All clear!'}</p>
                             </div>
                             {dashboardData?.unreadNotifications > 1 && (
-                                <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full animate-pulse"
-                                    style={{ background: '#22c55e', boxShadow: '0 0 8px rgba(34,197,94,0.9)' }} />
+                                <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full"
+                                    style={{ background: '#22c55e', boxShadow: '0 0 6px rgba(34,197,94,0.6)' }} />
                             )}
                         </div>
                     </Link>
@@ -1588,8 +1612,8 @@ const StudentDashboard = () => {
                                     </div>
                                     <span className="text-sm font-bold tracking-wide" style={{ color: '#1A1A1A' }}>AI Study Suite</span>
                                 </div>
-                                <span className="text-[9px] font-bold px-2.5 py-1 rounded-full tracking-widest uppercase" style={{ background: '#FFF5EE', border: '1.5px solid #FDDCAE', color: '#EA580C' }}>
-                                    ✦ AI POWERED
+                                <span className="text-[9px] font-bold px-2.5 py-1 rounded-full tracking-widest uppercase flex items-center gap-1" style={{ background: '#FFF5EE', border: '1.5px solid #FDDCAE', color: '#EA580C' }}>
+                                    <IoSparklesOutline size={10} /> AI POWERED
                                 </span>
                             </div>
 
@@ -1776,11 +1800,11 @@ const StudentDashboard = () => {
                                             {leaderboard.map((item) => {
                                                 const isCurrentUser = item.userId === user?.id;
                                                 const rankTheme = item.rank === 1
-                                                    ? { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', text: '#92400e', badge: '🥇' }
+                                                    ? { bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)', text: '#92400e', badge: '#1' }
                                                     : item.rank === 2
-                                                    ? { bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.25)', text: '#475569', badge: '🥈' }
+                                                    ? { bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.25)', text: '#475569', badge: '#2' }
                                                     : item.rank === 3
-                                                    ? { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', text: '#9a3412', badge: '🥉' }
+                                                    ? { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', text: '#9a3412', badge: '#3' }
                                                     : { bg: 'transparent', border: '#EDE8E0', text: '#9B7B5A', badge: `#${item.rank}` };
                                                 return (
                                                     <div key={item.userId}
@@ -1860,15 +1884,143 @@ const StudentDashboard = () => {
                                                 <p className="text-[10px] text-emerald-600 font-medium">Streak maintained</p>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => { setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]); setCurrentQuizQuestionIndex(0); setShowQuizModal(true); }}
-                                            className="flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl font-extrabold text-xs text-white transition-all active:scale-95 shrink-0"
-                                            style={{ background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
-                                        >
-                                            <IoDocumentTextOutline size={13} />
-                                            Review Solutions
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setShowSolutionsBelow(prev => !prev)}
+                                                className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all active:scale-95 shrink-0 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 shadow-sm"
+                                            >
+                                                <IoDocumentTextOutline size={13} />
+                                                {showSolutionsBelow ? 'Hide Solutions' : 'View Solutions'}
+                                            </button>
+                                            <button
+                                                onClick={() => { setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]); setCurrentQuizQuestionIndex(0); setShowQuizModal(true); }}
+                                                className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-extrabold text-xs text-white transition-all active:scale-95 shrink-0"
+                                                style={{ background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
+                                            >
+                                                <IoSparklesOutline size={13} />
+                                                Interactive Mode
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {/* Solutions & Explanations rendered directly below the card */}
+                                    {showSolutionsBelow && (
+                                        <div className="p-4 pt-2 border-t border-emerald-200/70 space-y-3.5 bg-emerald-50/40">
+                                            <div className="flex items-center justify-between pt-1 pb-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <IoDocumentTextOutline size={15} className="text-emerald-700" />
+                                                    <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wider">
+                                                        Today's Challenge Solutions
+                                                    </h4>
+                                                </div>
+                                                <span className="text-[10px] font-bold text-emerald-800 bg-white/80 border border-emerald-200 px-2 py-0.5 rounded-full shadow-xs">
+                                                    1 Attempt Only • Locked
+                                                </span>
+                                            </div>
+
+                                            {/* Questions list */}
+                                            {(dailyQuizAttempt?.questionsWithSolutions || dailyQuiz?.questions || []).map((q, qIdx) => {
+                                                const studentAns = dailyQuizAttempt?.answers?.[qIdx];
+                                                const correctAns = q.correct;
+                                                const isStudentCorrect = studentAns === correctAns;
+
+                                                return (
+                                                    <div
+                                                        key={qIdx}
+                                                        className="p-4 rounded-2xl bg-white border shadow-sm space-y-3"
+                                                        style={{
+                                                            borderColor: isStudentCorrect ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.3)'
+                                                        }}
+                                                    >
+                                                        {/* Top indicator row */}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black text-white ${
+                                                                    isStudentCorrect ? 'bg-emerald-600' : 'bg-rose-500'
+                                                                }`}>
+                                                                    {qIdx + 1}
+                                                                </span>
+                                                                {q.subject && (
+                                                                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+                                                                        {q.subject}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                                                isStudentCorrect
+                                                                    ? 'bg-emerald-100 text-emerald-800'
+                                                                    : 'bg-rose-100 text-rose-800'
+                                                            }`}>
+                                                                {isStudentCorrect ? 'Correct (+10 XP)' : 'Incorrect (0 XP)'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Question text */}
+                                                        <div className="text-xs font-bold text-gray-900 leading-relaxed">
+                                                            <FormattedQuizText text={q.question} />
+                                                        </div>
+
+                                                        {/* Options */}
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                            {q.options.map((opt, optIdx) => {
+                                                                const optLetter = ['A', 'B', 'C', 'D'][optIdx];
+                                                                const isThisCorrect = optIdx === correctAns;
+                                                                const isThisStudentChoice = optIdx === studentAns;
+
+                                                                let optBg = 'bg-gray-50/60 border-gray-200 text-gray-700';
+                                                                if (isThisCorrect) {
+                                                                    optBg = 'bg-emerald-50 border-emerald-500 text-emerald-950 font-bold';
+                                                                } else if (isThisStudentChoice && !isThisCorrect) {
+                                                                    optBg = 'bg-rose-50 border-rose-400 text-rose-950 font-bold';
+                                                                }
+
+                                                                return (
+                                                                    <div
+                                                                        key={optIdx}
+                                                                        className={`p-2.5 rounded-xl border text-xs flex items-start gap-2 ${optBg}`}
+                                                                    >
+                                                                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                                                            isThisCorrect
+                                                                                ? 'bg-emerald-600 text-white'
+                                                                                : isThisStudentChoice
+                                                                                ? 'bg-rose-500 text-white'
+                                                                                : 'bg-gray-200 text-gray-600'
+                                                                        }`}>
+                                                                            {optLetter}
+                                                                        </span>
+                                                                        <div className="flex-1 leading-normal">
+                                                                            <FormattedQuizText text={opt} />
+                                                                        </div>
+                                                                        {isThisCorrect && (
+                                                                            <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
+                                                                                Correct
+                                                                            </span>
+                                                                        )}
+                                                                        {isThisStudentChoice && !isThisCorrect && (
+                                                                            <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded shrink-0">
+                                                                                Your Choice
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+
+                                                        {/* Explanation */}
+                                                        {q.explanation && (
+                                                            <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/70 text-xs text-amber-950 flex items-start gap-2">
+                                                                <IoInformationCircleOutline size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                                                                <div className="flex-1 leading-relaxed">
+                                                                    <strong className="font-black text-amber-900 block mb-0.5">Explanation:</strong>
+                                                                    <FormattedQuizText text={q.explanation} />
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -2013,9 +2165,9 @@ const StudentDashboard = () => {
                                                         {currentQuestion.subject}
                                                     </span>
                                                 )}
-                                                <p className="text-sm font-bold text-gray-800 leading-relaxed whitespace-pre-line">
-                                                    {currentQuestion.question}
-                                                </p>
+                                                <div className="text-sm font-bold text-gray-800 leading-relaxed">
+                                                    <FormattedQuizText text={currentQuestion.question} />
+                                                </div>
                                             </div>
 
                                             {/* Options */}
@@ -2062,7 +2214,9 @@ const StudentDashboard = () => {
                                                             }`}>
                                                                 {optionLetter}
                                                             </div>
-                                                            <span className="text-xs font-bold leading-normal text-gray-800">{option}</span>
+                                                            <div className="text-xs font-bold leading-normal text-gray-800 flex-1">
+                                                                <FormattedQuizText text={option} />
+                                                            </div>
                                                         </button>
                                                     );
                                                 })}
@@ -2079,9 +2233,9 @@ const StudentDashboard = () => {
                                                         <IoInformationCircleOutline size={14} className="text-indigo-600" />
                                                         Explanation
                                                     </h5>
-                                                    <p className="text-xs text-indigo-900/90 leading-relaxed font-medium">
-                                                        {dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex]?.explanation || 'No explanation available.'}
-                                                    </p>
+                                                    <div className="text-xs text-indigo-900/90 leading-relaxed font-medium">
+                                                        <FormattedQuizText text={dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex]?.explanation || 'No explanation available.'} />
+                                                    </div>
                                                 </motion.div>
                                             )}
                                         </div>
@@ -2131,11 +2285,10 @@ const StudentDashboard = () => {
                                                         // Refresh dashboard data
                                                         fetchDashboardData();
                                                         fetchEngagementData();
-                                                        // Close modal then scroll to the completed quiz card
+                                                        // Close quiz modal & open result modal directly
                                                         setShowQuizModal(false);
-                                                        setTimeout(() => {
-                                                            quizCompletedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                        }, 350);
+                                                        setShowQuizResultModal(true);
+                                                        setShowSolutionsBelow(true);
                                                     }
                                                 } catch (e) {
                                                     setQuizError(e.response?.data?.message || 'Submission failed. Please try again.');
@@ -2149,7 +2302,7 @@ const StudentDashboard = () => {
                                             {quizSubmitting ? (
                                                 <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting...</>
                                             ) : (
-                                                <>✓ Submit Challenge</>
+                                                <><IoCheckmarkOutline size={16} /> Submit Challenge</>
                                             )}
                                         </button>
                                     ) : (
@@ -2168,6 +2321,107 @@ const StudentDashboard = () => {
                                         Close Review
                                     </button>
                                 )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Daily Quiz Result Popup Modal */}
+            <AnimatePresence>
+                {showQuizResultModal && dailyQuizAttempt && (
+                    <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                            className="w-full max-w-md bg-white border border-gray-100 rounded-3xl shadow-2xl relative overflow-hidden text-center p-6 sm:p-8"
+                        >
+                            {/* Accent top gradient */}
+                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500" />
+
+                            {/* Close X */}
+                            <button
+                                onClick={() => {
+                                    setShowQuizResultModal(false);
+                                    setShowSolutionsBelow(true);
+                                    setTimeout(() => {
+                                        quizCompletedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }, 200);
+                                }}
+                                className="absolute top-4 right-4 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                                <IoCloseCircle size={24} />
+                            </button>
+
+                            {/* Sparkle / Award Icon */}
+                            <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"
+                                style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                                <IoSparklesOutline size={30} className="text-white" />
+                            </div>
+
+                            <h3 className="text-xl font-black text-gray-900 mb-1">Challenge Completed!</h3>
+                            <p className="text-xs font-semibold text-gray-500 mb-5">
+                                Your response has been submitted and recorded.
+                            </p>
+
+                            {/* Score & XP Cards */}
+                            <div className="grid grid-cols-2 gap-3 mb-5">
+                                <div className="p-3.5 rounded-2xl border border-emerald-100 bg-emerald-50/60">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block mb-1">Your Score</span>
+                                    <p className="text-2xl font-black text-emerald-800">
+                                        {dailyQuizAttempt?.score ?? 0} <span className="text-sm font-bold text-emerald-600">/ 5</span>
+                                    </p>
+                                </div>
+                                <div className="p-3.5 rounded-2xl border border-amber-100 bg-amber-50/60">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block mb-1">XP Awarded</span>
+                                    <p className="text-2xl font-black text-amber-800">
+                                        +{dailyQuizAttempt?.xpAwarded ?? 0}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Single attempt info notice */}
+                            <div className="p-3.5 rounded-2xl border border-blue-100 bg-blue-50/50 text-blue-900 text-xs font-medium mb-6 text-left flex items-start gap-2.5">
+                                <IoInformationCircleOutline size={18} className="text-blue-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <strong className="font-bold block text-blue-950">Daily Attempt Locked</strong>
+                                    <span>Only 1 attempt is allowed per day. Your submission is locked and saved for today.</span>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-2.5">
+                                <button
+                                    onClick={() => {
+                                        setShowQuizResultModal(false);
+                                        setShowSolutionsBelow(true);
+                                        setTimeout(() => {
+                                            quizCompletedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }, 200);
+                                    }}
+                                    className="w-full py-3.5 px-5 rounded-xl font-extrabold text-sm text-white shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    style={{
+                                        background: 'linear-gradient(135deg,#10b981,#059669)',
+                                        boxShadow: '0 6px 20px rgba(16,185,129,0.35)'
+                                    }}
+                                >
+                                    <IoDocumentTextOutline size={18} />
+                                    View Solution
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowQuizResultModal(false);
+                                        setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]);
+                                        setCurrentQuizQuestionIndex(0);
+                                        setShowQuizModal(true);
+                                    }}
+                                    className="w-full py-2.5 px-4 rounded-xl font-bold text-xs text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                    <IoSparklesOutline size={14} />
+                                    Review in Interactive Mode
+                                </button>
                             </div>
                         </motion.div>
                     </div>

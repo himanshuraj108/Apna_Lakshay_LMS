@@ -1898,12 +1898,14 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                     >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
-                                    <IoKeypadOutline size={22} />
-                                </div>
+                                <img
+                                    src="/app-icon-192.png"
+                                    alt="Apna Lakshay Logo"
+                                    style={{ width: 44, height: 44, borderRadius: 14, objectFit: 'contain', padding: 3, border: '1.5px solid #fed7aa', background: 'linear-gradient(135deg,#fff7ed,#ffedd5)', flexShrink: 0 }}
+                                />
                                 <div>
                                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#111827' }}>Manual Attendance</h3>
-                                    <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>Mark without scanning QR</p>
+                                    <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>Mark without scanning QR</p>
                                 </div>
                             </div>
                             <button onClick={() => setShowPinModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 4 }}>

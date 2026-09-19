@@ -7,6 +7,7 @@ import {
     IoAlertCircleOutline, IoHelpCircleOutline
 } from 'react-icons/io5';
 import api from '../../utils/api';
+import FormattedQuizText from '../../components/common/QuizTextFormatter';
 
 const CATEGORY_COLORS = {
     india:   { bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.2)', text: '#ea580c' },
@@ -247,7 +248,10 @@ const AICurrentAffairsQuiz = () => {
                                                     )}
                                                     {quiz?.questions?.map((q, qi) => (
                                                         <div key={qi} className="mb-4 last:mb-0">
-                                                            <p className="text-xs font-bold mb-2" style={{ color: '#1A1A1A' }}>Q{qi + 1}. {q.question}</p>
+                                                            <div className="text-xs font-bold mb-2 leading-relaxed" style={{ color: '#1A1A1A' }}>
+                                                                <span className="mr-1">Q{qi + 1}.</span>
+                                                                <FormattedQuizText text={q.question} />
+                                                            </div>
                                                             <div className="grid grid-cols-1 gap-1">
                                                                 {q.options.map((opt, oi) => {
                                                                     const letter = opt.charAt(0);
@@ -266,16 +270,16 @@ const AICurrentAffairsQuiz = () => {
                                                                                 color: !revealed ? (isSelected ? '#EA580C' : '#1A1A1A')
                                                                                     : isCorrect ? '#059669' : (isSelected ? '#dc2626' : '#1A1A1A'),
                                                                             }}>
-                                                                            {opt}
+                                                                            <FormattedQuizText text={opt} />
                                                                         </button>
                                                                     );
                                                                 })}
                                                             </div>
                                                             {quiz.revealed[qi] && q.explanation && (
-                                                                <div className="mt-2 text-[11px] rounded-lg px-3 py-2 flex items-start gap-1.5"
+                                                                <div className="mt-2 text-[11px] rounded-lg px-3 py-2 flex items-start gap-1.5 leading-relaxed"
                                                                     style={{ color: '#6B6560', background: '#FFFFFF', border: '1.5px solid #EDE8E0' }}>
                                                                     <IoCheckmarkCircleOutline size={12} className="flex-shrink-0 mt-0.5" style={{ color: '#059669' }} />
-                                                                    {q.explanation}
+                                                                    <FormattedQuizText text={q.explanation} />
                                                                 </div>
                                                             )}
                                                         </div>

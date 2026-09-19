@@ -357,8 +357,8 @@ function App() {
                 </Routes>
                 <PwaInstallBanner />
             </Suspense>
-            {/* Force Doubt Board overlay: shown ONLY to active students with assigned seat */}
-            {forceDoubtBoard && user?.role === 'student' && user?.isActive && (user?.seat || user?.seatNumber) && !doubtDismissed && location.pathname !== '/student/doubt' && (
+            {/* Doubt Board launcher & tour: shown ONLY to active students with assigned seat */}
+            {user?.role === 'student' && user?.isActive && (user?.seat || user?.seatNumber) && !doubtDismissed && location.pathname !== '/student/doubt' && (
                 <ForcedDoubtOverlay onClose={() => setDoubtDismissed(true)} />
             )}
         </PinLockScreen>

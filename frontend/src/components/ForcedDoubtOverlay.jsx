@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DoubtBoard from '../pages/student/DoubtBoard';
+import { useAuth } from '../context/AuthContext';
 
 const STORAGE_KEY             = 'doubt_btn_y_ratio';
 const SESSION_SHOWN_KEY       = 'doubt_tutorial_shown';
-const PERMANENT_DISMISSED_KEY = 'doubt_tutorial_dismissed'; // localStorage → permanently dismissed after Got It
+const PERMANENT_DISMISSED_KEY = 'doubt_tutorial_dismissed'; // localStorage key fallback
 const BTN_HEIGHT = 124;
 const BTN_WIDTH  = 52;
 
@@ -16,11 +17,14 @@ function getSavedY() {
     return 0.42;
 }
 
-// Show tutorial only if not permanently dismissed (persisted in localStorage)
-function shouldShowTutorial() {
+const getUserDismissKey = (userId) => (userId ? `doubt_tutorial_dismissed_${userId}` : PERMANENT_DISMISSED_KEY);
+
+// Show tutorial only if not permanently dismissed for this specific user
+function shouldShowTutorial(userId) {
     try {
-        if (localStorage.getItem(PERMANENT_DISMISSED_KEY) === 'true') return false;
-        if (sessionStorage.getItem(SESSION_SHOWN_KEY) === 'true') return false;
+        const key = getUserDismissKey(userId);
+        if (localStorage.getItem(key) === 'true') return false;
+        if (sessionStorage.getItem(`${SESSION_SHOWN_KEY}_${userId || 'default'}`) === 'true') return false;
         return true;
     } catch { return false; }
 }
@@ -181,6 +185,7 @@ const TutorialOverlay = ({ btnTop, onDismiss, onDismissPermanent }) => {
 
 // ── Main Overlay ───────────────────────────────────────────────────────────────
 const ForcedDoubtOverlay = ({ onClose }) => {
+    const { user } = useAuth();
     const [isOpen, setIsOpen]         = useState(false);
     const [yRatio, setYRatio]         = useState(getSavedY);
     const [dragging, setDragging]     = useState(false);
@@ -196,36 +201,39 @@ const ForcedDoubtOverlay = ({ onClose }) => {
     const minTop  = 20;
     const btnTop  = Math.max(minTop, Math.min(maxTop, yRatio * screenH));
 
-    // Show tutorial on first render if not permanently dismissed
+    // Show tutorial on first render if not permanently dismissed for this user
     useEffect(() => {
-        if (shouldShowTutorial()) {
+        if (!user?._id) return;
+        if (shouldShowTutorial(user._id)) {
             // Slight delay so page renders first
             const t = setTimeout(() => {
-                if (shouldShowTutorial()) {
+                if (shouldShowTutorial(user._id)) {
                     setShowTutorial(true);
                 }
             }, 800);
             return () => clearTimeout(t);
         }
-    }, []);
+    }, [user?._id]);
 
     // Dismiss by clicking outside — also permanently dismiss so it doesn't harass the student
     const dismissTutorial = useCallback(() => {
         try {
-            localStorage.setItem(PERMANENT_DISMISSED_KEY, 'true');
-            sessionStorage.setItem(SESSION_SHOWN_KEY, 'true');
+            const key = getUserDismissKey(user?._id);
+            localStorage.setItem(key, 'true');
+            sessionStorage.setItem(`${SESSION_SHOWN_KEY}_${user?._id || 'default'}`, 'true');
         } catch {}
         setShowTutorial(false);
-    }, []);
+    }, [user?._id]);
 
-    // "Got it" button — permanently dismiss so it will never show again
+    // "Got it" button — permanently dismiss so it will never show again for this student
     const dismissTutorialPermanent = useCallback(() => {
         try {
-            localStorage.setItem(PERMANENT_DISMISSED_KEY, 'true');
-            sessionStorage.setItem(SESSION_SHOWN_KEY, 'true');
+            const key = getUserDismissKey(user?._id);
+            localStorage.setItem(key, 'true');
+            sessionStorage.setItem(`${SESSION_SHOWN_KEY}_${user?._id || 'default'}`, 'true');
         } catch {}
         setShowTutorial(false);
-    }, []);
+    }, [user?._id]);
 
     // Notify other components (e.g. attendance FAB) when DoubtBoard opens/closes
     useEffect(() => {
@@ -238,14 +246,15 @@ const ForcedDoubtOverlay = ({ onClose }) => {
         if (!moved.current) {
             // When opening the board, also permanently mark tutorial as dismissed
             try {
-                localStorage.setItem(PERMANENT_DISMISSED_KEY, 'true');
-                sessionStorage.setItem(SESSION_SHOWN_KEY, 'true');
+                const key = getUserDismissKey(user?._id);
+                localStorage.setItem(key, 'true');
+                sessionStorage.setItem(`${SESSION_SHOWN_KEY}_${user?._id || 'default'}`, 'true');
             } catch {}
             setShowTutorial(false);
             setIsOpen(true);
         }
         moved.current = false;
-    }, [yRatio]);
+    }, [yRatio, user?._id]);
 
     // ── Touch ──────────────────────────────────────────────────────────────────
     const onTouchStart = useCallback((e) => {
