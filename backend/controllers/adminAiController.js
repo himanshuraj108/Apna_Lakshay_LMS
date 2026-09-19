@@ -89,6 +89,21 @@ const getLiveOperationalMetrics = async () => {
         Fee.aggregate([
             { $match: { status: { $in: ['pending', 'overdue'] } } },
             {
+                $lookup: {
+                    from: 'users',
+                    localField: 'student',
+                    foreignField: '_id',
+                    as: 'studentInfo'
+                }
+            },
+            { $unwind: { path: '$studentInfo', preserveNullAndEmptyArrays: false } },
+            {
+                $match: {
+                    'studentInfo.role': 'student',
+                    'studentInfo.isActive': { $ne: false }  // exclude inactive/deactivated students
+                }
+            },
+            {
                 $group: {
                     _id: null,
                     count: { $sum: 1 },
