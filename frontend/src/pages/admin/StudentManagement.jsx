@@ -1081,87 +1081,124 @@ const StudentManagement = () => {
 
     // Helper to get seat number for a student
     const getStudentSeat = (studentId) => {
-        if (!floors || floors.length === 0) return null;
+        if (floors && floors.length > 0) {
+            for (const floor of floors) {
+                if (!floor.rooms) continue;
+                for (const room of floor.rooms) {
+                    if (!room.seats) continue;
+                    for (const seat of room.seats) {
+                        // Check assignments array for active assignments
+                        if (seat.assignments && seat.assignments.length > 0) {
+                            const hasActiveAssignment = seat.assignments.some(assignment => {
+                                if (assignment.status !== 'active') return false;
 
-        for (const floor of floors) {
-            if (!floor.rooms) continue;
-            for (const room of floor.rooms) {
-                if (!room.seats) continue;
-                for (const seat of room.seats) {
-                    // Check assignments array for active assignments
-                    if (seat.assignments && seat.assignments.length > 0) {
-                        const hasActiveAssignment = seat.assignments.some(assignment => {
-                            if (assignment.status !== 'active') return false;
+                                const assignedStudentId = typeof assignment.student === 'object'
+                                    ? assignment.student._id
+                                    : assignment.student;
 
-                            const assignedStudentId = typeof assignment.student === 'object'
-                                ? assignment.student._id
-                                : assignment.student;
+                                return String(assignedStudentId) === String(studentId);
+                            });
 
-                            return assignedStudentId === studentId;
-                        });
-
-                        if (hasActiveAssignment) {
-                            return seat.number;
+                            if (hasActiveAssignment) {
+                                return seat.number;
+                            }
                         }
-                    }
 
-                    // Fallback to legacy assignedTo field
-                    if (seat.assignedTo) {
-                        const assignedId = typeof seat.assignedTo === 'object' ? seat.assignedTo._id : seat.assignedTo;
-                        if (assignedId === studentId) {
-                            return seat.number;
+                        // Fallback to legacy assignedTo field
+                        if (seat.assignedTo) {
+                            const assignedId = typeof seat.assignedTo === 'object' ? seat.assignedTo._id : seat.assignedTo;
+                            if (String(assignedId) === String(studentId)) {
+                                return seat.number;
+                            }
                         }
                     }
                 }
             }
         }
+
+        // Fallback for temporary seat assignments or directly populated seatNumber
+        const st = students?.find(s => String(s._id) === String(studentId));
+        if (st) {
+            if (st.tempAssignments?.length > 0 && st.tempAssignments[0]?.seat?.number) {
+                return st.tempAssignments[0].seat.number;
+            }
+            if (st.seatNumber) return st.seatNumber;
+            if (st.seat?.number) return st.seat.number;
+        }
+
         return null;
     };
 
     // Helper to get seat, room, floor & AC details for a student
     const getStudentSeatDetails = (studentId) => {
-        if (!floors || floors.length === 0) return null;
+        if (floors && floors.length > 0) {
+            for (const floor of floors) {
+                if (!floor.rooms) continue;
+                for (const room of floor.rooms) {
+                    if (!room.seats) continue;
+                    for (const seat of room.seats) {
+                        if (seat.assignments && seat.assignments.length > 0) {
+                            const hasActiveAssignment = seat.assignments.some(assignment => {
+                                if (assignment.status !== 'active') return false;
+                                const assignedStudentId = typeof assignment.student === 'object'
+                                    ? assignment.student._id
+                                    : assignment.student;
+                                return String(assignedStudentId) === String(studentId);
+                            });
 
-        for (const floor of floors) {
-            if (!floor.rooms) continue;
-            for (const room of floor.rooms) {
-                if (!room.seats) continue;
-                for (const seat of room.seats) {
-                    if (seat.assignments && seat.assignments.length > 0) {
-                        const hasActiveAssignment = seat.assignments.some(assignment => {
-                            if (assignment.status !== 'active') return false;
-                            const assignedStudentId = typeof assignment.student === 'object'
-                                ? assignment.student._id
-                                : assignment.student;
-                            return String(assignedStudentId) === String(studentId);
-                        });
-
-                        if (hasActiveAssignment) {
-                            return {
-                                seatNumber: seat.number,
-                                roomName: room.name,
-                                hasAc: !!room.hasAc,
-                                floorName: floor.name,
-                                floorId: floor._id
-                            };
+                            if (hasActiveAssignment) {
+                                return {
+                                    seatNumber: seat.number,
+                                    roomName: room.name,
+                                    roomId: room.roomId || room._id,
+                                    hasAc: !!room.hasAc,
+                                    floorName: floor.name,
+                                    floorId: floor._id,
+                                    isTemporary: false
+                                };
+                            }
                         }
-                    }
 
-                    if (seat.assignedTo) {
-                        const assignedId = typeof seat.assignedTo === 'object' ? seat.assignedTo._id : seat.assignedTo;
-                        if (String(assignedId) === String(studentId)) {
-                            return {
-                                seatNumber: seat.number,
-                                roomName: room.name,
-                                hasAc: !!room.hasAc,
-                                floorName: floor.name,
-                                floorId: floor._id
-                            };
+                        if (seat.assignedTo) {
+                            const assignedId = typeof seat.assignedTo === 'object' ? seat.assignedTo._id : seat.assignedTo;
+                            if (String(assignedId) === String(studentId)) {
+                                return {
+                                    seatNumber: seat.number,
+                                    roomName: room.name,
+                                    roomId: room.roomId || room._id,
+                                    hasAc: !!room.hasAc,
+                                    floorName: floor.name,
+                                    floorId: floor._id,
+                                    isTemporary: false
+                                };
+                            }
                         }
                     }
                 }
             }
         }
+
+        // Fallback for temporary seat assignments or students populated directly with seat
+        const st = students?.find(s => String(s._id) === String(studentId));
+        if (st) {
+            const isTemp = !!(st.isTemporary || st.isTemporarySeat || (st.tempAssignments && st.tempAssignments.length > 0));
+            const tempAssign = st.tempAssignments && st.tempAssignments.length > 0 ? st.tempAssignments[0] : null;
+            const seatNum = tempAssign?.seat?.number || st.seatNumber || st.seat?.number;
+            if (seatNum) {
+                const room = tempAssign?.seat?.room || st.seat?.room || st.room;
+                const floor = tempAssign?.seat?.floor || st.seat?.floor || st.floor;
+                return {
+                    seatNumber: seatNum,
+                    roomName: typeof room === 'object' ? room?.name : (room || 'Main Room'),
+                    roomId: typeof room === 'object' ? (room?.roomId || room?._id) : (st.roomId || '101'),
+                    hasAc: typeof room === 'object' ? !!room?.hasAc : false,
+                    floorName: typeof floor === 'object' ? floor?.name : (floor || 'Ground Floor'),
+                    floorId: typeof floor === 'object' ? floor?._id : null,
+                    isTemporary: isTemp
+                };
+            }
+        }
+
         return null;
     };
 
@@ -1889,7 +1926,15 @@ const StudentManagement = () => {
                                                 </div>
                                             ) : filtered.map(student => (
                                                 <div key={student._id} className="flex justify-center p-2">
-                                                    <StudentIdCard student={{ ...student, seatNumber: getStudentSeat(student._id) }} />
+                                                    <StudentIdCard
+                                                        student={{
+                                                            ...student,
+                                                            seatNumber: getStudentSeat(student._id),
+                                                            roomId: student.roomId || getStudentSeatDetails(student._id)?.roomId,
+                                                            isTemporary: !!(student.isTemporary || student.isTemporarySeat || student.tempAssignments?.length > 0 || getStudentSeatDetails(student._id)?.isTemporary),
+                                                            isTemporarySeat: !!(student.isTemporary || student.isTemporarySeat || student.tempAssignments?.length > 0 || getStudentSeatDetails(student._id)?.isTemporary)
+                                                        }}
+                                                    />
                                                 </div>
                                             ));
                                         })()}
@@ -2145,8 +2190,13 @@ const StudentManagement = () => {
                                                                     <div className="mt-1.5">
                                                                         {seatDetails ? (
                                                                             <>
-                                                                                <p className="font-black text-sm text-[#0F172A]">
-                                                                                    Desk {seatDetails.seatNumber}
+                                                                                <p className="font-black text-sm text-[#0F172A] flex items-center gap-1.5">
+                                                                                    <span>Desk {seatDetails.seatNumber}</span>
+                                                                                    {(seatDetails.isTemporary || student.isTemporarySeat || student.isTemporary || student.tempAssignments?.length > 0) && (
+                                                                                        <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold text-[9px] border border-amber-300">
+                                                                                            Temporary
+                                                                                        </span>
+                                                                                    )}
                                                                                 </p>
                                                                                 <p className="text-[10px] text-stone-500 truncate mt-0.5">
                                                                                     {seatDetails.roomName} · {seatDetails.floorName}
@@ -2508,6 +2558,11 @@ const StudentManagement = () => {
                                                                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-950 font-bold text-xs w-fit">
                                                                             <IoBedOutline size={13} className="text-orange-600" />
                                                                             <span>Desk {seatDetails.seatNumber}</span>
+                                                                            {(seatDetails.isTemporary || student.isTemporarySeat || student.isTemporary || student.tempAssignments?.length > 0) && (
+                                                                                <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold text-[9px] border border-amber-300">
+                                                                                    Temp
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                         <div className="flex items-center gap-1 text-[10px] text-slate-500">
                                                                             <span>{seatDetails.roomName}</span>
@@ -3066,7 +3121,10 @@ const StudentManagement = () => {
                                         <StudentIdCard
                                             student={{
                                                 ...selectedStudent,
-                                                seatNumber: getStudentSeat(selectedStudent._id)
+                                                seatNumber: getStudentSeat(selectedStudent._id),
+                                                roomId: selectedStudent.roomId || getStudentSeatDetails(selectedStudent._id)?.roomId,
+                                                isTemporary: !!(selectedStudent.isTemporary || selectedStudent.isTemporarySeat || selectedStudent.tempAssignments?.length > 0 || getStudentSeatDetails(selectedStudent._id)?.isTemporary),
+                                                isTemporarySeat: !!(selectedStudent.isTemporary || selectedStudent.isTemporarySeat || selectedStudent.tempAssignments?.length > 0 || getStudentSeatDetails(selectedStudent._id)?.isTemporary)
                                             }}
                                         />
                                     </div>

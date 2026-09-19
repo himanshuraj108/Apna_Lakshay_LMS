@@ -147,7 +147,34 @@ exports.getDashboard = async (req, res) => {
                 shifts: shiftsArr,         // NEW: all shifts
                 shiftDetails: shiftsArr[0] ? { startTime: shiftsArr[0].startTime, endTime: shiftsArr[0].endTime } : null,
                 price: myAssignments[0]?.price || 0,
-                assignedAt: myAssignments[0]?.assignedAt
+                assignedAt: myAssignments[0]?.assignedAt,
+                isTemporary: false,
+                isTemporarySeat: false
+            };
+        } else if (rawTempAssignments && rawTempAssignments.length > 0) {
+            const firstTemp = rawTempAssignments[0];
+            const tempShiftsArr = firstTemp.shift ? [{
+                _id: firstTemp.shift._id,
+                name: firstTemp.shift.name,
+                startTime: firstTemp.shift.startTime,
+                endTime: firstTemp.shift.endTime
+            }] : [];
+
+            assignedSeatData = {
+                number: firstTemp.seat?.number,
+                floor: firstTemp.seat?.floor?.name,
+                room: firstTemp.seat?.room?.name,
+                roomId: firstTemp.seat?.room?.roomId || null,
+                roomHasAc: firstTemp.seat?.room?.hasAc || false,
+                roomHasFan: firstTemp.seat?.room?.hasFan || false,
+                shift: firstTemp.shift?.name || 'Temporary Shift',
+                shifts: tempShiftsArr,
+                shiftDetails: firstTemp.shift ? { startTime: firstTemp.shift.startTime, endTime: firstTemp.shift.endTime } : null,
+                price: 0,
+                assignedAt: firstTemp.startDate || firstTemp.createdAt,
+                isTemporary: true,
+                isTemporarySeat: true,
+                tempNote: firstTemp.note
             };
         }
 
@@ -419,10 +446,10 @@ exports.getMySeat = async (req, res) => {
             });
         }
 
-        // Find ALL active assignments for this student
-        const myAssignments = seat.assignments.filter(
+        // Find ALL active assignments for this student if permanent seat exists
+        const myAssignments = seat?.assignments ? seat.assignments.filter(
             a => a.student.toString() === studentId.toString() && a.status === 'active'
-        );
+        ) : [];
 
         // Build shifts[] array from all assignments
         const shiftsArr = myAssignments.map(a => {
@@ -458,9 +485,9 @@ exports.getMySeat = async (req, res) => {
             endDate: ta.endDate
         }));
 
-        res.status(200).json({
-            success: true,
-            seat: seat ? {
+        let seatResponse = null;
+        if (myAssignments.length > 0 && seat) {
+            seatResponse = {
                 _id: seat._id,
                 number: seat.number,
                 floor: seat.floor,
@@ -470,8 +497,30 @@ exports.getMySeat = async (req, res) => {
                 shifts: shiftsArr,       // NEW: all assigned shifts
                 price: myAssignments[0]?.price || 0,
                 basePrices: seat.basePrices,
-                shiftPrices: seat.shiftPrices
-            } : null,
+                shiftPrices: seat.shiftPrices,
+                isTemporary: false,
+                isTemporarySeat: false
+            };
+        } else if (formattedTempAssignments.length > 0) {
+            const firstT = formattedTempAssignments[0];
+            seatResponse = {
+                _id: firstT.seat?._id || (seat ? seat._id : null),
+                number: firstT.seat?.number,
+                floor: firstT.seat?.floor,
+                room: firstT.seat?.room,
+                shift: firstT.shift?.name || 'Temporary Shift',
+                shiftId: null,
+                shifts: firstT.shift ? [firstT.shift] : [],
+                price: 0,
+                isTemporary: true,
+                isTemporarySeat: true,
+                tempNote: firstT.note
+            };
+        }
+
+        res.status(200).json({
+            success: true,
+            seat: seatResponse,
             tempAssignments: formattedTempAssignments
         });
     } catch (error) {

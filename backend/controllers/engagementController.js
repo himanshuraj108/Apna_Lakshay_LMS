@@ -277,21 +277,61 @@ const getDailyQuiz = async (req, res) => {
         // Search for cached daily quiz
         let quiz = await DailyQuiz.findOne({ date: todayStr, examCode });
 
+        // Auto-backfill Hindi translations if existing quiz lacks them
+        if (quiz && (!quiz.questions[0]?.question_hi || !quiz.questions[0]?.options_hi?.length)) {
+            try {
+                const transPrompt = `Translate the following 5 exam questions, options, and explanations into Hindi (pure Devanagari script).
+Return ONLY a raw JSON object with a "translations" key containing an array of 5 objects:
+{
+  "translations": [
+    {
+      "question_hi": "Hindi question",
+      "options_hi": ["Option 1 in Hindi", "Option 2 in Hindi", "Option 3 in Hindi", "Option 4 in Hindi"],
+      "explanation_hi": "Hindi explanation"
+    }
+  ]
+}
+Questions to translate:
+${JSON.stringify(quiz.questions.map(q => ({ question: q.question, options: q.options, explanation: q.explanation })))}`;
+                const rawTrans = await callGroq([
+                    { role: 'system', content: 'You are an expert bilingual exam translator. Respond with ONLY valid JSON.' },
+                    { role: 'user', content: transPrompt }
+                ]);
+                const parsedTrans = extractJSON(rawTrans);
+                const transList = parsedTrans?.translations || (Array.isArray(parsedTrans) ? parsedTrans : []);
+                if (transList.length === quiz.questions.length) {
+                    quiz.questions.forEach((q, i) => {
+                        if (transList[i]) {
+                            q.question_hi = transList[i].question_hi || q.question;
+                            q.options_hi = (Array.isArray(transList[i].options_hi) && transList[i].options_hi.length === 4) ? transList[i].options_hi : q.options;
+                            q.explanation_hi = transList[i].explanation_hi || q.explanation || '';
+                        }
+                    });
+                    await quiz.save();
+                }
+            } catch (transErr) {
+                console.error('Failed to backfill Hindi translation for existing quiz:', transErr);
+            }
+        }
+
         if (!quiz) {
             // Generate using Groq
             const config = EXAM_TOPIC_GUIDES[examCode] || EXAM_TOPIC_GUIDES['generic'];
             
             const systemPrompt = 'You are an expert exam coach for Indian competitive exams. Always respond with ONLY a valid JSON object containing a "questions" array, and nothing else.';
-            const userPrompt = `Generate exactly 5 unique hard-difficulty MCQ questions for the competitive exam: ${config.name}.
+            const userPrompt = `Generate exactly 5 unique hard-difficulty bilingual MCQ questions for the competitive exam: ${config.name}.
 Topics to draw from: ${config.topics}.
 Each question must be a multiple choice question with exactly 4 options.
 Respond with ONLY a raw JSON object — no markdown fences, no extra text.
 The JSON object must have a "questions" key containing an array of 5 objects.
-Each question object must have:
-  "question": string (the question text)
-  "options": array of exactly 4 strings
+Each question object must provide complete English and Hindi translations:
+  "question": string (the question text in English)
+  "question_hi": string (the question text translated into pure Hindi / Devanagari script)
+  "options": array of exactly 4 strings (options in English)
+  "options_hi": array of exactly 4 strings (options translated into Hindi / Devanagari script)
   "correct": integer 0-3 (representing the correct option index, where 0=A, 1=B, 2=C, 3=D)
-  "explanation": string (one sentence explanation of the correct answer)
+  "explanation": string (one sentence explanation of the correct answer in English)
+  "explanation_hi": string (one sentence explanation of the correct answer in Hindi / Devanagari script)
   "subject": string (the subject or topic of this question)`;
 
             const messages = [
@@ -318,7 +358,12 @@ Each question object must have:
                 }
 
                 // Slice exactly 5 questions
-                questions = questions.slice(0, 5);
+                questions = questions.slice(0, 5).map(q => ({
+                    ...q,
+                    question_hi: q.question_hi || q.question,
+                    options_hi: (Array.isArray(q.options_hi) && q.options_hi.length === 4) ? q.options_hi : q.options,
+                    explanation_hi: q.explanation_hi || q.explanation || ''
+                }));
 
                 // Save to database daily cache
                 try {
@@ -354,7 +399,9 @@ Each question object must have:
                 questions: quiz.questions.map(q => ({
                     _id: q._id,
                     question: q.question,
+                    question_hi: q.question_hi || q.question,
                     options: q.options,
+                    options_hi: (q.options_hi && q.options_hi.length === 4) ? q.options_hi : q.options,
                     subject: q.subject
                 }))
             },
@@ -388,10 +435,21 @@ const submitDailyQuiz = async (req, res) => {
         const examCode = user.examTarget || 'generic';
         const todayStr = getISTDateString(new Date());
 
-        // Validate single attempt lock
+        // Validate single attempt lock - if already attempted, return existing attempt gracefully with solutions
         const existingAttempt = await DailyQuizAttempt.findOne({ user: user._id, date: todayStr });
         if (existingAttempt) {
-            return res.status(400).json({ success: false, message: 'You have already attempted today\'s quiz challenge.' });
+            const quiz = await DailyQuiz.findOne({ date: todayStr, examCode });
+            return res.status(200).json({
+                success: true,
+                alreadyAttempted: true,
+                message: 'You have already attempted today\'s quiz challenge.',
+                attempt: {
+                    score: existingAttempt.score,
+                    answers: existingAttempt.answers,
+                    xpAwarded: existingAttempt.xpAwarded,
+                    questionsWithSolutions: quiz ? quiz.questions : []
+                }
+            });
         }
 
         // Get the cached quiz

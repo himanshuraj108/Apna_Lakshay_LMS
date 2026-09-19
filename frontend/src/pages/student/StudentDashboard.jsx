@@ -18,7 +18,7 @@ import {
     IoLogOutOutline as IoLogoutIcon, IoChevronForward, IoGridOutline, IoMapOutline,
     IoMenuOutline, IoCloseOutline, IoKeypadOutline,
     IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline,
-    IoCheckmarkDoneOutline,
+    IoCheckmarkDoneOutline, IoCheckmarkOutline,
     IoLanguageOutline, IoWallet,
     IoTrophyOutline, IoDesktopOutline
 } from 'react-icons/io5';
@@ -540,6 +540,20 @@ const StudentDashboard = () => {
     const [activeUpdate, setActiveUpdate]             = useState(null);
     const [showUpdateModal, setShowUpdateModal]       = useState(false);
     const [modalLang, setModalLang]                   = useState('en');
+    const [quizLang, setQuizLang]                     = useState(() => {
+        try {
+            return localStorage.getItem('daily_quiz_lang') || 'en';
+        } catch (_) {
+            return 'en';
+        }
+    });
+    const [showQuizLangModal, setShowQuizLangModal]   = useState(false);
+    const handleSetQuizLang = (lang) => {
+        setQuizLang(lang);
+        try {
+            localStorage.setItem('daily_quiz_lang', lang);
+        } catch (_) {}
+    };
     const [quizAnswers, setQuizAnswers]               = useState([null, null, null, null, null]);
     const [currentQuizQuestionIndex, setCurrentQuizQuestionIndex] = useState(0);
     const [quizSubmitting, setQuizSubmitting]         = useState(false);
@@ -963,8 +977,25 @@ const StudentDashboard = () => {
                   MODALS
                â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <AnimatePresence>
-                {showLocationPrompt && <LocationPromptModal onClose={() => setShowLocationPrompt(false)} onEnable={handleEnableLocation} enabling={enablingLocation} />}
-                {showIDCard && <IDCard student={{ ...user, isActive, registrationSource: dashboardData?.registrationSource, seat: dashboardData?.seat, shift: dashboardData?.seat?.shift, shifts: dashboardData?.seat?.shifts, seatNumber: dashboardData?.seat?.number, shiftDetails: dashboardData?.seat?.shiftDetails, tempAssignments: dashboardData?.tempAssignments?.map(ta => ({ seat: { number: ta.seatNumber, room: { roomId: ta.room } }, shift: { name: ta.shiftName, startTime: ta.startTime, endTime: ta.endTime }, note: ta.note })) }} onClose={() => setShowIDCard(false)} />}
+                {showIDCard && <IDCard student={{
+                    ...user,
+                    isActive,
+                    registrationSource: dashboardData?.registrationSource,
+                    seat: dashboardData?.seat,
+                    seatNumber: dashboardData?.seat?.number,
+                    roomId: dashboardData?.seat?.roomId,
+                    room: dashboardData?.seat?.room,
+                    shift: dashboardData?.seat?.shift,
+                    shifts: dashboardData?.seat?.shifts,
+                    shiftDetails: dashboardData?.seat?.shiftDetails,
+                    isTemporary: Boolean(dashboardData?.seat?.isTemporary || dashboardData?.tempAssignments?.length > 0),
+                    isTemporarySeat: Boolean(dashboardData?.seat?.isTemporary || dashboardData?.tempAssignments?.length > 0),
+                    tempAssignments: dashboardData?.tempAssignments?.map(ta => ({
+                        seat: { number: ta.seatNumber, room: { roomId: ta.room, name: ta.room }, floor: { name: ta.floor } },
+                        shift: { name: ta.shiftName, startTime: ta.startTime, endTime: ta.endTime },
+                        note: ta.note
+                    }))
+                }} onClose={() => setShowIDCard(false)} />}
                 {showNewspaper && <NewspaperModal onClose={() => setShowNewspaper(false)} />}
 
                 {/* ── Manual Attendance Modal (PIN or Direct) ── */}
@@ -1335,71 +1366,304 @@ const StudentDashboard = () => {
                     </motion.a>
                 )}
 
-                {/* -- DAILY CHALLENGE -- shown here when NOT yet done -- */}
+                {/* -- DAILY CHALLENGE -- */}
                 <AnimatePresence mode="wait">
-                {!dailyQuizAttempted && dailyQuiz && (
-                    <motion.div
-                        key="challenge-top"
-                        initial={{ opacity: 0, y: -16, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -16, scale: 0.97 }}
-                        transition={{ type: 'spring', stiffness: 220, damping: 22 }}
-                        className="mb-5"
-                    >
-                        <div className="rounded-2xl overflow-hidden relative"
-                            style={{ background: 'linear-gradient(135deg,#7c2d12 0%,#c2410c 40%,#ea580c 70%,#f97316 100%)', boxShadow: '0 8px 32px rgba(249,115,22,0.35)', border: '1.5px solid rgba(249,115,22,0.4)' }}>
-                            {/* Top badge strip */}
-                            <div className="px-5 pt-4 pb-0 flex flex-wrap items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
-                                    style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff' }}>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-300" />{t("Today's Task")}
-                                </span>
-                                <span className="text-[9px] font-semibold" style={{ color: 'rgba(255,255,255,0.65)' }}>{t("Complete before midnight")}</span>
+                {dailyQuiz && (
+                    dailyQuizAttempted ? (
+                        <motion.div
+                            key="challenge-completed-top"
+                            ref={quizCompletedRef}
+                            initial={{ opacity: 0, y: -16, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -16, scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+                            className="mb-6 rounded-2xl overflow-hidden shadow-lg border"
+                            style={{
+                                background: 'linear-gradient(135deg, #064e3b 0%, #065f46 45%, #047857 75%, #059669 100%)',
+                                borderColor: 'rgba(52, 211, 153, 0.4)',
+                                boxShadow: '0 8px 32px rgba(5, 150, 105, 0.25)'
+                            }}
+                        >
+                            {/* Top badge row */}
+                            <div className="px-5 pt-4 pb-0 flex flex-wrap items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white">
+                                        <IoCheckmarkCircleOutline size={13} className="text-emerald-300" />
+                                        Today's Challenge Completed
+                                    </span>
+                                    <span className="text-[10px] font-semibold text-emerald-200">
+                                        Date: {dailyQuiz.date}
+                                    </span>
+                                </div>
+                                {/* Language Switcher Pill */}
+                                <div className="inline-flex p-0.5 rounded-xl bg-black/25 border border-white/20">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSetQuizLang('en')}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${
+                                            quizLang === 'en'
+                                                ? 'bg-white text-emerald-950 shadow-sm'
+                                                : 'text-emerald-100 hover:text-white'
+                                        }`}
+                                    >
+                                        English
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSetQuizLang('hi')}
+                                        className={`px-3 py-1 rounded-lg text-[10px] font-black transition-all ${
+                                            quizLang === 'hi'
+                                                ? 'bg-white text-emerald-950 shadow-sm'
+                                                : 'text-emerald-100 hover:text-white'
+                                        }`}
+                                    >
+                                        हिंदी
+                                    </button>
+                                </div>
                             </div>
-                            {/* Main row */}
-                            <div className="px-5 py-3.5 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
-                                <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
-                                        style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}>
-                                        <IoSparklesOutline size={18} className="text-white" />
+
+                            {/* Main Stats Row */}
+                            <div className="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/15">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md shrink-0 bg-white/15 border border-white/25">
+                                        <IoSparklesOutline size={22} className="text-emerald-200" />
                                     </div>
-                                    <div className="min-w-0">
-                                        <h2 className="font-black text-sm text-white truncate">{t("Daily Challenge")}</h2>
-                                        <p className="text-[10px] font-semibold truncate" style={{ color: 'rgba(255,255,255,0.7)' }}>5 {t("questions")} • Up to +70 {t("XP")}</p>
+                                    <div>
+                                        <h2 className="font-black text-base text-white">
+                                            Daily Challenge Solutions & Score
+                                        </h2>
+                                        <p className="text-[11px] font-semibold text-emerald-200">
+                                            Target: {user?.examTarget && user.examTarget !== 'generic' ? (EXAM_TARGET_NAMES[user.examTarget] || user.examTarget) : 'General Aptitude'} • Streak Kept Alive
+                                        </p>
                                     </div>
                                 </div>
-                                <span className="text-[9px] font-black px-2.5 py-1 rounded-full shrink-0"
-                                    style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff' }}>
-                                    {user?.examTarget && user.examTarget !== 'generic' ? (EXAM_TARGET_NAMES[user.examTarget] || t(user.examTarget)) : t('Select Target')}
-                                </span>
-                            </div>
-                            {/* Rewards + CTA */}
-                            <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    {[{val: `+50 ${t('XP')}`, sub: t('base reward')}, {val: `+20 ${t('Bonus')}`, sub: t('if 5/5')}, {val: t('Streak'), sub: t('kept alive')}].map((r, i) => (
-                                        <div key={i} className="flex flex-col items-center text-center">
-                                            <span className="text-sm font-black text-white whitespace-nowrap">{r.val}</span>
-                                            <span className="text-[9px] whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.6)' }}>{r.sub}</span>
+
+                                {/* Score & XP Badges & Action Buttons */}
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="px-3.5 py-1.5 rounded-xl flex items-center gap-2 bg-white/15 border border-white/20 text-white">
+                                        <div className="text-center">
+                                            <div className="text-[9px] uppercase font-bold text-emerald-200">Score</div>
+                                            <div className="text-sm font-black text-white">{dailyQuizAttempt?.score ?? 0}/5</div>
                                         </div>
-                                    ))}
+                                        <div className="h-6 w-px bg-white/20" />
+                                        <div className="text-center">
+                                            <div className="text-[9px] uppercase font-bold text-amber-300">XP Earned</div>
+                                            <div className="text-sm font-black text-amber-200">+{dailyQuizAttempt?.xpAwarded ?? 0}</div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSolutionsBelow(prev => !prev)}
+                                        className="px-4 py-2 rounded-xl text-xs font-black bg-white text-emerald-900 hover:bg-emerald-50 transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                                    >
+                                        <IoDocumentTextOutline size={15} />
+                                        {showSolutionsBelow ? 'Hide Solutions' : 'View Solutions'}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]);
+                                            setCurrentQuizQuestionIndex(0);
+                                            setShowQuizModal(true);
+                                        }}
+                                        className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-800/80 hover:bg-emerald-800 text-white border border-emerald-400/40 transition-all active:scale-95 flex items-center gap-1.5"
+                                    >
+                                        <IoSparklesOutline size={14} />
+                                        Review Mode
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        if (!user?.examTarget || user.examTarget === 'generic') { navigate('/student/profile?focus=examTarget'); return; }
-                                        setQuizAnswers([null, null, null, null, null]);
-                                        setCurrentQuizQuestionIndex(0);
-                                        setShowQuizModal(true);
-                                        setQuizError('');
-                                    }}
-                                    className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-sm transition-all hover:opacity-95 active:scale-95 shrink-0 self-stretch sm:self-auto"
-                                    style={{ background: 'rgba(255,255,255,0.95)', color: '#c2410c', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
-                                >
-                                    <IoFlashOutline size={15} className="animate-bounce" />
-                                    {t("Start Challenge")}
-                                </button>
                             </div>
-                        </div>
-                    </motion.div>
+
+                            {/* Questions & Solutions List */}
+                            {showSolutionsBelow && (
+                                <div className="p-4 sm:p-5 bg-white text-gray-900 space-y-4">
+                                    <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                                        <div className="flex items-center gap-2">
+                                            <IoDocumentTextOutline size={16} className="text-emerald-600" />
+                                            <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                                                {quizLang === 'hi' ? 'आज के प्रश्न एवं विस्तृत हल' : "Today's Questions & Solutions"}
+                                            </h4>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
+                                            {quizLang === 'hi' ? 'माध्यम: हिंदी' : 'Medium: English'}
+                                        </span>
+                                    </div>
+
+                                    {(dailyQuizAttempt?.questionsWithSolutions || dailyQuiz?.questions || []).map((q, qIdx) => {
+                                        const studentAns = dailyQuizAttempt?.answers?.[qIdx];
+                                        const correctAns = q.correct;
+                                        const isStudentCorrect = studentAns === correctAns;
+
+                                        const qText = (quizLang === 'hi' && (q.question_hi || q.question)) ? (q.question_hi || q.question) : q.question;
+                                        const opts = (quizLang === 'hi' && q.options_hi && q.options_hi.length === 4) ? q.options_hi : q.options;
+                                        const expl = (quizLang === 'hi' && (q.explanation_hi || q.explanation)) ? (q.explanation_hi || q.explanation) : q.explanation;
+
+                                        return (
+                                            <div
+                                                key={qIdx}
+                                                className="p-4 rounded-2xl bg-gray-50/70 border transition-all space-y-3"
+                                                style={{
+                                                    borderColor: isStudentCorrect ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.3)'
+                                                }}
+                                            >
+                                                {/* Top indicator */}
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black text-white ${
+                                                            isStudentCorrect ? 'bg-emerald-600' : 'bg-rose-500'
+                                                        }`}>
+                                                            {qIdx + 1}
+                                                        </span>
+                                                        {q.subject && (
+                                                            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-orange-100 text-orange-700">
+                                                                {q.subject}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                                                        isStudentCorrect
+                                                            ? 'bg-emerald-100 text-emerald-800'
+                                                            : 'bg-rose-100 text-rose-800'
+                                                    }`}>
+                                                        {isStudentCorrect ? 'Correct (+10 XP)' : 'Incorrect (0 XP)'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Question Text */}
+                                                <div className="text-xs sm:text-sm font-bold text-gray-900 leading-relaxed">
+                                                    <FormattedQuizText text={qText} />
+                                                </div>
+
+                                                {/* Options */}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {opts.map((opt, optIdx) => {
+                                                        const optLetter = ['A', 'B', 'C', 'D'][optIdx];
+                                                        const isThisCorrect = optIdx === correctAns;
+                                                        const isThisStudentChoice = optIdx === studentAns;
+
+                                                        let optBg = 'bg-white border-gray-200 text-gray-700';
+                                                        if (isThisCorrect) {
+                                                            optBg = 'bg-emerald-50 border-emerald-500 text-emerald-950 font-bold';
+                                                        } else if (isThisStudentChoice && !isThisCorrect) {
+                                                            optBg = 'bg-rose-50 border-rose-400 text-rose-950 font-bold';
+                                                        }
+
+                                                        return (
+                                                            <div
+                                                                key={optIdx}
+                                                                className={`p-2.5 rounded-xl border text-xs flex items-start gap-2 ${optBg}`}
+                                                            >
+                                                                <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
+                                                                    isThisCorrect
+                                                                        ? 'bg-emerald-600 text-white'
+                                                                        : isThisStudentChoice
+                                                                        ? 'bg-rose-500 text-white'
+                                                                        : 'bg-gray-200 text-gray-600'
+                                                                }`}>
+                                                                    {optLetter}
+                                                                </span>
+                                                                <div className="flex-1 leading-normal">
+                                                                    <FormattedQuizText text={opt} />
+                                                                </div>
+                                                                {isThisCorrect && (
+                                                                    <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
+                                                                        Correct
+                                                                    </span>
+                                                                )}
+                                                                {isThisStudentChoice && !isThisCorrect && (
+                                                                    <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded shrink-0">
+                                                                        Your Choice
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Explanation */}
+                                                {expl && (
+                                                    <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-2">
+                                                        <IoInformationCircleOutline size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                                                        <div className="flex-1 leading-relaxed">
+                                                            <strong className="font-black text-amber-900 block mb-0.5">
+                                                                {quizLang === 'hi' ? 'व्याख्या / हल:' : 'Explanation:'}
+                                                            </strong>
+                                                            <FormattedQuizText text={expl} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="challenge-top"
+                            initial={{ opacity: 0, y: -16, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -16, scale: 0.97 }}
+                            transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+                            className="mb-5"
+                        >
+                            <div className="rounded-2xl overflow-hidden relative"
+                                style={{ background: 'linear-gradient(135deg,#7c2d12 0%,#c2410c 40%,#ea580c 70%,#f97316 100%)', boxShadow: '0 8px 32px rgba(249,115,22,0.35)', border: '1.5px solid rgba(249,115,22,0.4)' }}>
+                                {/* Top badge strip */}
+                                <div className="px-5 pt-4 pb-0 flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
+                                        style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff' }}>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-300" />{t("Today's Task")}
+                                    </span>
+                                    <span className="text-[9px] font-semibold" style={{ color: 'rgba(255,255,255,0.65)' }}>{t("Complete before midnight")}</span>
+                                </div>
+                                {/* Main row */}
+                                <div className="px-5 py-3.5 flex items-center justify-between gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                                            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}>
+                                            <IoSparklesOutline size={18} className="text-white" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h2 className="font-black text-sm text-white truncate">{t("Daily Challenge")}</h2>
+                                            <p className="text-[10px] font-semibold truncate" style={{ color: 'rgba(255,255,255,0.7)' }}>5 {t("questions")} • Up to +70 {t("XP")}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[9px] font-black px-2.5 py-1 rounded-full shrink-0"
+                                        style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff' }}>
+                                        {user?.examTarget && user.examTarget !== 'generic' ? (EXAM_TARGET_NAMES[user.examTarget] || t(user.examTarget)) : t('Select Target')}
+                                    </span>
+                                </div>
+                                {/* Rewards + CTA */}
+                                <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        {[{val: `+50 ${t('XP')}`, sub: t('base reward')}, {val: `+20 ${t('Bonus')}`, sub: t('if 5/5')}, {val: t('Streak'), sub: t('kept alive')}].map((r, i) => (
+                                            <div key={i} className="flex flex-col items-center text-center">
+                                                <span className="text-sm font-black text-white whitespace-nowrap">{r.val}</span>
+                                                <span className="text-[9px] whitespace-nowrap" style={{ color: 'rgba(255,255,255,0.6)' }}>{r.sub}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (!user?.examTarget || user.examTarget === 'generic') { navigate('/student/profile?focus=examTarget'); return; }
+                                            setQuizAnswers([null, null, null, null, null]);
+                                            setCurrentQuizQuestionIndex(0);
+                                            setQuizError('');
+                                            setShowQuizLangModal(true);
+                                        }}
+                                        className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-extrabold text-sm transition-all hover:opacity-95 active:scale-95 shrink-0 self-stretch sm:self-auto"
+                                        style={{ background: 'rgba(255,255,255,0.95)', color: '#c2410c', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}
+                                    >
+                                        <IoFlashOutline size={15} className="animate-bounce" />
+                                        {t("Start Challenge")}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )
                 )}
                 </AnimatePresence>
 
@@ -1429,14 +1693,17 @@ const StudentDashboard = () => {
                                 const displaySeats = [];
                                 if (dashboardData?.seat) {
                                     displaySeats.push({
-                                        isTemp: false,
+                                        isTemp: Boolean(dashboardData.seat.isTemporary),
                                         number: dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}` : dashboardData.seat.number,
                                         shifts: dashboardData.seat.shifts || (dashboardData.seat.shift ? [{ name: dashboardData.seat.shift }] : []),
                                     });
                                 }
                                 if (dashboardData?.tempAssignments?.length > 0) {
                                     dashboardData.tempAssignments.forEach(s => {
-                                        displaySeats.push({ isTemp: true, number: s.room ? `${s.room} - ${s.seatNumber}` : s.seatNumber || '?', shifts: [{ name: s.shiftName, startTime: s.startTime, endTime: s.endTime }] });
+                                        const numStr = s.room ? `${s.room} - ${s.seatNumber}` : s.seatNumber || '?';
+                                        if (!displaySeats.some(d => d.number === numStr)) {
+                                            displaySeats.push({ isTemp: true, number: numStr, shifts: [{ name: s.shiftName, startTime: s.startTime, endTime: s.endTime }] });
+                                        }
                                     });
                                 }
                                 if (displaySeats.length === 0) return (
@@ -1446,10 +1713,19 @@ const StudentDashboard = () => {
                                     </div>
                                 );
                                 return (
-                                    <div className="flex flex-col gap-2 mt-1">
+                                    <div className="flex flex-col gap-2.5 mt-1">
                                         {displaySeats.map((s, r) => (
                                             <div key={r}>
-                                                <p className="text-2xl sm:text-3xl font-black mb-0.5 truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : '#1A1A1A' }} title={s.number}>{s.number}</p>
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <p className="text-2xl sm:text-3xl font-black truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : '#1A1A1A' }} title={s.number}>
+                                                        {s.number}
+                                                    </p>
+                                                    {s.isTemp && (
+                                                        <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-300 shadow-2xs">
+                                                            Temporary Desk
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {s.shifts.map((m, g) => (
                                                         <span key={g} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-full"
@@ -1841,189 +2117,7 @@ const StudentDashboard = () => {
                             )}
                         </motion.div>
 
-                        {/* Completed Daily Challenge (inside left col) */}
-                        <AnimatePresence mode="wait">
-                            {dailyQuizAttempted && dailyQuiz && (
-                                <motion.div
-                                    ref={quizCompletedRef}
-                                    key="challenge-completed"
-                                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 16, scale: 0.98 }}
-                                    transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                                    className="rounded-2xl overflow-hidden"
-                                    style={{ background: 'linear-gradient(135deg,#ecfdf5 0%,#d1fae5 60%,#a7f3d0 100%)', border: '1.5px solid #6ee7b7', boxShadow: '0 4px 20px rgba(16,185,129,0.1)' }}
-                                >
-                                    <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500" />
-                                    <div className="px-4 py-3.5 border-b flex items-center justify-between gap-3" style={{ borderColor: 'rgba(16,185,129,0.2)', background: 'rgba(255,255,255,0.5)' }}>
-                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                            <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md shrink-0" style={{ background: 'linear-gradient(135deg,#10b981,#34d399)' }}>
-                                                <IoCheckmarkCircleOutline size={16} className="text-white" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h2 className="font-black text-xs sm:text-sm text-emerald-900 truncate">Daily Challenge</h2>
-                                                <p className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold truncate">Completed! Keep it up!</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-white border border-emerald-200 text-emerald-700 shrink-0">
-                                            {user?.examTarget && user.examTarget !== 'generic' ? EXAM_TARGET_NAMES[user.examTarget] : 'Select Target'}
-                                        </span>
-                                    </div>
-                                    <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="px-3 py-2 rounded-xl flex flex-col items-center" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                                                <span className="text-xs font-black text-emerald-800">{dailyQuizAttempt?.score || 0}/5</span>
-                                                <span className="text-[8px] font-bold text-emerald-600 uppercase tracking-wide">Score</span>
-                                            </div>
-                                            <div className="px-3 py-2 rounded-xl flex flex-col items-center" style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(245,158,11,0.2)' }}>
-                                                <span className="text-xs font-black text-amber-700">+{dailyQuizAttempt?.xpAwarded || 0}</span>
-                                                <span className="text-[8px] font-bold text-amber-600 uppercase tracking-wide">XP</span>
-                                            </div>
-                                            <div>
-                                                <h4 className="text-xs font-black text-emerald-900">Excellent Work!</h4>
-                                                <p className="text-[10px] text-emerald-600 font-medium">Streak maintained</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => setShowSolutionsBelow(prev => !prev)}
-                                                className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-extrabold text-xs transition-all active:scale-95 shrink-0 bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 shadow-sm"
-                                            >
-                                                <IoDocumentTextOutline size={13} />
-                                                {showSolutionsBelow ? 'Hide Solutions' : 'View Solutions'}
-                                            </button>
-                                            <button
-                                                onClick={() => { setQuizAnswers(dailyQuizAttempt?.answers || [null, null, null, null, null]); setCurrentQuizQuestionIndex(0); setShowQuizModal(true); }}
-                                                className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-extrabold text-xs text-white transition-all active:scale-95 shrink-0"
-                                                style={{ background: 'linear-gradient(135deg,#10b981,#34d399)', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}
-                                            >
-                                                <IoSparklesOutline size={13} />
-                                                Interactive Mode
-                                            </button>
-                                        </div>
-                                    </div>
 
-                                    {/* Solutions & Explanations rendered directly below the card */}
-                                    {showSolutionsBelow && (
-                                        <div className="p-4 pt-2 border-t border-emerald-200/70 space-y-3.5 bg-emerald-50/40">
-                                            <div className="flex items-center justify-between pt-1 pb-1">
-                                                <div className="flex items-center gap-1.5">
-                                                    <IoDocumentTextOutline size={15} className="text-emerald-700" />
-                                                    <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wider">
-                                                        Today's Challenge Solutions
-                                                    </h4>
-                                                </div>
-                                                <span className="text-[10px] font-bold text-emerald-800 bg-white/80 border border-emerald-200 px-2 py-0.5 rounded-full shadow-xs">
-                                                    1 Attempt Only • Locked
-                                                </span>
-                                            </div>
-
-                                            {/* Questions list */}
-                                            {(dailyQuizAttempt?.questionsWithSolutions || dailyQuiz?.questions || []).map((q, qIdx) => {
-                                                const studentAns = dailyQuizAttempt?.answers?.[qIdx];
-                                                const correctAns = q.correct;
-                                                const isStudentCorrect = studentAns === correctAns;
-
-                                                return (
-                                                    <div
-                                                        key={qIdx}
-                                                        className="p-4 rounded-2xl bg-white border shadow-sm space-y-3"
-                                                        style={{
-                                                            borderColor: isStudentCorrect ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.3)'
-                                                        }}
-                                                    >
-                                                        {/* Top indicator row */}
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black text-white ${
-                                                                    isStudentCorrect ? 'bg-emerald-600' : 'bg-rose-500'
-                                                                }`}>
-                                                                    {qIdx + 1}
-                                                                </span>
-                                                                {q.subject && (
-                                                                    <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-orange-100 text-orange-700">
-                                                                        {q.subject}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                                                                isStudentCorrect
-                                                                    ? 'bg-emerald-100 text-emerald-800'
-                                                                    : 'bg-rose-100 text-rose-800'
-                                                            }`}>
-                                                                {isStudentCorrect ? 'Correct (+10 XP)' : 'Incorrect (0 XP)'}
-                                                            </span>
-                                                        </div>
-
-                                                        {/* Question text */}
-                                                        <div className="text-xs font-bold text-gray-900 leading-relaxed">
-                                                            <FormattedQuizText text={q.question} />
-                                                        </div>
-
-                                                        {/* Options */}
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                            {q.options.map((opt, optIdx) => {
-                                                                const optLetter = ['A', 'B', 'C', 'D'][optIdx];
-                                                                const isThisCorrect = optIdx === correctAns;
-                                                                const isThisStudentChoice = optIdx === studentAns;
-
-                                                                let optBg = 'bg-gray-50/60 border-gray-200 text-gray-700';
-                                                                if (isThisCorrect) {
-                                                                    optBg = 'bg-emerald-50 border-emerald-500 text-emerald-950 font-bold';
-                                                                } else if (isThisStudentChoice && !isThisCorrect) {
-                                                                    optBg = 'bg-rose-50 border-rose-400 text-rose-950 font-bold';
-                                                                }
-
-                                                                return (
-                                                                    <div
-                                                                        key={optIdx}
-                                                                        className={`p-2.5 rounded-xl border text-xs flex items-start gap-2 ${optBg}`}
-                                                                    >
-                                                                        <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black shrink-0 ${
-                                                                            isThisCorrect
-                                                                                ? 'bg-emerald-600 text-white'
-                                                                                : isThisStudentChoice
-                                                                                ? 'bg-rose-500 text-white'
-                                                                                : 'bg-gray-200 text-gray-600'
-                                                                        }`}>
-                                                                            {optLetter}
-                                                                        </span>
-                                                                        <div className="flex-1 leading-normal">
-                                                                            <FormattedQuizText text={opt} />
-                                                                        </div>
-                                                                        {isThisCorrect && (
-                                                                            <span className="text-[9px] font-black uppercase text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
-                                                                                Correct
-                                                                            </span>
-                                                                        )}
-                                                                        {isThisStudentChoice && !isThisCorrect && (
-                                                                            <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded shrink-0">
-                                                                                Your Choice
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-
-                                                        {/* Explanation */}
-                                                        {q.explanation && (
-                                                            <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/70 text-xs text-amber-950 flex items-start gap-2">
-                                                                <IoInformationCircleOutline size={15} className="text-amber-600 shrink-0 mt-0.5" />
-                                                                <div className="flex-1 leading-relaxed">
-                                                                    <strong className="font-black text-amber-900 block mb-0.5">Explanation:</strong>
-                                                                    <FormattedQuizText text={q.explanation} />
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
                     </div>
 
                     {/* RIGHT: Learning section */}
@@ -2103,6 +2197,110 @@ const StudentDashboard = () => {
                 </div>
             </main>
 
+            {/* Language Selector Modal */}
+            <AnimatePresence>
+                {showQuizLangModal && (
+                    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                            className="w-full max-w-md bg-white border border-gray-100 rounded-3xl shadow-2xl relative overflow-hidden text-center p-6 sm:p-7"
+                        >
+                            {/* Accent top gradient */}
+                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-emerald-500" />
+
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setShowQuizLangModal(false)}
+                                className="absolute top-4 right-4 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                                <IoCloseCircle size={22} />
+                            </button>
+
+                            {/* Icon */}
+                            <div className="w-14 h-14 rounded-2xl mx-auto mb-3.5 flex items-center justify-center shadow-lg"
+                                style={{ background: 'linear-gradient(135deg,#f97316,#ea580c)' }}>
+                                <IoSparklesOutline size={26} className="text-white" />
+                            </div>
+
+                            <h3 className="text-lg font-black text-gray-900 mb-1">
+                                Select Quiz Language
+                            </h3>
+                            <p className="text-xs font-semibold text-gray-500 mb-5">
+                                Choose your medium for questions, options, and explanations
+                            </p>
+
+                            {/* Two Option Cards */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5 text-left">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleSetQuizLang('en');
+                                        setShowQuizLangModal(false);
+                                        setQuizAnswers([null, null, null, null, null]);
+                                        setCurrentQuizQuestionIndex(0);
+                                        setQuizError('');
+                                        setShowQuizModal(true);
+                                    }}
+                                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col justify-between gap-3 text-left hover:border-orange-500 hover:shadow-md ${
+                                        quizLang === 'en'
+                                            ? 'border-orange-500 bg-orange-50/30'
+                                            : 'border-gray-200 bg-white hover:bg-orange-50/10'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-black px-2 py-0.5 rounded-md bg-orange-100 text-orange-700">EN</span>
+                                        <span className="text-[10px] font-bold text-gray-400">Medium</span>
+                                    </div>
+                                    <div>
+                                        <div className="text-base font-black text-gray-900">English</div>
+                                        <div className="text-[11px] font-medium text-gray-500 mt-0.5">Read questions & solutions in English</div>
+                                    </div>
+                                    <div className="text-[11px] font-black text-orange-600 flex items-center gap-1">
+                                        Start in English &rarr;
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        handleSetQuizLang('hi');
+                                        setShowQuizLangModal(false);
+                                        setQuizAnswers([null, null, null, null, null]);
+                                        setCurrentQuizQuestionIndex(0);
+                                        setQuizError('');
+                                        setShowQuizModal(true);
+                                    }}
+                                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col justify-between gap-3 text-left hover:border-emerald-500 hover:shadow-md ${
+                                        quizLang === 'hi'
+                                            ? 'border-emerald-500 bg-emerald-50/30'
+                                            : 'border-gray-200 bg-white hover:bg-emerald-50/10'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700">HI</span>
+                                        <span className="text-[10px] font-bold text-gray-400">माध्यम</span>
+                                    </div>
+                                    <div>
+                                        <div className="text-base font-black text-gray-900">हिंदी</div>
+                                        <div className="text-[11px] font-medium text-gray-500 mt-0.5">हिंदी माध्यम में प्रश्न व विस्तृत हल</div>
+                                    </div>
+                                    <div className="text-[11px] font-black text-emerald-600 flex items-center gap-1">
+                                        हिंदी में शुरू करें &rarr;
+                                    </div>
+                                </button>
+                            </div>
+
+                            <p className="text-[10px] text-gray-400 font-medium">
+                                Note: You can also switch languages anytime while attempting or reviewing the quiz.
+                            </p>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* Daily Quiz Modal */}
             <AnimatePresence>
                 {showQuizModal && dailyQuiz && (
@@ -2127,12 +2325,39 @@ const StudentDashboard = () => {
                                         {dailyQuizAttempted ? 'Review Mode' : 'Live Challenge'} • Date: {dailyQuiz.date}
                                     </p>
                                 </div>
-                                <button
-                                    onClick={() => setShowQuizModal(false)}
-                                    className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-800 transition-colors"
-                                >
-                                    <IoCloseCircle size={22} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    {/* Language switch toggle pill */}
+                                    <div className="inline-flex p-0.5 rounded-lg bg-gray-200/80 border border-gray-300">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSetQuizLang('en')}
+                                            className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${
+                                                quizLang === 'en'
+                                                    ? 'bg-white text-orange-600 shadow-xs'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                        >
+                                            EN
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSetQuizLang('hi')}
+                                            className={`px-2.5 py-1 rounded-md text-[10px] font-black transition-all ${
+                                                quizLang === 'hi'
+                                                    ? 'bg-white text-orange-600 shadow-xs'
+                                                    : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                        >
+                                            हिंदी
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowQuizModal(false)}
+                                        className="p-1.5 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-800 transition-colors"
+                                    >
+                                        <IoCloseCircle size={22} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Progress bar */}
@@ -2149,30 +2374,47 @@ const StudentDashboard = () => {
                             {/* Content */}
                             <div className="p-5 overflow-y-auto flex-1 space-y-4">
                                 {(() => {
-                                    const currentQuestion = dailyQuiz.questions[currentQuizQuestionIndex];
+                                    const rawQuestion = dailyQuiz.questions[currentQuizQuestionIndex];
+                                    const rawSolution = dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex] || rawQuestion;
                                     const selectedAnswer = quizAnswers[currentQuizQuestionIndex];
                                     const isAttempted = dailyQuizAttempted;
-                                    const correctOptionIndex = isAttempted 
-                                        ? dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex]?.correct
-                                        : null;
+                                    const correctOptionIndex = isAttempted ? rawSolution?.correct : null;
+
+                                    // Bilingual resolution
+                                    const questionText = (quizLang === 'hi' && (rawQuestion.question_hi || rawSolution?.question_hi))
+                                        ? (rawQuestion.question_hi || rawSolution?.question_hi)
+                                        : rawQuestion.question;
+
+                                    const optionsList = (quizLang === 'hi' && (rawQuestion.options_hi?.length === 4 || rawSolution?.options_hi?.length === 4))
+                                        ? (rawQuestion.options_hi || rawSolution?.options_hi)
+                                        : rawQuestion.options;
+
+                                    const explanationText = (quizLang === 'hi' && (rawSolution?.explanation_hi || rawQuestion.explanation_hi))
+                                        ? (rawSolution?.explanation_hi || rawQuestion.explanation_hi)
+                                        : (rawSolution?.explanation || rawQuestion.explanation || 'No explanation available.');
 
                                     return (
                                         <div className="space-y-4">
                                             {/* Question card */}
                                             <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                                                {currentQuestion.subject && (
-                                                    <span className="text-[9px] font-black uppercase bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md mb-2 inline-block">
-                                                        {currentQuestion.subject}
+                                                <div className="flex items-center justify-between mb-2">
+                                                    {rawQuestion.subject && (
+                                                        <span className="text-[9px] font-black uppercase bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md inline-block">
+                                                            {rawQuestion.subject}
+                                                        </span>
+                                                    )}
+                                                    <span className="text-[9px] font-black uppercase text-gray-400">
+                                                        {quizLang === 'hi' ? 'हिंदी माध्यम' : 'English Medium'}
                                                     </span>
-                                                )}
+                                                </div>
                                                 <div className="text-sm font-bold text-gray-800 leading-relaxed">
-                                                    <FormattedQuizText text={currentQuestion.question} />
+                                                    <FormattedQuizText text={questionText} />
                                                 </div>
                                             </div>
 
                                             {/* Options */}
                                             <div className="space-y-2.5">
-                                                {currentQuestion.options.map((option, idx) => {
+                                                {optionsList.map((option, idx) => {
                                                     const optionLetter = ['A', 'B', 'C', 'D'][idx];
                                                     const isSelected = selectedAnswer === idx;
 
@@ -2231,10 +2473,10 @@ const StudentDashboard = () => {
                                                 >
                                                     <h5 className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
                                                         <IoInformationCircleOutline size={14} className="text-indigo-600" />
-                                                        Explanation
+                                                        {quizLang === 'hi' ? 'विस्तृत हल एवं व्याख्या' : 'Explanation & Solution'}
                                                     </h5>
                                                     <div className="text-xs text-indigo-900/90 leading-relaxed font-medium">
-                                                        <FormattedQuizText text={dailyQuizAttempt?.questionsWithSolutions?.[currentQuizQuestionIndex]?.explanation || 'No explanation available.'} />
+                                                        <FormattedQuizText text={explanationText} />
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -2278,19 +2520,54 @@ const StudentDashboard = () => {
                                                     const res = await api.post('/student/engagement/daily-quiz/submit', { answers: quizAnswers });
                                                     if (res.data.success) {
                                                         playSuccessBeep();
+                                                        bustCache('engagement');
                                                         setDailyQuizAttempted(true);
-                                                        setDailyQuizAttempt(res.data.attempt);
-                                                        setQuizAnswers(res.data.attempt?.answers || quizAnswers);
+                                                        const attemptData = res.data.attempt;
+                                                        setDailyQuizAttempt(attemptData);
+                                                        setQuizAnswers(attemptData?.answers || quizAnswers);
                                                         setCurrentQuizQuestionIndex(0);
-                                                        // Refresh dashboard data
-                                                        fetchDashboardData();
-                                                        fetchEngagementData();
-                                                        // Close quiz modal & open result modal directly
+                                                        
+                                                        // Update cache explicitly so no race condition reverts to false
+                                                        setCache('engagement', {
+                                                            ...(_cache.engagement?.data || {}),
+                                                            dailyQuizAttempted: true,
+                                                            dailyQuizAttempt: attemptData
+                                                        });
+
+                                                        // Close modal & directly move to solutions view at the top of dashboard
                                                         setShowQuizModal(false);
-                                                        setShowQuizResultModal(true);
+                                                        setShowQuizResultModal(false);
                                                         setShowSolutionsBelow(true);
+                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                                                        // Refresh background stats
+                                                        fetchDashboardData();
                                                     }
                                                 } catch (e) {
+                                                    const errMsg = e.response?.data?.message || '';
+                                                    if (errMsg.toLowerCase().includes('already attempted')) {
+                                                        bustCache('engagement');
+                                                        try {
+                                                            const freshRes = await api.get('/student/engagement/daily-quiz');
+                                                            if (freshRes.data.success) {
+                                                                setDailyQuiz(freshRes.data.quiz);
+                                                                setDailyQuizAttempted(true);
+                                                                setDailyQuizAttempt(freshRes.data.attempt);
+                                                                setQuizAnswers(freshRes.data.attempt?.answers || quizAnswers);
+                                                                setCache('engagement', {
+                                                                    ...(_cache.engagement?.data || {}),
+                                                                    dailyQuiz: freshRes.data.quiz,
+                                                                    dailyQuizAttempted: true,
+                                                                    dailyQuizAttempt: freshRes.data.attempt
+                                                                });
+                                                                setShowQuizModal(false);
+                                                                setShowQuizResultModal(false);
+                                                                setShowSolutionsBelow(true);
+                                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                return;
+                                                            }
+                                                        } catch (_) {}
+                                                    }
                                                     setQuizError(e.response?.data?.message || 'Submission failed. Please try again.');
                                                 } finally {
                                                     setQuizSubmitting(false);

@@ -670,15 +670,39 @@ exports.getStudents = async (req, res) => {
                 }
             }
 
+            let isTemporarySeat = false;
+            let resolvedSeat = student.seat;
+            let resolvedSeatNumber = student.seat?.number || null;
+
+            if (shiftsArr.length === 0 && tempMap[student._id.toString()]?.length > 0) {
+                const firstTemp = tempMap[student._id.toString()][0];
+                isTemporarySeat = true;
+                if (firstTemp.seat) {
+                    resolvedSeat = firstTemp.seat;
+                    resolvedSeatNumber = firstTemp.seat.number;
+                }
+                if (firstTemp.shift) {
+                    shiftInfo = firstTemp.shift.name;
+                    shiftDetails = { startTime: firstTemp.shift.startTime, endTime: firstTemp.shift.endTime };
+                    shiftsArr = [{ _id: firstTemp.shift._id, name: firstTemp.shift.name, startTime: firstTemp.shift.startTime, endTime: firstTemp.shift.endTime }];
+                }
+            } else if (tempMap[student._id.toString()]?.length > 0) {
+                isTemporarySeat = true;
+            }
+
             // Calculate online status
             const userRoom = io ? io.sockets.adapter.rooms.get(`user:${student._id}`) : null;
             const isOnline = userRoom ? userRoom.size > 0 : false;
 
             return {
                 ...student,
+                seat: resolvedSeat,
+                seatNumber: resolvedSeatNumber,
                 shift: shiftInfo,              // backward compat: "Shift 1 + Shift 3"
                 shiftDetails,                  // backward compat: first shift times
                 shifts: shiftsArr,             // NEW: full array [{name, startTime, endTime}]
+                isTemporary: isTemporarySeat,
+                isTemporarySeat,
                 registrationSource: student.registrationSource || 'admin',
                 currentFee: feeMap[student._id.toString()] || null,
                 tempAssignments: tempMap[student._id.toString()] || [],
@@ -833,6 +857,30 @@ exports.getStudent = async (req, res) => {
             }
         }
 
+        // Check if student has an active temporary seat assignment
+        const tempAssignments = await TempSeatAssignment.find({
+            borrowerStudent: student._id,
+            status: 'active'
+        }).populate({ path: 'seat', populate: { path: 'room floor' } }).populate('shift').lean();
+
+        let isTemporary = false;
+        if (!seatData && tempAssignments.length > 0) {
+            const firstTemp = tempAssignments[0];
+            seatData = {
+                number: firstTemp.seat?.number,
+                floor: firstTemp.seat?.floor?.name,
+                room: firstTemp.seat?.room?.name,
+                roomId: firstTemp.seat?.room?.roomId,
+                shift: firstTemp.shift?.name || 'Temporary Shift',
+                price: 0,
+                isTemporary: true
+            };
+            student.shift = firstTemp.shift?.name || 'Temporary Shift';
+            isTemporary = true;
+        } else if (tempAssignments.length > 0) {
+            isTemporary = true;
+        }
+
         const io = req.app.get('io');
         const userRoom = io ? io.sockets.adapter.rooms.get(`user:${student._id}`) : null;
         const isOnline = userRoom ? userRoom.size > 0 : false;
@@ -842,6 +890,9 @@ exports.getStudent = async (req, res) => {
             student: {
                 ...student, // It is already lean object
                 seat: seatData,
+                isTemporary,
+                isTemporarySeat: isTemporary,
+                tempAssignments,
                 isOnline,
                 isLoggedIn: student.isLoggedIn || false,
                 lastLogin: student.lastLogin || null,
@@ -1614,13 +1665,44 @@ exports.requestStudentInactivation = async (req, res) => {
             });
         }
 
-        // Free up student's seat immediately
-        const assignedSeats = await Seat.find({ 'assignments.student': student._id });
+        // Free up student's seat immediately, capturing all desk details first
+        let assignedSeats = await Seat.find({ 'assignments.student': student._id }).populate('room floor');
+        if (assignedSeats.length === 0 && student.seat) {
+            const fallbackSeat = await Seat.findById(student.seat).populate('room floor');
+            if (fallbackSeat) assignedSeats = [fallbackSeat];
+        }
+
         let vacatedSeatDesc = null;
+        let originalSeatData = null;
 
         for (const seat of assignedSeats) {
             const userAssign = seat.assignments.find(a => a.student.toString() === student._id.toString());
             if (userAssign) {
+                originalSeatData = {
+                    seatId: seat._id,
+                    seatNumber: seat.number,
+                    shift: userAssign.shift || student.shift,
+                    shifts: userAssign.shifts || student.shifts || [],
+                    legacyShift: userAssign.legacyShift || null,
+                    type: userAssign.type || 'specific',
+                    price: userAssign.price || seat.price || 800,
+                    assignedAt: userAssign.assignedAt || student.seatAssignedAt,
+                    room: seat.room ? (seat.room.name || seat.room.roomId || seat.room) : null,
+                    floor: seat.floor ? (seat.floor.name || seat.floor) : null
+                };
+                vacatedSeatDesc = `Seat ${seat.number}${seat.room ? ` (${seat.room.name || seat.room.roomId || ''})` : ''}`;
+            } else if (!originalSeatData) {
+                originalSeatData = {
+                    seatId: seat._id,
+                    seatNumber: seat.number,
+                    shift: student.shift,
+                    shifts: student.shifts || [],
+                    legacyShift: null,
+                    type: 'specific',
+                    price: seat.price || 800,
+                    room: seat.room ? (seat.room.name || seat.room.roomId || seat.room) : null,
+                    floor: seat.floor ? (seat.floor.name || seat.floor) : null
+                };
                 vacatedSeatDesc = `Seat ${seat.number}`;
             }
             seat.assignments = seat.assignments.filter(a => a.student.toString() !== student._id.toString());
@@ -1650,9 +1732,12 @@ exports.requestStudentInactivation = async (req, res) => {
             type: 'inactivation',
             currentData: {
                 vacatedSeat: vacatedSeatDesc || 'No physical desk assigned',
+                originalSeat: originalSeatData,
                 studentName: student.name,
                 mobile: student.mobile || student.phoneNumber || '',
-                email: student.email
+                email: student.email,
+                shift: student.shift,
+                shifts: student.shifts || []
             },
             requestedData: {
                 action: 'inactivate',
@@ -4125,7 +4210,8 @@ exports.bulkResetPasswordsToMobile = async (req, res) => {
 exports.getRequests = async (req, res) => {
     try {
         const requests = await Request.find()
-            .populate('student', 'name email')
+            .populate('student', 'name email mobile phoneNumber studentId shift shifts seat isActive inactivationStatus')
+            .populate('reviewedBy', 'name email')
             .sort({ createdAt: -1 });
 
         // Filter out orphaned requests
@@ -4192,54 +4278,357 @@ exports.handleRequest = async (req, res) => {
         }
 
         if (request.status !== 'pending') {
+            if (request.status === status) {
+                return res.status(200).json({
+                    success: true,
+                    message: `Request has already been ${status}.`,
+                    request
+                });
+            }
             return res.status(400).json({
                 success: false,
-                message: 'This request has already been processed'
+                message: `This request has already been ${request.status}.`
             });
         }
 
         // Handle scholar inactivation requests (initiated by sub-admin)
         if (request.type === 'inactivation') {
-            const student = await User.findById(request.student._id);
-            if (student) {
-                if (status === 'approved') {
-                    student.isActive = false;
-                    student.inactivationStatus = 'approved';
-                    // Ensure seat references are completely cleaned
-                    if (student.seat) {
-                        const assignedSeats = await Seat.find({ 'assignments.student': student._id });
-                        for (const s of assignedSeats) {
-                            s.assignments = s.assignments.filter(a => a.student.toString() !== student._id.toString());
-                            s.isOccupied = s.assignments.some(a => a.status === 'active');
-                            await s.save();
-                        }
-                        student.seat = null;
-                        student.seatAssignedAt = null;
-                    }
-                    await student.save();
+            const student = await User.findById(request.student._id || request.student);
+            if (!student) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Student associated with this request was not found'
+                });
+            }
 
-                    await logAction(
-                        req,
-                        'student_inactivation_approved',
-                        'User',
-                        student._id,
-                        student.name,
-                        `Super Admin approved scholar inactivation requested by sub-admin`
-                    );
-                } else {
-                    student.isActive = true;
-                    student.inactivationStatus = 'none';
-                    await student.save();
-
-                    await logAction(
-                        req,
-                        'student_inactivation_rejected',
-                        'User',
-                        student._id,
-                        student.name,
-                        `Super Admin rejected scholar inactivation request: ${adminResponse || 'No reason specified'}`
-                    );
+            if (status === 'approved') {
+                student.isActive = false;
+                student.inactivationStatus = 'approved';
+                // Clean up any seat references
+                const assignedSeats = await Seat.find({ 'assignments.student': student._id });
+                for (const s of assignedSeats) {
+                    s.assignments = s.assignments.filter(a => a.student.toString() !== student._id.toString());
+                    s.isOccupied = s.assignments.some(a => a.status === 'active');
+                    await s.save();
                 }
+                student.seat = null;
+                student.seatAssignedAt = null;
+
+                // Revoke any active temporary seat assignments for this student
+                await TempSeatAssignment.updateMany(
+                    { borrowerStudent: student._id, status: 'active' },
+                    { status: 'revoked', note: 'Inactivation confirmed by Super Admin' }
+                );
+
+                if (!student.statusHistory) student.statusHistory = [];
+                student.statusHistory.push({
+                    status: 'inactive',
+                    date: new Date(),
+                    reason: `Super Admin approved scholar inactivation. ${adminResponse ? `Note: ${adminResponse}` : ''}`
+                });
+                await student.save();
+
+                request.status = 'approved';
+                request.adminResponse = adminResponse || 'Approved scholar inactivation';
+                request.reviewedBy = req.user.id;
+                request.reviewedAt = new Date();
+                await request.save();
+
+                // Notify student
+                await Notification.create({
+                    recipient: student._id,
+                    title: 'Account Inactivated',
+                    message: adminResponse || 'Your library membership has been inactivated following Super Admin confirmation.',
+                    type: 'profile',
+                    createdBy: req.user.id
+                });
+
+                // Notify requesting sub-admin if present
+                if (request.requestedData?.subAdminId) {
+                    await Notification.create({
+                        recipient: request.requestedData.subAdminId,
+                        title: 'Inactivation Request Approved',
+                        message: `Super Admin approved your inactivation request for scholar ${student.name}.`,
+                        type: 'request',
+                        createdBy: req.user.id
+                    });
+                }
+
+                await logAction(
+                    req,
+                    'student_inactivation_approved',
+                    'User',
+                    student._id,
+                    student.name,
+                    `Super Admin approved scholar inactivation requested by sub-admin (${request.requestedData?.subAdminName || 'Staff'})`
+                );
+
+                return res.status(200).json({
+                    success: true,
+                    message: `Scholar ${student.name} inactivation approved successfully.`,
+                    request
+                });
+            } else {
+                // status === 'rejected' -> Super Admin DISAPPROVED the inactivation request!
+                // 1. Reactivate student
+                student.isActive = true;
+                student.inactivationStatus = 'none';
+                if (!student.statusHistory) student.statusHistory = [];
+                student.statusHistory.push({
+                    status: 'active',
+                    date: new Date(),
+                    reason: `Super Admin disapproved inactivation request: ${adminResponse || 'Reinstated by Super Admin'}`
+                });
+
+                // 2. Identify previous desk
+                const origSeat = request.currentData?.originalSeat;
+                let targetSeat = null;
+
+                if (origSeat?.seatId) {
+                    targetSeat = await Seat.findById(origSeat.seatId).populate('room floor');
+                }
+                if (!targetSeat && origSeat?.seatNumber) {
+                    targetSeat = await Seat.findOne({ number: origSeat.seatNumber }).populate('room floor');
+                }
+
+                const targetShiftId = origSeat?.shift || student.shift || null;
+                const targetLegacyShift = origSeat?.legacyShift || null;
+                const targetShiftType = origSeat?.type || 'specific';
+                const targetPrice = origSeat?.price || 800;
+
+                let relocatedStudentName = null;
+                let temporaryAssignedStudentName = null;
+                let assignedDeskNumber = null;
+
+                if (targetSeat) {
+                    assignedDeskNumber = targetSeat.number;
+
+                    const { doTimeRangesOverlap } = require('../utils/timeUtils');
+                    const allShiftsList = await Shift.find({}).lean();
+                    const shiftMap = new Map(allShiftsList.map(s => [s._id.toString(), s]));
+
+                    const shiftsOverlap = (asgn1, asgn2) => {
+                        if (!asgn1 || !asgn2) return false;
+                        if (asgn1.type === 'full_day' || asgn2.type === 'full_day') return true;
+                        if (asgn1.legacyShift === 'full' || asgn2.legacyShift === 'full') return true;
+                        if (asgn1.shift && asgn2.shift && asgn1.shift.toString() === asgn2.shift.toString()) return true;
+                        if (asgn1.legacyShift && asgn2.legacyShift && asgn1.legacyShift === asgn2.legacyShift) return true;
+
+                        if (asgn1.shift && asgn2.shift) {
+                            const s1 = shiftMap.get(asgn1.shift.toString());
+                            const s2 = shiftMap.get(asgn2.shift.toString());
+                            if (s1 && s2) {
+                                const isS1Full = s1.name?.toLowerCase().includes('full') || (s1.startTime === '06:00' && s1.endTime === '21:00');
+                                const isS2Full = s2.name?.toLowerCase().includes('full') || (s2.startTime === '06:00' && s2.endTime === '21:00');
+                                if (isS1Full || isS2Full) return true;
+                                return doTimeRangesOverlap(s1.startTime, s1.endTime, s2.startTime, s2.endTime);
+                            }
+                        }
+                        return false;
+                    };
+
+                    const targetAsgn = { shift: targetShiftId, type: targetShiftType, legacyShift: targetLegacyShift };
+
+                    // Check for conflicting active assignments on targetSeat that overlap with this shift
+                    const conflictingAssignments = targetSeat.assignments.filter(a =>
+                        a.status === 'active' &&
+                        a.student.toString() !== student._id.toString() &&
+                        shiftsOverlap(targetAsgn, a)
+                    );
+
+                    for (const conflictAssign of conflictingAssignments) {
+                        const conflictStudentId = conflictAssign.student;
+                        const conflictStudent = await User.findById(conflictStudentId);
+
+                        // Find a vacant candidate desk for this conflict student shift-wise
+                        const allSeats = await Seat.find({}).populate('room floor');
+                        let vacantSeat = null;
+
+                        for (const candSeat of allSeats) {
+                            if (candSeat._id.toString() === targetSeat._id.toString()) continue;
+                            const hasOverlap = candSeat.assignments.some(a =>
+                                a.status === 'active' &&
+                                shiftsOverlap(conflictAssign, a)
+                            );
+                            if (!hasOverlap) {
+                                vacantSeat = candSeat;
+                                break;
+                            }
+                        }
+
+                        if (vacantSeat && conflictStudent) {
+                            // Move conflicting student to the vacant desk shift-wise
+                            conflictAssign.status = 'expired';
+                            vacantSeat.assignments.push({
+                                student: conflictStudent._id,
+                                shift: conflictAssign.shift,
+                                legacyShift: conflictAssign.legacyShift,
+                                type: conflictAssign.type,
+                                price: conflictAssign.price,
+                                status: 'active',
+                                assignedAt: new Date()
+                            });
+                            vacantSeat.isOccupied = true;
+                            vacantSeat.markModified('assignments');
+                            await vacantSeat.save();
+
+                            conflictStudent.seat = vacantSeat._id;
+                            await conflictStudent.save();
+
+                            relocatedStudentName = conflictStudent.name;
+
+                            // In-app notification to relocated student
+                            await Notification.create({
+                                recipient: conflictStudent._id,
+                                title: 'Desk Relocated',
+                                message: `Your assigned desk was updated to Desk ${vacantSeat.number} (${vacantSeat.room?.name || 'Main Room'}) as Desk ${targetSeat.number} was restored to its original scholar.`,
+                                type: 'seat',
+                                createdBy: req.user.id
+                            });
+                        } else if (conflictStudent) {
+                            // No vacant desk available -> keep on same desk with TEMPORARY status
+                            conflictAssign.status = 'expired';
+
+                            await TempSeatAssignment.create({
+                                borrowerStudent: conflictStudent._id,
+                                seat: targetSeat._id,
+                                shift: conflictAssign.shift || targetShiftId,
+                                originalOwner: student._id,
+                                note: `Temporary desk allocation on Desk ${targetSeat.number} after original scholar ${student.name} was reinstated.`,
+                                startDate: new Date(),
+                                status: 'active',
+                                createdBy: req.user.id
+                            });
+
+                            temporaryAssignedStudentName = conflictStudent.name;
+
+                            // In-app notification to temporary student
+                            await Notification.create({
+                                recipient: conflictStudent._id,
+                                title: 'Temporary Desk Allocation',
+                                message: `You have been allocated temporary status on Desk ${targetSeat.number} following restoration of original scholar ${student.name} by Super Admin.`,
+                                type: 'seat',
+                                createdBy: req.user.id
+                            });
+                        }
+                    }
+
+                    // Forcefully reassign original student back to targetSeat
+                    targetSeat.assignments = targetSeat.assignments.filter(a => a.student.toString() !== student._id.toString());
+                    targetSeat.assignments.push({
+                        student: student._id,
+                        shift: targetShiftId,
+                        legacyShift: targetLegacyShift,
+                        type: targetShiftType,
+                        price: targetPrice,
+                        status: 'active',
+                        assignedAt: new Date()
+                    });
+                    targetSeat.isOccupied = true;
+                    targetSeat.markModified('assignments');
+                    await targetSeat.save();
+
+                    student.seat = targetSeat._id;
+                    student.seatAssignedAt = new Date();
+                } else {
+                    // Fallback: original seat was not found, find any vacant seat shift-wise
+                    const { doTimeRangesOverlap } = require('../utils/timeUtils');
+                    const allShiftsList = await Shift.find({}).lean();
+                    const shiftMap = new Map(allShiftsList.map(s => [s._id.toString(), s]));
+
+                    const shiftsOverlap = (asgn1, asgn2) => {
+                        if (!asgn1 || !asgn2) return false;
+                        if (asgn1.type === 'full_day' || asgn2.type === 'full_day') return true;
+                        if (asgn1.legacyShift === 'full' || asgn2.legacyShift === 'full') return true;
+                        if (asgn1.shift && asgn2.shift && asgn1.shift.toString() === asgn2.shift.toString()) return true;
+                        if (asgn1.legacyShift && asgn2.legacyShift && asgn1.legacyShift === asgn2.legacyShift) return true;
+
+                        if (asgn1.shift && asgn2.shift) {
+                            const s1 = shiftMap.get(asgn1.shift.toString());
+                            const s2 = shiftMap.get(asgn2.shift.toString());
+                            if (s1 && s2) {
+                                const isS1Full = s1.name?.toLowerCase().includes('full') || (s1.startTime === '06:00' && s1.endTime === '21:00');
+                                const isS2Full = s2.name?.toLowerCase().includes('full') || (s2.startTime === '06:00' && s2.endTime === '21:00');
+                                if (isS1Full || isS2Full) return true;
+                                return doTimeRangesOverlap(s1.startTime, s1.endTime, s2.startTime, s2.endTime);
+                            }
+                        }
+                        return false;
+                    };
+
+                    const targetAsgn = { shift: targetShiftId, type: targetShiftType, legacyShift: targetLegacyShift };
+                    const allSeats = await Seat.find({}).populate('room floor');
+                    let fallbackVacant = null;
+                    for (const cand of allSeats) {
+                        const hasOverlap = cand.assignments.some(a =>
+                            a.status === 'active' &&
+                            shiftsOverlap(targetAsgn, a)
+                        );
+                        if (!hasOverlap) {
+                            fallbackVacant = cand;
+                            break;
+                        }
+                    }
+                    if (fallbackVacant) {
+                        fallbackVacant.assignments.push({
+                            student: student._id,
+                            shift: targetShiftId,
+                            legacyShift: targetLegacyShift,
+                            type: targetShiftType,
+                            price: targetPrice,
+                            status: 'active',
+                            assignedAt: new Date()
+                        });
+                        fallbackVacant.isOccupied = true;
+                        await fallbackVacant.save();
+                        student.seat = fallbackVacant._id;
+                        student.seatAssignedAt = new Date();
+                        assignedDeskNumber = fallbackVacant.number;
+                    }
+                }
+
+                await student.save();
+
+                request.status = 'rejected';
+                request.adminResponse = adminResponse || 'Disapproved by Super Admin';
+                request.reviewedBy = req.user.id;
+                request.reviewedAt = new Date();
+                await request.save();
+
+                // In-app notification to reinstated student
+                await Notification.create({
+                    recipient: student._id,
+                    title: 'Account & Desk Restored',
+                    message: `Super Admin disapproved the inactivation request. You are active and forcefully restored to Desk ${assignedDeskNumber || 'your allocated desk'}.`,
+                    type: 'profile',
+                    createdBy: req.user.id
+                });
+
+                // In-app notification to requesting sub-admin
+                if (request.requestedData?.subAdminId) {
+                    await Notification.create({
+                        recipient: request.requestedData.subAdminId,
+                        title: 'Inactivation Request Disapproved',
+                        message: `Super Admin disapproved your inactivation request for ${student.name}. The scholar was reactivated and restored to Desk ${assignedDeskNumber || 'original desk'}.${relocatedStudentName ? ` Conflicting occupant (${relocatedStudentName}) was relocated to a vacant desk.` : ''}${temporaryAssignedStudentName ? ` Conflicting occupant (${temporaryAssignedStudentName}) was placed on temporary desk status.` : ''}`,
+                        type: 'request',
+                        createdBy: req.user.id
+                    });
+                }
+
+                await logAction(
+                    req,
+                    'student_inactivation_disapproved',
+                    'User',
+                    student._id,
+                    student.name,
+                    `Super Admin disapproved inactivation request. Scholar reactivated & restored to Desk ${assignedDeskNumber || 'N/A'}. Reason: ${adminResponse || 'Disapproved by Super Admin'}`
+                );
+
+                return res.status(200).json({
+                    success: true,
+                    message: `Inactivation request disapproved. Scholar ${student.name} reactivated and restored to Desk ${assignedDeskNumber || 'N/A'}.${relocatedStudentName ? ` Later occupant ${relocatedStudentName} relocated to a vacant desk.` : ''}${temporaryAssignedStudentName ? ` Later occupant ${temporaryAssignedStudentName} assigned as temporary borrower.` : ''}`,
+                    request
+                });
             }
         }
 

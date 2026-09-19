@@ -317,11 +317,13 @@ const Profile = () => {
 
 
     // ─── derived ──────────────────────────────────────────────────────
-    const memberStatus = !profile?.isActive ? 'inactive' : !profile?.seat ? 'pending' : 'active';
+    const isTemporary = Boolean(profile?.isTemporary || profile?.isTemporarySeat || (profile?.tempAssignments && profile.tempAssignments.length > 0));
+    const memberStatus = !profile?.isActive ? 'inactive' : isTemporary ? 'temporary' : !profile?.seat ? 'pending' : 'active';
     const statusConfig = {
-        active:  { label: 'Active Member',      color: 'from-green-400 to-emerald-500', border: 'border-green-200',  bg: 'bg-green-50',  text: 'text-green-600', dot: 'bg-green-400' },
-        pending: { label: 'Pending Allocation', color: 'from-yellow-400 to-amber-500',  border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-600', dot: 'bg-amber-400' },
-        inactive:{ label: 'Inactive',           color: 'from-red-400 to-rose-500',      border: 'border-red-200',    bg: 'bg-red-50',    text: 'text-red-500',  dot: 'bg-red-400' },
+        active:    { label: 'Active Member',      color: 'from-green-400 to-emerald-500', border: 'border-green-200',  bg: 'bg-green-50',  text: 'text-green-600', dot: 'bg-green-400' },
+        temporary: { label: 'Active (Temporary)', color: 'from-amber-400 to-orange-500',  border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-700', dot: 'bg-amber-500' },
+        pending:   { label: 'Pending Allocation', color: 'from-yellow-400 to-amber-500',  border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-600', dot: 'bg-amber-400' },
+        inactive:  { label: 'Inactive',           color: 'from-red-400 to-rose-500',      border: 'border-red-200',    bg: 'bg-red-50',    text: 'text-red-500',  dot: 'bg-red-400' },
     }[memberStatus];
 
     const initials = (profile?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
@@ -621,16 +623,16 @@ const Profile = () => {
                                                 AL-{(profile?._id || profile?.id || '').slice(-6).toUpperCase()}
                                             </p>
                                             {/* Status badge */}
-                                            <div style={{ display:'inline-flex', alignItems:'center', gap:'4px', background: profile?.isActive ? 'rgba(74,222,128,0.12)' : 'rgba(248,113,113,0.12)', border:`1px solid ${profile?.isActive ? 'rgba(74,222,128,0.35)' : 'rgba(248,113,113,0.35)'}`, borderRadius:'99px', padding:'2px 7px', marginTop:'5px' }}>
-                                                <span style={{ width:'5px', height:'5px', borderRadius:'50%', background: profile?.isActive ? '#4ade80' : '#f87171', display:'inline-block', boxShadow: profile?.isActive ? '0 0 5px #4ade80' : 'none' }} />
-                                                <span style={{ fontSize:'6px', fontWeight:800, color: profile?.isActive ? '#4ade80' : '#f87171', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                                                    {profile?.isActive ? 'Active' : 'Inactive'}
+                                            <div style={{ display:'inline-flex', alignItems:'center', gap:'4px', background: !profile?.isActive ? 'rgba(248,113,113,0.12)' : isTemporary ? 'rgba(245,158,11,0.15)' : 'rgba(74,222,128,0.12)', border:`1px solid ${!profile?.isActive ? 'rgba(248,113,113,0.35)' : isTemporary ? 'rgba(245,158,11,0.45)' : 'rgba(74,222,128,0.35)'}`, borderRadius:'99px', padding:'2px 7px', marginTop:'5px' }}>
+                                                <span style={{ width:'5px', height:'5px', borderRadius:'50%', background: !profile?.isActive ? '#f87171' : isTemporary ? '#f59e0b' : '#4ade80', display:'inline-block', boxShadow: profile?.isActive ? `0 0 5px ${isTemporary ? '#f59e0b' : '#4ade80'}` : 'none' }} />
+                                                <span style={{ fontSize:'6px', fontWeight:800, color: !profile?.isActive ? '#f87171' : isTemporary ? '#f59e0b' : '#4ade80', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                                                    {!profile?.isActive ? 'Inactive' : isTemporary ? 'Active (Temp)' : 'Active'}
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Right: QR code */}
-                                        {profile?.isActive && profile?.seat ? (
+                                        {profile?.isActive && (profile?.seat || isTemporary) ? (
                                             <div
                                                 onClick={e => { e.stopPropagation(); setShowQrZoom(true); }}
                                                 title="Tap to zoom QR"
@@ -653,8 +655,11 @@ const Profile = () => {
 
                                     {/* Bottom row */}
                                     <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'24px', borderTop:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', background:'rgba(0,0,0,0.2)' }}>
-                                        <span style={{ fontSize:'6px', color:'rgba(255,255,255,0.3)', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>
-                                            {profile?.seat ? `Seat: ${profile.seatNumber || profile.seat?.number || profile.seat}` : 'No Seat Assigned'}
+                                        <span style={{ fontSize:'6px', color:'rgba(255,255,255,0.4)', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>
+                                            {(profile?.seat || isTemporary) 
+                                                ? `Seat: ${profile.seatNumber || profile.seat?.number || profile.tempAssignments?.[0]?.seat?.number || 'Temp'} ${isTemporary ? '(TEMPORARY)' : ''}`
+                                                : 'No Seat Assigned'
+                                            }
                                         </span>
                                         <span style={{ fontSize:'6px', color:'rgba(255,140,0,0.65)', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase' }}>TAP TO FLIP →</span>
                                     </div>
@@ -768,7 +773,16 @@ const Profile = () => {
                             value={profile?.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : 'Not specified'} 
                             color="text-pink-500" 
                         />
-                        <InfoRow icon={IoBedOutline} label="Seat Number"  value={(profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : profile?.seatNumber) || 'Not Assigned'} color="text-cyan-500" />
+                        <InfoRow 
+                            icon={IoBedOutline} 
+                            label="Seat Number"  
+                            value={
+                                (profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : (profile?.seatNumber || profile?.seat?.number))
+                                    ? `${profile?.roomId ? `${profile.roomId} - ${profile.seatNumber || profile.seat?.number}` : (profile?.seatNumber || profile?.seat?.number)} ${isTemporary ? '(Temporary)' : ''}`
+                                    : (isTemporary && profile?.tempAssignments?.[0]?.seat?.number ? `Desk ${profile.tempAssignments[0].seat.number} (Temporary)` : 'Not Assigned')
+                            } 
+                            color={isTemporary ? "text-amber-600" : "text-cyan-500"} 
+                        />
                         <InfoRow icon={IoCalendar}  label="Member Since"
                             value={(profile?.admissionDate || profile?.createdAt)
                                 ? new Date(profile.admissionDate || profile.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -907,7 +921,7 @@ const Profile = () => {
                     </div>
 
                     <div className="p-4">
-                    {profile?.isActive && profile?.seat ? (
+                    {profile?.isActive && (profile?.seat || isTemporary) ? (
                         <>
                             <div className="flex flex-col gap-2.5">
                                 {/* Shift Change */}

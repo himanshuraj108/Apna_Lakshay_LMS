@@ -270,38 +270,38 @@ exports.getMe = async (req, res) => {
                 assignments: { $elemMatch: { student: user._id, status: 'active' } }
             }).populate('assignments.shift').populate('room');
 
-            if (seat) {
-                const assignment = seat.assignments.find(a => a.student.toString() === user._id.toString() && a.status === 'active');
-                if (assignment) {
+            const assignment = seat ? seat.assignments.find(a => a.student.toString() === user._id.toString() && a.status === 'active') : null;
 
-                    // Self-healing: If user.seatAssignedAt is missing, update it from assignment
-                    if (!user.seatAssignedAt) {
-                        userData.seatAssignedAt = assignment.assignedAt;
-                        try {
-                            await User.findByIdAndUpdate(user._id, { seatAssignedAt: assignment.assignedAt });
-                        } catch (err) { console.error('Failed to update seatAssignedAt:', err); }
-                    }
-
-                    userData.currentShift = assignment.shift ? assignment.shift._id.toString() : (assignment.legacyShift || 'full');
-
-                    // Add populated shift details for ID Card
-                    userData.shift = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'full');
-                    userData.shiftDetails = assignment.shift ? {
-                        startTime: assignment.shift.startTime,
-                        endTime: assignment.shift.endTime
-                    } : null;
-                    userData.seatNumber = seat.number; // Explicitly add seat number
-                    userData.roomId = seat.room ? seat.room.roomId : null; // Explicitly add room ID
-
-                    // Self-healing: If user.seat is missing/null but we found an active seat, update it
-                    if (!user.seat) {
-                        userData.seat = seat._id; // Update response immediately
-                        try {
-                            await User.findByIdAndUpdate(user._id, { seat: seat._id });
-                            console.log(`Self-healed missing seat reference for user ${user._id}`);
-                        } catch (err) { console.error('Failed to self-heal seat reference:', err); }
-                    }
+            if (seat && assignment) {
+                // Self-healing: If user.seatAssignedAt is missing, update it from assignment
+                if (!user.seatAssignedAt) {
+                    userData.seatAssignedAt = assignment.assignedAt;
+                    try {
+                        await User.findByIdAndUpdate(user._id, { seatAssignedAt: assignment.assignedAt });
+                    } catch (err) { console.error('Failed to update seatAssignedAt:', err); }
                 }
+
+                userData.currentShift = assignment.shift ? assignment.shift._id.toString() : (assignment.legacyShift || 'full');
+
+                // Add populated shift details for ID Card
+                userData.shift = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'full');
+                userData.shiftDetails = assignment.shift ? {
+                    startTime: assignment.shift.startTime,
+                    endTime: assignment.shift.endTime
+                } : null;
+                userData.seatNumber = seat.number; // Explicitly add seat number
+                userData.roomId = seat.room ? seat.room.roomId : null; // Explicitly add room ID
+
+                // Self-healing: If user.seat is missing/null but we found an active seat, update it
+                if (!user.seat) {
+                    userData.seat = seat._id; // Update response immediately
+                    try {
+                        await User.findByIdAndUpdate(user._id, { seat: seat._id });
+                        console.log(`Self-healed missing seat reference for user ${user._id}`);
+                    } catch (err) { console.error('Failed to self-heal seat reference:', err); }
+                }
+                userData.isTemporary = false;
+                userData.isTemporarySeat = false;
             } else {
                 // Check if student has a temporary seat
                 const TempSeatAssignment = require('../models/TempSeatAssignment');
@@ -313,11 +313,35 @@ exports.getMe = async (req, res) => {
                     userData.seat = tempAssignment.seat._id;
                     userData.seatNumber = tempAssignment.seat.number;
                     userData.roomId = tempAssignment.seat.room?.roomId || tempAssignment.seat.room?.name || null;
-                    userData.shift = tempAssignment.shift ? tempAssignment.shift.name : 'Temp Shift';
+                    userData.room = tempAssignment.seat.room;
+                    userData.shift = tempAssignment.shift ? tempAssignment.shift.name : 'Temporary Shift';
+                    userData.shifts = tempAssignment.shift ? [{
+                        _id: tempAssignment.shift._id,
+                        name: tempAssignment.shift.name,
+                        startTime: tempAssignment.shift.startTime,
+                        endTime: tempAssignment.shift.endTime
+                    }] : [];
                     userData.shiftDetails = tempAssignment.shift ? {
                         startTime: tempAssignment.shift.startTime,
                         endTime: tempAssignment.shift.endTime
                     } : null;
+                    userData.isTemporary = true;
+                    userData.isTemporarySeat = true;
+                    userData.tempAssignments = [{
+                        seat: {
+                            number: tempAssignment.seat.number,
+                            room: tempAssignment.seat.room,
+                            floor: tempAssignment.seat.floor
+                        },
+                        shift: tempAssignment.shift ? {
+                            name: tempAssignment.shift.name,
+                            startTime: tempAssignment.shift.startTime,
+                            endTime: tempAssignment.shift.endTime
+                        } : null,
+                        note: tempAssignment.note,
+                        startDate: tempAssignment.startDate,
+                        endDate: tempAssignment.endDate
+                    }];
                 }
             }
         } catch (seatError) {

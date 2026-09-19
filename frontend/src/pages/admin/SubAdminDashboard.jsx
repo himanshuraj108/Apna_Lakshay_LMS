@@ -393,22 +393,12 @@ const SubAdminDashboard = () => {
                                 <IoCheckmarkCircle size={15} className="text-emerald-600" />
                                 <span>{allowedCards.length} Active Modules</span>
                             </div>
-
-                            {stats?.pendingRequests > 0 && (
-                                <Link
-                                    to="/admin/requests"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200/90 text-rose-800 text-xs font-bold shadow-2xs hover:bg-rose-100 transition-colors"
-                                >
-                                    <IoAlertCircleOutline size={15} className="text-rose-600" />
-                                    <span>{stats.pendingRequests} Pending Requests</span>
-                                </Link>
-                            )}
                         </div>
                     </div>
                 </motion.div>
 
-                {/* ─── Executive Operational Metrics (4-Card Primary Grid) ─── */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                {/* ─── Executive Operational Metrics (Primary Grid) ─── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                     <StatCard
                         label="Seats Occupied"
                         value={`${stats?.occupiedSeats || 0} / ${stats?.totalSeats || 0}`}
@@ -434,24 +424,6 @@ const SubAdminDashboard = () => {
                         gradient="from-amber-400 to-orange-500"
                         icon={IoCashOutline}
                         delay={0.10}
-                    />
-
-                    <StatCard
-                        label="Requests"
-                        value={(stats?.pendingRequests || 0).toLocaleString('en-IN')}
-                        badge={(stats?.pendingRequests || 0) > 0 ? `${stats.pendingRequests} Pending` : 'All Clear'}
-                        gradient="from-orange-500 to-rose-500"
-                        icon={IoDocumentTextOutline}
-                        delay={0.15}
-                    />
-
-                    <StatCard
-                        label="Available Desks"
-                        value={(stats?.vacantSeats || 0).toLocaleString('en-IN')}
-                        badge="Ready"
-                        gradient="from-blue-500 to-indigo-600"
-                        icon={IoSearchOutline}
-                        delay={0.20}
                     />
                 </div>
 

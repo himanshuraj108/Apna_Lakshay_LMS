@@ -79,7 +79,7 @@ const MySeat = () => {
     );
 
     const displaySeats = [];
-    if (seatData.seat) {
+    if (seatData.seat && !seatData.seat.isTemporary && (seatData.seat.shifts?.length > 0 || (seatData.seat.shift && seatData.seat.shift !== 'N/A'))) {
         displaySeats.push({
             isTemp: false,
             seat: seatData.seat,
@@ -103,10 +103,21 @@ const MySeat = () => {
                 note: ta.note
             });
         });
+    } else if (seatData.seat && seatData.seat.isTemporary) {
+        displaySeats.push({
+            isTemp: true,
+            seat: seatData.seat,
+            number: seatData.seat.room?.roomId ? `${seatData.seat.room.roomId} - ${seatData.seat.number}` : seatData.seat.number,
+            shifts: seatData.seat.shifts || (seatData.seat.shift ? [{ name: seatData.seat.shift }] : []),
+            price: 0,
+            floor: seatData.seat.floor,
+            room: seatData.seat.room,
+            note: seatData.seat.tempNote
+        });
     }
 
     // Use the primary seat for pricing and map view (if available, else first temp seat)
-    const primarySeat = seatData.seat || displaySeats[0].seat;
+    const primarySeat = displaySeats[0]?.seat || seatData.seat;
     const room = primarySeat?.room;
 
     return (

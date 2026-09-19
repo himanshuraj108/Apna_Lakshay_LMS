@@ -14,10 +14,18 @@ const dailyQuizSchema = new mongoose.Schema({
             type: String,
             required: true
         },
+        question_hi: {
+            type: String,
+            default: ''
+        },
         options: {
             type: [String],
             required: true,
             validate: [arr => arr.length === 4, 'Must have exactly 4 options']
+        },
+        options_hi: {
+            type: [String],
+            default: []
         },
         correct: {
             type: Number, // 0-3
@@ -26,6 +34,10 @@ const dailyQuizSchema = new mongoose.Schema({
             max: 3
         },
         explanation: {
+            type: String,
+            default: ''
+        },
+        explanation_hi: {
             type: String,
             default: ''
         },

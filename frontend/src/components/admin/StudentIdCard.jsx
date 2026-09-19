@@ -24,11 +24,23 @@ const StudentIdCard = ({ student }) => {
 
     const registrationSource = student.registrationSource || 'admin';
 
-    // Strict Active Check: Must have a verified Seat AND a Shift assigned.
-    const isPending = !student.seat?.number && !student.seatNumber || !student.shift;
-
-    // Temp assignments (caution badges)
+    // Temp assignments (caution badges / temporary status)
     const tempAssignments = student.tempAssignments || [];
+    const isTemporary = Boolean(
+        student.isTemporary ||
+        student.isTemporarySeat ||
+        student.seat?.isTemporary ||
+        tempAssignments.length > 0
+    );
+
+    const firstTemp = tempAssignments[0];
+    const resolvedSeatNumber = student.seat?.number || student.seatNumber || firstTemp?.seat?.number || firstTemp?.seatNumber || null;
+    const resolvedRoomId = student.roomId || student.seat?.room?.roomId || student.seat?.roomId || firstTemp?.seat?.room?.roomId || firstTemp?.room || null;
+
+    // Strict Active Check: Must have a verified Seat AND a Shift assigned (if not temporary)
+    const hasSeatAssigned = Boolean(resolvedSeatNumber);
+    const hasShiftAssigned = Boolean(student.shift || student.shifts?.length > 0 || firstTemp?.shift?.name || firstTemp?.shiftName);
+    const isPending = !isTemporary && (!hasSeatAssigned || !hasShiftAssigned);
 
     // Helper to get formatted shift name
     const getFormattedShift = () => {
@@ -38,15 +50,18 @@ const StudentIdCard = ({ student }) => {
             shiftName = student.shift;
         } else if (student.shift && student.shift.name) {
             shiftName = student.shift.name;
+        } else if (firstTemp?.shift?.name || firstTemp?.shiftName) {
+            shiftName = firstTemp.shift?.name || firstTemp.shiftName;
         } else {
             const shiftVal = student.shift?._id || student.shift || student.seat?.shift;
             if (shiftVal) shiftName = getShiftName(shiftVal);
         }
 
-        if (student.shift?.startTime && student.shift?.endTime) {
-            return `${shiftName} (${student.shift.startTime} - ${student.shift.endTime})`;
-        } else if (student.shiftDetails?.startTime && student.shiftDetails?.endTime) {
-            return `${shiftName} (${student.shiftDetails.startTime} - ${student.shiftDetails.endTime})`;
+        const startT = student.shift?.startTime || student.shiftDetails?.startTime || firstTemp?.shift?.startTime || firstTemp?.startTime;
+        const endT = student.shift?.endTime || student.shiftDetails?.endTime || firstTemp?.shift?.endTime || firstTemp?.endTime;
+
+        if (startT && endT) {
+            return `${shiftName} (${startT} - ${endT})`;
         }
 
         return typeof shiftName === 'string' ? shiftName : 'N/A';
@@ -58,6 +73,11 @@ const StudentIdCard = ({ student }) => {
             gradient: 'from-red-600 to-rose-700',
             footer: 'from-red-400 to-rose-500',
             tag: 'bg-red-100 text-red-700'
+        };
+        if (isTemporary) return {
+            gradient: 'from-amber-600 to-orange-700',
+            footer: 'from-amber-400 to-orange-500',
+            tag: 'bg-amber-100 text-amber-800 border border-amber-300'
         };
         if (isPending) return {
             gradient: 'from-yellow-500 to-amber-600',
@@ -113,14 +133,21 @@ const StudentIdCard = ({ student }) => {
                     {/* Name & Role */}
                     <div className="text-center mt-3 mb-4">
                         <h2 className="text-2xl font-bold text-gray-800 leading-tight">{student.name}</h2>
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2 uppercase tracking-wide ${theme.tag}`}>
-                            Student
-                        </span>
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap mt-2">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${theme.tag}`}>
+                                Student
+                            </span>
+                            {isTemporary && (
+                                <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-300 shadow-2xs">
+                                    Temporary Desk
+                                </span>
+                            )}
+                        </div>
 
                         {/* AC / NON-AC Badge — only show if seat is assigned */}
-                        {(student.seat?.number || student.seatNumber) && (
+                        {resolvedSeatNumber && (
                             <div className="flex justify-center mt-2">
-                                {(student.seat?.roomHasAc || student.seat?.room?.hasAc || student.room?.hasAc) ? (
+                                {(student.seat?.roomHasAc || student.seat?.room?.hasAc || student.room?.hasAc || firstTemp?.seat?.room?.hasAc) ? (
                                     <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
                                         <FaWind size={10} className="text-blue-500" />
                                         AC Room
@@ -142,14 +169,24 @@ const StudentIdCard = ({ student }) => {
                             <p className="font-mono font-bold text-gray-700 text-sm">AL-{studentId}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Assigned Seat</p>
-                            {(student.seat?.number || student.seatNumber) ? (
-                                <p className="font-bold text-lg text-purple-600 truncate" title={(student.roomId || student.seat?.room?.roomId || student.seat?.roomId) ? `${student.roomId || student.seat?.room?.roomId || student.seat?.roomId} - ${student.seat?.number || student.seatNumber}` : (student.seat?.number || student.seatNumber)}>
-                                    {(student.roomId || student.seat?.room?.roomId || student.seat?.roomId)
-                                        ? `${student.roomId || student.seat?.room?.roomId || student.seat?.roomId} - ${student.seat?.number || student.seatNumber}`
-                                        : (student.seat?.number || student.seatNumber)
-                                    }
-                                </p>
+                            <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">
+                                {isTemporary ? 'Temp Desk' : 'Assigned Seat'}
+                            </p>
+                            {resolvedSeatNumber ? (
+                                <div className="flex flex-col items-end">
+                                    <p className={`font-bold text-lg leading-tight truncate ${isTemporary ? 'text-amber-700' : 'text-purple-600'}`} 
+                                        title={resolvedRoomId ? `${resolvedRoomId} - ${resolvedSeatNumber}` : resolvedSeatNumber}>
+                                        {resolvedRoomId
+                                            ? `${resolvedRoomId} - ${resolvedSeatNumber}`
+                                            : resolvedSeatNumber
+                                        }
+                                    </p>
+                                    {isTemporary && (
+                                        <span className="text-[9px] font-extrabold text-rose-600 uppercase tracking-wider bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded mt-0.5">
+                                            Temporary
+                                        </span>
+                                    )}
+                                </div>
                             ) : (
                                 <p className="font-bold text-lg text-gray-600">N/A</p>
                             )}
@@ -184,8 +221,8 @@ const StudentIdCard = ({ student }) => {
                                     })}
                                 </div>
                             ) : (
-                                <div className={`px-2 py-1 rounded-md border whitespace-nowrap ${student.seat?.number || student.seatNumber ? 'bg-purple-100 border-purple-300' : 'bg-gray-100 border-gray-300'}`}>
-                                    <p className={`font-bold text-[10px] leading-none ${student.seat?.number || student.seatNumber ? 'text-purple-700' : 'text-gray-600'}`}>
+                                <div className={`px-2 py-1 rounded-md border whitespace-nowrap ${resolvedSeatNumber ? (isTemporary ? 'bg-amber-100 border-amber-300' : 'bg-purple-100 border-purple-300') : 'bg-gray-100 border-gray-300'}`}>
+                                    <p className={`font-bold text-[10px] leading-none ${resolvedSeatNumber ? (isTemporary ? 'text-amber-800' : 'text-purple-700') : 'text-gray-600'}`}>
                                         {getFormattedShift()}
                                     </p>
                                 </div>
@@ -257,10 +294,20 @@ const StudentIdCard = ({ student }) => {
                     <div className="w-full mt-6 pt-4 border-t-2 border-dashed border-gray-100 flex justify-between items-center group-hover:border-blue-100 transition-colors">
                         <div className="flex flex-col">
                             <span className="text-[10px] text-gray-600 uppercase">
-                                {!student.isActive ? 'Status' : (isPending ? 'Status' : 'Valid Until')}
+                                {!student.isActive ? 'Status' : (isTemporary ? 'Desk Status' : (isPending ? 'Status' : 'Valid Until'))}
                             </span>
-                            <span className={`text-xs font-bold ${!student.isActive ? 'text-red-600' : (isPending ? 'text-yellow-600' : 'text-green-600')}`}>
-                                {!student.isActive ? 'Inactive' : (isPending ? 'Pending Allocation' : 'Active Membership')}
+                            <span className={`text-xs font-bold ${
+                                !student.isActive 
+                                    ? 'text-red-600' 
+                                    : (isTemporary 
+                                        ? 'text-amber-700 font-extrabold' 
+                                        : (isPending ? 'text-yellow-600' : 'text-green-600'))
+                            }`}>
+                                {!student.isActive 
+                                    ? 'Inactive' 
+                                    : (isTemporary 
+                                        ? 'Active (Temporary)' 
+                                        : (isPending ? 'Pending Allocation' : 'Active Membership'))}
                             </span>
                         </div>
                         <div className="bg-white p-1 rounded-lg border border-gray-100">
