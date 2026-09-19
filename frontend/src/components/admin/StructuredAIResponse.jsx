@@ -1,4 +1,6 @@
 import React from 'react';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import {
     IoCalendarOutline, IoBedOutline, IoCashOutline, IoPersonOutline,
     IoDocumentTextOutline, IoArrowForward, IoTimeOutline, IoGridOutline,
@@ -6,22 +8,39 @@ import {
 } from 'react-icons/io5';
 
 /**
- * Helper to parse inline markdown such as **bold**, *italic*, and `code`
+ * Helper to parse inline markdown such as **bold**, *italic*, and LaTeX math
  */
 export const parseInlineFormatting = (text) => {
     if (!text) return '';
 
-    // Split on bold **text**
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, index) => {
-        if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
-            return (
-                <strong key={index} className="font-bold text-slate-900">
-                    {part.slice(2, -2)}
-                </strong>
-            );
+    // First handle any inline LaTeX $...$ or \(...\)
+    const mathRegex = /(\$[^$]+\$|\\\([^\)]+\\\))/g;
+    const segments = text.split(mathRegex);
+
+    return segments.map((seg, sIdx) => {
+        if ((seg.startsWith('$') && seg.endsWith('$') && seg.length > 2) ||
+            (seg.startsWith('\\(') && seg.endsWith('\\)'))) {
+            const rawMath = seg.startsWith('$') ? seg.slice(1, -1) : seg.slice(2, -2);
+            try {
+                const html = katex.renderToString(rawMath, { throwOnError: false, displayMode: false });
+                return <span key={sIdx} dangerouslySetInnerHTML={{ __html: html }} className="inline-block px-0.5 text-orange-950 font-serif" />;
+            } catch (e) {
+                return <span key={sIdx} className="font-mono text-orange-800">{seg}</span>;
+            }
         }
-        return part;
+
+        // Split on bold **text**
+        const parts = seg.split(/(\*\*.*?\*\*)/g);
+        return parts.map((part, index) => {
+            if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+                return (
+                    <strong key={`${sIdx}-${index}`} className="font-bold text-[#0F172A]">
+                        {part.slice(2, -2)}
+                    </strong>
+                );
+            }
+            return part;
+        });
     });
 };
 
@@ -123,17 +142,17 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
     }
 
     return (
-        <div className={`space-y-3.5 text-xs select-text ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+        <div className={`space-y-3.5 text-xs select-text ${isDark ? 'text-stone-200' : 'text-[#0F172A]'}`}>
             {/* Top Report Header Banner */}
             {mainTitle && (
-                <div className="pb-2.5 mb-3 border-b border-slate-200/80 flex items-center justify-between flex-wrap gap-2">
+                <div className="pb-2.5 mb-3 border-b border-[#EDE8E0] flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-                        <h4 className="font-extrabold text-sm text-slate-900 tracking-tight">
+                        <h4 className="font-extrabold text-sm text-[#0F172A] tracking-tight">
                             {mainTitle}
                         </h4>
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-orange-800 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200/80">
                         Operational Intelligence
                     </span>
                 </div>
@@ -149,8 +168,9 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
                         return (
                             <div
                                 key={sIdx}
-                                className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-600/10 border border-orange-300/80 shadow-2xs mt-3"
+                                className="p-3.5 rounded-2xl bg-[#FFFDF9] border border-orange-200/90 shadow-2xs mt-3 relative overflow-hidden"
                             >
+                                <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
                                 <div className="flex items-center gap-2 text-xs font-bold text-orange-950 mb-1.5">
                                     <div className="p-1 rounded-lg bg-orange-500 text-white shadow-2xs">
                                         <IoArrowForward size={13} />
@@ -159,7 +179,7 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
                                         {sec.title || 'Executive Recommendation'}
                                     </span>
                                 </div>
-                                <div className="space-y-1.5 text-slate-800 text-xs leading-relaxed font-medium pl-1">
+                                <div className="space-y-1.5 text-[#0F172A] text-xs leading-relaxed font-medium pl-1">
                                     {sec.items.map((item, itIdx) => (
                                         <p key={itIdx}>
                                             {parseInlineFormatting(item.text || `${item.key}: ${item.value}`)}
@@ -174,17 +194,17 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
                     return (
                         <div
                             key={sIdx}
-                            className="rounded-xl border border-slate-200/90 bg-slate-50/50 overflow-hidden shadow-2xs"
+                            className="rounded-xl border border-[#EDE8E0] bg-[#FAF6F0] overflow-hidden shadow-2xs"
                         >
                             {sec.title && (
-                                <div className="px-3 py-2 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
+                                <div className="px-3 py-2 bg-[#F5EFE6] border-b border-[#EDE8E0] flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <IconComp size={14} className="text-orange-600 shrink-0" />
-                                        <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-800">
+                                        <span className="font-extrabold text-[11px] uppercase tracking-wider text-[#0F172A]">
                                             {sec.title}
                                         </span>
                                     </div>
-                                    <span className="text-[10px] text-slate-400 font-semibold">Live Data</span>
+                                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Live Data</span>
                                 </div>
                             )}
 
@@ -194,13 +214,13 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
                                         return (
                                             <div
                                                 key={itIdx}
-                                                className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 px-2.5 rounded-lg hover:bg-slate-50 border border-slate-100 transition-colors gap-1"
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between py-1.5 px-2.5 rounded-lg hover:bg-[#FAF6F0] border border-[#EDE8E0] transition-colors gap-1"
                                             >
-                                                <span className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                                                <span className="text-xs font-semibold text-[#574E45] flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
                                                     {parseInlineFormatting(item.key)}
                                                 </span>
-                                                <span className="text-xs font-extrabold text-slate-900 bg-slate-100/90 px-2 py-0.5 rounded-md border border-slate-200/80 shrink-0 self-start sm:self-auto shadow-2xs font-mono">
+                                                <span className="text-xs font-extrabold text-[#0F172A] bg-[#FAF6F0] px-2 py-0.5 rounded-md border border-[#EDE8E0] shrink-0 self-start sm:self-auto shadow-2xs font-mono">
                                                     {parseInlineFormatting(item.value)}
                                                 </span>
                                             </div>
@@ -211,9 +231,9 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
                                         return (
                                             <div
                                                 key={itIdx}
-                                                className="flex items-start gap-2 py-1 px-2.5 text-xs text-slate-700"
+                                                className="flex items-start gap-2 py-1 px-2.5 text-xs text-[#0F172A]"
                                             >
-                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 shrink-0" />
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
                                                 <span className="leading-relaxed">
                                                     {parseInlineFormatting(item.text)}
                                                 </span>
@@ -224,7 +244,7 @@ const StructuredAIResponse = ({ content, isDark = false }) => {
                                     return (
                                         <p
                                             key={itIdx}
-                                            className="text-xs text-slate-700 leading-relaxed px-2 py-1"
+                                            className="text-xs text-[#0F172A] leading-relaxed px-2 py-1"
                                         >
                                             {parseInlineFormatting(item.text)}
                                         </p>

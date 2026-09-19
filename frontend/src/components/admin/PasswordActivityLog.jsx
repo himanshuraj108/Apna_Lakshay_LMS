@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoEye, IoEyeOff, IoTime, IoKeyOutline, IoLockClosed, IoClose } from 'react-icons/io5';
 import api from '../../utils/api';
-import Card from '../ui/Card';
-import Badge from '../ui/Badge';
 
 const PasswordActivityLog = () => {
     const [logs, setLogs] = useState([]);
@@ -21,7 +19,7 @@ const PasswordActivityLog = () => {
     const fetchLogs = async () => {
         try {
             const response = await api.get('/admin/password-activity');
-            setLogs(response.data.logs);
+            setLogs(response.data.logs || []);
         } catch (error) {
             console.error('Error fetching password logs:', error);
         } finally {
@@ -38,7 +36,6 @@ const PasswordActivityLog = () => {
 
     const verifyAndReveal = async () => {
         try {
-            // Verify admin password
             const user = JSON.parse(localStorage.getItem('user'));
             const response = await api.post('/auth/login', {
                 email: user.email,
@@ -46,7 +43,6 @@ const PasswordActivityLog = () => {
             });
 
             if (response.data.success) {
-                // Password correct, show the student password
                 setVisiblePasswords(prev => ({
                     ...prev,
                     [pendingLogId]: true
@@ -67,108 +63,126 @@ const PasswordActivityLog = () => {
         }));
     };
 
-    if (loading) return (
-        <Card>
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl">
-                        <IoKeyOutline size={24} className="text-gray-900" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold">Password Activity</h3>
-                        <p className="text-sm text-gray-600">Recent password changes</p>
-                    </div>
-                </div>
-            </div>
-            <div className="space-y-3">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="animate-pulse flex gap-3 glass p-3 rounded-lg">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full"></div>
-                        <div className="flex-1 space-y-2">
-                            <div className="h-3 bg-gray-100 rounded w-3/4"></div>
-                            <div className="h-2 bg-gray-50 rounded w-1/2"></div>
+    if (loading) {
+        return (
+            <div className="bg-white border border-[#EDE8E0] rounded-2xl p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#EDE8E0]">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2.5 rounded-xl shadow-sm">
+                            <IoKeyOutline size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-stone-900">Password Audit Trail</h3>
+                            <p className="text-xs text-stone-500">Loading student credential updates...</p>
                         </div>
                     </div>
-                ))}
+                </div>
+                <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="animate-pulse flex gap-3.5 bg-[#FAF6F0] p-4 rounded-xl border border-[#EDE8E0]/60">
+                            <div className="w-10 h-10 bg-stone-200 rounded-full shrink-0"></div>
+                            <div className="flex-1 space-y-2">
+                                <div className="h-3.5 bg-stone-200 rounded-md w-1/3"></div>
+                                <div className="h-3 bg-stone-200 rounded-md w-1/2"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-        </Card>
-    );
+        );
+    }
 
     return (
         <>
-            <Card>
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-white border border-[#EDE8E0] rounded-2xl p-6 shadow-xs">
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#EDE8E0] flex-wrap gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl">
-                            <IoKeyOutline size={24} className="text-gray-900" />
+                        <div className="bg-gradient-to-br from-orange-500 to-amber-500 p-2.5 rounded-xl shadow-sm">
+                            <IoKeyOutline size={20} className="text-white" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold">Password Activity</h3>
-                            <p className="text-sm text-gray-600">Recent password changes</p>
+                            <h3 className="text-base font-black text-stone-900">Password Audit Trail</h3>
+                            <p className="text-xs text-stone-500 font-medium">Recent security and credential reset events</p>
                         </div>
                     </div>
-                    <Badge variant="red" className="animate-pulse">Live</Badge>
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-xs font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Live Sync
+                    </span>
                 </div>
 
-                <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
                     {logs.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8 glass rounded-xl">
-                            <IoKeyOutline size={48} className="mx-auto mb-2 opacity-20" />
-                            <p>No password changes recorded yet</p>
+                        <div className="text-center text-stone-400 py-12 bg-[#FAF6F0] rounded-2xl border border-[#EDE8E0]">
+                            <IoKeyOutline size={40} className="mx-auto mb-2 opacity-30 text-stone-500" />
+                            <p className="text-sm font-semibold text-stone-600">No password changes recorded yet</p>
+                            <p className="text-xs text-stone-400 mt-1">Student credential resets will appear here</p>
                         </div>
                     ) : (
                         logs.map((log) => (
                             <motion.div
                                 key={log._id}
-                                initial={{ opacity: 0, y: 10 }}
+                                initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="glass rounded-lg p-4 hover:bg-gray-100 transition-all group"
+                                className="bg-[#FAF6F0] hover:bg-[#F5EFE6] border border-[#EDE8E0] rounded-xl p-4 transition-all duration-150"
                             >
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                                     <div className="flex items-center gap-3">
-                                        <div className="bg-gradient-to-br from-blue-500 to-purple-500 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold">
+                                        <div className="w-9 h-9 rounded-full bg-stone-900 text-amber-400 flex items-center justify-center text-xs font-black shrink-0 border border-amber-400/20">
                                             {log.user?.name?.[0]?.toUpperCase() || 'U'}
                                         </div>
                                         <div>
-                                            <p className="font-semibold">{log.user?.name || 'Unknown'}</p>
-                                            <p className="text-xs text-gray-600">{log.email}</p>
+                                            <p className="font-bold text-xs text-stone-900">{log.user?.name || 'Unknown Student'}</p>
+                                            <p className="text-[11px] text-stone-500 font-medium">{log.email}</p>
                                         </div>
                                     </div>
-                                    <Badge variant={log.source === 'forgot_reset' ? 'yellow' : 'blue'} className="text-xs">
-                                        {log.source === 'forgot_reset' ? 'Reset' : 'Changed'}
-                                    </Badge>
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                        log.source === 'forgot_reset'
+                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    }`}>
+                                        {log.source === 'forgot_reset' ? 'Forgot Reset' : 'Profile Change'}
+                                    </span>
                                 </div>
 
-                                <div className={`flex items-center justify-between rounded-lg p-3 transition-all ${visiblePasswords[log._id] ? 'bg-white' : 'bg-black/20'}`}>
+                                <div className={`flex items-center justify-between rounded-xl px-3.5 py-2.5 transition-all border ${
+                                    visiblePasswords[log._id]
+                                        ? 'bg-white border-orange-300 shadow-xs'
+                                        : 'bg-stone-100/80 border-[#E2DBD2]'
+                                }`}>
                                     <div className="flex items-center gap-2 flex-1">
                                         {visiblePasswords[log._id] ? (
-                                            <span className="font-mono text-base font-semibold text-black">
+                                            <span className="font-mono text-sm font-black text-orange-600 tracking-wide select-all">
                                                 {log.newPassword}
                                             </span>
                                         ) : (
-                                            <span className="font-mono text-sm text-gray-500">
+                                            <span className="font-mono text-xs text-stone-400 select-none">
                                                 ••••••••••••
                                             </span>
                                         )}
                                     </div>
                                     <button
                                         onClick={() => visiblePasswords[log._id] ? hidePassword(log._id) : requestPasswordReveal(log._id)}
-                                        className={`transition-colors p-2 hover:bg-gray-100 rounded-lg ${visiblePasswords[log._id] ? 'text-gray-700 hover:text-black' : 'text-gray-600 hover:text-gray-900'}`}
-                                        title={visiblePasswords[log._id] ? "Hide" : "Show (Requires Auth)"}
+                                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                            visiblePasswords[log._id]
+                                                ? 'text-orange-600 hover:bg-orange-50'
+                                                : 'text-stone-400 hover:text-stone-700 hover:bg-stone-200/60'
+                                        }`}
+                                        title={visiblePasswords[log._id] ? "Hide password" : "Show password (Admin verification required)"}
                                     >
-                                        {visiblePasswords[log._id] ? <IoEyeOff size={18} /> : <IoEye size={18} />}
+                                        {visiblePasswords[log._id] ? <IoEyeOff size={16} /> : <IoEye size={16} />}
                                     </button>
                                 </div>
 
-                                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                                    <IoTime size={12} />
-                                    <span>{new Date(log.createdAt).toLocaleString()}</span>
+                                <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-stone-400 font-medium">
+                                    <IoTime size={13} className="text-stone-400" />
+                                    <span>{new Date(log.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                             </motion.div>
                         ))
                     )}
                 </div>
-            </Card>
+            </div>
 
             {/* Admin Password Verification Modal */}
             <AnimatePresence>
@@ -177,49 +191,49 @@ const PasswordActivityLog = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4"
                         onClick={() => setShowAuthModal(false)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white border border-gray-200 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                            className="bg-white border border-[#EDE8E0] rounded-2xl p-6 max-w-md w-full shadow-2xl"
                         >
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="flex justify-between items-center mb-5 pb-4 border-b border-[#EDE8E0]">
                                 <div className="flex items-center gap-3">
-                                    <div className="bg-gradient-to-br from-red-500 to-orange-500 p-3 rounded-xl">
-                                        <IoLockClosed size={24} className="text-gray-900" />
+                                    <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-2.5 rounded-xl text-white shadow-xs">
+                                        <IoLockClosed size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-gray-900">Admin Authentication</h3>
-                                        <p className="text-sm text-gray-600">Enter your password to view</p>
+                                        <h3 className="text-base font-black text-stone-900">Admin Authentication</h3>
+                                        <p className="text-xs text-stone-500">Confirm identity to view sensitive credentials</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setShowAuthModal(false)}
-                                    className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 transition-colors"
+                                    className="p-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
                                 >
-                                    <IoClose size={24} />
+                                    <IoClose size={20} />
                                 </button>
                             </div>
 
                             {authError && (
-                                <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm mb-4">
+                                <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 rounded-xl text-xs font-bold mb-4">
                                     {authError}
                                 </div>
                             )}
 
-                            <div className="mb-6">
-                                <label className="block text-sm font-medium text-gray-600 mb-2">Admin Password</label>
+                            <div className="mb-5">
+                                <label className="block text-xs font-bold text-stone-700 mb-1.5">Your Admin Password</label>
                                 <input
                                     type="password"
                                     value={adminPassword}
                                     onChange={(e) => setAdminPassword(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && verifyAndReveal()}
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-gray-900 outline-none"
-                                    placeholder="Enter your password"
+                                    onKeyDown={(e) => e.key === 'Enter' && verifyAndReveal()}
+                                    className="w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-stone-900 text-xs focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 outline-none shadow-2xs font-medium placeholder:text-stone-400"
+                                    placeholder="Enter your current password"
                                     autoFocus
                                 />
                             </div>
@@ -227,15 +241,15 @@ const PasswordActivityLog = () => {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setShowAuthModal(false)}
-                                    className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl font-semibold transition-all text-gray-900"
+                                    className="flex-1 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={verifyAndReveal}
-                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl font-semibold transition-all text-white"
+                                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 rounded-xl text-xs font-bold text-white shadow-md shadow-orange-500/20 cursor-pointer transition-all"
                                 >
-                                    Verify & Show
+                                    Verify & Reveal
                                 </button>
                             </div>
                         </motion.div>

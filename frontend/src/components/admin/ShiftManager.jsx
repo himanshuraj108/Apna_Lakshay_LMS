@@ -77,36 +77,36 @@ const ShiftManager = ({ allowDelete = true }) => {
         }
     };
 
-    const INPUT = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/10 outline-none transition-all placeholder-gray-400';
-    const LABEL = 'block text-sm font-semibold text-gray-700 mb-2';
+    const INPUT = 'w-full bg-white border border-[#E2DBD2] rounded-xl px-3.5 py-2.5 text-[#0F172A] text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all placeholder-slate-400 shadow-2xs';
+    const LABEL = 'block text-xs font-bold uppercase tracking-wider text-stone-600 mb-1.5';
 
     // Generate a gradient for each shift based on index
     const shiftGradients = [
-        'from-blue-500 to-indigo-500',
-        'from-green-500 to-teal-500',
         'from-orange-500 to-amber-500',
-        'from-purple-500 to-violet-500',
-        'from-pink-500 to-rose-500',
-        'from-cyan-500 to-blue-500',
+        'from-amber-500 to-yellow-500',
+        'from-stone-700 to-stone-900',
+        'from-emerald-500 to-teal-500',
+        'from-blue-500 to-indigo-500',
+        'from-rose-500 to-pink-500',
     ];
 
     return (
         <div className="space-y-4">
             {/* Header */}
-            <div className="flex justify-between items-center bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
+            <div className="flex justify-between items-center bg-white border border-[#EDE8E0] p-5 rounded-2xl shadow-xs">
                 <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl shadow-lg shadow-indigo-500/25">
+                    <div className="p-2.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-md shadow-orange-500/20">
                         <IoTimeOutline size={20} className="text-white" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-lg text-gray-900">Custom Shifts</h3>
-                        <p className="text-sm text-gray-500">Add, remove, or modify your shift timings</p>
+                        <h3 className="font-black text-lg text-[#0F172A]">Custom Shifts</h3>
+                        <p className="text-xs text-stone-500 font-medium">Add, remove, or modify your shift timings</p>
                     </div>
                 </div>
                 <motion.button
-                    whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                     onClick={() => { setShowAddModal(true); setEditingId(null); setFormData({ name: '', startTime: '', endTime: '' }); }}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 transition-all cursor-pointer"
                 >
                     <IoAdd size={18} /> Add Shift
                 </motion.button>
@@ -116,16 +116,16 @@ const ShiftManager = ({ allowDelete = true }) => {
             {dbLoading ? (
                 <div className="grid gap-3">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-20 bg-white border border-gray-100 rounded-2xl animate-pulse" />
+                        <div key={i} className="h-20 bg-white border border-[#EDE8E0] rounded-2xl animate-pulse" />
                     ))}
                 </div>
             ) : dbShifts.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50">
-                    <div className="p-3 bg-gray-100 rounded-2xl w-fit mx-auto mb-3">
-                        <IoAlertCircle className="text-gray-400" size={28} />
+                <div className="text-center py-12 border-2 border-dashed border-[#EDE8E0] rounded-2xl bg-white">
+                    <div className="p-3 bg-[#FAF6F0] rounded-2xl w-fit mx-auto mb-3">
+                        <IoAlertCircle className="text-stone-400" size={28} />
                     </div>
-                    <p className="text-gray-700 font-semibold">No custom shifts yet</p>
-                    <p className="text-sm text-gray-400 mt-1">Click "Add Shift" to create your first shift</p>
+                    <p className="text-stone-800 font-bold text-sm">No custom shifts yet</p>
+                    <p className="text-xs text-stone-400 mt-1">Click "Add Shift" to create your first shift</p>
                 </div>
             ) : (
                 <div className="grid gap-3">
@@ -139,17 +139,17 @@ const ShiftManager = ({ allowDelete = true }) => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -12 }}
                                     transition={{ delay: idx * 0.05 }}
-                                    className="group bg-white border border-gray-200 hover:border-gray-300 rounded-2xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all"
+                                    className="group bg-white border border-[#EDE8E0] hover:border-[#E2B08A] rounded-2xl px-5 py-4 flex items-center gap-4 shadow-2xs hover:shadow-xs transition-all"
                                 >
                                     {/* Icon */}
-                                    <div className={`shrink-0 p-3 rounded-xl bg-gradient-to-br ${grad} shadow-md`}>
+                                    <div className={`shrink-0 p-3 rounded-xl bg-gradient-to-br ${grad} shadow-sm`}>
                                         <IoTimeOutline size={20} className="text-white" />
                                     </div>
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
-                                        <p className="font-bold text-gray-900 text-sm">{shift.name}</p>
-                                        <p className="text-gray-500 text-xs font-mono mt-0.5">
+                                        <p className="font-bold text-[#0F172A] text-sm">{shift.name}</p>
+                                        <p className="text-stone-500 text-xs font-mono mt-0.5">
                                             {shift.startTime && shift.endTime
                                                 ? `${shift.startTime} – ${shift.endTime}`
                                                 : 'Standard Timing'}
@@ -159,9 +159,9 @@ const ShiftManager = ({ allowDelete = true }) => {
                                     {/* Actions */}
                                     <div className="flex items-center gap-2 shrink-0">
                                         <motion.button
-                                            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                             onClick={() => handleViewStudents(shift._id)}
-                                            className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-semibold transition-all"
+                                            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
                                         >
                                             <IoPeople size={14} /> Students
                                         </motion.button>
@@ -170,7 +170,7 @@ const ShiftManager = ({ allowDelete = true }) => {
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                                     onClick={() => handleEditShift(shift)}
-                                                    className="p-2 bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 text-gray-500 hover:text-indigo-600 rounded-xl transition-all"
+                                                    className="p-2 bg-white hover:bg-orange-50 border border-[#EDE8E0] hover:border-orange-200 text-stone-600 hover:text-orange-600 rounded-xl transition-all cursor-pointer"
                                                     title="Edit shift"
                                                 >
                                                     <IoPencil size={15} />
@@ -178,7 +178,7 @@ const ShiftManager = ({ allowDelete = true }) => {
                                                 <motion.button
                                                     whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                                     onClick={() => handleDeleteShift(shift._id)}
-                                                    className="p-2 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 text-gray-500 hover:text-red-500 rounded-xl transition-all"
+                                                    className="p-2 bg-white hover:bg-rose-50 border border-[#EDE8E0] hover:border-rose-200 text-stone-600 hover:text-rose-600 rounded-xl transition-all cursor-pointer"
                                                     title="Delete shift"
                                                 >
                                                     <IoTrash size={15} />
@@ -199,12 +199,11 @@ const ShiftManager = ({ allowDelete = true }) => {
                 onClose={() => { setShowAddModal(false); setEditingId(null); setFormData({ name: '', startTime: '', endTime: '' }); }}
                 title={editingId ? 'Edit Shift' : 'Create New Shift'}
                 theme="light"
-                accentColor="from-indigo-400 via-purple-500 to-pink-500"
                 maxWidth="max-w-md"
             >
                 <form onSubmit={handleCreateShift} className="space-y-4">
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-xl text-sm">
+                        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-medium">
                             {error}
                         </div>
                     )}
@@ -247,14 +246,14 @@ const ShiftManager = ({ allowDelete = true }) => {
                         <button
                             type="button"
                             onClick={() => { setShowAddModal(false); setEditingId(null); setFormData({ name: '', startTime: '', endTime: '' }); }}
-                            className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all text-sm"
+                            className="flex-1 px-4 py-2.5 bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] text-stone-700 font-bold rounded-xl transition-all text-xs cursor-pointer"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={processing}
-                            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 text-sm"
+                            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold rounded-xl transition-all shadow-md shadow-orange-500/25 disabled:opacity-50 text-xs cursor-pointer"
                         >
                             {processing ? (editingId ? 'Updating…' : 'Creating…') : (editingId ? 'Update Shift' : 'Create Shift')}
                         </button>

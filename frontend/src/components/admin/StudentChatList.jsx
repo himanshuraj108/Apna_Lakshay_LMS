@@ -77,29 +77,29 @@ const StudentChatList = () => {
             {/* Search and Toggle Row */}
             <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1 w-full">
-                    <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                    <IoSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
                     <input
                         type="text"
-                        placeholder="Search students..."
+                        placeholder="Search students by name or ID..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-gray-50 text-gray-900 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-white text-stone-800 text-sm pl-10 pr-4 py-2.5 rounded-xl border border-[#E2DBD2] focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 outline-none shadow-2xs font-medium placeholder:text-stone-400"
                     />
                 </div>
                 
                 {/* Show Inactive Toggle */}
-                <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-sm font-semibold text-gray-700 select-none">
+                <div className="flex items-center gap-2.5 shrink-0 bg-white border border-[#EDE8E0] px-3.5 py-2 rounded-xl shadow-2xs">
+                    <span className="text-xs font-bold text-stone-700 select-none">
                         Show Inactive
                     </span>
                     <button
                         onClick={() => setShowInactive(!showInactive)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            showInactive ? 'bg-indigo-600' : 'bg-gray-200'
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors duration-200 ease-in-out focus:outline-none ${
+                            showInactive ? 'bg-gradient-to-r from-orange-500 to-amber-500' : 'bg-stone-300'
                         }`}
                     >
                         <span
-                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
                                 showInactive ? 'translate-x-5' : 'translate-x-0'
                             }`}
                         />
@@ -109,15 +109,15 @@ const StudentChatList = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredStudents.map(student => (
-                    <Card key={student._id} className="flex justify-between items-center p-4">
+                    <div key={student._id} className="flex justify-between items-center p-4 bg-white border border-[#EDE8E0] rounded-2xl shadow-xs hover:border-orange-200 hover:shadow-sm transition-all">
                         <div
-                            className="flex items-center gap-3 cursor-pointer group"
+                            className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
                             onClick={() => {
                                 setSelectedStudent(student);
                                 setShowIdCard(true);
                             }}
                         >
-                            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold overflow-hidden shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-600 font-bold overflow-hidden shrink-0">
                                 <img
                                     src={(() => {
                                         const img = (!student.profileImage || student.profileImage === '/uploads/avatars/avatar1.svg')
@@ -129,16 +129,16 @@ const StudentChatList = () => {
                                     className="w-full h-full object-cover"
                                 />
                             </div>
-                            <div>
-                                <h3 className="font-bold text-gray-900 group-hover:text-blue-400 transition-colors flex items-center gap-1.5 flex-wrap">
+                            <div className="min-w-0 flex-1">
+                                <h3 className="font-bold text-stone-900 text-sm group-hover:text-orange-600 transition-colors flex items-center gap-1.5 flex-wrap truncate">
                                     {student.name}
                                     {student.isActive === false && (
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-600">
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200">
                                             Inactive
                                         </span>
                                     )}
                                 </h3>
-                                <p className="text-xs text-gray-600">{student.studentId || 'No ID'}</p>
+                                <p className="text-xs text-stone-400 font-medium">{student.studentId || 'No ID'}</p>
                             </div>
                         </div>
                         <button
@@ -146,15 +146,15 @@ const StudentChatList = () => {
                                 e.stopPropagation();
                                 handleToggleBlock(student._id);
                             }}
-                            className={`p-2 rounded-lg transition-colors ${student.isChatBlocked
-                                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                                : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                            className={`p-2 rounded-xl border transition-all cursor-pointer ${student.isChatBlocked
+                                ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                 }`}
                             title={student.isChatBlocked ? "Unblock Chat" : "Block Chat"}
                         >
-                            {student.isChatBlocked ? <IoBan size={20} /> : <IoCheckmarkCircle size={20} />}
+                            {student.isChatBlocked ? <IoBan size={18} /> : <IoCheckmarkCircle size={18} />}
                         </button>
-                    </Card>
+                    </div>
                 ))}
             </div>
 
