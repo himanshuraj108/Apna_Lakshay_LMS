@@ -213,9 +213,7 @@ const renderPayloadDetails = (toolName, payload) => {
             return <pre className="bg-gray-900 text-gray-100 p-3 rounded-xl overflow-x-auto text-[10px] leading-relaxed">{JSON.stringify(payload, null, 2)}</pre>;
     }
 };
-
-const PAGE_BG = { background: '#F8FAFC' };
-
+const PAGE_BG = { background: '#FAF6F0', fontFamily: "'Inter', sans-serif" };
 const StudentActivities = () => {
     const [loading, setLoading] = useState(true);
     const [activities, setActivities] = useState([]);
@@ -430,40 +428,45 @@ const StudentActivities = () => {
 
     return (
         <div className="relative min-h-screen" style={PAGE_BG}>
-            {/* Background Orbs */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-orange-600/5 blur-3xl" />
-                <div className="absolute bottom-[10%] left-[-6%] w-[400px] h-[400px] rounded-full bg-indigo-600/5 blur-3xl" />
-            </div>
+            {/* Ambient Dot Grid */}
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
                         <Link to="/admin">
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all shadow-sm">
-                                <IoArrowBack size={16} /> Back
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                                <IoArrowBack size={15} /> Back
                             </motion.button>
                         </Link>
                         <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg"><IoPulseOutline size={14} className="text-white" /></div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-orange-500">Super Admin Only</span>
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-sm">
+                                    <IoPulseOutline size={13} className="text-white" />
+                                </div>
+                                <span className="text-[11px] font-black uppercase tracking-widest text-orange-600">Super Admin Only</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Engagement & Activity Logs</h1>
-                            <p className="text-gray-500 text-sm mt-0.5">Monitor student daily streaks, XP gains, mock tests, and library leaderboards.</p>
+                            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">Engagement & Activity Logs</h1>
+                            <p className="text-stone-500 text-xs mt-0.5 font-medium">Monitor student daily streaks, XP gains, mock tests, and library leaderboards.</p>
                         </div>
                     </div>
 
                     {/* Segment Tab Controls */}
-                    <div className="flex bg-white border border-gray-200 p-1.5 rounded-2xl shadow-sm self-start sm:self-auto">
+                    <div className="flex bg-white border border-[#EDE8E0] p-1.5 rounded-2xl shadow-2xs self-start sm:self-auto">
                         <button
                             onClick={() => { setActiveTab('logs'); setPage(1); }}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                                 activeTab === 'logs'
-                                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
-                                    : 'text-gray-500 hover:text-gray-800'
+                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                                    : 'text-stone-600 hover:text-stone-900'
                             }`}
                         >
                             <IoStatsChartOutline size={14} />
@@ -471,10 +474,10 @@ const StudentActivities = () => {
                         </button>
                         <button
                             onClick={() => { setActiveTab('leaderboard'); }}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                                 activeTab === 'leaderboard'
-                                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
-                                    : 'text-gray-500 hover:text-gray-800'
+                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                                    : 'text-stone-600 hover:text-stone-900'
                             }`}
                         >
                             <IoTrophyOutline size={14} />
@@ -488,23 +491,23 @@ const StudentActivities = () => {
                     <>
                         {/* Filters Row */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                            className="bg-white border border-gray-200 rounded-2xl p-4 mb-6 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                            className="bg-white border border-[#EDE8E0] rounded-2xl p-4 mb-6 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
                             {/* Search */}
                             <div className="relative w-full md:w-96">
-                                <IoSearchOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <IoSearchOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
                                 <input
                                     type="text"
                                     placeholder="Search by student name..."
                                     value={search}
                                     onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none transition-all"
+                                    className="w-full pl-10 pr-4 py-2 bg-[#FAF6F0] border border-[#E2DBD2] rounded-xl text-xs font-medium text-stone-900 placeholder:text-stone-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 outline-none transition-all"
                                 />
                             </div>
 
                             {/* Sorting */}
                             <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-between md:justify-start">
-                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Sort By</span>
-                                <div className="flex bg-gray-50 border border-gray-200 p-1 rounded-xl">
+                                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Sort By</span>
+                                <div className="flex bg-[#FAF6F0] border border-[#EDE8E0] p-1 rounded-xl">
                                     {[
                                         { id: 'xp', label: 'XP / Level', icon: IoTrendingUpOutline },
                                         { id: 'streak', label: 'Streak', icon: IoFlame },
@@ -514,11 +517,11 @@ const StudentActivities = () => {
                                         <button
                                             key={opt.id}
                                             onClick={() => { setSortBy(opt.id); setPage(1); }}
-                                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${sortBy === opt.id
-                                                ? 'bg-white text-orange-600 shadow-sm border border-gray-100'
-                                                : 'text-gray-500 hover:text-gray-800'}`}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${sortBy === opt.id
+                                                ? 'bg-white text-orange-600 shadow-2xs border border-[#EDE8E0]'
+                                                : 'text-stone-500 hover:text-stone-800'}`}
                                         >
-                                            <opt.icon size={13} className={sortBy === opt.id ? 'text-orange-500' : 'text-gray-400'} />
+                                            <opt.icon size={13} className={sortBy === opt.id ? 'text-orange-500' : 'text-stone-400'} />
                                             {opt.label}
                                         </button>
                                     ))}
@@ -528,7 +531,7 @@ const StudentActivities = () => {
 
                         {/* Table Container */}
                         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                            className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                            className="bg-white border border-[#EDE8E0] rounded-2xl overflow-hidden shadow-xs">
                             {error ? (
                                 <div className="p-12 text-center">
                                     <p className="text-red-500 font-semibold mb-3">{error}</p>

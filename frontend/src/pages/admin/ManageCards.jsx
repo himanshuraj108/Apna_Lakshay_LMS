@@ -14,9 +14,9 @@ const TABS = ['Quick Actions', 'Learning', 'AI Study Suite', 'Doubt Credits', 'M
 
 const Toggle = ({ checked, onChange }) => (
     <button onClick={() => onChange(!checked)}
-        className="relative inline-flex items-center h-5 w-9 rounded-full transition-all flex-shrink-0"
-        style={{ background: checked ? '#6366f1' : '#e5e7eb' }}>
-        <span className="absolute left-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
+        className="relative inline-flex items-center h-5 w-9 rounded-full transition-all flex-shrink-0 cursor-pointer"
+        style={{ background: checked ? '#F97316' : '#E2DBD2' }}>
+        <span className="absolute left-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all"
             style={{ transform: checked ? 'translateX(16px)' : 'translateX(0)' }} />
     </button>
 );
@@ -26,24 +26,24 @@ const CardRow = ({ card, index, total, onMove, onToggle, onToggleNew }) => (
         layout
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-            card.visible ? 'bg-white border-gray-200 shadow-sm' : 'bg-gray-50 border-gray-100 opacity-50'
+        className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all ${
+            card.visible ? 'bg-white border-[#EDE8E0] shadow-xs hover:border-orange-200' : 'bg-[#FAF6F0] border-[#EDE8E0] opacity-55'
         }`}>
         {/* Order buttons */}
         <div className="flex flex-col">
             <button onClick={() => onMove(index, -1)} disabled={index === 0}
-                className="p-0.5 rounded text-gray-400 hover:text-gray-700 disabled:opacity-20 transition-colors"><IoChevronUp size={14} /></button>
+                className="p-0.5 rounded text-stone-400 hover:text-orange-600 disabled:opacity-20 transition-colors cursor-pointer"><IoChevronUp size={14} /></button>
             <button onClick={() => onMove(index, 1)} disabled={index === total - 1}
-                className="p-0.5 rounded text-gray-400 hover:text-gray-700 disabled:opacity-20 transition-colors"><IoChevronDown size={14} /></button>
+                className="p-0.5 rounded text-stone-400 hover:text-orange-600 disabled:opacity-20 transition-colors cursor-pointer"><IoChevronDown size={14} /></button>
         </div>
         {/* Label */}
-        <span className="flex-1 text-sm font-semibold text-gray-800">{card.label}</span>
+        <span className="flex-1 text-xs font-bold text-stone-800">{card.label}</span>
         {/* NEW badge toggle */}
         <button onClick={() => onToggleNew(index)}
-            className={`text-[10px] font-black px-2 py-0.5 rounded-full border transition-all ${
+            className={`text-[10px] font-black px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
                 card.isNew
-                    ? 'bg-amber-100 border-amber-300 text-amber-700'
-                    : 'bg-gray-100 border-gray-200 text-gray-400 hover:text-gray-600'
+                    ? 'bg-amber-50 border-amber-300 text-amber-800'
+                    : 'bg-[#FAF6F0] border-[#EDE8E0] text-stone-400 hover:text-stone-600'
             }`}>
             NEW
         </button>
@@ -182,24 +182,32 @@ const ManageCards = () => {
         (s.studentId || '').toLowerCase().includes(searchMock.toLowerCase())
     );
 
-    const INPUT = 'w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/10';
+    const INPUT = 'w-full bg-white border border-[#E2DBD2] text-stone-900 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 shadow-2xs font-medium';
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="w-8 h-8 rounded-full border-2 border-indigo-400/30 border-t-indigo-500 animate-spin" />
+        <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAF6F0' }}>
+            <div className="w-8 h-8 rounded-full border-2 border-orange-200 border-t-orange-500 animate-spin" />
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen relative" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
+
             {/* Toast */}
             <AnimatePresence>
                 {toast && (
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                        className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold shadow-xl border ${
+                        className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold shadow-xl border ${
                             toast.type === 'success'
-                                ? 'bg-green-50 border-green-200 text-green-700'
-                                : 'bg-red-50 border-red-200 text-red-700'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                : 'bg-rose-50 border-rose-200 text-rose-700'
                         }`}>
                         {toast.type === 'success' ? <IoCheckmarkCircle size={16} /> : <IoAlertCircle size={16} />}
                         {toast.msg}
@@ -208,25 +216,27 @@ const ManageCards = () => {
             </AnimatePresence>
 
             {/* Header */}
-            <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-                <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <Link to="/admin" className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all">
+            <div className="sticky top-0 z-30 bg-white border-b border-[#EDE8E0] shadow-2xs">
+                <div className="max-w-4xl mx-auto px-4 h-16 flex items-center gap-3">
+                    <Link to="/admin" className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-[#FAF6F0] border border-transparent hover:border-[#EDE8E0] transition-all">
                         <IoArrowBack size={18} />
                     </Link>
-                    <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg">
-                        <IoCog size={14} className="text-white" />
+                    <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600">
+                        <IoCog size={16} />
                     </div>
-                    <h1 className="text-gray-900 font-bold text-base flex-1">Manage Cards</h1>
-                    <span className="text-xs text-gray-500 font-medium">Student Dashboard Config</span>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-stone-900 font-bold text-base">Dashboard Cards & AI Suite</h1>
+                        <span className="text-[11px] text-stone-400 font-medium">Student Dashboard Layout & Credit Configuration</span>
+                    </div>
                 </div>
                 {/* Section tabs */}
-                <div className="max-w-3xl mx-auto px-4 pb-3 flex gap-2 flex-wrap">
+                <div className="max-w-4xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto">
                     {TABS.map(t => (
                         <button key={t} onClick={() => setTab(t)}
-                            className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all ${
+                            className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
                                 activeTab === t
-                                    ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/25'
-                                    : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
+                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                                    : 'bg-white text-stone-600 border border-[#EDE8E0] hover:bg-[#FAF6F0]'
                             }`}>
                             {t}
                         </button>
@@ -234,12 +244,12 @@ const ManageCards = () => {
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto px-4 py-6">
+            <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
 
                 {/* ── Quick Actions ─────────────────────────────────── */}
                 {activeTab === 'Quick Actions' && (
                     <div>
-                        <p className="text-xs text-gray-500 mb-4">Toggle visibility, mark as NEW (will blink on student dashboard), and reorder with ▲▼ arrows.</p>
+                        <p className="text-xs text-stone-500 font-medium mb-4">Toggle visibility, mark as NEW (blinks on student dashboard), and reorder with ▲▼ arrows.</p>
                         <div className="space-y-2 mb-6">
                             {quickActions.map((card, i) => (
                                 <CardRow key={card.id} card={card} index={i} total={quickActions.length}
@@ -249,7 +259,7 @@ const ManageCards = () => {
                             ))}
                         </div>
                         <button onClick={() => saveSection('quickActions', quickActions)} disabled={saving}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white transition-all disabled:opacity-50 shadow-md shadow-orange-500/20 cursor-pointer">
                             <IoSave size={15} /> {saving ? 'Saving…' : 'Save Quick Actions'}
                         </button>
                     </div>
@@ -258,7 +268,7 @@ const ManageCards = () => {
                 {/* ── Learning ────────────────────────────────────── */}
                 {activeTab === 'Learning' && (
                     <div>
-                        <p className="text-xs text-gray-500 mb-4">Control which learning cards are visible and their order in the Learning section.</p>
+                        <p className="text-xs text-stone-500 font-medium mb-4">Control which learning cards are visible and their order in the Learning section.</p>
                         <div className="space-y-2 mb-6">
                             {learning.map((card, i) => (
                                 <CardRow key={card.id} card={card} index={i} total={learning.length}
@@ -268,7 +278,7 @@ const ManageCards = () => {
                             ))}
                         </div>
                         <button onClick={() => saveSection('learning', learning)} disabled={saving}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white transition-all disabled:opacity-50 shadow-md shadow-orange-500/20 cursor-pointer">
                             <IoSave size={15} /> {saving ? 'Saving…' : 'Save Learning Section'}
                         </button>
                     </div>
@@ -277,7 +287,7 @@ const ManageCards = () => {
                 {/* ── AI Study Suite ──────────────────────────────── */}
                 {activeTab === 'AI Study Suite' && (
                     <div>
-                        <p className="text-xs text-gray-500 mb-4">Control which AI Study Suite tools are visible, their order, and whether they show a NEW tag.</p>
+                        <p className="text-xs text-stone-500 font-medium mb-4">Control which AI Study Suite tools are visible, their order, and whether they show a NEW tag.</p>
                         <div className="space-y-2 mb-6">
                             {aiStudySuite.map((card, i) => (
                                 <CardRow key={card.id} card={card} index={i} total={aiStudySuite.length}
@@ -287,7 +297,7 @@ const ManageCards = () => {
                             ))}
                         </div>
                         <button onClick={() => saveSection('aiStudySuite', aiStudySuite)} disabled={saving}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/25">
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white transition-all disabled:opacity-50 shadow-md shadow-orange-500/20 cursor-pointer">
                             <IoSave size={15} /> {saving ? 'Saving…' : 'Save AI Study Suite'}
                         </button>
                     </div>
@@ -297,49 +307,51 @@ const ManageCards = () => {
                 {activeTab === 'Doubt Credits' && (
                     <div className="space-y-6">
                         {/* Global config */}
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                        <div className="rounded-2xl border border-[#EDE8E0] bg-white p-5 shadow-xs">
                             <div className="flex items-center gap-2 mb-3">
-                                <IoSparkles size={14} className="text-amber-500" />
-                                <h3 className="text-gray-900 font-bold text-sm">Credit Formula</h3>
+                                <div className="w-7 h-7 rounded-lg bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-600">
+                                    <IoSparkles size={14} />
+                                </div>
+                                <h3 className="text-stone-900 font-bold text-sm">Credit Formula</h3>
                             </div>
-                            <p className="text-xs text-gray-600 mb-4">
-                                Default credits per student = <span className="text-amber-600 font-bold">Negotiated Fee ÷ Divisor</span>.
+                            <p className="text-xs text-stone-500 font-medium mb-4">
+                                Default credits per student = <span className="text-orange-600 font-bold">Negotiated Fee ÷ Divisor</span>.
                                 If no fee, fallback default is used instead.
                             </p>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Divisor</label>
+                                    <label className="text-xs font-bold text-stone-700 mb-1 block">Divisor</label>
                                     <input type="number" min="1" value={aiConfig.divisor}
                                         onChange={e => setAiConfig(prev => ({ ...prev, divisor: Number(e.target.value) }))}
                                         className={INPUT} />
-                                    <p className="text-[10px] text-gray-500 mt-1">e.g. Fee ₹5000 ÷ 10 = 500 credits</p>
+                                    <p className="text-[10px] text-stone-400 font-medium mt-1">e.g. Fee ₹5000 ÷ 10 = 500 credits</p>
                                 </div>
                                 <div>
-                                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Fallback Credits (no fee)</label>
+                                    <label className="text-xs font-bold text-stone-700 mb-1 block">Fallback Credits (no fee)</label>
                                     <input type="number" min="0" value={aiConfig.defaultCredits}
                                         onChange={e => setAiConfig(prev => ({ ...prev, defaultCredits: Number(e.target.value) }))}
                                         className={INPUT} />
                                 </div>
                             </div>
-                            <div className="flex flex-wrap gap-3 items-center">
+                            <div className="flex flex-wrap gap-2.5 items-center">
                                 <button onClick={saveAiConfig} disabled={saving}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-white transition-all disabled:opacity-50 shadow-md shadow-amber-500/25">
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white transition-all disabled:opacity-50 shadow-md shadow-orange-500/20 cursor-pointer">
                                     <IoSave size={13} /> Save Config
                                 </button>
                                 <button onClick={applyFormula} disabled={saving}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-amber-300 text-amber-700 hover:bg-amber-100 disabled:opacity-50 transition-all">
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-orange-200/80 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all cursor-pointer">
                                     <IoFlashOutline size={13} /> Apply Formula to All
                                 </button>
                             </div>
 
-                            <div className="pt-3 border-t border-amber-200">
-                                <label className="text-xs font-semibold text-gray-700 mb-1 block">Bulk Set Credits For All Students</label>
+                            <div className="pt-4 mt-4 border-t border-[#EDE8E0]">
+                                <label className="text-xs font-bold text-stone-700 mb-1.5 block">Bulk Set Credits For All Students</label>
                                 <div className="flex items-center gap-3 max-w-sm">
                                     <input type="number" min="0" value={bulkAiValue}
                                         onChange={e => setBulkAiValue(Number(e.target.value))}
                                         className={INPUT} />
                                     <button onClick={resetAllAiCredits} disabled={saving}
-                                        className="flex items-center justify-center gap-2 px-4 py-2 h-[38px] rounded-xl text-xs font-bold border border-amber-400 bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-all shadow-sm shrink-0">
+                                        className="flex items-center justify-center gap-1.5 px-4 py-2 h-[42px] rounded-xl text-xs font-bold border border-orange-500 bg-gradient-to-r from-orange-500 to-amber-600 text-white hover:from-orange-600 hover:to-amber-700 disabled:opacity-50 transition-all shadow-md shadow-orange-500/20 shrink-0 cursor-pointer">
                                         <IoFlashOutline size={13} /> Set All Now
                                     </button>
                                 </div>
@@ -348,44 +360,44 @@ const ManageCards = () => {
 
                         {/* Per-student credits */}
                         <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2">
-                                    <IoPersonOutline size={14} className="text-gray-500" /> Per-Student Credits
+                            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <h3 className="text-stone-900 font-bold text-sm flex items-center gap-2">
+                                    <IoPersonOutline size={15} className="text-orange-600" /> Per-Student Credits
                                 </h3>
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-xs font-semibold text-gray-700">Show Inactive</span>
+                                    <div className="flex items-center gap-2 bg-white border border-[#EDE8E0] px-3 py-1.5 rounded-xl shadow-2xs">
+                                        <span className="text-xs font-bold text-stone-700">Show Inactive</span>
                                         <Toggle checked={showInactive} onChange={setShowInactive} />
                                     </div>
-                                    <span className="text-xs text-gray-500">{students.length} students</span>
+                                    <span className="text-xs text-stone-400 font-medium">{students.length} students</span>
                                 </div>
                             </div>
                             <div className="relative mb-3">
-                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                 <input value={search} onChange={e => setSearch(e.target.value)}
                                     placeholder="Search by name or ID…"
-                                    className="w-full bg-white border border-gray-200 text-gray-900 text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-indigo-400 placeholder-gray-400 shadow-sm" />
+                                    className="w-full bg-white border border-[#E2DBD2] text-stone-900 text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-orange-500 placeholder-stone-400 shadow-2xs font-medium" />
                             </div>
                             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                                 {filteredStudents.map(s => {
                                     const isAuto = (s.creditMode || 'auto') === 'auto';
                                     return (
                                         <div key={s._id}
-                                            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm">
+                                            className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-[#EDE8E0] bg-white shadow-2xs hover:border-orange-200 transition-all">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-gray-900 text-xs font-semibold truncate flex items-center gap-1.5">
+                                                <p className="text-stone-900 text-xs font-bold truncate flex items-center gap-1.5">
                                                     {s.name}
                                                     {s.isActive === false && (
-                                                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-red-100 text-red-600">
+                                                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-50 text-rose-600 border border-rose-200">
                                                             INACTIVE
                                                         </span>
                                                     )}
                                                 </p>
-                                                <p className="text-gray-500 text-[10px]">{s.studentId} · Fee &#8377;{s.negotiatedFee || 'N/A'} · Suggested: {s.suggestedCredits}</p>
+                                                <p className="text-stone-400 text-[10px] font-medium">{s.studentId} · Fee &#8377;{s.negotiatedFee || 'N/A'} · Suggested: {s.suggestedCredits}</p>
                                             </div>
 
-                                            <div className="flex items-center gap-1.5">
-                                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border ${isAuto ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-orange-50 text-orange-700 border-orange-300'}`}>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${isAuto ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-orange-50 text-orange-700 border-orange-300'}`}>
                                                     {isAuto ? 'AUTO' : 'MANUAL'}
                                                 </span>
                                                 <Toggle
@@ -403,23 +415,23 @@ const ManageCards = () => {
                                                         value={editingCredit.value}
                                                         onChange={e => setEditing(prev => ({ ...prev, value: e.target.value }))}
                                                         onKeyDown={e => { if (e.key === 'Enter') saveStudentCredit(s._id, Number(editingCredit.value), 'manual'); if (e.key === 'Escape') setEditing(null); }}
-                                                        className="w-16 bg-gray-50 border border-indigo-300 text-gray-900 text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
+                                                        className="w-16 bg-[#FAF6F0] border border-orange-300 text-stone-900 text-xs rounded-xl px-2 py-1 focus:outline-none text-center font-bold"
                                                         autoFocus />
                                                     <button onClick={() => saveStudentCredit(s._id, Number(editingCredit.value), 'manual')}
-                                                        className="text-green-600 hover:text-green-700 transition-colors"><IoCheckmarkCircle size={16} /></button>
+                                                        className="text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"><IoCheckmarkCircle size={18} /></button>
                                                     <button onClick={() => setEditing(null)}
-                                                        className="text-gray-400 hover:text-gray-700 transition-colors text-xs">✕</button>
+                                                        className="text-stone-400 hover:text-stone-700 transition-colors text-xs cursor-pointer">✕</button>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`font-bold text-sm text-center px-1 ${isAuto ? 'text-gray-400' : 'text-indigo-600'}`} title="Current Credits / Total Quota">
+                                                    <span className={`font-bold text-xs text-center px-1 ${isAuto ? 'text-stone-400' : 'text-orange-600'}`} title="Current Credits / Total Quota">
                                                         {s.doubtCredits}{s.maxDoubtCredits && s.maxDoubtCredits !== s.doubtCredits ? ` / ${s.maxDoubtCredits}` : ''}
                                                     </span>
                                                     {!isAuto && (
                                                         <button onClick={() => setEditing({ id: s._id, value: s.maxDoubtCredits ?? s.doubtCredits })}
-                                                            className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+                                                            className="p-1 rounded-lg text-stone-400 hover:text-orange-600 hover:bg-[#FAF6F0] transition-all cursor-pointer"
                                                             title="Edit Credits">
-                                                            <IoPencilOutline size={13} />
+                                                            <IoPencilOutline size={14} />
                                                         </button>
                                                     )}
                                                 </div>
@@ -428,7 +440,7 @@ const ManageCards = () => {
                                     );
                                 })}
                                 {filteredStudents.length === 0 && (
-                                    <p className="text-center text-gray-500 text-xs py-8">No students found</p>
+                                    <p className="text-center text-stone-400 text-xs py-8">No students found</p>
                                 )}
                             </div>
                         </div>
@@ -438,61 +450,63 @@ const ManageCards = () => {
                 {/* ── Mock Test Credits ─────────────────────────────── */}
                 {activeTab === 'Mock Test Credits' && (
                     <div className="space-y-6">
-                        <div className="rounded-2xl border border-green-200 bg-green-50 p-5 flex flex-col gap-4">
+                        <div className="rounded-2xl border border-[#EDE8E0] bg-white p-5 shadow-xs flex flex-col gap-4">
                             <div className="flex items-center gap-2">
-                                <IoSparkles size={14} className="text-green-600" />
-                                <h3 className="text-gray-900 font-bold text-sm">Daily Mock Test Allowance</h3>
+                                <div className="w-7 h-7 rounded-lg bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-600">
+                                    <IoSparkles size={14} />
+                                </div>
+                                <h3 className="text-stone-900 font-bold text-sm">Daily Mock Test Allowance</h3>
                             </div>
-                            <p className="text-xs text-gray-600">
+                            <p className="text-xs text-stone-500 font-medium">
                                 This sets the total allowed tests a student can generate per day. It will automatically reset to 2 at midnight IST unless modified.
                             </p>
                             <div className="flex items-end gap-3 max-w-sm">
                                 <div className="flex-1">
-                                    <label className="text-xs font-semibold text-gray-700 mb-1 block">Bulk Reset To</label>
+                                    <label className="text-xs font-bold text-stone-700 mb-1 block">Bulk Reset To</label>
                                     <input type="number" min="0" value={bulkMockValue}
                                         onChange={e => setBulkMockValue(Number(e.target.value))}
                                         className={INPUT} />
                                 </div>
                                 <button onClick={resetAllMockCredits} disabled={saving}
-                                    className="flex items-center justify-center gap-2 px-4 py-2 h-[38px] rounded-xl text-xs font-bold border border-green-300 text-green-700 hover:bg-green-100 disabled:opacity-50 transition-all">
+                                    className="flex items-center justify-center gap-1.5 px-4 py-2 h-[42px] rounded-xl text-xs font-bold border border-orange-200/80 bg-orange-50 text-orange-700 hover:bg-orange-100 disabled:opacity-50 transition-all cursor-pointer">
                                     <IoFlashOutline size={13} /> Reset All Now
                                 </button>
                             </div>
                         </div>
 
                         <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-gray-900 font-bold text-sm flex items-center gap-2">
-                                    <IoPersonOutline size={14} className="text-gray-500" /> Per-Student Credits
+                            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                                <h3 className="text-stone-900 font-bold text-sm flex items-center gap-2">
+                                    <IoPersonOutline size={15} className="text-orange-600" /> Per-Student Credits
                                 </h3>
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-xs font-semibold text-gray-700">Show Inactive</span>
+                                    <div className="flex items-center gap-2 bg-white border border-[#EDE8E0] px-3 py-1.5 rounded-xl shadow-2xs">
+                                        <span className="text-xs font-bold text-stone-700">Show Inactive</span>
                                         <Toggle checked={showInactive} onChange={setShowInactive} />
                                     </div>
-                                    <span className="text-xs text-gray-500">{mockStudents.length} students</span>
+                                    <span className="text-xs text-stone-400 font-medium">{mockStudents.length} students</span>
                                 </div>
                             </div>
                             <div className="relative mb-3">
-                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                                 <input value={searchMock} onChange={e => setSearchMock(e.target.value)}
                                     placeholder="Search by name or ID…"
-                                    className="w-full bg-white border border-gray-200 text-gray-900 text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-green-400 placeholder-gray-400 shadow-sm" />
+                                    className="w-full bg-white border border-[#E2DBD2] text-stone-900 text-xs rounded-xl pl-8 pr-3 py-2.5 focus:outline-none focus:border-orange-500 placeholder-stone-400 shadow-2xs font-medium" />
                             </div>
                             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                                 {filteredMockStudents.map(s => (
                                     <div key={s._id}
-                                        className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white shadow-sm">
+                                        className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-[#EDE8E0] bg-white shadow-2xs hover:border-orange-200 transition-all">
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-gray-900 text-xs font-semibold truncate flex items-center gap-1.5">
+                                            <p className="text-stone-900 text-xs font-bold truncate flex items-center gap-1.5">
                                                 {s.name}
                                                 {s.isActive === false && (
-                                                    <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-red-100 text-red-600">
+                                                    <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-rose-50 text-rose-600 border border-rose-200">
                                                         INACTIVE
                                                     </span>
                                                 )}
                                             </p>
-                                            <p className="text-gray-500 text-[10px]">{s.studentId} · Seat {s.seatNumber} · Last reset: {s.lastReset || 'Never'}</p>
+                                            <p className="text-stone-400 text-[10px] font-medium">{s.studentId} · Seat {s.seatNumber} · Last reset: {s.lastReset || 'Never'}</p>
                                         </div>
 
                                         {editingMockCredit?.id === s._id ? (
@@ -501,26 +515,26 @@ const ManageCards = () => {
                                                     value={editingMockCredit.value}
                                                     onChange={e => setEditingMock(prev => ({ ...prev, value: e.target.value }))}
                                                     onKeyDown={e => { if (e.key === 'Enter') saveMockTestCredit(s._id, Number(editingMockCredit.value)); if (e.key === 'Escape') setEditingMock(null); }}
-                                                    className="w-16 bg-gray-50 border border-green-300 text-gray-900 text-xs rounded-lg px-2 py-1 focus:outline-none text-center"
+                                                    className="w-16 bg-[#FAF6F0] border border-orange-300 text-stone-900 text-xs rounded-xl px-2 py-1 focus:outline-none text-center font-bold"
                                                     autoFocus />
                                                 <button onClick={() => saveMockTestCredit(s._id, Number(editingMockCredit.value))}
-                                                    className="text-green-600 hover:text-green-700 transition-colors"><IoCheckmarkCircle size={16} /></button>
+                                                    className="text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"><IoCheckmarkCircle size={18} /></button>
                                                 <button onClick={() => setEditingMock(null)}
-                                                    className="text-gray-400 hover:text-gray-700 transition-colors text-xs">✕</button>
+                                                    className="text-stone-400 hover:text-stone-700 transition-colors text-xs cursor-pointer">✕</button>
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2">
-                                                <span className="font-bold text-sm w-8 text-center text-green-600">{s.mockTestCredits}</span>
+                                                <span className="font-bold text-xs w-8 text-center text-orange-600">{s.mockTestCredits}</span>
                                                 <button onClick={() => setEditingMock({ id: s._id, value: s.mockTestCredits })}
-                                                    className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
-                                                    <IoPencilOutline size={13} />
+                                                    className="p-1 rounded-lg text-stone-400 hover:text-orange-600 hover:bg-[#FAF6F0] transition-all cursor-pointer">
+                                                    <IoPencilOutline size={14} />
                                                 </button>
                                             </div>
                                         )}
                                     </div>
                                 ))}
                                 {filteredMockStudents.length === 0 && (
-                                    <p className="text-center text-gray-500 text-xs py-8">No students found</p>
+                                    <p className="text-center text-stone-400 text-xs py-8">No students found</p>
                                 )}
                             </div>
                         </div>
@@ -531,15 +545,16 @@ const ManageCards = () => {
                 {activeTab === 'AI Chat History' && (
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <IoChatbubblesOutline size={15} className="text-indigo-500" />
-                            <p className="text-sm font-bold text-gray-800">Student AI Doubt Session History</p>
+                            <div className="w-6 h-6 rounded-lg bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-600">
+                                <IoChatbubblesOutline size={14} />
+                            </div>
+                            <p className="text-sm font-bold text-stone-800">Student AI Doubt Session History</p>
                         </div>
                         <StudentChatHistory embedded />
                     </div>
                 )}
             </div>
         </div>
-
     );
 };
 

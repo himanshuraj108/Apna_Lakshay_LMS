@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../../utils/api';
 import {
-    IoArrowBack, IoAnalyticsOutline, IoDownload,
+    IoArrowBack, IoAnalyticsOutline,
     IoPeopleOutline, IoTimeOutline, IoTrendingUpOutline,
     IoCalendarOutline
 } from 'react-icons/io5';
-
-const PAGE_BG = { background: '#F8FAFC' };
 
 const AnalyticsDashboard = () => {
     const [loading, setLoading] = useState(true);
@@ -35,23 +33,27 @@ const AnalyticsDashboard = () => {
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center" style={PAGE_BG}>
-            <div className="grid grid-cols-2 gap-4 w-full max-w-7xl px-6">
-                {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/3 rounded-2xl animate-pulse" />)}
+        <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-7xl px-6">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-32 bg-white border border-[#EDE8E0] rounded-2xl animate-pulse" />
+                ))}
             </div>
         </div>
     );
 
     if (error || !analytics) return (
-        <div className="min-h-screen flex items-center justify-center" style={PAGE_BG}>
-            <div className="text-center">
-                <p className="text-red-400 mb-4">{error || 'No analytics data'}</p>
-                <button onClick={fetchAnalytics} className="px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl">Retry</button>
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div className="text-center bg-white border border-[#EDE8E0] p-8 rounded-3xl shadow-xl max-w-md w-full">
+                <p className="text-rose-600 font-bold text-sm mb-4">{error || 'No analytics data available'}</p>
+                <button onClick={fetchAnalytics} className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 cursor-pointer">
+                    Retry Loading
+                </button>
             </div>
         </div>
     );
 
-    const { activeCount, dailyTrends, peakHours, topStudents } = analytics;
+    const { activeCount, dailyTrends = [], peakHours = [], topStudents = [] } = analytics;
     const maxDayValue = Math.max(...dailyTrends.map(d => d.presentCount), 1);
     const maxPeakValue = Math.max(...peakHours.map(d => d.count), 1);
     const avgDuration = Math.round(dailyTrends.reduce((a, c) => a + (c.avgDuration || 0), 0) / (dailyTrends.length || 1));
@@ -59,43 +61,49 @@ const AnalyticsDashboard = () => {
     const totalVisits = dailyTrends.reduce((a, c) => a + c.presentCount, 0);
 
     const STAT_CARDS = [
-        { label: 'Live Occupancy', value: activeCount, sub: 'Students inside now', icon: IoPeopleOutline, color: 'from-blue-500 to-cyan-500', glow: 'rgba(59,130,246,0.3)' },
-        { label: 'Avg. Duration', value: `${avgDuration}m`, sub: 'Per session average', icon: IoTimeOutline, color: 'from-purple-500 to-violet-500', glow: 'rgba(139,92,246,0.3)' },
-        { label: 'Peak Hour', value: peakHour, sub: 'Most busy time (30d)', icon: IoTrendingUpOutline, color: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)' },
-        { label: 'Total Visits', value: totalVisits, sub: 'In selected period', icon: IoCalendarOutline, color: 'from-orange-400 to-amber-500', glow: 'rgba(245,158,11,0.3)' },
+        { label: 'Live Occupancy', value: activeCount, sub: 'Students inside now', icon: IoPeopleOutline, color: 'from-blue-500 to-cyan-500', iconBg: 'bg-blue-50 text-blue-600 border border-blue-200' },
+        { label: 'Avg. Duration', value: `${avgDuration}m`, sub: 'Per session average', icon: IoTimeOutline, color: 'from-purple-500 to-violet-500', iconBg: 'bg-purple-50 text-purple-600 border border-purple-200' },
+        { label: 'Peak Hour', value: peakHour, sub: 'Most busy window (30d)', icon: IoTrendingUpOutline, color: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-200' },
+        { label: 'Total Visits', value: totalVisits, sub: 'In selected period', icon: IoCalendarOutline, color: 'from-orange-500 to-amber-500', iconBg: 'bg-orange-50 text-orange-600 border border-orange-200' },
     ];
 
     return (
-        <div className="relative min-h-screen" style={PAGE_BG}>
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-blue-600/6 blur-3xl" />
-                <div className="absolute bottom-[5%] left-[-5%] w-[400px] h-[400px] rounded-full bg-purple-600/6 blur-3xl" />
-            </div>
+        <div className="relative min-h-screen" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                         <Link to="/admin/attendance">
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                                <IoArrowBack size={16} /> Back
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                                <IoArrowBack size={15} /> Back
                             </motion.button>
                         </Link>
                         <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg"><IoAnalyticsOutline size={14} className="text-gray-900" /></div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Admin</span>
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg shadow-sm">
+                                    <IoAnalyticsOutline size={13} className="text-white" />
+                                </div>
+                                <span className="text-[11px] font-black uppercase tracking-widest text-orange-600">Analytics & Insights</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Analytics Dashboard</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">Analytics Dashboard</h1>
+                            <p className="text-stone-500 text-xs mt-0.5 font-medium">Real-time occupancy trends and student learning duration</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
                         {['week', 'month'].map(p => (
                             <button key={p} onClick={() => setPeriod(p)}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${period === p
-                                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25'
-                                    : 'bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600'}`}>
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${period === p
+                                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                                    : 'bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 shadow-2xs'}`}>
                                 {p === 'week' ? 'Last 7 Days' : 'Last 30 Days'}
                             </button>
                         ))}
@@ -104,60 +112,71 @@ const AnalyticsDashboard = () => {
 
                 {/* Stat Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    {STAT_CARDS.map(({ label, value, sub, icon: Icon, color, glow }, i) => (
-                        <motion.div key={label} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                            className="relative bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 overflow-hidden group">
-                            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r ${color} opacity-60 group-hover:opacity-100 transition-opacity`} />
-                            <div className={`p-2 rounded-xl bg-gradient-to-br ${color} w-fit mb-3`} style={{ boxShadow: `0 6px 20px -4px ${glow}` }}>
-                                <Icon size={16} className="text-gray-900" />
+                    {STAT_CARDS.map(({ label, value, sub, icon: Icon, iconBg }, i) => (
+                        <motion.div key={label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                            className="bg-white border border-[#EDE8E0] rounded-2xl p-5 shadow-xs hover:shadow-sm transition-all">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">{label}</span>
+                                <div className={`p-2 rounded-xl ${iconBg}`}>
+                                    <Icon size={16} />
+                                </div>
                             </div>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-                            <p className={`text-3xl font-black bg-gradient-to-br ${color} bg-clip-text text-transparent`}>{value}</p>
-                            <p className="text-[10px] text-gray-600 mt-1">{sub}</p>
+                            <p className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">{value}</p>
+                            <p className="text-[11px] text-stone-400 font-medium mt-1">{sub}</p>
                         </motion.div>
                     ))}
                 </div>
 
                 {/* Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
                     {/* Attendance Trend */}
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
-                        className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
-                        <div className="flex items-center gap-2 mb-5">
-                            <IoAnalyticsOutline size={16} className="text-blue-400" />
-                            <h3 className="font-bold text-gray-900 text-sm">Attendance Trends</h3>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                        className="bg-white border border-[#EDE8E0] rounded-2xl p-6 shadow-xs">
+                        <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#EDE8E0]">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-orange-50 text-orange-600 border border-orange-200 rounded-lg">
+                                    <IoAnalyticsOutline size={15} />
+                                </div>
+                                <h3 className="font-black text-stone-900 text-sm">Attendance Trends</h3>
+                            </div>
+                            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Students Present</span>
                         </div>
-                        <div className="h-48 flex items-end gap-1">
+                        <div className="h-48 flex items-end gap-1.5 pt-4">
                             {dailyTrends.map((day, i) => (
                                 <div key={i} className="flex-1 flex flex-col items-center gap-1 group relative">
-                                    <div className="absolute -top-10 bg-white border border-gray-200 text-xs p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-xl">
+                                    <div className="absolute -top-9 bg-stone-900 text-white text-[10px] font-bold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 shadow-lg pointer-events-none">
                                         {day._id}: {day.presentCount} students
                                     </div>
                                     <motion.div initial={{ height: 0 }} animate={{ height: `${(day.presentCount / maxDayValue) * 100}%` }}
-                                        transition={{ duration: 0.5, delay: i * 0.04 }}
-                                        className="w-full bg-gradient-to-t from-blue-600/70 to-blue-400/50 hover:from-blue-500/90 hover:to-blue-400/70 rounded-t-lg transition-colors" />
-                                    <span className="text-[9px] text-gray-600">{new Date(day._id).getDate()}</span>
+                                        transition={{ duration: 0.5, delay: i * 0.03 }}
+                                        className="w-full bg-gradient-to-t from-orange-500 to-amber-400 hover:from-orange-600 hover:to-amber-500 rounded-t-lg transition-colors cursor-pointer min-h-[4px]" />
+                                    <span className="text-[10px] font-bold text-stone-500">{new Date(day._id).getDate()}</span>
                                 </div>
                             ))}
                         </div>
                     </motion.div>
 
                     {/* Peak Hours */}
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}
-                        className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5">
-                        <div className="flex items-center gap-2 mb-5">
-                            <IoTimeOutline size={16} className="text-green-400" />
-                            <h3 className="font-bold text-gray-900 text-sm">Peak Hours (Last 30 Days)</h3>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+                        className="bg-white border border-[#EDE8E0] rounded-2xl p-6 shadow-xs">
+                        <div className="flex items-center justify-between mb-6 pb-3 border-b border-[#EDE8E0]">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg">
+                                    <IoTimeOutline size={15} />
+                                </div>
+                                <h3 className="font-black text-stone-900 text-sm">Peak Hours (Last 30 Days)</h3>
+                            </div>
+                            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Activity Distribution</span>
                         </div>
-                        <div className="space-y-2 h-48 overflow-y-auto pr-1">
+                        <div className="space-y-2.5 h-48 overflow-y-auto pr-1">
                             {peakHours.map((hour, i) => (
                                 <div key={i} className="flex items-center gap-3">
-                                    <span className="text-xs font-mono text-gray-500 w-14 shrink-0">{formatHour(hour._id)}</span>
-                                    <div className="flex-1 h-5 bg-gray-50 rounded-full overflow-hidden">
+                                    <span className="text-xs font-mono font-bold text-stone-600 w-16 shrink-0">{formatHour(hour._id)}</span>
+                                    <div className="flex-1 h-5 bg-[#FAF6F0] rounded-full overflow-hidden border border-[#EDE8E0]">
                                         <motion.div initial={{ width: 0 }} animate={{ width: `${(hour.count / maxPeakValue) * 100}%` }}
-                                            transition={{ duration: 0.8, delay: i * 0.03 }}
-                                            className="h-full bg-gradient-to-r from-green-600 to-emerald-400 rounded-full flex items-center justify-end pr-2">
-                                            <span className="text-[9px] font-bold text-black">{hour.count}</span>
+                                            transition={{ duration: 0.6, delay: i * 0.02 }}
+                                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-end pr-2 min-w-[24px]">
+                                            <span className="text-[10px] font-black text-white">{hour.count}</span>
                                         </motion.div>
                                     </div>
                                 </div>
@@ -167,35 +186,51 @@ const AnalyticsDashboard = () => {
                 </div>
 
                 {/* Top Students */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36 }}
-                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden">
-                    <div className="px-5 py-4 border-b border-white/8 flex items-center gap-2">
-                        <IoTrendingUpOutline size={16} className="text-yellow-400" />
-                        <h3 className="font-bold text-gray-900 text-sm">Top Students — Study Hours</h3>
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                    className="bg-white border border-[#EDE8E0] rounded-2xl overflow-hidden shadow-xs">
+                    <div className="px-6 py-4 border-b border-[#EDE8E0] bg-[#FAF6F0]/60 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg">
+                                <IoTrendingUpOutline size={15} />
+                            </div>
+                            <h3 className="font-black text-stone-900 text-sm">Top Students — Study Hours</h3>
+                        </div>
+                        <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Leaderboard</span>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full">
+                        <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-gray-100">
-                                    {['Rank', 'Student', 'Days', 'Total Hours'].map(h => (
-                                        <th key={h} className={`px-5 py-3 text-[10px] font-bold uppercase tracking-widest text-gray-500 ${h === 'Total Hours' ? 'text-right' : 'text-left'}`}>{h}</th>
+                                <tr className="border-b border-[#EDE8E0] bg-[#FAF6F0]/30">
+                                    {['Rank', 'Student', 'Days Present', 'Total Hours'].map(h => (
+                                        <th key={h} className={`px-6 py-3.5 text-[11px] font-black uppercase tracking-wider text-stone-500 ${h === 'Total Hours' ? 'text-right' : 'text-left'}`}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody>
-                                {topStudents.map((s, i) => (
-                                    <tr key={i} className="border-b border-gray-100 hover:bg-white/3 transition-colors">
-                                        <td className="px-5 py-3">
-                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-black ${i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-gray-400 text-black' : i === 2 ? 'bg-orange-500 text-black' : 'bg-gray-50 text-gray-500'}`}>{i + 1}</span>
-                                        </td>
-                                        <td className="px-5 py-3">
-                                            <p className="font-semibold text-gray-900 text-sm">{s.name}</p>
-                                            <p className="text-xs text-gray-600">{s.email}</p>
-                                        </td>
-                                        <td className="px-5 py-3 text-sm text-gray-700">{s.daysPresent}</td>
-                                        <td className="px-5 py-3 text-right font-mono font-bold text-purple-400">{Math.floor(s.totalDuration / 60)}h {s.totalDuration % 60}m</td>
+                            <tbody className="divide-y divide-[#EDE8E0]/70">
+                                {topStudents.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="text-center py-8 text-stone-400 text-xs">No student data recorded in this period</td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    topStudents.map((s, i) => (
+                                        <tr key={i} className="hover:bg-[#FAF6F0]/50 transition-colors">
+                                            <td className="px-6 py-3.5">
+                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-black shadow-2xs ${
+                                                    i === 0 ? 'bg-amber-400 text-stone-900' :
+                                                    i === 1 ? 'bg-stone-300 text-stone-900' :
+                                                    i === 2 ? 'bg-amber-700 text-white' :
+                                                    'bg-stone-100 text-stone-600 border border-[#EDE8E0]'
+                                                }`}>{i + 1}</span>
+                                            </td>
+                                            <td className="px-6 py-3.5">
+                                                <p className="font-bold text-stone-900 text-xs">{s.name}</p>
+                                                <p className="text-[11px] text-stone-500 font-medium">{s.email}</p>
+                                            </td>
+                                            <td className="px-6 py-3.5 text-xs font-bold text-stone-700">{s.daysPresent} days</td>
+                                            <td className="px-6 py-3.5 text-right font-mono font-black text-orange-600 text-xs">{Math.floor(s.totalDuration / 60)}h {s.totalDuration % 60}m</td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
