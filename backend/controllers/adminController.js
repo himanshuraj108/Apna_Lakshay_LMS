@@ -2565,7 +2565,26 @@ exports.quickCheckIn = async (req, res) => {
         const attendanceDate = getISTDate();
         attendanceDate.setHours(0, 0, 0, 0);
 
-        const student = await User.findById(studentId);
+        let cleanId = studentId;
+        if (cleanId && typeof cleanId === 'string' && (cleanId.toUpperCase().startsWith('AL-') || cleanId.toUpperCase().startsWith('HL-'))) {
+            cleanId = cleanId.substring(3);
+        }
+
+        let student = null;
+        if (mongoose.Types.ObjectId.isValid(cleanId)) {
+            student = await User.findById(cleanId);
+        }
+        if (!student && cleanId) {
+            student = await User.findOne({
+                $or: [
+                    { rollNumber: cleanId },
+                    { studentId: cleanId },
+                    { email: String(cleanId).toLowerCase() },
+                    { phone: cleanId }
+                ]
+            });
+        }
+
         if (!student) {
             return res.status(404).json({ success: false, message: 'Student not found' });
         }
@@ -2579,13 +2598,13 @@ exports.quickCheckIn = async (req, res) => {
         }
 
         // Sub-Admins cannot override student self-marked attendance
-        const existingAttendance = await Attendance.findOne({ student: studentId, date: attendanceDate });
+        const existingAttendance = await Attendance.findOne({ student: student._id, date: attendanceDate });
         if (existingAttendance && existingAttendance.selfMarked && req.user.role === 'subadmin') {
             return res.status(403).json({ success: false, message: 'Cannot override student self-marked attendance' });
         }
 
         const attendance = await Attendance.findOneAndUpdate(
-            { student: studentId, date: attendanceDate },
+            { student: student._id, date: attendanceDate },
             {
                 status: 'present',
                 entryTime: currentTime,
@@ -2618,9 +2637,33 @@ exports.quickCheckOut = async (req, res) => {
         const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         console.log(`[AdminCheckOut] IST Time: ${currentTime}`);
 
+        let cleanId = studentId;
+        if (cleanId && typeof cleanId === 'string' && (cleanId.toUpperCase().startsWith('AL-') || cleanId.toUpperCase().startsWith('HL-'))) {
+            cleanId = cleanId.substring(3);
+        }
+
+        let student = null;
+        if (mongoose.Types.ObjectId.isValid(cleanId)) {
+            student = await User.findById(cleanId);
+        }
+        if (!student && cleanId) {
+            student = await User.findOne({
+                $or: [
+                    { rollNumber: cleanId },
+                    { studentId: cleanId },
+                    { email: String(cleanId).toLowerCase() },
+                    { phone: cleanId }
+                ]
+            });
+        }
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+
         // Find the latest active session (handles overnight or today)
         const attendance = await Attendance.findOne({
-            student: studentId,
+            student: student._id,
             isActive: true
         }).sort({ createdAt: -1 }).populate('student', 'name email');
 
@@ -3337,6 +3380,96 @@ exports.sendNotification = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// Get notification history for admin
+exports.getNotificationHistory = async (req, res) => {
+    try {
+        const rawNotifications = await Notification.find()
+            .populate('recipient', 'name email rollNumber studentId')
+            .populate('createdBy', 'name role')
+            .sort({ createdAt: -1 })
+            .limit(200);
+
+        // Group broadcasts by title, message, and created time minute
+        const grouped = [];
+        const seenBroadcasts = new Map();
+
+        for (const notif of rawNotifications) {
+            if (notif.type === 'announcement') {
+                const minuteKey = `${notif.title}_${notif.message}_${Math.floor(new Date(notif.createdAt).getTime() / (60 * 1000))}`;
+                if (seenBroadcasts.has(minuteKey)) {
+                    const existing = seenBroadcasts.get(minuteKey);
+                    existing.recipientCount = (existing.recipientCount || 1) + 1;
+                    existing.ids.push(notif._id);
+                } else {
+                    const entry = {
+                        _id: notif._id,
+                        ids: [notif._id],
+                        title: notif.title,
+                        message: notif.message,
+                        type: notif.type,
+                        isRead: notif.isRead,
+                        createdAt: notif.createdAt,
+                        createdBy: notif.createdBy,
+                        recipientCount: 1,
+                        isBroadcast: true
+                    };
+                    seenBroadcasts.set(minuteKey, entry);
+                    grouped.push(entry);
+                }
+            } else {
+                grouped.push({
+                    _id: notif._id,
+                    ids: [notif._id],
+                    title: notif.title,
+                    message: notif.message,
+                    type: notif.type,
+                    isRead: notif.isRead,
+                    createdAt: notif.createdAt,
+                    createdBy: notif.createdBy,
+                    recipient: notif.recipient,
+                    isBroadcast: false
+                });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            notifications: grouped
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch notification history',
+            error: error.message
+        });
+    }
+};
+
+// Delete notification or broadcast batch
+exports.deleteNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { ids } = req.body || {};
+
+        if (Array.isArray(ids) && ids.length > 0) {
+            await Notification.deleteMany({ _id: { $in: ids } });
+        } else {
+            await Notification.findByIdAndDelete(id);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Notification removed from history'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete notification',
             error: error.message
         });
     }

@@ -33,6 +33,8 @@ const {
     cancelFee,
     getVacantSeats,
     sendNotification,
+    getNotificationHistory,
+    deleteNotification,
     getRequests,
     handleRequest,
     getActionHistory,
@@ -203,7 +205,9 @@ router.put('/fees/:id/cancelled', cancelFee);
 router.get('/vacant-seats', getVacantSeats);
 
 // Notifications
+router.get('/notifications', getNotificationHistory);
 router.post('/notifications', sendNotification);
+router.delete('/notifications/:id', deleteNotification);
 
 // System Updates
 router.get('/updates', getUpdates);
