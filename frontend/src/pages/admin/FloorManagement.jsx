@@ -15,8 +15,8 @@ import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const PAGE_BG = { background: '#F8FAFC' };
-const INPUT = 'w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-gray-900 text-sm focus:border-blue-500/50 outline-none transition-all placeholder-gray-400 shadow-sm';
+const PAGE_BG = { background: '#FAF6F0' };
+const INPUT = 'w-full bg-white border border-[#E2DBD2] rounded-xl px-4 py-2.5 text-[#0F172A] text-sm focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15 outline-none transition-all placeholder-slate-400 shadow-2xs';
 
 // Add Room Modal Component
 const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
@@ -47,19 +47,19 @@ const AddRoomModal = ({ isOpen, onClose, floorId, onAdd }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white/4 border border-gray-200 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                <div className="h-px w-full bg-gradient-to-r from-blue-500 to-cyan-500 mb-5 -mt-1 -mx-0 rounded-t-2xl" />
-                <h3 className="text-lg font-black text-gray-900 mb-5">Add New Room</h3>
+                className="bg-white border border-[#EDE8E0] rounded-2xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden">
+                <div className="h-[3px] w-full bg-gradient-to-r from-orange-500 to-amber-500 mb-5 -mt-6 -mx-6 rounded-t-2xl" />
+                <h3 className="text-lg font-black text-[#0F172A] mb-5">Add New Room</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Room Name</label>
+                        <label className="block text-[11px] text-stone-500 font-bold uppercase tracking-wider mb-1.5">Room Name</label>
                         <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={INPUT} placeholder="e.g. Study Hall A" required />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/25 disabled:opacity-50 transition-all">{loading ? 'Creating…' : 'Create Room'}</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-stone-600 bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] rounded-xl text-xs font-bold transition-all cursor-pointer">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/25 transition-all disabled:opacity-50 cursor-pointer">{loading ? 'Adding…' : 'Add Room'}</button>
                     </div>
                 </form>
             </motion.div>
@@ -93,23 +93,23 @@ const AddFloorModal = ({ isOpen, onClose, onAdd }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white/4 border border-gray-200 backdrop-blur-2xl rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                <div className="h-px w-full bg-gradient-to-r from-indigo-500 to-purple-500 mb-5 -mt-1 rounded-t-2xl" />
-                <h3 className="text-lg font-black text-gray-900 mb-5">Add New Floor</h3>
+                className="bg-white border border-[#EDE8E0] rounded-2xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden">
+                <div className="h-[3px] w-full bg-gradient-to-r from-orange-500 to-amber-500 mb-5 -mt-6 -mx-6 rounded-t-2xl" />
+                <h3 className="text-lg font-black text-[#0F172A] mb-5">Add New Floor</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Floor Name</label>
+                        <label className="block text-[11px] text-stone-500 font-bold uppercase tracking-wider mb-1.5">Floor Name</label>
                         <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={INPUT} placeholder="e.g. Ground Floor" required />
                     </div>
                     <div>
-                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">Floor Level (Number)</label>
+                        <label className="block text-[11px] text-stone-500 font-bold uppercase tracking-wider mb-1.5">Floor Level (Number)</label>
                         <input type="number" value={level} onChange={(e) => setLevel(e.target.value)} className={INPUT} placeholder="e.g. 0 for Ground, 1 for First" required />
                     </div>
                     <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all">{loading ? 'Creating…' : 'Create Floor'}</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] transition-all cursor-pointer">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/25 disabled:opacity-50 transition-all cursor-pointer">{loading ? 'Creating…' : 'Create Floor'}</button>
                     </div>
                 </form>
             </motion.div>
@@ -352,53 +352,57 @@ const FloorManagement = () => {
 
     return (
         <div className="relative min-h-screen" style={PAGE_BG}>
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-indigo-600/6 blur-3xl" />
-                <div className="absolute bottom-[5%] right-[-5%] w-[400px] h-[400px] rounded-full bg-blue-600/6 blur-3xl" />
-            </div>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
                         <Link to="/admin">
-                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                                <IoArrowBack size={16} /> Back
+                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                                <IoArrowBack size={15} /> Back
                             </motion.button>
                         </Link>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-lg"><IoLayersOutline size={14} className="text-white" /></div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Admin</span>
+                                <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600"><IoLayersOutline size={14} /></div>
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-orange-600">Admin Operations</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Floor & Seat Management</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A]">Floor & Seat Management</h1>
                         </div>
                     </div>
-                    <motion.button whileHover={{ scale: 1.05 }} onClick={fetchFloors}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                        <IoRefresh size={16} /> Refresh Data
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={fetchFloors}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                        <IoRefresh size={15} /> Refresh Data
                     </motion.button>
                 </motion.div>
 
                 {loading ? (
-                    <div className="space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/3 rounded-2xl animate-pulse" />)}</div>
+                    <div className="space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white/60 border border-[#EDE8E0] rounded-2xl animate-pulse" />)}</div>
                 ) : (
                     <>
                         {/* Bulk Price Update */}
                         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-white border border-gray-200 rounded-2xl p-5 mb-5 shadow-sm">
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Bulk Price Update</h3>
+                            className="bg-white border border-[#EDE8E0] rounded-2xl p-5 mb-5 shadow-xs relative overflow-hidden">
+                            <div className="h-[2px] w-full bg-gradient-to-r from-orange-500/80 to-amber-400/80 -mt-5 -mx-5 mb-4" />
+                            <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-4">Bulk Price Update</h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 items-end">
                                 {shifts.map(shift => (
                                     <div key={shift.id}>
-                                        <label className="block text-[11px] text-gray-500 uppercase tracking-wider mb-1.5">{shift.name} (₹)</label>
+                                        <label className="block text-[11px] text-stone-500 font-bold uppercase tracking-wider mb-1.5">{shift.name} (₹)</label>
                                         <input type="number" value={bulkPrices[shift.id] || ''}
                                             onChange={(e) => setBulkPrices({ ...bulkPrices, [shift.id]: parseInt(e.target.value) || 0 })}
                                             className={INPUT} placeholder="Price" />
                                     </div>
                                 ))}
-                                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                     onClick={handleBulkPriceUpdate} disabled={updating || shifts.length === 0}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-40 transition-all">
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 disabled:opacity-40 transition-all cursor-pointer">
                                     <IoSaveOutline size={15} /> Update All
                                 </motion.button>
                             </div>
@@ -406,10 +410,10 @@ const FloorManagement = () => {
 
                         {/* Shift Filter & Floor Selector */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-5">
-                            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-2 rounded-xl">
-                                <span className="text-xs text-gray-500 whitespace-nowrap">Shift:</span>
+                            <div className="flex items-center gap-2 bg-white border border-[#EDE8E0] px-3.5 py-2 rounded-xl shadow-2xs">
+                                <span className="text-xs font-bold text-stone-500 whitespace-nowrap">Shift:</span>
                                 <select value={selectedShiftFilter} onChange={(e) => setSelectedShiftFilter(e.target.value)}
-                                    className="bg-transparent border-none text-sm text-gray-900 outline-none">
+                                    className="bg-transparent border-none text-xs font-semibold text-[#0F172A] outline-none cursor-pointer">
                                     <option value="">All / Overview</option>
                                     {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({getShiftTimeRange(s)})</option>)}
                                     <option value="full">Full Day Only</option>
@@ -418,17 +422,17 @@ const FloorManagement = () => {
                             <div className="flex gap-2 overflow-x-auto pb-1 flex-1 justify-end">
                                 {floors.map((floor, index) => (
                                     <button key={floor._id} onClick={() => setSelectedFloor(index)}
-                                        className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${selectedFloor === index ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-lg shadow-indigo-500/25' : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${selectedFloor === index ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/25' : 'bg-white border border-[#EDE8E0] text-stone-700 hover:bg-[#FAF6F0]'}`}>
                                         {floor.name}
                                     </button>
                                 ))}
                             </div>
-                            <motion.button whileHover={{ scale: 1.05 }} onClick={() => setAddFloorModal(true)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl text-sm font-bold shadow-lg whitespace-nowrap">
+                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setAddFloorModal(true)}
+                                className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 whitespace-nowrap cursor-pointer">
                                 <IoAdd size={16} /> Floor
                             </motion.button>
-                            <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleDeleteFloor(floors[selectedFloor]._id)}
-                                className="p-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl transition-all" title="Delete Floor">
+                            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => handleDeleteFloor(floors[selectedFloor]._id)}
+                                className="p-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 rounded-xl transition-all cursor-pointer" title="Delete Floor">
                                 <IoTrash size={18} />
                             </motion.button>
                         </div>
@@ -437,30 +441,30 @@ const FloorManagement = () => {
                         {floors[selectedFloor] && (
                             <div className="space-y-5">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Rooms</h3>
-                                    <motion.button whileHover={{ scale: 1.05 }}
+                                    <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">Rooms in {floors[selectedFloor].name}</h3>
+                                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                                         onClick={() => setAddRoomModal({ isOpen: true, floorId: floors[selectedFloor]._id })}
-                                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/25 text-blue-400 rounded-xl text-sm font-semibold transition-all">
+                                        className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
                                         <IoAdd size={16} /> Add Room
                                     </motion.button>
                                 </div>
 
                                 {floors[selectedFloor].rooms.map((room) => (
-                                    <div key={room._id} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                                        <div className="h-px bg-gradient-to-r from-blue-500/60 to-indigo-500/60" />
+                                    <div key={room._id} className="bg-white border border-[#EDE8E0] rounded-2xl overflow-hidden shadow-xs">
+                                        <div className="h-[2px] bg-gradient-to-r from-orange-500/80 to-amber-400/80" />
                                         <div className="p-5">
                                             <div className="flex justify-between items-center mb-5 flex-wrap gap-3">
-                                                <h2 className="text-lg font-black text-gray-900">{room.name}</h2>
+                                                <h2 className="text-lg font-black text-[#0F172A]">{room.name}</h2>
                                                 <div className="flex flex-wrap gap-2 items-center">
-                                                    <span className="text-[10px] bg-gray-50 border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full font-bold">{room.seats.length} Seats</span>
+                                                    <span className="text-[11px] bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 px-2.5 py-1 rounded-full font-bold">{room.seats.length} Seats</span>
                                                     <button onClick={() => setUpdateRoomPricesModal({ isOpen: true, room })}
-                                                        className="px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 rounded-xl text-xs font-semibold transition-all">Update Prices</button>
+                                                        className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-600 rounded-xl text-xs font-bold transition-all cursor-pointer">Update Prices</button>
                                                     <button onClick={() => setRoomLayoutModal({ isOpen: true, room })}
-                                                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 rounded-xl text-xs transition-all">
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
                                                         <IoSettingsOutline size={13} /> Configure
                                                     </button>
                                                     <button onClick={() => handleDeleteRoom(room._id)}
-                                                        className="p-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl transition-all" title="Delete Room">
+                                                        className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 rounded-xl transition-all cursor-pointer" title="Delete Room">
                                                         <IoTrash size={14} />
                                                     </button>
                                                 </div>
@@ -477,16 +481,16 @@ const FloorManagement = () => {
                                 ))}
 
                                 {/* Summary */}
-                                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Floor Summary</h3>
+                                <div className="bg-white border border-[#EDE8E0] rounded-2xl p-5 shadow-xs">
+                                    <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-4">Floor Summary</h3>
                                     <div className="grid grid-cols-3 gap-3">
                                         {[
-                                            { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.length, 0), color: 'text-gray-900' },
-                                            { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-red-400' },
-                                            { label: 'Available', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-green-400' },
+                                            { label: 'Total Seats', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.length, 0), color: 'text-[#0F172A]' },
+                                            { label: 'Occupied', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => s.isOccupied).length, 0), color: 'text-rose-600' },
+                                            { label: 'Available', value: floors[selectedFloor].rooms.reduce((a, r) => a + r.seats.filter(s => !s.isOccupied).length, 0), color: 'text-emerald-600' },
                                         ].map(({ label, value, color }) => (
-                                            <div key={label} className="bg-gray-50 rounded-xl p-4">
-                                                <p className="text-xs text-gray-500 mb-1">{label}</p>
+                                            <div key={label} className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-xl p-4">
+                                                <p className="text-xs text-stone-500 font-semibold mb-1">{label}</p>
                                                 <p className={`text-3xl font-black ${color}`}>{value}</p>
                                             </div>
                                         ))}
@@ -504,12 +508,12 @@ const FloorManagement = () => {
                     title="Confirm Price Update"
                 >
                     <div className="p-4">
-                        <p className="mb-4 text-gray-700">
+                        <p className="mb-4 text-stone-700 text-sm">
                             Are you sure you want to update prices for all <strong>{confirmModal.seatCount}</strong> seats in <strong>{confirmModal.floorName}</strong>?
                         </p>
-                        <div className="bg-gray-50 p-4 rounded-lg mb-6 text-sm">
-                            <p className="font-semibold mb-2">New Prices:</p>
-                            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-700">
+                        <div className="bg-[#FAF6F0] border border-[#EDE8E0] p-4 rounded-xl mb-6 text-sm">
+                            <p className="font-bold text-xs uppercase tracking-wider text-stone-600 mb-2">New Prices:</p>
+                            <ul className="list-disc pl-5 mt-2 space-y-1 text-stone-700 text-sm">
                                 {shifts.map(shift => (
                                     bulkPrices[shift.id] ? (
                                         <li key={shift.id}>{shift.name}: ₹{bulkPrices[shift.id]}</li>
@@ -520,11 +524,11 @@ const FloorManagement = () => {
                         </div>
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} disabled={updating}
-                                className="px-4 py-2 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all disabled:opacity-50">
+                                className="px-4 py-2 rounded-xl text-xs font-bold text-stone-600 bg-white hover:bg-stone-50 border border-[#EDE8E0] transition-all disabled:opacity-50 cursor-pointer">
                                 Cancel
                             </button>
                             <button onClick={executeBulkUpdate} disabled={updating}
-                                className="px-4 py-2 rounded-xl text-sm bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-bold shadow-lg shadow-indigo-500/25 disabled:opacity-50 transition-all">
+                                className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/25 disabled:opacity-50 transition-all cursor-pointer">
                                 {updating ? 'Updating…' : 'Confirm Update'}
                             </button>
                         </div>
@@ -613,15 +617,15 @@ const FloorManagement = () => {
                                 {/* Download buttons (only for first card) */}
                                 <div className="flex flex-col sm:flex-row gap-3 w-full">
                                     <button onClick={() => setShowIdCardModal(false)}
-                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 font-medium transition-all">
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 bg-white hover:bg-stone-50 border border-[#EDE8E0] transition-all cursor-pointer">
                                         Close
                                     </button>
                                     <button onClick={handleDownloadPNG}
-                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2">
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
                                         <IoDownload size={15} /> Download PNG
                                     </button>
                                     <button onClick={handleDownloadPDF}
-                                        className="flex-1 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/25 transition-all flex items-center justify-center gap-2">
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#141210] hover:bg-[#231F1B] text-[#FAF6F0] border border-[#292420] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
                                         <IoDownload size={15} /> Download PDF
                                     </button>
                                 </div>

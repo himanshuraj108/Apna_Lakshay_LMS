@@ -66,68 +66,85 @@ const VacantSeats = () => {
         });
         return map;
     }, [filtered]);
-
     return (
-        <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Inter', sans-serif" }}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
+        <div className="min-h-screen relative" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
 
                 {/* Header */}
                 <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
                     className="flex items-center justify-between gap-4 mb-6 flex-wrap">
                     <div className="flex items-center gap-4">
                         <Link to={backPath}>
-                            <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium shadow-sm hover:bg-gray-50 transition-all">
-                                <IoArrowBack size={16} /> Back to Dashboard
-                            </button>
+                            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                                <IoArrowBack size={15} /> Back to Dashboard
+                            </motion.button>
                         </Link>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600">
+                                    <IoBedOutline size={14} />
+                                </div>
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-orange-600">Seat Inventory</span>
+                            </div>
+                            <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A]">Vacant Seats Overview</h1>
+                        </div>
                     </div>
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={fetchVacant}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer">
+                        <IoRefreshOutline size={16} /> Refresh
+                    </motion.button>
                 </motion.div>
 
                 {/* Error */}
                 <AnimatePresence>
                     {error && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-5 text-sm font-medium">
+                            className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl mb-5 text-xs font-bold">
                             <IoCloseCircle size={18} />{error}
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-
-
                 {/* Shift Cards — Step 1 */}
                 {data && data.shiftSummary.length > 0 && (
                     <div className="mb-7">
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                             {data.shiftSummary.map(shift => {
                                 const pct = Math.round((shift.vacant / (shift.total || 1)) * 100);
                                 const isActive = filterShift === shift.shiftId;
-                                const barColor = pct > 60 ? '#16a34a' : pct > 30 ? '#d97706' : '#dc2626';
+                                const barColor = pct > 60 ? '#10b981' : pct > 30 ? '#f59e0b' : '#ef4444';
                                 return (
                                     <div key={shift.shiftId}
                                         onClick={() => setShift(isActive ? 'all' : shift.shiftId)}
-                                        className={`rounded-xl p-4 cursor-pointer border-2 transition-all select-none ${
+                                        className={`rounded-2xl p-4 cursor-pointer border transition-all select-none ${
                                             isActive
-                                                ? 'bg-indigo-50 border-indigo-500 shadow-md shadow-indigo-100'
-                                                : 'bg-white border-gray-200 hover:border-indigo-400 hover:shadow-sm'
+                                                ? 'bg-orange-50/60 border-orange-500 shadow-md shadow-orange-500/15'
+                                                : 'bg-white border-[#EDE8E0] hover:border-orange-300 hover:shadow-xs'
                                         }`}>
                                         <div className="flex items-center justify-between mb-1">
-                                            <p className={`text-sm font-bold ${isActive ? 'text-indigo-700' : 'text-gray-900'}`}>{shift.shiftName}</p>
+                                            <p className={`text-sm font-black ${isActive ? 'text-orange-700' : 'text-[#0F172A]'}`}>{shift.shiftName}</p>
                                             {isActive
-                                                ? <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white">Selected</span>
-                                                : <span className="text-[10px] font-semibold text-gray-400">Click to filter</span>
+                                                ? <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-orange-600 text-white">Selected</span>
+                                                : <span className="text-[10px] font-bold text-stone-400">Click to filter</span>
                                             }
                                         </div>
-                                        <div className={`inline-block px-2 py-1 rounded text-[11px] font-bold tracking-wide mb-3 border ${isActive ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                                        <div className={`inline-block px-2 py-1 rounded-lg text-[11px] font-bold tracking-wide mb-3 border ${isActive ? 'bg-orange-100/70 text-orange-800 border-orange-200' : 'bg-[#FAF6F0] text-stone-700 border-[#EDE8E0]'}`}>
                                             {shift.shiftTime}
                                         </div>
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-xs text-gray-600">{shift.vacant} empty out of {shift.total} seats</span>
+                                            <span className="text-xs text-stone-600 font-medium">{shift.vacant} empty out of {shift.total} seats</span>
                                             <span className="text-xs font-black" style={{ color: barColor }}>{pct}% free</span>
                                         </div>
-                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: barColor }} />
+                                        <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: barColor }} />
                                         </div>
                                     </div>
                                 );
@@ -136,79 +153,75 @@ const VacantSeats = () => {
                     </div>
                 )}
 
-
-
-
-
                 {/* Results Popup Modal */}
                 <AnimatePresence>
                     {filterShift !== 'all' && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-sm">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
                             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-gray-50 w-full max-w-6xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                                className="bg-[#FAF6F0] w-full max-w-6xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-[#EDE8E0]">
                                 {/* Modal Header */}
-                                <div className="flex items-center justify-between p-5 bg-white border-b border-gray-200 shadow-sm z-10">
+                                <div className="flex items-center justify-between p-5 bg-white border-b border-[#EDE8E0] z-10">
                                     <div>
                                         <div className="flex items-center gap-3">
                                             {acFilter !== null && (
-                                                <button onClick={() => setAcFilter(null)} className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors" title="Back to AC Selection">
-                                                    <IoArrowBack size={20} />
+                                                <button onClick={() => setAcFilter(null)} className="p-1.5 bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] text-stone-700 rounded-xl transition-colors cursor-pointer" title="Back to AC Selection">
+                                                    <IoArrowBack size={18} />
                                                 </button>
                                             )}
-                                            <h2 className="text-xl font-black text-gray-900">
-                                                Available Seats — <span className="text-green-700">{shifts.find(s => s.id === filterShift)?.name || 'Shift'}</span>
+                                            <h2 className="text-xl font-black text-[#0F172A]">
+                                                Available Seats — <span className="text-orange-600">{shifts.find(s => s.id === filterShift)?.name || 'Shift'}</span>
                                             </h2>
                                         </div>
-                                        <p className="text-sm text-gray-500 mt-1 font-medium ml-10">{acFilter === null ? shiftSlots.length : filtered.length} vacant seats found</p>
+                                        <p className="text-xs text-stone-500 mt-1 font-bold ml-10">{acFilter === null ? shiftSlots.length : filtered.length} vacant seats found</p>
                                     </div>
-                                    <button onClick={() => { setShift('all'); setAcFilter(null); }} className="flex items-center gap-1.5 p-1.5 bg-red-50 border border-red-200 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm font-bold">
-                                        <IoCloseCircle size={32} />
-                                        <span className="pr-2 text-sm uppercase tracking-wide">Close</span>
+                                    <button onClick={() => { setShift('all'); setAcFilter(null); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 rounded-xl transition-all font-bold text-xs cursor-pointer">
+                                        <IoCloseCircle size={18} />
+                                        <span className="uppercase tracking-wide">Close</span>
                                     </button>
                                 </div>
 
                                 {/* Modal Body */}
-                                <div className="p-6 overflow-y-auto flex-1 bg-gray-50/50">
+                                <div className="p-6 overflow-y-auto flex-1 bg-[#FAF6F0]">
                                     {loading ? (
                                         <PrimaryLogoLoader text="Loading Vacant Seats..." />
                                     ) : acFilter === null ? (
                                         <div className="flex flex-col sm:flex-row gap-6 max-w-2xl mx-auto py-12">
                                             {/* AC Card */}
-                                            <div onClick={() => setAcFilter('ac')} className="flex-1 bg-white border-2 border-orange-200 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] rounded-3xl p-8 cursor-pointer shadow-sm transition-all group flex flex-col items-center justify-center text-center">
-                                                <div className="w-24 h-24 bg-sky-50 text-sky-500 rounded-full flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-sky-100 transition-all">
-                                                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                            <div onClick={() => setAcFilter('ac')} className="flex-1 bg-white border border-[#EDE8E0] hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10 rounded-3xl p-8 cursor-pointer transition-all group flex flex-col items-center justify-center text-center">
+                                                <div className="w-20 h-20 bg-sky-50 border border-sky-100 text-sky-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-all">
+                                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                                                 </div>
-                                                <h3 className="text-2xl font-black text-gray-900 mb-2">AC Rooms</h3>
-                                                <p className="text-gray-500 font-bold">{shiftSlots.filter(s => s.hasAc).length} vacant seats</p>
+                                                <h3 className="text-xl font-black text-[#0F172A] mb-1">AC Rooms</h3>
+                                                <p className="text-stone-500 text-xs font-bold">{shiftSlots.filter(s => s.hasAc).length} vacant seats</p>
                                             </div>
 
                                             {/* Non-AC Card */}
-                                            <div onClick={() => setAcFilter('non-ac')} className="flex-1 bg-white border-2 border-orange-200 hover:border-orange-500 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)] rounded-3xl p-8 cursor-pointer shadow-sm transition-all group flex flex-col items-center justify-center text-center">
-                                                <div className="w-24 h-24 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-orange-100 transition-all">
-                                                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                            <div onClick={() => setAcFilter('non-ac')} className="flex-1 bg-white border border-[#EDE8E0] hover:border-orange-500 hover:shadow-lg hover:shadow-orange-500/10 rounded-3xl p-8 cursor-pointer transition-all group flex flex-col items-center justify-center text-center">
+                                                <div className="w-20 h-20 bg-orange-50 border border-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-105 transition-all">
+                                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                                                 </div>
-                                                <h3 className="text-2xl font-black text-gray-900 mb-2">Non-AC Rooms</h3>
-                                                <p className="text-gray-500 font-bold">{shiftSlots.filter(s => !s.hasAc).length} vacant seats</p>
+                                                <h3 className="text-xl font-black text-[#0F172A] mb-1">Non-AC Rooms</h3>
+                                                <p className="text-stone-500 text-xs font-bold">{shiftSlots.filter(s => !s.hasAc).length} vacant seats</p>
                                             </div>
                                         </div>
                                     ) : filtered.length === 0 ? (
-                                        <div className="text-center py-20 bg-white border border-gray-200 rounded-2xl shadow-sm">
-                                            <IoCheckmarkCircle size={48} className="text-emerald-400 mx-auto mb-4" />
-                                            <p className="text-gray-800 font-bold text-lg">No vacant seats in this shift</p>
+                                        <div className="text-center py-20 bg-white border border-[#EDE8E0] rounded-2xl shadow-xs">
+                                            <IoCheckmarkCircle size={48} className="text-emerald-500 mx-auto mb-4" />
+                                            <p className="text-[#0F172A] font-black text-lg">No vacant seats in this shift</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-8">
                                             {Object.entries(grouped).map(([floorName, slots]) => (
                                                 <div key={floorName}>
                                                     <div className="flex items-center gap-3 mb-4">
-                                                        <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl px-3 py-1.5">
-                                                            <IoLayersOutline size={14} className="text-purple-600" />
-                                                            <span className="text-sm font-bold text-purple-700">{floorName}</span>
+                                                        <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-xl px-3 py-1.5">
+                                                            <IoLayersOutline size={14} className="text-orange-600" />
+                                                            <span className="text-xs font-bold text-orange-800">{floorName}</span>
                                                         </div>
-                                                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700">
+                                                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
                                                             {slots.length} seat{slots.length !== 1 ? 's' : ''} available
                                                         </span>
-                                                        <div className="flex-1 h-px bg-gray-200" />
+                                                        <div className="flex-1 h-px bg-[#EDE8E0]" />
                                                     </div>
 
                                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -217,38 +230,38 @@ const VacantSeats = () => {
                                                                 initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
                                                                 transition={{ delay: i * 0.02 }}
                                                                 whileHover={{ y: -3 }}
-                                                                className={`relative bg-white border-2 rounded-xl p-4 shadow-sm transition-all ${
-                                                                    slot.isPartial ? 'border-amber-300' : 'border-emerald-300'
+                                                                className={`relative bg-white border rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-all overflow-hidden ${
+                                                                    slot.isPartial ? 'border-amber-300' : 'border-[#EDE8E0] hover:border-orange-400'
                                                                 }`}>
                                                                 {/* Color bar at top */}
-                                                                <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-xl ${slot.isPartial ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                                                                <div className={`absolute top-0 left-0 right-0 h-1.5 ${slot.isPartial ? 'bg-amber-400' : 'bg-gradient-to-r from-orange-500 to-amber-500'}`} />
 
                                                                 {/* Seat Number */}
-                                                                <p className="text-gray-900 font-black text-2xl leading-none mt-1 mb-1">
+                                                                <p className="text-[#0F172A] font-black text-2xl leading-none mt-1 mb-1">
                                                                     {slot.seatNumber}
                                                                 </p>
-                                                                <p className="text-[11px] text-gray-400 font-medium mb-2 truncate">{slot.roomName}</p>
+                                                                <p className="text-[11px] text-stone-400 font-medium mb-2 truncate">{slot.roomName}</p>
 
                                                                 {/* Shift */}
                                                                 <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md w-fit ${
                                                                     slot.isPartial
                                                                         ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                                                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                        : 'bg-orange-50 text-orange-700 border border-orange-200'
                                                                 }`}>
                                                                     {slot.shiftName}
                                                                 </div>
 
                                                                 {/* Partial warning */}
                                                                 {slot.isPartial && (
-                                                                    <div className="mt-1.5 text-[9px] text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5">
+                                                                    <div className="mt-1.5 text-[9px] text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
                                                                         One shift already taken
                                                                     </div>
                                                                 )}
 
                                                                 {/* Price */}
                                                                 {slot.price > 0 && (
-                                                                    <p className="text-xs text-gray-500 mt-2 font-semibold">
-                                                                        ₹{slot.price}<span className="font-normal text-gray-400">/month</span>
+                                                                    <p className="text-xs text-stone-600 mt-2 font-bold">
+                                                                        ₹{slot.price}<span className="font-medium text-stone-400">/month</span>
                                                                     </p>
                                                                 )}
                                                             </motion.div>

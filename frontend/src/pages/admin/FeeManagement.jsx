@@ -554,9 +554,16 @@ const FeeManagement = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+        <div className="min-h-screen relative text-[#0F172A] pb-20" style={{ background: '#FAF6F0' }}>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
             {/* Top Container */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+            <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
                 
                 {/* ═════════════════════════════════════════════════════════
                     EXECUTIVE HEADER BAR
@@ -564,22 +571,22 @@ const FeeManagement = () => {
                 <motion.div
                     initial={{ opacity: 0, y: -12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs"
+                    className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white border border-[#EDE8E0] rounded-2xl p-5 shadow-2xs"
                 >
                     <div className="flex items-center gap-3.5">
                         <Link to={backPath}>
                             <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="p-2.5 bg-slate-100 hover:bg-slate-200/80 text-slate-700 rounded-xl transition-all flex items-center justify-center"
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                className="px-4 py-2.5 bg-white hover:bg-[#FAF6F0] text-stone-700 rounded-xl transition-all flex items-center justify-center gap-1.5 border border-[#EDE8E0] text-xs font-bold shadow-2xs cursor-pointer"
                                 title="Back"
                             >
-                                <IoArrowBack size={18} />
+                                <IoArrowBack size={15} /> Back
                             </motion.button>
                         </Link>
                         <div>
-                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-bold mb-1">
-                                <IoCashOutline size={13} className="text-orange-600" />
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 text-[11px] font-bold mb-1">
+                                <IoCashOutline size={13} />
                                 <span>Main Campus (Sitamarhi) · Enterprise Financial Ledger</span>
                             </div>
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
