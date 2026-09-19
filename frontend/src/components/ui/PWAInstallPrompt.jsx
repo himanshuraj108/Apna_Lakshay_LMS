@@ -82,11 +82,11 @@ const PWAInstallPrompt = () => {
                     {/* Card Container */}
                     <motion.div
                         key="pwa-card"
-                        initial={{ opacity: 0, y: 30, scale: 0.94 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 30, scale: 0.94 }}
+                        initial={{ opacity: 0, x: -40, scale: 0.94 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -40, scale: 0.94 }}
                         transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none"
+                        className="fixed inset-0 z-[9999] flex items-end justify-start p-4 sm:p-6 pointer-events-none"
                     >
                         <div
                             className="relative w-full max-w-sm sm:max-w-md rounded-2xl border border-white/10 shadow-2xl overflow-hidden pointer-events-auto"
