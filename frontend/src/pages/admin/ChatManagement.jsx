@@ -13,8 +13,8 @@ import StudentChatList from '../../components/admin/StudentChatList';
 const PAGE_BG = { background: '#F8FAFC' };
 
 const ROOM_TYPE_COLORS = {
-    public: 'from-blue-500 to-cyan-500',
-    group: 'from-indigo-500 to-purple-500',
+    public: 'from-orange-500 to-amber-500',
+    group: 'from-blue-500 to-indigo-500',
     private: 'from-rose-500 to-pink-500',
 };
 
@@ -96,61 +96,72 @@ const ChatManagement = () => {
     const filteredRooms = filter === 'all' ? rooms : rooms.filter(r => r.type === filter);
 
     return (
-        <div className="relative min-h-screen" style={PAGE_BG}>
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-violet-600/6 blur-3xl" />
-                <div className="absolute bottom-[5%] right-[-5%] w-[400px] h-[400px] rounded-full bg-fuchsia-600/6 blur-3xl" />
-            </div>
+        <div className="relative min-h-screen" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+            <div
+                className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
 
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-24">
                 {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
+                <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-8 flex-wrap gap-4">
                     <div className="flex items-center gap-4">
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => navigate('/admin')}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
+                        <button
+                            onClick={() => navigate('/admin')}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                        >
                             <IoArrowBack size={16} /> Back
-                        </motion.button>
+                        </button>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                                <div className="p-1.5 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-lg"><IoChatbubbles size={14} className="text-gray-900" /></div>
-                                <span className="text-xs font-bold uppercase tracking-widest text-violet-400">Admin</span>
+                                <div className="p-1.5 bg-orange-500/10 rounded-lg text-orange-600">
+                                    <IoChatbubbles size={14} />
+                                </div>
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-orange-600">Admin Console</span>
                             </div>
-                            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">Discussion Management</h1>
+                            <h1 className="text-2xl sm:text-3xl font-black text-stone-900">Discussion Management</h1>
                         </div>
                     </div>
-                    <motion.button whileHover={{ scale: 1.05 }} onClick={fetchData}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium transition-all">
-                        <IoRefresh size={16} /> Refresh
-                    </motion.button>
+                    <button
+                        onClick={fetchData}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                    >
+                        <IoRefresh size={16} className={loading ? 'animate-spin text-orange-500' : ''} /> Refresh
+                    </button>
                 </motion.div>
 
                 {/* Config Panel */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}
-                    className="bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl p-5 mb-6">
+                    className="bg-white border border-[#EDE8E0] rounded-2xl p-5 mb-6 shadow-xs">
                     <div className="flex items-center gap-2 mb-4">
-                        <IoSettings size={16} className="text-gray-500" />
-                        <span className="text-sm font-bold text-gray-600 uppercase tracking-widest">System Configuration</span>
+                        <div className="w-6 h-6 rounded-lg bg-orange-50 border border-orange-200/60 flex items-center justify-center text-orange-600">
+                            <IoSettings size={14} />
+                        </div>
+                        <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">System Configuration</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-4">
                         {/* Global toggle */}
                         <div className="flex items-center gap-3">
                             <div onClick={handleGlobalToggle}
-                                className={`w-14 h-7 rounded-full p-0.5 cursor-pointer transition-colors duration-300 ${isGlobalChatEnabled ? 'bg-green-500' : 'bg-gray-700'}`}>
-                                <div className={`bg-white w-6 h-6 rounded-full shadow transition-transform duration-300 ${isGlobalChatEnabled ? 'translate-x-7' : 'translate-x-0'}`} />
+                                className={`w-12 h-6.5 rounded-full p-0.5 cursor-pointer transition-colors duration-300 ${isGlobalChatEnabled ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-stone-300'}`}>
+                                <div className={`bg-white w-5.5 h-5.5 rounded-full shadow transition-transform duration-300 ${isGlobalChatEnabled ? 'translate-x-5.5' : 'translate-x-0'}`} />
                             </div>
-                            <span className={`font-semibold text-sm ${isGlobalChatEnabled ? 'text-green-400' : 'text-red-400'}`}>
-                                {isGlobalChatEnabled ? 'Chat Enabled' : 'Chat Offline'}
+                            <span className={`font-bold text-xs uppercase tracking-wider ${isGlobalChatEnabled ? 'text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full' : 'text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full'}`}>
+                                {isGlobalChatEnabled ? 'Chat Active' : 'Chat Offline'}
                             </span>
                         </div>
-                        <div className="w-px h-6 bg-gray-100 hidden sm:block" />
-                        <motion.button whileHover={{ scale: 1.04 }} onClick={handlePurgeAll}
-                            className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 rounded-xl text-sm font-semibold transition-all">
+                        <div className="w-px h-6 bg-stone-200 hidden sm:block" />
+                        <button onClick={handlePurgeAll}
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-xl text-xs font-bold transition-all cursor-pointer">
                             <IoTrash size={14} /> Clear Messages Only
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.04 }} onClick={handleFactoryReset}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/25 text-red-400 rounded-xl text-sm font-semibold transition-all">
+                        </button>
+                        <button onClick={handleFactoryReset}
+                            className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 text-rose-600 rounded-xl text-xs font-bold transition-all cursor-pointer">
                             <IoWarning size={14} /> Factory Reset All
-                        </motion.button>
+                        </button>
                     </div>
                 </motion.div>
 
@@ -158,12 +169,12 @@ const ChatManagement = () => {
                 <div className="flex gap-2 mb-5">
                     {[
                         { key: 'rooms', label: 'Chat Rooms', icon: IoGridOutline },
-                        { key: 'users', label: 'User Management', icon: IoPeopleOutline },
+                        { key: 'users', label: 'User Moderation', icon: IoPeopleOutline },
                     ].map(({ key, label, icon: Icon }) => (
                         <button key={key} onClick={() => setActiveTab(key)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === key
-                                ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25'
-                                : 'bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100'}`}>
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === key
+                                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md shadow-orange-500/20'
+                                : 'bg-white border border-[#EDE8E0] text-stone-600 hover:bg-[#FAF6F0]'}`}>
                             <Icon size={15} /> {label}
                         </button>
                     ))}
@@ -175,41 +186,41 @@ const ChatManagement = () => {
                         <div className="flex gap-2 mb-5 flex-wrap">
                             {['all', 'public', 'group', 'private'].map(t => (
                                 <button key={t} onClick={() => setFilter(t)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all ${filter === t
-                                        ? 'bg-white/15 border border-white/20 text-gray-900'
-                                        : 'bg-gray-50 border border-gray-200 text-gray-500 hover:bg-gray-100'}`}>
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer ${filter === t
+                                        ? 'bg-orange-50 border border-orange-300 text-orange-600'
+                                        : 'bg-white border border-[#EDE8E0] text-stone-500 hover:bg-[#FAF6F0]'}`}>
                                     {t}
                                 </button>
                             ))}
                         </div>
                         {loading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {[...Array(6)].map((_, i) => <div key={i} className="bg-white/3 border border-white/8 rounded-2xl h-28 animate-pulse" />)}
+                                {[...Array(6)].map((_, i) => <div key={i} className="bg-white border border-[#EDE8E0] rounded-2xl h-28 animate-pulse shadow-xs" />)}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {filteredRooms.map(room => (
-                                    <motion.div key={room._id} whileHover={{ y: -3 }}
-                                        className={`bg-white/3 border border-white/8 backdrop-blur-xl rounded-2xl overflow-hidden ${room.isDisabled ? 'opacity-60' : ''}`}>
-                                        <div className={`h-px w-full bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-gray-500 to-slate-500'}`} />
+                                    <motion.div key={room._id} whileHover={{ y: -2 }}
+                                        className={`bg-white border border-[#EDE8E0] rounded-2xl overflow-hidden shadow-xs hover:border-orange-200 transition-all ${room.isDisabled ? 'opacity-60 bg-stone-50' : ''}`}>
+                                        <div className={`h-1 w-full bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-orange-500 to-amber-500'}`} />
                                         <div className="p-4">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1 min-w-0">
-                                                    {room.isDisabled && <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-bold mb-1 inline-block">DISABLED</span>}
-                                                    <h3 className="font-bold text-gray-900 text-sm truncate">{room.type === 'private' ? 'Private Chat' : room.name}</h3>
-                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                    {room.isDisabled && <span className="text-[10px] bg-rose-50 text-rose-600 border border-rose-200 px-2 py-0.5 rounded-full font-bold mb-1.5 inline-block">DISABLED</span>}
+                                                    <h3 className="font-bold text-stone-900 text-sm truncate">{room.type === 'private' ? 'Private Chat' : room.name}</h3>
+                                                    <p className="text-xs text-stone-400 font-medium mt-0.5">
                                                         {room.type === 'private' ? room.participants?.map(p => p.name).join(', ') : `${room.participants?.length || 0} members`}
                                                     </p>
                                                 </div>
-                                                <div className="flex gap-1 shrink-0">
-                                                    <button onClick={() => openMonitor(room)} className="p-1.5 text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-lg transition-all" title="View"><IoEye size={15} /></button>
-                                                    <button onClick={() => handleDisableRoom(room._id)} className={`p-1.5 rounded-lg transition-all ${room.isDisabled ? 'text-green-400 bg-green-500/10 hover:bg-green-500/20' : 'text-orange-400 bg-orange-500/10 hover:bg-orange-500/20'}`} title={room.isDisabled ? 'Enable' : 'Disable'}>
+                                                <div className="flex gap-1.5 shrink-0">
+                                                    <button onClick={() => openMonitor(room)} className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 border border-orange-200/60 rounded-xl transition-all cursor-pointer" title="View"><IoEye size={15} /></button>
+                                                    <button onClick={() => handleDisableRoom(room._id)} className={`p-2 rounded-xl transition-all cursor-pointer border ${room.isDisabled ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100' : 'text-amber-800 bg-amber-50 border-amber-200 hover:bg-amber-100'}`} title={room.isDisabled ? 'Enable' : 'Disable'}>
                                                         {room.isDisabled ? <IoCheckmarkCircle size={15} /> : <IoBan size={15} />}
                                                     </button>
-                                                    <button onClick={() => handleDeleteRoom(room._id)} className="p-1.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-all" title="Delete"><IoTrash size={15} /></button>
+                                                    <button onClick={() => handleDeleteRoom(room._id)} className="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/60 rounded-xl transition-all cursor-pointer" title="Delete"><IoTrash size={15} /></button>
                                                 </div>
                                             </div>
-                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mt-2 inline-block capitalize bg-gradient-to-r ${ROOM_TYPE_COLORS[room.type] || 'from-gray-500 to-slate-500'} bg-clip-text text-transparent border border-gray-200`}>{room.type}</span>
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md mt-3 inline-block capitalize bg-[#FAF6F0] text-stone-600 border border-[#EDE8E0]`}>{room.type}</span>
                                         </div>
                                     </motion.div>
                                 ))}
