@@ -23,7 +23,7 @@ import useBackPath from '../../hooks/useBackPath';
 import { useAuth } from '../../context/AuthContext';
 import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 
-const PAGE_BG = { background: '#F8FAFC' };
+const PAGE_BG = { background: '#FAF6F0' };
 const INPUT = 'w-full bg-slate-50/70 focus:bg-white border border-slate-200 focus:border-orange-500 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-orange-500/15 outline-none transition-all placeholder-slate-400 shadow-2xs';
 const LABEL = 'block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5';
 const BTN_PRIMARY = 'px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-sm shadow-orange-500/25 disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-1.5';
@@ -1334,11 +1334,14 @@ const StudentManagement = () => {
     return (
         <>
             <div className="relative min-h-screen" style={PAGE_BG}>
-                {/* Subtle Brand Atmosphere Blurs */}
-                <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                    <div className="absolute top-[-10%] right-[-5%] w-[550px] h-[550px] rounded-full bg-orange-500/5 blur-3xl" />
-                    <div className="absolute bottom-[5%] left-[-5%] w-[450px] h-[450px] rounded-full bg-amber-500/5 blur-3xl" />
-                </div>
+                {/* Unified Warm 28px Dot Grid */}
+                <div
+                    className="fixed inset-0 pointer-events-none z-0"
+                    style={{
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)',
+                        backgroundSize: '28px 28px'
+                    }}
+                />
 
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 space-y-6">
 
@@ -1349,13 +1352,13 @@ const StudentManagement = () => {
                         <div className="flex items-start sm:items-center gap-3">
                             <Link to={backPath}>
                                 <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-all shadow-2xs flex items-center gap-1.5"
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    className="px-4 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
                                     title="Go back"
                                 >
-                                    <IoArrowBack size={18} />
-                                    <span className="hidden sm:inline text-xs font-bold">Back</span>
+                                    <IoArrowBack size={15} />
+                                    <span>Back</span>
                                 </motion.button>
                             </Link>
                             <div>
@@ -1363,10 +1366,10 @@ const StudentManagement = () => {
                                     <IoSparkles size={12} className="text-orange-500" />
                                     <span>Main Campus (Sitamarhi) · Enterprise Roster</span>
                                 </div>
-                                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0F172A]">
                                     Student Management
                                 </h1>
-                                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                                <p className="text-xs sm:text-sm text-stone-500 mt-0.5">
                                     Live student lifecycle, desk allocations, shift schedules, and presence tracking
                                 </p>
                             </div>
@@ -1381,12 +1384,12 @@ const StudentManagement = () => {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => setShowSettingsMenu(prev => !prev)}
-                                        className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs transition-all"
+                                        className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
                                         title="Operations Menu"
                                     >
-                                        <IoFilterOutline size={15} className="text-slate-500" />
+                                        <IoFilterOutline size={15} className="text-stone-500" />
                                         <span>Tools & Operations</span>
-                                        <IoChevronDown size={13} className={`text-slate-400 transition-transform duration-200 ${showSettingsMenu ? 'rotate-180' : ''}`} />
+                                        <IoChevronDown size={13} className={`text-stone-400 transition-transform duration-200 ${showSettingsMenu ? 'rotate-180' : ''}`} />
                                     </motion.button>
 
                                     <AnimatePresence>
@@ -1398,10 +1401,10 @@ const StudentManagement = () => {
                                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                                     exit={{ opacity: 0, scale: 0.95, y: -6 }}
                                                     transition={{ duration: 0.15 }}
-                                                    className="absolute right-0 top-full mt-2 w-64 z-40 rounded-2xl overflow-hidden shadow-xl bg-white border border-slate-200 p-1.5"
+                                                    className="absolute right-0 top-full mt-2 w-64 z-40 rounded-2xl overflow-hidden shadow-xl bg-white border border-[#EDE8E0] p-1.5"
                                                 >
-                                                    <div className="px-3 py-2 border-b border-slate-100">
-                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Roster Operations</span>
+                                                    <div className="px-3 py-2 border-b border-[#EDE8E0]">
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Roster Operations</span>
                                                     </div>
                                                     {[
                                                         {
@@ -1432,7 +1435,7 @@ const StudentManagement = () => {
                                                         <button
                                                             key={i}
                                                             onClick={item.action}
-                                                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-colors text-left"
+                                                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-stone-700 hover:text-[#0F172A] hover:bg-[#FAF6F0] rounded-xl transition-colors text-left cursor-pointer"
                                                         >
                                                             <span className={item.color}>{item.icon}</span>
                                                             <span>{item.label}</span>
@@ -1449,7 +1452,7 @@ const StudentManagement = () => {
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={openAddModal}
-                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all"
+                                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer"
                                 >
                                     <IoAdd size={17} />
                                     <span>Add Student</span>
@@ -1463,100 +1466,108 @@ const StudentManagement = () => {
                     ══════════════════════════════════════════════════════ */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                         {/* Total Enrolled */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Roster</span>
-                                <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-xs">
+                        <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-orange-300 hover:shadow-[0_4px_16px_rgba(180,120,60,0.1)] transition-all overflow-hidden">
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-amber-500" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Total Roster</span>
+                                <div className="w-8 h-8 rounded-xl bg-orange-50 border border-orange-200/70 text-orange-600 flex items-center justify-center shadow-2xs">
                                     <IoPeopleOutline size={16} />
                                 </div>
                             </div>
-                            <p className="text-2xl font-black text-slate-900 tabular-nums">{metrics.total}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Enrolled students</p>
+                            <p className="text-2xl font-black text-[#0F172A] tabular-nums">{metrics.total}</p>
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">Enrolled students</p>
                         </div>
 
                         {/* Active Scholars */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active Members</span>
-                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                        <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-emerald-300 hover:shadow-[0_4px_16px_rgba(16,185,129,0.1)] transition-all overflow-hidden">
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Active Members</span>
+                                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-600 flex items-center justify-center shadow-2xs">
                                     <IoCheckmarkCircle size={16} />
                                 </div>
                             </div>
                             <p className="text-2xl font-black text-emerald-600 tabular-nums">{metrics.active}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">
                                 {metrics.total > 0 ? Math.round((metrics.active / metrics.total) * 100) : 0}% active roster
                             </p>
                         </div>
 
                         {/* Assigned & Seated */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Seated Desks</span>
-                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                        <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-amber-300 hover:shadow-[0_4px_16px_rgba(245,158,11,0.1)] transition-all overflow-hidden">
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-500 to-orange-500" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Seated Desks</span>
+                                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/70 text-amber-600 flex items-center justify-center shadow-2xs">
                                     <IoBedOutline size={16} />
                                 </div>
                             </div>
-                            <p className="text-2xl font-black text-slate-900 tabular-nums">{metrics.seated}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Seats allocated</p>
+                            <p className="text-2xl font-black text-[#0F172A] tabular-nums">{metrics.seated}</p>
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">Seats allocated</p>
                         </div>
 
                         {/* Pending Desk Allocation */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending Desk</span>
-                                <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-xs">
+                        <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-rose-300 hover:shadow-[0_4px_16px_rgba(244,63,94,0.1)] transition-all overflow-hidden">
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-rose-500 to-red-500" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Pending Desk</span>
+                                <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200/70 text-rose-600 flex items-center justify-center shadow-2xs">
                                     <IoWarningOutline size={16} />
                                 </div>
                             </div>
                             <p className="text-2xl font-black text-rose-600 tabular-nums">{metrics.pending}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Awaiting assignment</p>
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">Awaiting assignment</p>
                         </div>
 
                         {/* AC Climate Study Halls */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">AC Study Halls</span>
-                                <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-xs">
+                        <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-sky-300 hover:shadow-[0_4px_16px_rgba(14,165,233,0.1)] transition-all overflow-hidden">
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-sky-500 to-blue-500" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">AC Study Halls</span>
+                                <div className="w-8 h-8 rounded-xl bg-sky-50 border border-sky-200/70 text-sky-600 flex items-center justify-center shadow-2xs">
                                     <IoSparkles size={16} />
                                 </div>
                             </div>
-                            <p className="text-2xl font-black text-slate-900 tabular-nums">{metrics.acCount}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Climate controlled</p>
+                            <p className="text-2xl font-black text-[#0F172A] tabular-nums">{metrics.acCount}</p>
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">Climate controlled</p>
                         </div>
 
                         {/* Inactive / Left */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Inactive / Left</span>
-                                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center shadow-xs">
+                        <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-stone-400 transition-all overflow-hidden">
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-stone-400 to-stone-500" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Inactive / Left</span>
+                                <div className="w-8 h-8 rounded-xl bg-stone-100 border border-[#EDE8E0] text-stone-500 flex items-center justify-center shadow-2xs">
                                     <IoTimeOutline size={16} />
                                 </div>
                             </div>
-                            <p className="text-2xl font-black text-slate-600 tabular-nums">{metrics.inactive}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">Archived or paused</p>
+                            <p className="text-2xl font-black text-stone-600 tabular-nums">{metrics.inactive}</p>
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">Archived or paused</p>
                         </div>
                     </div>
 
                     {/* ══════════════════════════════════════════════════════
                         UNIFIED ENTERPRISE SEARCH, TABS & MULTI-FILTER BAR
                     ══════════════════════════════════════════════════════ */}
-                    <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-4">
+                    <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-xs space-y-4 overflow-hidden">
+                        <div className="h-[2px] bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 absolute top-0 left-0 right-0" />
+
                         {/* Row 1: Search Input & Multi-select Dropdowns */}
-                        <div className="flex flex-col lg:flex-row items-center gap-3">
+                        <div className="flex flex-col lg:flex-row items-center gap-3 pt-0.5">
                             {/* Instant Search Bar */}
                             <div className="relative flex-1 w-full">
-                                <IoSearchOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <IoSearchOutline size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search by student name, mobile, email, roll no, or seat number..."
-                                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-orange-500 rounded-xl pl-10 pr-9 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all shadow-inner"
+                                    className="w-full bg-[#FAF6F0] hover:bg-white focus:bg-white border border-[#EDE8E0] focus:border-orange-500 rounded-xl pl-10 pr-9 py-2.5 text-xs text-[#0F172A] placeholder-stone-400 outline-none transition-all shadow-2xs"
                                 />
                                 {searchQuery && (
                                     <button
                                         onClick={() => setSearchQuery('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-full"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 rounded-full cursor-pointer"
                                         title="Clear search"
                                     >
                                         <IoClose size={15} />
@@ -1570,7 +1581,7 @@ const StudentManagement = () => {
                                 <select
                                     value={acFilter}
                                     onChange={(e) => setAcFilter(e.target.value)}
-                                    className="flex-1 sm:flex-initial px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none transition-colors"
+                                    className="flex-1 sm:flex-initial px-3 py-2.5 bg-[#FAF6F0] hover:bg-white border border-[#EDE8E0] focus:border-orange-500 rounded-xl text-xs font-bold text-stone-700 outline-none transition-colors shadow-2xs"
                                 >
                                     <option value="all">All Room Types</option>
                                     <option value="ac">AC Rooms Only</option>
@@ -1581,7 +1592,7 @@ const StudentManagement = () => {
                                 <select
                                     value={floorFilter}
                                     onChange={(e) => setFloorFilter(e.target.value)}
-                                    className="flex-1 sm:flex-initial px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none transition-colors"
+                                    className="flex-1 sm:flex-initial px-3 py-2.5 bg-[#FAF6F0] hover:bg-white border border-[#EDE8E0] focus:border-orange-500 rounded-xl text-xs font-bold text-stone-700 outline-none transition-colors shadow-2xs"
                                 >
                                     <option value="all">All Floors</option>
                                     {floors.map(f => (
@@ -1593,7 +1604,7 @@ const StudentManagement = () => {
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
-                                    className="flex-1 sm:flex-initial px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none transition-colors"
+                                    className="flex-1 sm:flex-initial px-3 py-2.5 bg-[#FAF6F0] hover:bg-white border border-[#EDE8E0] focus:border-orange-500 rounded-xl text-xs font-bold text-stone-700 outline-none transition-colors shadow-2xs"
                                 >
                                     <option value="newest">Sort: Newest Joined</option>
                                     <option value="oldest">Sort: Oldest Joined</option>
@@ -1605,7 +1616,7 @@ const StudentManagement = () => {
                         </div>
 
                         {/* Row 2: Status Tab Pills */}
-                        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 pt-1 border-t border-slate-100 custom-scrollbar">
+                        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 pt-2 border-t border-[#EDE8E0] custom-scrollbar">
                             <div className="flex items-center gap-1.5 flex-nowrap">
                                 {[
                                     { id: 'all', label: 'All Scholars', count: metrics.active },
@@ -1622,17 +1633,17 @@ const StudentManagement = () => {
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                                            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                                                 isActive
                                                     ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-xs'
-                                                    : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80'
+                                                    : 'bg-[#FAF6F0] hover:bg-orange-50/70 text-stone-600 hover:text-stone-900 border border-[#EDE8E0]'
                                             }`}
                                         >
                                             {tab.icon}
                                             <span>{tab.label}</span>
                                             {tab.count !== undefined && (
                                                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                                                    isActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700'
+                                                    isActive ? 'bg-white/25 text-white' : 'bg-white text-stone-600 border border-[#EDE8E0]'
                                                 }`}>
                                                     {tab.count}
                                                 </span>
@@ -1645,13 +1656,13 @@ const StudentManagement = () => {
                             {/* Right Actions: View Mode Switcher & History Purge */}
                             <div className="flex items-center gap-2 shrink-0">
                                 {activeTab !== 'id-cards' && activeTab !== 'history' && (
-                                    <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                                    <div className="flex items-center bg-[#FAF6F0] p-0.5 rounded-xl border border-[#EDE8E0]">
                                         <button
                                             onClick={() => setViewMode('cards')}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                                 viewMode === 'cards'
                                                     ? 'bg-white text-orange-600 shadow-2xs'
-                                                    : 'text-slate-500 hover:text-slate-800'
+                                                    : 'text-stone-500 hover:text-stone-800'
                                             }`}
                                             title="Enterprise One-Card-Per-Student Grid"
                                         >
@@ -1660,10 +1671,10 @@ const StudentManagement = () => {
                                         </button>
                                         <button
                                             onClick={() => setViewMode('table')}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                                 viewMode === 'table'
                                                     ? 'bg-white text-orange-600 shadow-2xs'
-                                                    : 'text-slate-500 hover:text-slate-800'
+                                                    : 'text-stone-500 hover:text-stone-800'
                                             }`}
                                             title="Compact Table View"
                                         >
@@ -1677,7 +1688,7 @@ const StudentManagement = () => {
                                     <button
                                         onClick={handleClearArchives}
                                         disabled={archivedStudents.length === 0}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all disabled:opacity-40 shrink-0"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 rounded-xl text-xs font-bold transition-all disabled:opacity-40 shrink-0 cursor-pointer"
                                     >
                                         <IoTrashOutline size={14} />
                                         <span>Clear All Archives</span>
@@ -1914,27 +1925,27 @@ const StudentManagement = () => {
                                 <div className="space-y-4">
                                     {/* Scholar Selection Bar & Count */}
                                     <div className="flex items-center justify-between px-1 text-xs text-slate-600 flex-wrap gap-2">
-                                        <label className="flex items-center gap-2 cursor-pointer font-bold select-none text-slate-800 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-2xs hover:border-orange-400 transition-colors">
+                                        <label className="flex items-center gap-2 cursor-pointer font-bold select-none text-[#0F172A] bg-white border border-[#EDE8E0] px-3 py-1.5 rounded-xl shadow-2xs hover:border-orange-300 transition-colors">
                                             <input
                                                 type="checkbox"
                                                 checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
                                                 onChange={(e) => setSelectedStudentIds(e.target.checked ? filteredStudents.map(s => s._id) : [])}
-                                                className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
+                                                className="rounded border-[#EDE8E0] text-orange-500 focus:ring-orange-500 cursor-pointer"
                                             />
                                             <span>Select All ({filteredStudents.length})</span>
                                         </label>
 
-                                        <div className="text-slate-500 font-semibold text-xs flex items-center gap-2">
-                                            <span>Showing <strong className="text-slate-900 font-extrabold">{filteredStudents.length}</strong> of <strong className="text-slate-900 font-extrabold">{students.length}</strong> scholars</span>
+                                        <div className="text-stone-500 font-semibold text-xs flex items-center gap-2">
+                                            <span>Showing <strong className="text-[#0F172A] font-black">{filteredStudents.length}</strong> of <strong className="text-[#0F172A] font-black">{students.length}</strong> scholars</span>
                                         </div>
                                     </div>
 
                                     {/* Cards Grid */}
                                     {filteredStudents.length === 0 ? (
-                                        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-                                            <IoPeopleOutline size={42} className="mx-auto text-slate-300 mb-2" />
-                                            <p className="font-bold text-slate-800 text-sm">No scholars match current criteria</p>
-                                            <p className="text-slate-400 text-xs mt-1">Try clearing or adjusting search and filters.</p>
+                                        <div className="text-center py-16 bg-white rounded-2xl border border-[#EDE8E0] shadow-2xs">
+                                            <IoPeopleOutline size={42} className="mx-auto text-stone-300 mb-2" />
+                                            <p className="font-bold text-[#0F172A] text-sm">No scholars match current criteria</p>
+                                            <p className="text-stone-400 text-xs mt-1">Try clearing or adjusting search and filters.</p>
                                         </div>
                                     ) : (
                                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -1954,20 +1965,23 @@ const StudentManagement = () => {
                                                         key={student._id}
                                                         className={`group relative bg-white rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                                                             isSelected
-                                                                ? 'border-orange-500 shadow-md ring-1 ring-orange-500/30'
-                                                                : 'border-slate-200/90 hover:border-orange-400/60 hover:shadow-lg shadow-2xs'
+                                                                ? 'border-orange-500 shadow-md ring-2 ring-orange-500/20'
+                                                                : 'border-[#EDE8E0] hover:border-orange-300 shadow-[0_2px_12px_rgba(180,120,60,0.06)] hover:shadow-[0_8px_24px_rgba(180,120,60,0.12)] hover:-translate-y-0.5'
                                                         }`}
                                                     >
+                                                        {/* Watermark Ghost Icon */}
+                                                        <IoPersonOutline size={76} className="absolute -bottom-3 -right-3 opacity-[0.035] text-orange-600 pointer-events-none" />
+
                                                         {/* Status Accent Stripe */}
-                                                        <div className={`h-1.5 w-full ${
+                                                        <div className={`h-[3px] w-full ${
                                                             !student.isActive
-                                                                ? 'bg-slate-300'
+                                                                ? 'bg-stone-300'
                                                                 : !seatDetails
-                                                                    ? 'bg-amber-400'
+                                                                    ? 'bg-gradient-to-r from-amber-400 to-amber-500'
                                                                     : 'bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600'
                                                         }`} />
 
-                                                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                                                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4 relative z-10">
                                                             {/* Header: Checkbox, Avatar, Name & Reg Source, Status */}
                                                             <div className="flex items-start justify-between gap-3">
                                                                 <div className="flex items-start gap-3 min-w-0">
@@ -1978,10 +1992,10 @@ const StudentManagement = () => {
                                                                             if (e.target.checked) setSelectedStudentIds(prev => [...prev, student._id]);
                                                                             else setSelectedStudentIds(prev => prev.filter(id => id !== student._id));
                                                                         }}
-                                                                        className="mt-1 rounded border-slate-300 text-orange-500 focus:ring-orange-500 cursor-pointer shrink-0"
+                                                                        className="mt-1 rounded border-[#EDE8E0] text-orange-500 focus:ring-orange-500 cursor-pointer shrink-0"
                                                                     />
 
-                                                                    <div className="relative w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 shadow-2xs">
+                                                                    <div className="relative w-12 h-12 rounded-2xl bg-[#FAF6F0] border border-[#EDE8E0] overflow-hidden shrink-0 shadow-2xs">
                                                                         <img
                                                                             src={avatarSrc}
                                                                             alt={student.name}
@@ -1989,7 +2003,7 @@ const StudentManagement = () => {
                                                                         />
                                                                         <span
                                                                             className={`absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                                                                                student.isOnline ? 'bg-emerald-500' : 'bg-slate-300'
+                                                                                student.isOnline ? 'bg-emerald-500' : 'bg-stone-300'
                                                                             }`}
                                                                             title={student.isOnline ? 'Online now' : 'Offline'}
                                                                         />
@@ -1997,7 +2011,7 @@ const StudentManagement = () => {
 
                                                                     <div className="min-w-0">
                                                                         <div className="flex items-center gap-1.5 flex-wrap">
-                                                                            <h3 className="font-extrabold text-sm text-slate-900 truncate tracking-tight" title={student.name}>
+                                                                            <h3 className="font-black text-sm text-[#0F172A] truncate tracking-tight" title={student.name}>
                                                                                 {student.name}
                                                                             </h3>
                                                                             {student.registrationSource === 'self' ? (
@@ -2005,13 +2019,13 @@ const StudentManagement = () => {
                                                                                     Self
                                                                                 </span>
                                                                             ) : (
-                                                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider">
+                                                                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#FAF6F0] text-stone-600 border border-[#EDE8E0] uppercase tracking-wider">
                                                                                     Admin
                                                                                 </span>
                                                                             )}
                                                                         </div>
 
-                                                                        <p className="text-[11px] text-slate-500 truncate mt-0.5" title={student.email}>
+                                                                        <p className="text-[11px] text-stone-500 truncate mt-0.5" title={student.email}>
                                                                             {student.email || 'No email registered'}
                                                                         </p>
 
@@ -2022,7 +2036,7 @@ const StudentManagement = () => {
                                                                                         href={`https://wa.me/91${student.mobile.replace(/\D/g, '')}`}
                                                                                         target="_blank"
                                                                                         rel="noopener noreferrer"
-                                                                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition-colors"
+                                                                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 px-2 py-0.5 rounded-lg border border-emerald-200/80 transition-colors"
                                                                                         title="Chat on WhatsApp"
                                                                                     >
                                                                                         <IoLogoWhatsapp size={12} />
@@ -2030,14 +2044,14 @@ const StudentManagement = () => {
                                                                                     </a>
                                                                                     <a
                                                                                         href={`tel:${student.mobile}`}
-                                                                                        className="p-1 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+                                                                                        className="p-1 text-stone-500 hover:text-stone-800 bg-[#FAF6F0] hover:bg-stone-100 rounded-lg border border-[#EDE8E0] transition-colors"
                                                                                         title="Call mobile"
                                                                                     >
                                                                                         <IoCallOutline size={12} />
                                                                                     </a>
                                                                                 </>
                                                                             ) : (
-                                                                                <span className="text-[10px] text-slate-400 italic">No mobile</span>
+                                                                                <span className="text-[10px] text-stone-400 italic">No mobile</span>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -2046,17 +2060,17 @@ const StudentManagement = () => {
                                                                 {/* Status & Sequence */}
                                                                 <div className="shrink-0 flex flex-col items-end gap-1">
                                                                     {student.isActive ? (
-                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-bold">
                                                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                                             <span>Active</span>
                                                                         </span>
                                                                     ) : (
-                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-bold">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-100 border border-[#EDE8E0] text-stone-600 text-[11px] font-bold">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
                                                                             <span>Inactive</span>
                                                                         </span>
                                                                     )}
-                                                                    <span className="text-[10px] text-slate-400 font-semibold">
+                                                                    <span className="text-[10px] text-stone-400 font-bold">
                                                                         #{idx + 1}
                                                                     </span>
                                                                 </div>
@@ -2065,8 +2079,8 @@ const StudentManagement = () => {
                                                             {/* Body: 2x2 Segmented Grid */}
                                                             <div className="grid grid-cols-2 gap-2.5 pt-1">
                                                                 {/* Box 1: Desk Space */}
-                                                                <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-2.5 flex flex-col justify-between">
-                                                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                <div className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-xl p-2.5 flex flex-col justify-between hover:border-orange-200/80 transition-colors">
+                                                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-stone-400">
                                                                         <span className="flex items-center gap-1">
                                                                             <IoBedOutline size={12} className="text-orange-500" />
                                                                             <span>Desk Space</span>
@@ -2080,10 +2094,10 @@ const StudentManagement = () => {
                                                                     <div className="mt-1.5">
                                                                         {seatDetails ? (
                                                                             <>
-                                                                                <p className="font-extrabold text-sm text-slate-900">
+                                                                                <p className="font-black text-sm text-[#0F172A]">
                                                                                     Desk {seatDetails.seatNumber}
                                                                                 </p>
-                                                                                <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                                                                <p className="text-[10px] text-stone-500 truncate mt-0.5">
                                                                                     {seatDetails.roomName} · {seatDetails.floorName}
                                                                                 </p>
                                                                             </>
@@ -2102,24 +2116,24 @@ const StudentManagement = () => {
                                                                 </div>
 
                                                                 {/* Box 2: Shift */}
-                                                                <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-2.5 flex flex-col justify-between">
-                                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                                                <div className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-xl p-2.5 flex flex-col justify-between hover:border-orange-200/80 transition-colors">
+                                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
                                                                         <IoTimeOutline size={12} className="text-orange-500" />
                                                                         <span>Shift</span>
                                                                     </div>
                                                                     <div className="mt-1.5">
-                                                                        <p className="font-extrabold text-xs text-slate-900 truncate" title={shiftsDisplay}>
+                                                                        <p className="font-black text-xs text-[#0F172A] truncate" title={shiftsDisplay}>
                                                                             {shiftsDisplay || (student.isActive ? 'Awaiting Shift' : 'None')}
                                                                         </p>
-                                                                        <p className="text-[10px] text-slate-500 mt-0.5">
+                                                                        <p className="text-[10px] text-stone-500 mt-0.5">
                                                                             {student.isActive ? 'Active schedule' : 'Inactive'}
                                                                         </p>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Box 3: Fee Rate */}
-                                                                <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-2.5 flex flex-col justify-between">
-                                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                <div className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-xl p-2.5 flex flex-col justify-between hover:border-orange-200/80 transition-colors">
+                                                                    <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
                                                                         <span>Fee Rate</span>
                                                                     </div>
                                                                     <div className="mt-1.5">
@@ -2136,18 +2150,18 @@ const StudentManagement = () => {
                                                                         <button
                                                                             type="button"
                                                                             onClick={(e) => { e.stopPropagation(); openActivityHistoryModal(student); }}
-                                                                            className="text-[10px] text-slate-500 hover:text-orange-600 truncate mt-0.5 flex items-center gap-1 group/hist transition-colors"
+                                                                            className="text-[10px] text-stone-500 hover:text-orange-600 truncate mt-0.5 flex items-center gap-1 group/hist transition-colors"
                                                                             title="Click to view full Activity & Status History"
                                                                         >
-                                                                            <IoTimeOutline size={11} className="text-slate-400 group-hover/hist:text-orange-500 shrink-0" />
+                                                                            <IoTimeOutline size={11} className="text-stone-400 group-hover/hist:text-orange-500 shrink-0" />
                                                                             <span>Joined {new Date(student.admissionDate || student.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
                                                                         </button>
                                                                     </div>
                                                                 </div>
 
                                                                 {/* Box 4: Mock Test AI & Session */}
-                                                                <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-2.5 flex flex-col justify-between">
-                                                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                                                <div className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-xl p-2.5 flex flex-col justify-between hover:border-orange-200/80 transition-colors">
+                                                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-stone-400">
                                                                         <span className="flex items-center gap-1">
                                                                             <IoSparkles size={11} className="text-orange-500" />
                                                                             <span>Mock Test</span>
@@ -2160,18 +2174,18 @@ const StudentManagement = () => {
                                                                         </button>
                                                                     </div>
                                                                     <div className="mt-1.5">
-                                                                        <p className="font-extrabold text-xs text-slate-900 flex items-center gap-1">
+                                                                        <p className="font-black text-xs text-[#0F172A] flex items-center gap-1">
                                                                             <span>{Math.min(student.mockTestCredits ?? 2, 2)}</span>
-                                                                            <span className="text-slate-400 font-normal text-[10px]">/ 2 Credits</span>
+                                                                            <span className="text-stone-400 font-normal text-[10px]">/ 2 Credits</span>
                                                                         </p>
                                                                         <button
                                                                             onClick={() => {
                                                                                 setSelectedSessionStudent(student);
                                                                                 setShowSessionModal(true);
                                                                             }}
-                                                                            className="text-[10px] font-bold mt-0.5 flex items-center gap-1 text-slate-600 hover:text-slate-900"
+                                                                            className="text-[10px] font-bold mt-0.5 flex items-center gap-1 text-stone-600 hover:text-stone-900"
                                                                         >
-                                                                            <span className={`w-1.5 h-1.5 rounded-full ${student.isLoggedIn ? 'bg-orange-500' : 'bg-slate-300'}`} />
+                                                                            <span className={`w-1.5 h-1.5 rounded-full ${student.isLoggedIn ? 'bg-orange-500' : 'bg-stone-300'}`} />
                                                                             <span>{student.isLoggedIn ? 'Logged In' : 'Logged Out'}</span>
                                                                         </button>
                                                                     </div>
@@ -2179,12 +2193,12 @@ const StudentManagement = () => {
                                                             </div>
 
                                                             {/* Footer Actions */}
-                                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                                                            <div className="pt-2.5 border-t border-[#EDE8E0] flex items-center justify-between gap-1.5">
                                                                 {student.isActive ? (
                                                                     <>
                                                                         <button
                                                                             onClick={() => openSeatAssignModal(student)}
-                                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+                                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                                                                             title="Assign or change desk"
                                                                         >
                                                                             <IoBedOutline size={14} />
@@ -2193,7 +2207,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openIdCardModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-orange-600 bg-slate-50 hover:bg-orange-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-orange-600 bg-[#FAF6F0] hover:bg-orange-50 border border-[#EDE8E0] hover:border-orange-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Digital ID Card & QR"
                                                                         >
                                                                             <IoIdCard size={15} />
@@ -2201,7 +2215,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openSplitSeatModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-orange-600 bg-slate-50 hover:bg-orange-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-orange-600 bg-[#FAF6F0] hover:bg-orange-50 border border-[#EDE8E0] hover:border-orange-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Split Shift Assignment"
                                                                         >
                                                                             <IoGitBranch size={15} />
@@ -2209,7 +2223,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openTempSeatModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-amber-600 bg-[#FAF6F0] hover:bg-amber-50 border border-[#EDE8E0] hover:border-amber-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Temporary Seat Allocation"
                                                                         >
                                                                             <IoWarningOutline size={15} />
@@ -2217,7 +2231,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openActivityHistoryModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-indigo-600 bg-[#FAF6F0] hover:bg-indigo-50 border border-[#EDE8E0] hover:border-indigo-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Scholar Activity & Status History"
                                                                         >
                                                                             <IoTimeOutline size={15} />
@@ -2225,7 +2239,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openResetPasswordModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-amber-600 bg-[#FAF6F0] hover:bg-amber-50 border border-[#EDE8E0] hover:border-amber-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Reset Password"
                                                                         >
                                                                             <IoKey size={15} />
@@ -2233,7 +2247,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openEditModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-[#0F172A] bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] hover:border-stone-300 rounded-xl transition-all cursor-pointer"
                                                                             title="Edit Profile"
                                                                         >
                                                                             <IoPencil size={15} />
@@ -2241,7 +2255,7 @@ const StudentManagement = () => {
 
                                                                         <button
                                                                             onClick={() => openDeleteModal(student)}
-                                                                            className="p-2 text-slate-400 hover:text-rose-600 bg-slate-50 hover:bg-rose-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-400 hover:text-rose-600 bg-[#FAF6F0] hover:bg-rose-50 border border-[#EDE8E0] hover:border-rose-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Inactivate / Remove"
                                                                         >
                                                                             <IoTrashOutline size={15} />
@@ -2251,28 +2265,28 @@ const StudentManagement = () => {
                                                                     <>
                                                                         <button
                                                                             onClick={() => handleReactivate(student)}
-                                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all"
+                                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
                                                                         >
                                                                             <IoRefresh size={14} />
                                                                             <span>Reactivate Scholar</span>
                                                                         </button>
                                                                         <button
                                                                             onClick={() => openActivityHistoryModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-indigo-600 bg-[#FAF6F0] hover:bg-indigo-50 border border-[#EDE8E0] hover:border-indigo-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Scholar Activity & Status History"
                                                                         >
                                                                             <IoTimeOutline size={15} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => openEditModal(student)}
-                                                                            className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all"
+                                                                            className="p-2 text-stone-600 hover:text-[#0F172A] bg-[#FAF6F0] hover:bg-stone-100 border border-[#EDE8E0] hover:border-stone-300 rounded-xl transition-all cursor-pointer"
                                                                             title="Edit Profile"
                                                                         >
                                                                             <IoPencil size={15} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => openDeleteModal(student)}
-                                                                            className="p-2 text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all"
+                                                                            className="p-2 text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Delete Permanently"
                                                                         >
                                                                             <IoTrashOutline size={15} />
