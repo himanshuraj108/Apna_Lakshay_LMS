@@ -756,7 +756,7 @@ const StudentDashboard = () => {
         }
     };
 
-    const handleLogout = () => { logout(); navigate('/login'); };
+    const handleLogout = () => { logout(); };
 
     // ── Premium smooth scroll ──────────────────────────────────────────
     useLenis(!showScanner);

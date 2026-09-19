@@ -78,11 +78,11 @@ const PwaInstallBanner = () => {
                     animate={{ y: 0, opacity: 1, scale: 1 }}
                     exit={{ y: 80, opacity: 0, scale: 0.95 }}
                     transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-                    className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 w-full max-w-sm z-[9999] px-4 sm:px-0 pointer-events-none"
+                    className="fixed bottom-4 sm:bottom-6 left-0 sm:left-6 w-full sm:w-[390px] z-[9999] p-3 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
                     style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}
                 >
                     <div
-                        className="relative overflow-hidden w-full rounded-3xl p-5 pointer-events-auto border"
+                        className="relative overflow-hidden w-full max-w-sm mx-auto rounded-3xl p-5 pointer-events-auto border"
                         style={{
                             background: 'linear-gradient(145deg, #1C150E 0%, #2A1D13 60%, #1A120C 100%)',
                             borderColor: 'rgba(249,115,22,0.35)',

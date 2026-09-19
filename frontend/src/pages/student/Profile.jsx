@@ -219,7 +219,6 @@ const Profile = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
     };
 
     const handleExamTargetChange = async (e) => {

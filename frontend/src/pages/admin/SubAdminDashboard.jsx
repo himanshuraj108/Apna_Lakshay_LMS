@@ -7,95 +7,89 @@ import {
     IoShieldCheckmarkOutline, IoCalendarOutline, IoPersonOutline,
     IoCashOutline, IoNotificationsOutline, IoDocumentTextOutline,
     IoSearchOutline, IoLogOutOutline, IoChevronForwardOutline,
-    IoLockClosedOutline, IoBedOutline, IoIdCard, IoTrendingUpOutline,
-    IoAlertCircleOutline, IoCheckmarkCircleOutline, IoRefreshOutline,
-    IoGridOutline, IoTimeOutline, IoStatsChartOutline
+    IoLockClosedOutline, IoBedOutline, IoIdCard,
+    IoAlertCircleOutline, IoRefreshOutline,
+    IoGridOutline, IoTimeOutline, IoCheckmarkCircle,
+    IoArrowForward, IoSparklesOutline, IoPulseOutline
 } from 'react-icons/io5';
 
 const PERM_CARDS = {
-    attendance:    {
+    attendance: {
         title: 'Attendance',
         path: '/admin/attendance',
         icon: IoCalendarOutline,
-        gradient: 'from-orange-500 to-red-500',
-        glow: 'rgba(249,115,22,0.25)',
+        gradient: 'from-orange-500 to-amber-500',
         bg: 'bg-orange-50',
-        border: 'border-orange-100',
+        border: 'border-orange-200/80',
         iconColor: 'text-orange-500',
-        desc: 'Mark & view daily attendance records',
-        tag: 'Daily Task'
+        desc: 'Mark & monitor student daily attendance and shifts',
+        tag: 'Daily Log'
     },
-    students:      {
-        title: 'Students',
+    students: {
+        title: 'Students Directory',
         path: '/admin/students',
         icon: IoPersonOutline,
         gradient: 'from-blue-500 to-indigo-600',
-        glow: 'rgba(99,102,241,0.25)',
         bg: 'bg-blue-50',
-        border: 'border-blue-100',
+        border: 'border-blue-200/80',
         iconColor: 'text-blue-500',
-        desc: 'Browse & manage student profiles',
+        desc: 'Browse student profiles, seat allocations & contacts',
         tag: 'Management'
     },
-    id_cards:      {
+    id_cards: {
         title: 'Student ID Cards',
         path: '/admin/students?tab=id-cards',
         icon: IoIdCard,
         gradient: 'from-purple-500 to-pink-500',
-        glow: 'rgba(168,85,247,0.25)',
         bg: 'bg-purple-50',
-        border: 'border-purple-100',
+        border: 'border-purple-200/80',
         iconColor: 'text-purple-500',
-        desc: 'Generate & print student ID cards',
-        tag: 'Cards'
+        desc: 'Generate, verify & print official library ID cards',
+        tag: 'Credentials'
     },
-    fees:          {
-        title: 'Fee Status',
+    fees: {
+        title: 'Fee Management',
         path: '/admin/fees',
         icon: IoCashOutline,
-        gradient: 'from-yellow-400 to-orange-500',
-        glow: 'rgba(245,158,11,0.25)',
-        bg: 'bg-yellow-50',
-        border: 'border-yellow-100',
-        iconColor: 'text-yellow-500',
-        desc: 'View & manage student fee records',
+        gradient: 'from-amber-400 to-orange-500',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200/80',
+        iconColor: 'text-amber-500',
+        desc: 'Collect monthly dues, view ledgers & receipts',
         tag: 'Finance'
     },
     notifications: {
-        title: 'Notifications',
+        title: 'Notice & Alerts',
         path: '/admin/notifications',
         icon: IoNotificationsOutline,
         gradient: 'from-pink-500 to-rose-500',
-        glow: 'rgba(244,63,94,0.25)',
         bg: 'bg-pink-50',
-        border: 'border-pink-100',
+        border: 'border-pink-200/80',
         iconColor: 'text-pink-500',
-        desc: 'Send announcements to students',
-        tag: 'Comms'
+        desc: 'Publish urgent library bulletins & broadcast alerts',
+        tag: 'Broadcast'
     },
-    requests:      {
+    requests: {
         title: 'Student Requests',
         path: '/admin/requests',
         icon: IoDocumentTextOutline,
         gradient: 'from-indigo-500 to-purple-600',
-        glow: 'rgba(99,102,241,0.25)',
         bg: 'bg-indigo-50',
-        border: 'border-indigo-100',
+        border: 'border-indigo-200/80',
         iconColor: 'text-indigo-500',
-        desc: 'Handle seat & shift change requests',
-        tag: 'Requests'
+        desc: 'Approve seat transfers, locker issues & requests',
+        tag: 'Approvals'
     },
-    vacant_seats:  {
-        title: 'Vacant Seats',
+    vacant_seats: {
+        title: 'Vacant Seats Matrix',
         path: '/admin/vacant-seats',
         icon: IoSearchOutline,
         gradient: 'from-emerald-500 to-teal-500',
-        glow: 'rgba(16,185,129,0.25)',
         bg: 'bg-emerald-50',
-        border: 'border-emerald-100',
+        border: 'border-emerald-200/80',
         iconColor: 'text-emerald-500',
-        desc: 'Browse all available seat slots',
-        tag: 'Seats'
+        desc: 'Real-time available desk availability across all rooms',
+        tag: 'Desk Matrix'
     },
 };
 
@@ -103,39 +97,43 @@ const ALL_PERMS = Object.keys(PERM_CARDS);
 
 const StatCard = ({ label, value, sub, badge, gradient, icon: Icon, delay = 0 }) => (
     <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        className="relative rounded-2xl p-3.5 sm:p-4 group flex flex-col justify-between overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay, duration: 0.35, ease: 'easeOut' }}
+        className="relative rounded-2xl p-4 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:-translate-y-1 group"
         style={{
             background: '#FFFFFF',
             border: '1.5px solid #EDE8E0',
-            boxShadow: '0 4px 20px rgba(180,120,60,0.07)'
+            boxShadow: '0 4px 20px rgba(180,120,60,0.06)'
         }}
     >
-        {/* top accent bar */}
+        {/* Top 3px Accent Gradient */}
         <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${gradient}`} />
 
-        {/* Header: Label & Icon */}
-        <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider truncate" style={{ color: '#9B7B5A' }}>{label}</p>
-            <div className={`p-1.5 sm:p-2 rounded-xl bg-gradient-to-br ${gradient} opacity-90 shadow-sm group-hover:scale-110 transition-transform duration-300 shrink-0`}>
-                <Icon size={14} className="text-white sm:w-4 sm:h-4" />
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#786D62]">
+                {label}
+            </span>
+            <div className={`p-2 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-sm group-hover:scale-105 transition-transform shrink-0`}>
+                <Icon size={15} />
             </div>
         </div>
 
         {/* Value */}
-        <div className="my-0.5">
-            <p className={`text-xl sm:text-2xl font-black bg-gradient-to-br ${gradient} bg-clip-text text-transparent leading-tight truncate`}>{value}</p>
+        <div className="my-1">
+            <p className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight leading-tight">
+                {value}
+            </p>
         </div>
 
-        {/* Bottom row: Sub content on left, Larger Today Income Badge on right */}
-        <div className="flex items-center justify-between gap-1 mt-1 text-[10px] sm:text-[11px] min-h-[22px] flex-wrap">
+        {/* Bottom Sub Info */}
+        <div className="flex items-center justify-between gap-1 mt-1 text-[11px] min-h-[22px] flex-wrap">
             {sub ? (
-                typeof sub === 'string' ? <p className="font-medium truncate" style={{ color: '#9B7B5A' }}>{sub}</p> : sub
-            ) : <div />}
+                typeof sub === 'string' ? <span className="font-semibold text-[#786D62]">{sub}</span> : sub
+            ) : <span />}
             {badge && (
-                <span className="text-xs sm:text-sm font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/80 shrink-0 ml-auto shadow-2xs">
+                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/90 shrink-0 ml-auto shadow-2xs">
                     {badge}
                 </span>
             )}
@@ -177,7 +175,7 @@ const SubAdminDashboard = () => {
             }
             setStats(s);
         } catch (e) {
-            console.error(e);
+            console.error('Failed to fetch sub-admin stats:', e);
         } finally {
             setLoadingStats(false);
             setRefreshing(false);
@@ -193,12 +191,12 @@ const SubAdminDashboard = () => {
     const greetingHour = currentTime.getHours();
     const greeting = greetingHour < 12 ? 'Good Morning' : greetingHour < 17 ? 'Good Afternoon' : 'Good Evening';
     const timeStr = currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-    const dateStr = currentTime.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dateStr = currentTime.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     if (loadingStats) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-                style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif" }}>
+                style={{ background: '#FAF6F0', fontFamily: "'DM Sans', 'Inter', sans-serif" }}>
                 <div className="fixed inset-0 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
                 <div className="relative flex flex-col items-center gap-5">
                     <div className="relative w-20 h-20">
@@ -217,10 +215,10 @@ const SubAdminDashboard = () => {
                         </div>
                     </div>
                     <div className="flex flex-col items-center gap-1 text-center">
-                        <h3 className="text-base font-black text-stone-900">
+                        <h3 className="text-base font-black text-[#0F172A]">
                             Sub-Admin Portal
                         </h3>
-                        <p className="text-xs font-medium text-stone-400">Loading module permissions & stats...</p>
+                        <p className="text-xs font-semibold text-[#786D62]">Loading authorized modules & ledger telemetry...</p>
                     </div>
                 </div>
             </div>
@@ -228,259 +226,379 @@ const SubAdminDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen relative" style={{ background: '#FAF6F0', fontFamily: "'Inter', sans-serif", color: '#0F172A' }}>
-            {/* ─── Dot Grid Background ─── */}
-            <div className="fixed inset-0 pointer-events-none -z-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.07) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
+        <div className="min-h-screen relative text-[#0F172A]" style={{ background: '#FAF6F0', fontFamily: "'DM Sans', 'Inter', sans-serif" }}>
+            <style>{`
+                @keyframes shimmer-ltr {
+                    0% { background-position: 0% center; }
+                    100% { background-position: -200% center; }
+                }
+                .dash-blob {
+                    position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0;
+                }
+                .dash-blob-1 {
+                    width: 500px; height: 500px; top: -120px; left: -150px; background: radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%);
+                }
+                .dash-blob-2 {
+                    width: 420px; height: 420px; top: 30%; right: -120px; background: radial-gradient(circle, rgba(251,146,60,0.05) 0%, transparent 70%);
+                }
+            `}</style>
 
-            {/* ─── Sticky Header ─── */}
-            <div className="sticky top-0 z-40 backdrop-blur-xl shadow-2xs" style={{ background: 'rgba(250,246,240,0.92)', borderBottom: '1.5px solid #EDE8E0' }}>
-                <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
-                    <img
-                        src="/app-icon-192.png"
-                        alt="Apna Lakshay"
-                        className="w-8 h-8 rounded-xl object-contain shadow-sm shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-widest leading-none" style={{ color: '#EA580C' }}>Sub Admin Panel</p>
-                        <p className="font-black text-sm truncate leading-tight mt-0.5" style={{ color: '#1A1A1A' }}>{user?.name}</p>
+            {/* Ambient Background Blobs */}
+            <div className="dash-blob dash-blob-1" />
+            <div className="dash-blob dash-blob-2" />
+
+            {/* Ambient Dot Grid */}
+            <div className="fixed inset-0 pointer-events-none z-0"
+                style={{
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.075) 1px, transparent 0)',
+                    backgroundSize: '28px 28px'
+                }}
+            />
+
+            {/* ══════════════════════════════════════════════════════════
+                PRIMARY TOP NAVIGATION BAR (Matching Primary Design)
+            ══════════════════════════════════════════════════════════ */}
+            <header className="sticky top-0 z-40 backdrop-blur-xl shadow-2xs"
+                style={{
+                    background: 'rgba(250, 246, 240, 0.94)',
+                    borderBottom: '1.5px solid #EDE8E0'
+                }}
+            >
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+                    {/* Brand Left */}
+                    <div className="flex items-center gap-3 select-none min-w-0">
+                        <img
+                            src="/app-icon-192.png"
+                            alt="Apna Lakshay"
+                            className="w-8 h-8 rounded-xl object-contain shadow-sm shrink-0"
+                        />
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-black text-base tracking-tight truncate hidden xs:inline-block" style={{
+                                background: 'linear-gradient(90deg, #ea580c 0%, #f97316 20%, #fb923c 40%, #f97316 70%, #ea580c 100%)',
+                                backgroundSize: '300% auto',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                animation: 'shimmer-ltr 3s linear infinite',
+                            }}>
+                                Apna Lakshay
+                            </span>
+                            <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200/90 text-orange-700 shrink-0">
+                                Sub-Admin Portal
+                            </span>
+                        </div>
                     </div>
-                    <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium mr-2" style={{ color: '#9B7B5A' }}>
-                        <IoTimeOutline size={13} />
-                        <span>{timeStr}</span>
+
+                    {/* Nav Right: Time HUD, Profile, Refresh & Logout */}
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        {/* Live Shift Clock HUD */}
+                        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#EDE8E0] bg-white/80 shadow-2xs text-[11px] font-bold text-[#786D62]">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>{timeStr}</span>
+                        </div>
+
+                        {/* Refresh Stats Button */}
+                        <button
+                            onClick={() => fetchStats(true)}
+                            className="p-2 rounded-xl text-stone-500 hover:text-orange-600 hover:bg-orange-50 transition-all cursor-pointer shadow-2xs"
+                            style={{ border: '1.5px solid #EDE8E0', background: '#FFFFFF' }}
+                            title="Refresh Dashboard Data"
+                        >
+                            <IoRefreshOutline size={17} className={refreshing ? 'animate-spin text-orange-500' : ''} />
+                        </button>
+
+                        {/* Profile Pill */}
+                        <div className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-xl bg-white border border-[#EDE8E0] shadow-2xs select-none">
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs text-orange-700 bg-orange-100 shrink-0 border border-orange-200">
+                                {initials}
+                            </div>
+                            <div className="hidden sm:block text-left min-w-0">
+                                <p className="text-xs font-black text-[#0F172A] truncate max-w-[130px] leading-tight">
+                                    {user?.name || 'Sub-Admin'}
+                                </p>
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-orange-600 leading-none">
+                                    Staff Panelist
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Logout Button (Triggers Universal Confirmation Modal) */}
+                        <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => logout()}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 bg-white hover:bg-rose-50 rounded-xl transition-all shadow-2xs cursor-pointer"
+                            style={{ border: '1.5px solid #FECACA' }}
+                            title="Log Out of Sub-Admin Portal"
+                        >
+                            <IoLogOutOutline size={16} />
+                            <span className="hidden sm:inline">Logout</span>
+                        </motion.button>
                     </div>
-                    <button
-                        onClick={() => fetchStats(true)}
-                        className="p-2 rounded-xl text-gray-500 hover:text-orange-600 hover:bg-orange-50 transition-all cursor-pointer"
-                        style={{ border: '1.5px solid #EDE8E0', background: '#FFFFFF' }}
-                        title="Refresh stats"
-                    >
-                        <IoRefreshOutline size={16} className={refreshing ? 'animate-spin text-orange-500' : ''} />
-                    </button>
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => logout()}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-white hover:bg-red-50 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
-                        style={{ border: '1.5px solid #FCA5A5' }}
-                        title="Log Out"
-                    >
-                        <IoLogOutOutline size={15} />
-                        <span className="hidden sm:inline">Logout</span>
-                    </motion.button>
                 </div>
-            </div>
+            </header>
 
-            <div className="max-w-3xl mx-auto px-4 py-4 sm:py-5 pb-24 space-y-5">
+            {/* ══════════════════════════════════════════════════════════
+                MAIN DASHBOARD CONTENT (max-w-6xl primary grid)
+            ══════════════════════════════════════════════════════════ */}
+            <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-28 space-y-6">
 
-                {/* ─── Hero Welcome Card (StudentDashboard Style) ─── */}
+                {/* ─── Hero Welcome Card (Primary Warm Architecture) ─── */}
                 <motion.div
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className="relative rounded-2xl overflow-hidden shadow-lg border border-white/20"
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    className="relative rounded-2xl p-5 sm:p-6 overflow-hidden transition-all"
                     style={{
-                        background: 'linear-gradient(135deg, #F97316 0%, #EA580C 60%, #C2410C 100%)',
-                        boxShadow: '0 10px 30px rgba(249,115,22,0.22)'
+                        background: '#FFFFFF',
+                        border: '1.5px solid #EDE8E0',
+                        boxShadow: '0 4px 24px rgba(180,120,60,0.07)'
                     }}
                 >
-                    {/* subtle decorative circles */}
-                    <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10 blur-xl" />
-                    <div className="absolute -bottom-8 -left-8 w-36 h-36 rounded-full bg-white/5 blur-2xl" />
+                    {/* Left Accent Bar */}
+                    <div
+                        className="absolute left-0 top-0 bottom-0 w-[4px] rounded-l-2xl"
+                        style={{ background: 'linear-gradient(180deg, #F97316, #FB923C, transparent)' }}
+                    />
 
-                    <div className="relative p-4 sm:p-5 flex items-center gap-3.5">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white font-black text-lg sm:text-xl shrink-0 shadow-md">
-                            {initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-white/80 text-[11px] font-semibold mb-0.5">{greeting} • {dateStr}</p>
-                            <h1 className="text-white font-black text-xl sm:text-2xl leading-tight truncate">
-                                {user?.name?.split(' ')[0]}!
-                            </h1>
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                <span className="text-[10px] font-bold px-2.5 py-0.5 bg-white/20 backdrop-blur-md text-white rounded-full border border-white/25">
-                                    {allowedCards.length} module{allowedCards.length !== 1 ? 's' : ''} active
-                                </span>
-                                {stats?.pendingRequests > 0 && (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 bg-red-900/40 text-white rounded-full border border-red-300/30 flex items-center gap-1">
-                                        <IoAlertCircleOutline size={10} />
-                                        {stats.pendingRequests} pending request{stats.pendingRequests !== 1 ? 's' : ''}
-                                    </span>
-                                )}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                            {/* Avatar Badge */}
+                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl text-white shadow-md shadow-orange-500/25 shrink-0"
+                                style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}>
+                                {initials}
                             </div>
+
+                            {/* Greeting & Meta */}
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                                        Sub-Admin Console
+                                    </span>
+                                    <span className="text-[11px] font-semibold text-[#786D62]">
+                                        {dateStr}
+                                    </span>
+                                </div>
+                                <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight truncate">
+                                    {greeting}, {user?.name?.split(' ')[0] || 'Staff'}!
+                                </h1>
+                                <p className="text-xs font-medium text-[#786D62] mt-0.5">
+                                    You have authorization for <span className="font-bold text-[#0F172A]">{allowedCards.length} module{allowedCards.length !== 1 ? 's' : ''}</span> in the library system.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Status Badges on Right */}
+                        <div className="flex items-center gap-2 flex-wrap self-stretch sm:self-auto justify-end">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/90 text-emerald-800 text-xs font-bold shadow-2xs">
+                                <IoCheckmarkCircle size={15} className="text-emerald-600" />
+                                <span>{allowedCards.length} Active Modules</span>
+                            </div>
+
+                            {stats?.pendingRequests > 0 && (
+                                <Link
+                                    to="/admin/requests"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200/90 text-rose-800 text-xs font-bold shadow-2xs hover:bg-rose-100 transition-colors"
+                                >
+                                    <IoAlertCircleOutline size={15} className="text-rose-600" />
+                                    <span>{stats.pendingRequests} Pending Requests</span>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </motion.div>
 
-                {/* ─── Stats Grid ─── */}
-                {loadingStats ? (
-                    <div className="grid grid-cols-2 gap-3">
-                        {[...Array(2)].map((_, i) => (
-                            <div key={i} className="h-24 rounded-2xl animate-pulse" style={{ background: "#FFFFFF", border: "1.5px solid #EDE8E0" }} />
-                        ))}
-                    </div>
-                ) : stats && (
-                    <div className="grid grid-cols-2 gap-3">
-                        <StatCard
-                            label="Seats Occupied"
-                            value={`${stats.occupiedSeats}/${stats.totalSeats}`}
-                            sub={
-                                <div className="flex items-center gap-1 flex-wrap">
-                                    <span className="font-bold text-sky-600 bg-sky-50 border border-sky-200/70 px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px]">
-                                        AC: {stats.acVacantSeats || 0}
-                                    </span>
-                                    <span className="font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/70 px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px]">
-                                        Non-AC: {stats.nonAcVacantSeats || 0}
-                                    </span>
-                                </div>
-                            }
-                            gradient="from-emerald-500 to-teal-500"
-                            icon={IoBedOutline}
-                            delay={0.05}
-                        />
-                        <StatCard
-                            label="Fees Collected"
-                            value={`₹${(stats.feesCollected || 0).toLocaleString('en-IN')}`}
-                            badge={`+₹${(stats.todayFeesCollected || 0).toLocaleString('en-IN')}`}
-                            gradient="from-yellow-400 to-orange-500"
-                            icon={IoCashOutline}
-                            delay={0.10}
-                        />
-                    </div>
-                )}
+                {/* ─── Executive Operational Metrics (4-Card Primary Grid) ─── */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                    <StatCard
+                        label="Seats Occupied"
+                        value={`${stats?.occupiedSeats || 0} / ${stats?.totalSeats || 0}`}
+                        sub={
+                            <div className="flex items-center gap-1 flex-wrap">
+                                <span className="font-bold text-sky-700 bg-sky-50 border border-sky-200/80 px-1.5 py-0.2 rounded text-[10px]">
+                                    AC: {stats?.acVacantSeats ?? 0}
+                                </span>
+                                <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded text-[10px]">
+                                    Non-AC: {stats?.nonAcVacantSeats ?? 0}
+                                </span>
+                            </div>
+                        }
+                        gradient="from-emerald-500 to-teal-500"
+                        icon={IoBedOutline}
+                        delay={0.05}
+                    />
 
-                {/* ─── Module Grid ─── */}
-                {allowedCards.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm"
-                    >
-                        <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mx-auto mb-4">
-                            <IoShieldCheckmarkOutline size={28} className="text-gray-300" />
+                    <StatCard
+                        label="Fees Collected"
+                        value={`₹${(stats?.feesCollected || 0).toLocaleString('en-IN')}`}
+                        badge={`+₹${(stats?.todayFeesCollected || 0).toLocaleString('en-IN')}`}
+                        gradient="from-amber-400 to-orange-500"
+                        icon={IoCashOutline}
+                        delay={0.10}
+                    />
+
+                    <StatCard
+                        label="Today Check-ins"
+                        value={(stats?.todayAttendance || 0).toLocaleString('en-IN')}
+                        badge={`${stats?.currentlyCheckedIn || 0} Inside`}
+                        gradient="from-orange-500 to-rose-500"
+                        icon={IoCalendarOutline}
+                        delay={0.15}
+                    />
+
+                    <StatCard
+                        label="Available Desks"
+                        value={(stats?.vacantSeats || 0).toLocaleString('en-IN')}
+                        badge="Ready"
+                        gradient="from-blue-500 to-indigo-600"
+                        icon={IoSearchOutline}
+                        delay={0.20}
+                    />
+                </div>
+
+                {/* ─── Module Directory: Primary Warm Cards Grid ─── */}
+                <section className="space-y-4">
+                    {/* Section Header */}
+                    <div className="flex items-center justify-between gap-3 px-1">
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-orange-100 text-orange-600">
+                                <IoGridOutline size={16} />
+                            </div>
+                            <h2 className="text-sm font-black uppercase tracking-wider text-[#0F172A]">
+                                Accessible Modules
+                            </h2>
                         </div>
-                        <p className="text-gray-700 font-bold text-lg">No permissions assigned</p>
-                        <p className="text-gray-400 text-sm mt-1">Ask the super admin to grant module access.</p>
-                    </motion.div>
-                ) : (
-                    <div className="space-y-4">
+                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700">
+                            {allowedCards.length} Enabled
+                        </span>
+                    </div>
 
-                        {/* Section label */}
-                        <div className="flex items-center gap-2 px-1">
-                            <IoGridOutline size={14} style={{ color: '#9B7B5A' }} />
-                            <p className="text-xs font-black uppercase tracking-widest" style={{ color: '#9B7B5A' }}>Your Modules</p>
-                            <div className="flex-1 h-px" style={{ background: '#EDE8E0' }} />
-                            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full" style={{ color: '#EA580C', background: '#F5F0EA', border: '1px solid #FDDCAE' }}>
-                                {allowedCards.length} accessible
-                            </span>
+                    {allowedCards.length === 0 ? (
+                        <div className="text-center py-16 bg-white rounded-2xl border border-[#EDE8E0] shadow-sm">
+                            <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center mx-auto mb-3 text-orange-500">
+                                <IoShieldCheckmarkOutline size={26} />
+                            </div>
+                            <h3 className="text-base font-black text-[#0F172A]">No Modules Assigned</h3>
+                            <p className="text-xs text-[#786D62] mt-1">Please ask the Super Admin to grant your sub-admin account role permissions.</p>
                         </div>
-
-                        {/* Cards — 2 column grid on sm+ */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {allowedCards.map((card, i) => (
                                 <motion.div
                                     key={card.path}
-                                    initial={{ opacity: 0, y: 20, scale: 0.96 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ delay: 0.05 + i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                                    initial={{ opacity: 0, y: 16 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.04 * i, duration: 0.3 }}
                                 >
                                     <Link
                                         to={card.path}
-                                        className="flex items-center gap-4 rounded-2xl p-4 transition-all duration-300 group active:scale-[0.98] relative overflow-hidden hover:-translate-y-0.5"
-                                        style={{
-                                            background: '#FFFFFF',
-                                            border: '1.5px solid #EDE8E0',
-                                            boxShadow: '0 4px 20px rgba(180,120,60,0.07)'
-                                        }}
+                                        className="relative flex flex-col justify-between rounded-2xl p-5 bg-white border border-[#EDE8E0] shadow-2xs hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group overflow-hidden block h-full"
                                     >
-                                        {/* subtle gradient hover bg */}
-                                        <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 rounded-2xl`} />
+                                        {/* Top Accent Line */}
+                                        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.gradient}`} />
 
-                                        {/* Icon */}
-                                        <div
-                                            className={`w-12 h-12 shrink-0 rounded-xl flex items-center justify-center ${card.bg} ${card.border} border transition-all duration-300 group-hover:scale-110 group-hover:shadow-md`}
-                                        >
-                                            <card.icon size={22} className={card.iconColor} />
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <p className="font-black text-sm leading-tight" style={{ color: '#1A1A1A' }}>{card.title}</p>
-                                                <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-gradient-to-r ${card.gradient} text-white opacity-90`}>
+                                        {/* Top Card Row: Icon & Tag */}
+                                        <div>
+                                            <div className="flex items-start justify-between gap-3 mb-3.5">
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.bg} ${card.border} border shadow-2xs group-hover:scale-105 transition-transform shrink-0`}>
+                                                    <card.icon size={22} className={card.iconColor} />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200 group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-700 transition-colors">
                                                     {card.tag}
                                                 </span>
                                             </div>
-                                            <p className="text-xs leading-tight line-clamp-1" style={{ color: '#9B7B5A' }}>{card.desc}</p>
+
+                                            {/* Title & Desc */}
+                                            <h3 className="font-black text-base text-[#0F172A] group-hover:text-orange-600 transition-colors leading-tight mb-1">
+                                                {card.title}
+                                            </h3>
+                                            <p className="text-xs text-[#786D62] leading-relaxed line-clamp-2">
+                                                {card.desc}
+                                            </p>
                                         </div>
 
-                                        {/* Arrow */}
-                                        <div className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300" style={{ background: '#F5F0EA', border: '1px solid #EDE8E0' }}>
-                                            <IoChevronForwardOutline size={13} style={{ color: '#9B7B5A' }} className="group-hover:translate-x-0.5 transition-transform duration-300" />
+                                        {/* Bottom Action Footer */}
+                                        <div className="pt-4 mt-4 border-t border-[#F5EFE6] flex items-center justify-between">
+                                            <span className="text-[11px] font-bold text-orange-600 group-hover:text-orange-700 transition-colors flex items-center gap-1">
+                                                Launch Module
+                                            </span>
+                                            <div className="w-7 h-7 rounded-lg bg-[#FAF6F0] border border-[#EDE8E0] group-hover:bg-orange-500 group-hover:text-white group-hover:border-orange-500 transition-all flex items-center justify-center text-stone-500 shadow-2xs">
+                                                <IoArrowForward size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                                            </div>
                                         </div>
                                     </Link>
                                 </motion.div>
                             ))}
                         </div>
+                    )}
+                </section>
 
-                        {/* ─── Locked Modules ─── */}
-                        {lockedCards.length > 0 && (
-                            <div className="space-y-3 pt-2">
-                                <div className="flex items-center gap-2 px-1">
-                                    <IoLockClosedOutline size={13} style={{ color: '#9B7B5A' }} />
-                                    <p className="text-xs font-black uppercase tracking-widest" style={{ color: '#9B7B5A' }}>Locked Modules</p>
-                                    <div className="flex-1 h-px" style={{ background: '#EDE8E0' }} />
+                {/* ─── Locked Modules Section (Clear, Scoped & Non-Intrusive) ─── */}
+                {lockedCards.length > 0 && (
+                    <section className="space-y-3 pt-2">
+                        <div className="flex items-center gap-2 px-1 text-[#786D62]">
+                            <IoLockClosedOutline size={14} />
+                            <h3 className="text-xs font-black uppercase tracking-wider">
+                                Locked Modules (Requires Clearance)
+                            </h3>
+                            <div className="flex-1 h-px bg-[#EDE8E0]" />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {lockedCards.map((card) => (
+                                <div
+                                    key={card.path}
+                                    className="flex items-center gap-3 p-3.5 rounded-2xl select-none"
+                                    style={{
+                                        background: '#F5EFE6',
+                                        border: '1.5px solid #EDE8E0'
+                                    }}
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-stone-200/80 border border-stone-300/80 flex items-center justify-center shrink-0 text-stone-500 grayscale opacity-60">
+                                        <card.icon size={18} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="font-bold text-xs text-stone-600 truncate">{card.title}</p>
+                                            <IoLockClosedOutline size={12} className="text-stone-400 shrink-0" />
+                                        </div>
+                                        <p className="text-[10px] text-stone-500 mt-0.5">Contact Super Admin for clearance</p>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {lockedCards.map((card, i) => (
-                                        <motion.div
-                                            key={card.path}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ delay: 0.3 + i * 0.04 }}
-                                            className="flex items-center gap-3 rounded-2xl px-4 py-3 select-none"
-                                            style={{
-                                                background: '#F5F0EA',
-                                                border: '1.5px solid #EDE8E0'
-                                            }}
-                                        >
-                                            <div className={`w-9 h-9 rounded-xl ${card.bg} border ${card.border} flex items-center justify-center shrink-0 grayscale opacity-40`}>
-                                                <card.icon size={16} className={card.iconColor} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-bold text-xs leading-tight" style={{ color: '#6B6560' }}>{card.title}</p>
-                                                <p className="text-[10px] mt-0.5" style={{ color: '#9B7B5A' }}>Contact admin for access</p>
-                                            </div>
-                                            <IoLockClosedOutline size={13} style={{ color: '#9B7B5A' }} className="shrink-0" />
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    </section>
                 )}
 
-                {/* ─── Quick Tips footer ─── */}
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="rounded-2xl px-5 py-4 flex items-center gap-3"
+                {/* ─── Enterprise Security & System Telemetry Footer ─── */}
+                <div
+                    className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     style={{
                         background: '#FFFFFF',
                         border: '1.5px solid #EDE8E0',
-                        boxShadow: '0 4px 20px rgba(180,120,60,0.07)'
+                        boxShadow: '0 4px 20px rgba(180,120,60,0.06)'
                     }}
                 >
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/20" style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}>
-                        <IoStatsChartOutline size={15} className="text-white" />
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-orange-600 bg-orange-50 border border-orange-200 shrink-0 shadow-2xs">
+                            <IoShieldCheckmarkOutline size={18} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-[#0F172A] leading-tight">
+                                Enterprise Session &amp; Action Audit Active
+                            </p>
+                            <p className="text-[11px] font-medium text-[#786D62] mt-0.5">
+                                All attendance entries, fee collections and records marked are cryptographically tied to your staff account.
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-xs font-bold" style={{ color: '#1A1A1A' }}>Stats refresh automatically</p>
-                        <p className="text-[11px] mt-0.5" style={{ color: '#9B7B5A' }}>Use the refresh button in the header to get latest data at any time.</p>
-                    </div>
-                </motion.div>
 
-            </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#FAF6F0] border border-[#EDE8E0] text-[10px] font-bold text-[#786D62] shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Live Database Sync</span>
+                    </div>
+                </div>
+
+            </main>
         </div>
     );
 };

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
+import LogoutConfirmationModal from '../components/ui/LogoutConfirmationModal';
 
 const AuthContext = createContext();
 
@@ -65,7 +66,28 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); };
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    const executeLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.clear();
+        setUser(null);
+        setShowLogoutModal(false);
+        window.location.href = '/login';
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutModal(false);
+    };
+
+    const logout = (force = false) => {
+        if (force === true) {
+            executeLogout();
+        } else {
+            setShowLogoutModal(true);
+        }
+    };
 
     const updateUser = (userData) => {
         setUser((prevUser) => {
@@ -90,11 +112,22 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user, setUser, loading, systemStatus, forceDoubtBoard,
         isSubAdminVerified, setSubAdminVerified,
-        checkSystemStatus, checkAuth, login, logout, updateUser,
+        checkSystemStatus, checkAuth, login, logout,
+        executeLogout, cancelLogout, promptLogout: () => setShowLogoutModal(true),
+        updateUser,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         isSubAdmin: user?.role === 'subadmin',
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+            <LogoutConfirmationModal
+                isOpen={showLogoutModal}
+                onClose={cancelLogout}
+                onConfirm={executeLogout}
+            />
+        </AuthContext.Provider>
+    );
 };

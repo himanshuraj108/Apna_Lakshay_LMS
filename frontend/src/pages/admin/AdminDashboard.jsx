@@ -568,7 +568,6 @@ const AdminDashboard = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
     };
 
     /* ── AI Assistant Query Handlers ───────────────────────── */
@@ -841,21 +840,9 @@ const AdminDashboard = () => {
     const minutes = currentTime.getMinutes();
     const seconds = currentTime.getSeconds();
 
-    const activeShiftName = hours >= 6 && hours < 14
-        ? 'Morning Shift'
-        : hours >= 14 && hours < 18
-            ? 'Afternoon Shift'
-            : hours >= 18 && hours < 23
-                ? 'Evening Shift'
-                : 'Night Shift';
-
-    const activeShiftTimings = hours >= 6 && hours < 14
-        ? '06:00 AM – 02:00 PM'
-        : hours >= 14 && hours < 18
-            ? '02:00 PM – 06:00 PM'
-            : hours >= 18 && hours < 23
-                ? '06:00 PM – 11:00 PM'
-                : '11:00 PM – 06:00 AM';
+    const isLibraryOpen = hours >= 6 && hours < 21;
+    const libraryStatusText = isLibraryOpen ? 'Library Open' : 'Library Closed';
+    const libraryTimingsText = '06:00 AM – 09:00 PM';
 
     const formattedDigitalTime = currentTime.toLocaleTimeString('en-IN', {
         hour: '2-digit',
@@ -1582,14 +1569,22 @@ const AdminDashboard = () => {
 
                                 {/* Active Shift & Digital Time Details */}
                                 <div className="flex flex-col justify-center min-w-0">
-                                    {/* Active Shift Tag */}
+                                    {/* Operating Status Tag */}
                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-extrabold tracking-wide">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                                            <span>{activeShiftName}</span>
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${
+                                            isLibraryOpen
+                                                ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300'
+                                                : 'bg-rose-500/15 border border-rose-400/30 text-rose-300'
+                                        } text-[11px] font-extrabold tracking-wide`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                isLibraryOpen
+                                                    ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]'
+                                                    : 'bg-rose-400'
+                                            }`} />
+                                            <span>{libraryStatusText}</span>
                                         </span>
-                                        <span className="text-[10px] font-semibold text-stone-400">
-                                            {activeShiftTimings}
+                                        <span className="text-[11px] font-bold text-amber-300">
+                                            6:00 AM – 9:00 PM Open
                                         </span>
                                     </div>
 
@@ -1600,12 +1595,14 @@ const AdminDashboard = () => {
                                         </span>
                                     </div>
 
-                                    {/* Date & Campus Roster Subtitle */}
-                                    <p className="text-[11px] font-medium text-stone-300 mt-0.5 flex items-center gap-1.5">
-                                        <IoCalendarOutline size={12} className="text-amber-400" />
+                                    {/* Date & Schedule Subtitle */}
+                                    <p className="text-[11px] font-medium text-stone-300 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                        <IoCalendarOutline size={12} className="text-amber-400 shrink-0" />
                                         <span>{formattedFullDate}</span>
                                         <span className="text-stone-500">·</span>
-                                        <span className="text-[10px] text-stone-400 font-semibold">Live Campus Roster</span>
+                                        <span className="text-[10px] text-stone-400 font-semibold">
+                                            {isLibraryOpen ? 'Open 6 AM to 9 PM (Closed after 9 PM · Every 7 Days)' : 'Closed after 9 PM · Opens at 6 AM (Every 7 Days)'}
+                                        </span>
                                     </p>
                                 </div>
                             </div>
