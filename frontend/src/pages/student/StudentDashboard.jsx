@@ -442,15 +442,8 @@ const AttendanceResultCard = ({ result, onClose, forceDoubtBoard }) => {
                         )}
                     </div>
 
-                    {forceDoubtBoard && (
-                        <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold mb-4 animate-pulse">
-                            <IoSparklesOutline size={14} className="text-orange-500" />
-                            <span>Opening AI Doubt Board...</span>
-                        </div>
-                    )}
-
                     <button onClick={onClose} className="w-full py-3 rounded-xl font-bold text-white text-sm hover:opacity-90 active:scale-95 transition-all" style={{ background: theme.iconBg }}>
-                        {forceDoubtBoard ? 'Continue to Doubt Board →' : 'Dismiss'}
+                        Dismiss
                     </button>
 
                 </div>
@@ -787,9 +780,6 @@ const StudentDashboard = () => {
 
     const handleDismissAttendanceResult = () => {
         setAttendanceResult(null);
-        if (forceDoubtBoard) {
-            navigate('/student/doubt');
-        }
     };
 
     const markAttendanceSuccess = (data) => {
@@ -805,14 +795,6 @@ const StudentDashboard = () => {
         if (isNew) {
             bustCache('dashboard');
             fetchDashboardData();
-        }
-
-        // When admin ON that (forceDoubtBoard), automatically open Doubt board after marking attendance
-        if (forceDoubtBoard) {
-            setTimeout(() => {
-                setAttendanceResult(null);
-                navigate('/student/doubt');
-            }, 1600);
         }
     };
 

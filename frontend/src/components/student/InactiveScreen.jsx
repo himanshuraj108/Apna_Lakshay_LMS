@@ -1,218 +1,144 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
-    IoLibraryOutline, IoLogOutOutline, IoCallOutline,
-    IoCheckmarkCircle, IoTrophyOutline, IoFlashOutline,
-    IoRocketOutline, IoTimeOutline, IoLockClosedOutline
+    IoLockClosedOutline, IoCallOutline, IoLogOutOutline,
+    IoTimeOutline, IoShieldCheckmarkOutline, IoDocumentTextOutline,
+    IoAlertCircleOutline, IoPersonOutline
 } from 'react-icons/io5';
 
-const STYLE = `
-@keyframes orb-drift1 {
-    0%,100%{transform:translate(0,0) scale(1);}
-    50%{transform:translate(40px,-50px) scale(1.08);}
-}
-@keyframes orb-drift2 {
-    0%,100%{transform:translate(0,0) scale(1);}
-    50%{transform:translate(-40px,35px) scale(0.94);}
-}
-@keyframes shimmer-title {
-    0%{background-position:200% center;}
-    100%{background-position:-200% center;}
-}
-@keyframes spin-slow {from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-@keyframes pulse-dot {0%,100%{opacity:0.5;}50%{opacity:1;}}
-.inactive-shimmer {
-    background:linear-gradient(90deg,#f59e0b,#ef4444,#ec4899,#a855f7,#f59e0b);
-    background-size:300% auto;
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-    animation:shimmer-title 5s linear infinite;
-}
-.cta-glow {
-    box-shadow:0 4px 28px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.15);
-}
-`;
-
-const Feature = ({ icon: Icon, text, color, delay }) => (
-    <motion.div
-        initial={{ opacity: 0, x: -14 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay, duration: 0.32 }}
-        className="flex items-center gap-2.5 py-2 px-3 rounded-xl"
-        style={{ background: `${color}0c`, border: `1px solid ${color}1e` }}
-    >
-        <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: `${color}18` }}>
-            <Icon size={12} style={{ color }} />
-        </div>
-        <span className="text-xs font-bold text-gray-700 leading-tight">{text}</span>
-        <IoCheckmarkCircle size={12} className="ml-auto shrink-0" style={{ color }} />
-    </motion.div>
-);
-
 const InactiveScreen = ({ user, onLogout }) => {
-    const firstName = user?.name?.split(' ')[0] || 'Student';
+    const isAwaited = user?.inactivationStatus === 'awaited';
+    const fullName = user?.name || 'Scholar';
+    const studentId = user?.studentId || user?.enrollmentNumber || user?._id?.toString().slice(-6).toUpperCase() || 'N/A';
+    const contact = user?.mobile || user?.phoneNumber || user?.email || 'N/A';
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            style={{ background: '#f8fafc', overflow: 'hidden' }}>
-            <style>{STYLE}</style>
-
-            {/* Ambient orbs */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] left-[-8%] w-[500px] h-[500px] rounded-full blur-[120px]"
-                    style={{ background: 'rgba(245,158,11,0.15)', animation: 'orb-drift1 20s ease-in-out infinite' }} />
-                <div className="absolute bottom-[-10%] right-[-8%] w-[450px] h-[450px] rounded-full blur-[110px]"
-                    style={{ background: 'rgba(168,85,247,0.15)', animation: 'orb-drift2 26s ease-in-out infinite' }} />
-                <div className="absolute inset-0"
-                    style={{ backgroundImage: 'radial-gradient(circle at 1px 1px,rgba(0,0,0,0.05) 1px,transparent 0)', backgroundSize: '48px 48px' }} />
-            </div>
-
-            {/* Card */}
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+            style={{
+                backgroundColor: '#FAF6F0',
+                backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.08) 1px, transparent 0)',
+                backgroundSize: '28px 28px'
+            }}
+        >
             <motion.div
-                initial={{ opacity: 0, scale: 0.94, y: 20 }}
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 210, damping: 22 }}
-                className="relative z-10 w-full"
-                style={{ maxWidth: 420 }}
+                transition={{ duration: 0.28, ease: 'easeOut' }}
+                className="relative z-10 w-full max-w-lg my-auto"
             >
-                {/* Glow border */}
-                <div className="absolute -inset-[1px] rounded-3xl opacity-30"
-                    style={{
-                        background: 'linear-gradient(135deg,rgba(245,158,11,0.5),rgba(236,72,153,0.3),rgba(168,85,247,0.4))',
-                        filter: 'blur(2px)'
-                    }} />
+                <div className="bg-white border border-[#EDE8E0] rounded-3xl shadow-xl overflow-hidden">
+                    {/* Top Status Border */}
+                    <div className={`h-1.5 w-full ${isAwaited ? 'bg-amber-500' : 'bg-rose-500'}`} />
 
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl"
-                    style={{ background: '#ffffff' }}>
+                    <div className="p-6 sm:p-8">
+                        {/* Status Icon & Header */}
+                        <div className="flex flex-col items-center text-center mb-6">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
+                                isAwaited ? 'bg-amber-500/10 text-amber-600 border border-amber-200' : 'bg-rose-500/10 text-rose-600 border border-rose-200'
+                            }`}>
+                                {isAwaited ? <IoTimeOutline size={28} /> : <IoLockClosedOutline size={28} />}
+                            </div>
 
-                    {/* Top bar */}
-                    <div className="h-[3px]"
-                        style={{ background: 'linear-gradient(90deg,#f59e0b,#ef4444,#ec4899,#a855f7)' }} />
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2 border">
+                                {isAwaited ? (
+                                    <span className="text-amber-700 bg-amber-50 border-amber-200">
+                                        Inactivation Awaiting Approval
+                                    </span>
+                                ) : (
+                                    <span className="text-rose-700 bg-rose-50 border-rose-200">
+                                        Account Inactive
+                                    </span>
+                                )}
+                            </div>
 
-                    {/* ── Hero ── */}
-                    <div className="px-7 pt-7 pb-5 text-center"
-                        style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                            <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
+                                {isAwaited ? 'Status: Awaiting Review' : 'Membership Inactive'}
+                            </h1>
+                            <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-sm leading-relaxed">
+                                {isAwaited
+                                    ? 'A sub-admin has requested inactivation for your scholar profile. Your previous desk was released and is pending Super Admin review.'
+                                    : 'Your library membership is currently paused. Physical desk access, attendance, and study tools are temporarily locked.'}
+                            </p>
+                        </div>
 
-                        {/* Icon — smaller, contained */}
-                        <div className="relative w-16 h-16 mx-auto mb-4">
-                            <div className="absolute inset-0 rounded-full"
-                                style={{ border: '1.5px dashed rgba(245,158,11,0.4)', animation: 'spin-slow 10s linear infinite' }} />
-                            <div className="absolute inset-[5px] rounded-full flex items-center justify-center bg-white"
-                                style={{
-                                    border: '1px solid rgba(245,158,11,0.3)',
-                                    boxShadow: '0 0 20px rgba(245,158,11,0.2)'
-                                }}>
-                                <IoLockClosedOutline size={22} className="text-amber-500" />
+                        {/* Scholar Snapshot Card */}
+                        <div className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-2xl p-4 mb-5">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-3">
+                                Scholar Information
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                    <span className="text-stone-500 block text-[11px]">Name</span>
+                                    <span className="font-bold text-[#0F172A] truncate block">{fullName}</span>
+                                </div>
+                                <div>
+                                    <span className="text-stone-500 block text-[11px]">Scholar ID</span>
+                                    <span className="font-mono font-bold text-stone-800 block">{studentId}</span>
+                                </div>
+                                <div>
+                                    <span className="text-stone-500 block text-[11px]">Contact</span>
+                                    <span className="font-mono text-stone-700 block truncate">{contact}</span>
+                                </div>
+                                <div>
+                                    <span className="text-stone-500 block text-[11px]">Membership</span>
+                                    <span className={`font-bold block ${isAwaited ? 'text-amber-600' : 'text-rose-600'}`}>
+                                        {isAwaited ? 'Pending Review' : 'Inactive'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Status pill */}
-                        <motion.div
-                            initial={{ scale: 0.75, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: 0.22, type: 'spring', stiffness: 280, damping: 18 }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3"
-                            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.26)' }}
-                        >
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0"
-                                style={{ animation: 'pulse-dot 1.8s ease-in-out infinite' }} />
-                            <span className="text-red-400 text-[10px] font-bold uppercase tracking-widest">Account Inactive</span>
-                        </motion.div>
+                        {/* Notice Boxes */}
+                        <div className="space-y-2.5 mb-6">
+                            <div className="flex items-start gap-3 p-3 rounded-xl bg-stone-50 border border-stone-200/80">
+                                <IoShieldCheckmarkOutline size={18} className="text-emerald-600 shrink-0 mt-0.5" />
+                                <div className="text-xs text-stone-700 leading-snug">
+                                    <span className="font-bold text-[#0F172A] block">Records Preserved</span>
+                                    All your previous attendance history, mock test credits, and fee receipts are safely preserved.
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3 p-3 rounded-xl bg-orange-50/50 border border-orange-200/60">
+                                <IoAlertCircleOutline size={18} className="text-orange-600 shrink-0 mt-0.5" />
+                                <div className="text-xs text-stone-700 leading-snug">
+                                    <span className="font-bold text-[#0F172A] block">Reactivation</span>
+                                    To restore your desk allocation and resume study sessions, please contact administration.
+                                </div>
+                            </div>
+                        </div>
 
-                        {/* Greeting */}
-                        <motion.h1
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.18 }}
-                            className="text-2xl font-black text-gray-900 mb-1.5"
-                        >
-                            Hi {firstName}! 👋
-                        </motion.h1>
+                        {/* Action Buttons */}
+                        <div className="space-y-2.5">
+                            <motion.a
+                                href="https://www.apnalakshay.com/contact"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer"
+                            >
+                                <IoCallOutline size={15} />
+                                <span>Contact Administration</span>
+                            </motion.a>
 
-                        <motion.p
-                            initial={{ opacity: 0, y: 6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.26 }}
-                            className="text-sm font-bold mb-2.5 inactive-shimmer"
-                        >
-                            Your membership is currently paused.
-                        </motion.p>
-
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.33 }}
-                            className="text-gray-500 text-xs leading-relaxed"
-                        >
-                            Your account has been deactivated. Contact the admin
-                            to restore access to your seat, attendance and study tools.
-                        </motion.p>
-                    </div>
-
-                    {/* ── Features ── */}
-                    <div className="px-7 py-4 bg-gray-50/50"
-                        style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-2.5">
-                            What you get on re-activation
-                        </p>
-                        <div className="flex flex-col gap-1.5">
-                            {[
-                                { icon: IoTrophyOutline, text: 'Access to your assigned seat & shift',       color: '#f59e0b', delay: 0.40 },
-                                { icon: IoFlashOutline,  text: 'AI doubt solving & mock test generator',     color: '#a855f7', delay: 0.46 },
-                                { icon: IoRocketOutline, text: 'Attendance tracking & monthly reports',      color: '#3b82f6', delay: 0.52 },
-                                { icon: IoLibraryOutline,text: 'All previous data preserved and restored',   color: '#10b981', delay: 0.58 },
-                            ].map((f, i) => <Feature key={i} {...f} />)}
+                            <motion.button
+                                onClick={onLogout}
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-stone-50 border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            >
+                                <IoLogOutOutline size={15} />
+                                <span>Sign Out</span>
+                            </motion.button>
                         </div>
                     </div>
 
-                    {/* ── CTA ── */}
-                    <div className="px-7 py-5">
-                        <motion.a
-                            href="https://www.apnalakshay.com/contact"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.66, type: 'spring', stiffness: 240, damping: 20 }}
-                            whileHover={{ scale: 1.025, y: -1 }}
-                            whileTap={{ scale: 0.97 }}
-                            className="cta-glow w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white mb-2.5"
-                            style={{
-                                background: 'linear-gradient(135deg,#d97706,#ef4444)',
-                                textDecoration: 'none',
-                                display: 'flex',
-                            }}
-                        >
-                            <IoCallOutline size={16} />
-                            Contact Admin to Re-Activate
-                        </motion.a>
-
-                        <motion.button
-                            onClick={onLogout}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.74 }}
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.97 }}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                            style={{ border: '1px solid rgba(0,0,0,0.08)' }}
-                        >
-                            <IoLogOutOutline size={13} />
-                            Sign Out
-                        </motion.button>
-
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.82 }}
-                            className="text-center text-[10px] text-gray-600 mt-3.5 flex items-center justify-center gap-1"
-                        >
-                            <IoTimeOutline size={11} />
-                            Your attendance history and data are fully preserved
-                        </motion.p>
+                    {/* Footer */}
+                    <div className="px-6 py-3 bg-[#FAF6F0] border-t border-[#EDE8E0] text-center">
+                        <p className="text-[11px] text-stone-500 font-medium">
+                            Apna Lakshay Library Management System
+                        </p>
                     </div>
-
                 </div>
             </motion.div>
         </div>

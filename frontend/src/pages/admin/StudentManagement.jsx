@@ -103,6 +103,33 @@ const StudentManagement = () => {
     const [swapStudentId2, setSwapStudentId2] = useState('');
     const [swapLoading, setSwapLoading] = useState(false);
 
+    // Sub-Admin Inactivation Modal States & Countdown
+    const [showSubAdminInactiveModal, setShowSubAdminInactiveModal] = useState(false);
+    const [subAdminInactiveStudent, setSubAdminInactiveStudent] = useState(null);
+    const [subAdminInactiveLoading, setSubAdminInactiveLoading] = useState(false);
+    const [inactiveCountdown, setInactiveCountdown] = useState(3);
+
+    useEffect(() => {
+        let timer;
+        if (showSubAdminInactiveModal) {
+            setInactiveCountdown(3);
+            timer = setInterval(() => {
+                setInactiveCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        } else {
+            setInactiveCountdown(3);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [showSubAdminInactiveModal]);
+
     // Bulk Fee Update States
     const [acFilter, setAcFilter] = useState('all');
     const [floorFilter, setFloorFilter] = useState('all');
@@ -237,12 +264,31 @@ const StudentManagement = () => {
     const handleReactivate = async (student) => {
         if (window.confirm(`Are you sure you want to reactivate ${student.name}?`)) {
             try {
-                await api.put(`/admin/students/${student._id}`, { isActive: true });
+                await api.put(`/admin/students/${student._id}`, { isActive: true, inactivationStatus: 'none' });
                 setSuccess('Student reactivated successfully');
                 fetchStudents();
             } catch (err) {
                 setError('Failed to reactivate student');
             }
+        }
+    };
+
+    const handleSubAdminInactivate = async () => {
+        if (!subAdminInactiveStudent) return;
+        setSubAdminInactiveLoading(true);
+        setError('');
+        try {
+            const res = await api.post(`/admin/students/${subAdminInactiveStudent._id}/inactivate-request`);
+            if (res.data.success) {
+                setSuccess(res.data.message || 'Scholar marked inactive (awaited). Request routed to Super Admin.');
+                setShowSubAdminInactiveModal(false);
+                setSubAdminInactiveStudent(null);
+                fetchStudents();
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to submit student inactivation request');
+        } finally {
+            setSubAdminInactiveLoading(false);
         }
     };
 
@@ -1376,7 +1422,7 @@ const StudentManagement = () => {
                         </div>
 
                         {/* Top Action Buttons */}
-                        {activeTab !== 'id-cards' && (
+                        {activeTab !== 'id-cards' && !isSubAdmin && (
                             <div className="flex items-center gap-2.5 flex-wrap">
                                 {/* Settings & Operations Dropdown */}
                                 <div className="relative">
@@ -2064,6 +2110,11 @@ const StudentManagement = () => {
                                                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                                             <span>Active</span>
                                                                         </span>
+                                                                    ) : student.inactivationStatus === 'awaited' ? (
+                                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-700 text-[11px] font-bold" title="Inactivation request pending Super Admin approval">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                            <span>Awaited</span>
+                                                                        </span>
                                                                     ) : (
                                                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-100 border border-[#EDE8E0] text-stone-600 text-[11px] font-bold">
                                                                             <span className="w-1.5 h-1.5 rounded-full bg-stone-400" />
@@ -2194,7 +2245,30 @@ const StudentManagement = () => {
 
                                                             {/* Footer Actions */}
                                                             <div className="pt-2.5 border-t border-[#EDE8E0] flex items-center justify-between gap-1.5">
-                                                                {student.isActive ? (
+                                                                {isSubAdmin ? (
+                                                                    student.isActive ? (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setSubAdminInactiveStudent(student);
+                                                                                setShowSubAdminInactiveModal(true);
+                                                                            }}
+                                                                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                                                                            title="Mark Student Inactive"
+                                                                        >
+                                                                            <IoTrashOutline size={14} />
+                                                                            <span>Mark Inactive</span>
+                                                                        </button>
+                                                                    ) : student.inactivationStatus === 'awaited' ? (
+                                                                        <div className="w-full text-center py-2 px-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] font-bold text-amber-700 flex items-center justify-center gap-1.5">
+                                                                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                                                            <span>Inactivation Awaited</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="w-full text-center py-2 px-3 bg-stone-100 border border-stone-200 rounded-xl text-[11px] font-bold text-stone-500 flex items-center justify-center gap-1.5">
+                                                                            <span>Inactive Scholar</span>
+                                                                        </div>
+                                                                    )
+                                                                ) : student.isActive ? (
                                                                     <>
                                                                         <button
                                                                             onClick={() => openSeatAssignModal(student)}
@@ -2271,6 +2345,14 @@ const StudentManagement = () => {
                                                                             <span>Reactivate Scholar</span>
                                                                         </button>
                                                                         <button
+                                                                            onClick={() => openDeleteModal(student)}
+                                                                            className="flex items-center justify-center gap-1 px-3 py-2 text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 hover:border-rose-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                                                                            title="Delete Scholar Permanently"
+                                                                        >
+                                                                            <IoTrashOutline size={14} />
+                                                                            <span>Delete</span>
+                                                                        </button>
+                                                                        <button
                                                                             onClick={() => openActivityHistoryModal(student)}
                                                                             className="p-2 text-stone-600 hover:text-indigo-600 bg-[#FAF6F0] hover:bg-indigo-50 border border-[#EDE8E0] hover:border-indigo-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Scholar Activity & Status History"
@@ -2283,13 +2365,6 @@ const StudentManagement = () => {
                                                                             title="Edit Profile"
                                                                         >
                                                                             <IoPencil size={15} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => openDeleteModal(student)}
-                                                                            className="p-2 text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all cursor-pointer"
-                                                                            title="Delete Permanently"
-                                                                        >
-                                                                            <IoTrashOutline size={15} />
                                                                         </button>
                                                                     </>
                                                                 )}
@@ -2541,6 +2616,11 @@ const StudentManagement = () => {
                                                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                                         <span>Active</span>
                                                                     </span>
+                                                                ) : student.inactivationStatus === 'awaited' ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold" title="Inactivation request pending Super Admin approval">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                        <span>Awaited</span>
+                                                                    </span>
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-bold">
                                                                         <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
@@ -2552,7 +2632,30 @@ const StudentManagement = () => {
                                                             {/* Actions Matrix */}
                                                             <td className="px-4 py-3.5 text-right">
                                                                 <div className="flex items-center justify-end gap-1.5">
-                                                                    {student.isActive ? (
+                                                                    {isSubAdmin ? (
+                                                                        student.isActive ? (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setSubAdminInactiveStudent(student);
+                                                                                    setShowSubAdminInactiveModal(true);
+                                                                                }}
+                                                                                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                                                                                title="Mark Inactive"
+                                                                            >
+                                                                                <IoTrashOutline size={14} />
+                                                                                <span>Mark Inactive</span>
+                                                                            </button>
+                                                                        ) : student.inactivationStatus === 'awaited' ? (
+                                                                            <span className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold rounded-lg flex items-center gap-1">
+                                                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                                                <span>Awaited</span>
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="px-2.5 py-1 bg-stone-100 text-stone-500 text-[11px] font-semibold rounded-lg">
+                                                                                Inactive
+                                                                            </span>
+                                                                        )
+                                                                    ) : student.isActive ? (
                                                                         <>
                                                                             <button
                                                                                 onClick={() => openIdCardModal(student)}
@@ -2603,6 +2706,13 @@ const StudentManagement = () => {
                                                                             >
                                                                                 <IoPencil size={16} />
                                                                             </button>
+                                                                            <button
+                                                                                onClick={() => openDeleteModal(student)}
+                                                                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                                                title="Delete or Deactivate"
+                                                                            >
+                                                                                <IoTrashOutline size={16} />
+                                                                            </button>
                                                                         </>
                                                                     ) : (
                                                                         <>
@@ -2614,6 +2724,13 @@ const StudentManagement = () => {
                                                                                 <IoRefresh size={16} />
                                                                             </button>
                                                                             <button
+                                                                                onClick={() => openDeleteModal(student)}
+                                                                                className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                                                title="Delete Scholar Permanently"
+                                                                            >
+                                                                                <IoTrashOutline size={16} />
+                                                                            </button>
+                                                                            <button
                                                                                 onClick={() => openActivityHistoryModal(student)}
                                                                                 className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                                                                 title="Scholar Activity & Status History"
@@ -2622,13 +2739,6 @@ const StudentManagement = () => {
                                                                             </button>
                                                                         </>
                                                                     )}
-                                                                    <button
-                                                                        onClick={() => openDeleteModal(student)}
-                                                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                                        title="Delete or Deactivate"
-                                                                    >
-                                                                        <IoTrashOutline size={16} />
-                                                                    </button>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -3615,6 +3725,172 @@ const StudentManagement = () => {
                                 </button>
                             </div>
                         </form>
+                    </Modal>
+
+                    {/* Sub-Admin Inactivation Request Modal */}
+                    <Modal
+                        theme="light"
+                        isOpen={showSubAdminInactiveModal}
+                        onClose={() => {
+                            if (!subAdminInactiveLoading) {
+                                setShowSubAdminInactiveModal(false);
+                                setSubAdminInactiveStudent(null);
+                            }
+                        }}
+                        title="Confirm Scholar Inactivation"
+                        maxWidth="max-w-lg"
+                        accentColor="from-rose-500 via-red-500 to-rose-600"
+                    >
+                        {subAdminInactiveStudent && (
+                            <div className="space-y-4">
+                                {/* Scholar Context Card */}
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-4">
+                                    {subAdminInactiveStudent.avatar ? (
+                                        <img
+                                            src={subAdminInactiveStudent.avatar}
+                                            alt={subAdminInactiveStudent.name}
+                                            className="w-14 h-14 rounded-2xl object-cover border-2 border-rose-200 shadow-sm shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white font-extrabold text-xl shrink-0 shadow-sm">
+                                            {subAdminInactiveStudent.name?.charAt(0)?.toUpperCase() || 'S'}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <h4 className="text-base font-bold text-slate-900 truncate">
+                                                {subAdminInactiveStudent.name}
+                                            </h4>
+                                            <span className="px-2.5 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold rounded-full">
+                                                Active → Awaited
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                                            {subAdminInactiveStudent.email || 'No email registered'}
+                                        </p>
+                                        <div className="flex items-center gap-3 text-xs text-slate-600 mt-1">
+                                            {subAdminInactiveStudent.mobile && (
+                                                <span className="font-medium">Mobile: {subAdminInactiveStudent.mobile}</span>
+                                            )}
+                                            {subAdminInactiveStudent.fatherName && (
+                                                <span className="text-slate-400">Guardian: {subAdminInactiveStudent.fatherName}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Desk & Schedule Details */}
+                                <div className="space-y-2">
+                                    {(() => {
+                                        const seat = getStudentSeat(subAdminInactiveStudent._id);
+                                        const flr = seat ? floors.find(f => f.rooms?.some(r => r.seats?.some(s => s._id === seat._id))) : null;
+                                        return seat ? (
+                                            <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between text-xs">
+                                                <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                                                    <IoBedOutline size={16} className="text-amber-600" />
+                                                    Assigned Desk: Seat #{seat.number} {flr ? `(${flr.name})` : ''}
+                                                </span>
+                                                <span className="px-2 py-0.5 bg-rose-100 border border-rose-200 text-rose-700 rounded-md text-[10px] font-extrabold">
+                                                    Vacated Immediately
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-500">
+                                                No physical desk assigned
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {(() => {
+                                        const shiftsDisplay = getStudentShifts(subAdminInactiveStudent._id);
+                                        return shiftsDisplay ? (
+                                            <div className="px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-600 flex items-center gap-1.5">
+                                                <IoTimeOutline size={14} className="text-stone-500" />
+                                                <span>Shift Schedule: <strong className="text-stone-800">{shiftsDisplay}</strong></span>
+                                            </div>
+                                        ) : null;
+                                    })()}
+
+                                    {subAdminInactiveStudent.address && (
+                                        <div className="px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-600 flex items-center gap-1.5">
+                                            <IoLocationOutline size={14} className="text-stone-500" />
+                                            <span>Address: <strong className="text-stone-800">{subAdminInactiveStudent.address}</strong></span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* High Warning & Policy Explainer */}
+                                <div className="p-3.5 bg-rose-50/70 border border-rose-200 rounded-xl flex items-start gap-2.5">
+                                    <IoAlertCircleOutline className="text-rose-600 shrink-0 mt-0.5" size={18} />
+                                    <div className="text-xs text-rose-900 space-y-1">
+                                        <p className="font-bold text-rose-950">Inactivation & Desk Vacation Notice</p>
+                                        <p className="text-rose-800 leading-relaxed">
+                                            Clicking Inactive will immediately free the assigned desk space for new enrollments. The scholar status will change to <strong>Awaited</strong>.
+                                        </p>
+                                        <p className="text-rose-700 text-[11px] leading-relaxed">
+                                            A ticket will be sent to the Super Admin's Requests panel for final approval. No password is required to submit this request.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                        <IoAlertCircleOutline size={15} className="shrink-0" />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
+
+                                {/* Action Buttons: Cancel and Highly Red Inactive Button */}
+                                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowSubAdminInactiveModal(false);
+                                            setSubAdminInactiveStudent(null);
+                                        }}
+                                        disabled={subAdminInactiveLoading}
+                                        className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+
+                                    {inactiveCountdown > 0 ? (
+                                        <button
+                                            type="button"
+                                            disabled
+                                            className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-red-400/80 cursor-not-allowed flex items-center gap-1.5 select-none"
+                                        >
+                                            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                                            <span>Inactive ({inactiveCountdown}s)</span>
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleSubAdminInactivate}
+                                            disabled={subAdminInactiveLoading}
+                                            className="px-6 py-2.5 rounded-xl text-xs font-extrabold text-white transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2"
+                                            style={{
+                                                backgroundColor: '#dc2626',
+                                                backgroundImage: 'linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #991b1b 100%)',
+                                                boxShadow: '0 4px 16px rgba(220, 38, 38, 0.45)'
+                                            }}
+                                        >
+                                            {subAdminInactiveLoading ? (
+                                                <>
+                                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    <span>Processing...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <IoTrashOutline size={15} />
+                                                    <span>Inactive</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </Modal>
 
                     {/* Reset Password Modal */}

@@ -206,8 +206,8 @@ export const ALL_ADMIN_MODULES = [
     },
     {
         id: 'requests',
-        title: 'Student Requests',
-        desc: 'Process seat shifting, locker requests & complaints',
+        title: 'Requests',
+        desc: 'Process seat shifting, student inactivation & approvals',
         path: '/admin/requests',
         category: 'Administration',
         icon: IoDocumentTextOutline,
@@ -716,14 +716,14 @@ const AdminDashboard = () => {
             subColor: '#059669'
         },
         {
-            title: 'Today Check-ins',
-            value: (metrics.todayAttendance || 0).toLocaleString(),
-            sub: `${metrics.currentlyCheckedIn || 0} inside right now`,
-            badge: 'Live',
-            badgePulse: true,
-            badgeColor: 'bg-amber-50 text-amber-800 border-amber-200/80',
-            icon: IoRefreshOutline,
-            path: '/admin/attendance',
+            title: 'Requests',
+            value: (metrics.pendingRequests || 0).toLocaleString(),
+            sub: (metrics.pendingRequests || 0) > 0 ? `${metrics.pendingRequests} pending approval` : 'All requests cleared',
+            badge: (metrics.pendingRequests || 0) > 0 ? `${metrics.pendingRequests} Pending` : 'All Clear',
+            badgePulse: (metrics.pendingRequests || 0) > 0,
+            badgeColor: (metrics.pendingRequests || 0) > 0 ? 'bg-amber-50 text-amber-800 border-amber-200/80' : 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+            icon: IoDocumentTextOutline,
+            path: '/admin/requests',
             accentColor: '#f59e0b',
             accentEnd: '#d97706',
             hoverBorder: '#FDE68A',
@@ -1296,7 +1296,7 @@ const AdminDashboard = () => {
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-semibold text-slate-900">Auto-Doubt Board</p>
-                                                            <p className="text-xs text-slate-500">{settings?.forceDoubtBoard ? 'Auto launch after attendance' : 'Manual launch'}</p>
+                                                            <p className="text-xs text-slate-500">{settings?.forceDoubtBoard ? 'Floating launcher active for students' : 'Manual launch'}</p>
                                                         </div>
                                                     </div>
                                                     <SettingsToggle checked={!!settings?.forceDoubtBoard} onClick={handleToggleForceDoubtBoard} activeColor="bg-orange-500" />
@@ -1490,7 +1490,7 @@ const AdminDashboard = () => {
                                     Welcome back, {user?.name ? user.name.split(' ')[0] : 'Admin'}!
                                 </h2>
                                 <p className="text-stone-300 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed font-medium">
-                                    Live telemetry across student seats, daily check-in attendance, shift rosters, and collections.
+                                    Live telemetry across student seats, student requests, shift rosters, and collections.
                                 </p>
                             </div>
                             

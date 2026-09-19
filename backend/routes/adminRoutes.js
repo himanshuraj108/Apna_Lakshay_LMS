@@ -7,6 +7,7 @@ const {
     createStudent,
     updateStudent,
     deleteStudent,
+    requestStudentInactivation,
     getAnalytics,
     exportAttendance,
     createFloor,
@@ -141,6 +142,8 @@ router.route('/students/:id')
     .get(getStudent)
     .put(updateStudent)
     .delete(deleteStudent);
+
+router.post('/students/:id/inactivate-request', requestStudentInactivation);
 
 router.post('/students/:id/reset-password', resetStudentPassword);
 router.get('/students/:id/activity-history', getStudentActivityHistory);

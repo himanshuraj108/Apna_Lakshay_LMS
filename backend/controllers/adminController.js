@@ -1241,6 +1241,7 @@ exports.updateStudent = async (req, res) => {
                 // Was inactive, now activating -> RESET SEAT logic
                 updateData.seat = null;
                 updateData.seatAssignedAt = null;
+                updateData.inactivationStatus = 'none';
 
                 // Note: We don't have a direct 'shift' field on User (it's in seat assignments), 
                 // but clearing the seat link effectively removes the shift association for the student.
@@ -1595,6 +1596,107 @@ exports.deleteStudent = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Sub-admin request student inactivation (vacates seat immediately & awaits super admin approval)
+// @route   POST /api/admin/students/:id/inactivate-request
+exports.requestStudentInactivation = async (req, res) => {
+    try {
+        const student = await User.findById(req.params.id);
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student not found'
+            });
+        }
+
+        // Free up student's seat immediately
+        const assignedSeats = await Seat.find({ 'assignments.student': student._id });
+        let vacatedSeatDesc = null;
+
+        for (const seat of assignedSeats) {
+            const userAssign = seat.assignments.find(a => a.student.toString() === student._id.toString());
+            if (userAssign) {
+                vacatedSeatDesc = `Seat ${seat.number}`;
+            }
+            seat.assignments = seat.assignments.filter(a => a.student.toString() !== student._id.toString());
+            const activeAssignments = seat.assignments.filter(a => a.status === 'active');
+            seat.isOccupied = activeAssignments.length > 0;
+            await seat.save();
+        }
+
+        // Mark student as inactive with awaited status
+        student.isActive = false;
+        student.inactivationStatus = 'awaited';
+        student.seat = null;
+        student.seatAssignedAt = null;
+        if (!student.statusHistory) student.statusHistory = [];
+        student.statusHistory.push({
+            status: 'inactive',
+            date: new Date(),
+            reason: `Sub-admin ${req.user.name || 'Staff'} requested inactivation (awaited)`
+        });
+        await student.save();
+
+        // Create Inactivation Approval Request
+        const ticketId = `REQ-INACT-${Date.now().toString().slice(-6)}`;
+        const inactRequest = await Request.create({
+            ticketId,
+            student: student._id,
+            type: 'inactivation',
+            currentData: {
+                vacatedSeat: vacatedSeatDesc || 'No physical desk assigned',
+                studentName: student.name,
+                mobile: student.mobile || student.phoneNumber || '',
+                email: student.email
+            },
+            requestedData: {
+                action: 'inactivate',
+                subAdminName: req.user.name || 'Staff Sub-Admin',
+                subAdminEmail: req.user.email,
+                subAdminId: req.user.id,
+                reason: req.body.reason || 'Sub-admin requested scholar inactivation'
+            },
+            status: 'pending'
+        });
+
+        // Notify all Super Admins
+        const superAdmins = await User.find({ role: 'admin' });
+        for (const admin of superAdmins) {
+            await Notification.create({
+                recipient: admin._id,
+                title: 'Student Inactivation Request',
+                message: `Sub-admin ${req.user.name || 'Staff'} marked ${student.name} as inactive. Assigned seat was vacated immediately. Awaiting Super Admin approval.`,
+                type: 'request',
+                createdBy: req.user.id
+            });
+        }
+
+        // Log action in audit history
+        await logAction(
+            req,
+            'student_inactivation_requested',
+            'User',
+            student._id,
+            student.name,
+            `Sub-admin ${req.user.name || 'Staff'} marked scholar inactive (seat vacated; approval request sent to Super Admin)`
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Scholar ${student.name} marked inactive (awaited). Desk vacated and approval request routed to Super Admin.`,
+            student,
+            request: inactRequest
+        });
+    } catch (error) {
+        console.error('Request student inactivation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while requesting student inactivation',
             error: error.message
         });
     }
@@ -4094,6 +4196,51 @@ exports.handleRequest = async (req, res) => {
                 success: false,
                 message: 'This request has already been processed'
             });
+        }
+
+        // Handle scholar inactivation requests (initiated by sub-admin)
+        if (request.type === 'inactivation') {
+            const student = await User.findById(request.student._id);
+            if (student) {
+                if (status === 'approved') {
+                    student.isActive = false;
+                    student.inactivationStatus = 'approved';
+                    // Ensure seat references are completely cleaned
+                    if (student.seat) {
+                        const assignedSeats = await Seat.find({ 'assignments.student': student._id });
+                        for (const s of assignedSeats) {
+                            s.assignments = s.assignments.filter(a => a.student.toString() !== student._id.toString());
+                            s.isOccupied = s.assignments.some(a => a.status === 'active');
+                            await s.save();
+                        }
+                        student.seat = null;
+                        student.seatAssignedAt = null;
+                    }
+                    await student.save();
+
+                    await logAction(
+                        req,
+                        'student_inactivation_approved',
+                        'User',
+                        student._id,
+                        student.name,
+                        `Super Admin approved scholar inactivation requested by sub-admin`
+                    );
+                } else {
+                    student.isActive = true;
+                    student.inactivationStatus = 'none';
+                    await student.save();
+
+                    await logAction(
+                        req,
+                        'student_inactivation_rejected',
+                        'User',
+                        student._id,
+                        student.name,
+                        `Super Admin rejected scholar inactivation request: ${adminResponse || 'No reason specified'}`
+                    );
+                }
+            }
         }
 
         // Handle seat change requests

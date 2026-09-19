@@ -1125,6 +1125,15 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
     const bottomRef = useRef(null);
     const textareaRef = useRef(null);
 
+    // Active status guard: only active students with an assigned seat can access DoubtBoard
+    useEffect(() => {
+        if (user && user.role === 'student') {
+            if (!user.isActive || (!user.seat && !user.seatNumber)) {
+                handleClose();
+            }
+        }
+    }, [user]);
+
     const t = T[lang] || T.en;
     const maxLimit = Math.max(Number(maxCredits) || 10, Number(creditsLeft) || 0);
     const displayCredits = Math.max(0, Number(creditsLeft) || 0);

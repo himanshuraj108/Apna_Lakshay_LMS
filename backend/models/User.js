@@ -144,6 +144,11 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    inactivationStatus: {
+        type: String,
+        enum: ['none', 'awaited', 'approved'],
+        default: 'none'
+    },
     showInFeeManagement: {
         type: Boolean,
         default: true

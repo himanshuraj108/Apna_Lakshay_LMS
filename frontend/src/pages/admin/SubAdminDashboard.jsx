@@ -70,7 +70,7 @@ const PERM_CARDS = {
         tag: 'Broadcast'
     },
     requests: {
-        title: 'Student Requests',
+        title: 'Requests',
         path: '/admin/requests',
         icon: IoDocumentTextOutline,
         gradient: 'from-indigo-500 to-purple-600',
@@ -437,11 +437,11 @@ const SubAdminDashboard = () => {
                     />
 
                     <StatCard
-                        label="Today Check-ins"
-                        value={(stats?.todayAttendance || 0).toLocaleString('en-IN')}
-                        badge={`${stats?.currentlyCheckedIn || 0} Inside`}
+                        label="Requests"
+                        value={(stats?.pendingRequests || 0).toLocaleString('en-IN')}
+                        badge={(stats?.pendingRequests || 0) > 0 ? `${stats.pendingRequests} Pending` : 'All Clear'}
                         gradient="from-orange-500 to-rose-500"
-                        icon={IoCalendarOutline}
+                        icon={IoDocumentTextOutline}
                         delay={0.15}
                     />
 

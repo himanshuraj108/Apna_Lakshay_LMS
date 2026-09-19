@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import {
     IoArrowBack, IoCheckmarkCircle, IoCloseCircle, IoDocumentTextOutline,
     IoChatbubbleOutline, IoSwapHorizontalOutline, IoHelpCircleOutline,
-    IoTimeOutline, IoStar
+    IoTimeOutline, IoStar, IoAlertCircleOutline
 } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 import useBackPath from '../../hooks/useBackPath';
@@ -18,6 +18,7 @@ const TYPE_META = {
     seat_change: { label: 'Seat Change', icon: IoSwapHorizontalOutline, color: 'from-orange-500 to-amber-500' },
     shift: { label: 'Shift Change', icon: IoTimeOutline, color: 'from-amber-500 to-orange-500' },
     support: { label: 'Support Ticket', icon: IoHelpCircleOutline, color: 'from-stone-700 to-stone-900' },
+    inactivation: { label: 'Scholar Inactivation', icon: IoAlertCircleOutline, color: 'from-rose-500 to-red-600' },
 };
 
 const STATUS_COLORS = {
@@ -176,6 +177,21 @@ const RequestManagement = () => {
                                                             {req.type === 'seat_change' && <p className={`text-xs font-bold ${color}`}>{data?.seatNumber || 'N/A'}<br /><span className="text-[11px] text-stone-500 font-normal">{data?.floor} – {data?.room}</span></p>}
                                                             {(req.type === 'seat' || req.type === 'shift') && <p className={`text-xs font-bold ${color}`}>Seat: {data?.seatNumber || 'N/A'}<br /><span className="text-[11px] text-stone-500 font-normal">Shift: {getShiftName(data?.shift || data?.requestedShift)}</span></p>}
                                                             {req.type === 'support' && (title === 'Current' ? <p className="text-xs text-stone-500 italic">New Ticket</p> : <div><p className={`text-xs font-bold ${color} capitalize mb-1`}>{data?.category}</p><p className="text-xs text-stone-700">{data?.message}</p></div>)}
+                                                            {req.type === 'inactivation' && (
+                                                                title === 'Current' ? (
+                                                                    <p className="text-xs font-bold text-stone-700">
+                                                                        Desk: <span className="text-rose-600 font-black">{data?.vacatedSeat || 'Vacated'}</span>
+                                                                        <br />
+                                                                        <span className="text-[11px] text-stone-500 font-medium">Mobile: {data?.mobile || 'N/A'}</span>
+                                                                    </p>
+                                                                ) : (
+                                                                    <div>
+                                                                        <p className="text-xs font-bold text-rose-600 mb-0.5">Inactivation Requested</p>
+                                                                        <p className="text-[11px] text-stone-700 font-semibold">By: {data?.subAdminName || 'Sub-Admin'}</p>
+                                                                        <p className="text-[10px] text-stone-500 italic mt-0.5">{data?.reason || 'Awaiting Super Admin approval'}</p>
+                                                                    </div>
+                                                                )
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>

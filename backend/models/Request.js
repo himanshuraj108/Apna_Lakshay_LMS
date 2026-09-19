@@ -12,7 +12,7 @@ const requestSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['seat', 'shift', 'profile', 'seat_change', 'support'],
+        enum: ['seat', 'shift', 'profile', 'seat_change', 'support', 'inactivation'],
         required: true
     },
     currentData: {
