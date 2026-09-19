@@ -588,7 +588,6 @@ export default function Login() {
                         {STATS_CONFIG.map((s, i) => (
                             <StatCell key={i} num={s.num} suffix={s.suffix} label={s.label} delay={i * 120} />
                         ))}
-                        {visitorCount && <ViewsCell count={visitorCount} />}
                     </div>
 
                     {/* Features */}
