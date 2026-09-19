@@ -1,9 +1,12 @@
-import { motion } from 'framer-motion';
-import { IoArrowBack, IoMail, IoCall, IoLocation, IoTime, IoShieldCheckmark } from 'react-icons/io5';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { IoArrowBack, IoMail, IoCall, IoLocation, IoTime, IoShieldCheckmark, IoClose, IoNavigate } from 'react-icons/io5';
 import { Link } from 'react-router-dom';
 import Footer from '../../components/layout/Footer';
 
 const ContactAdmin = () => {
+    const [showMap, setShowMap] = useState(false);
+
     return (
         <div className="min-h-screen bg-gray-50 text-gray-700 relative overflow-x-hidden">
             {/* Background Elements */}
@@ -48,16 +51,64 @@ const ContactAdmin = () => {
                                         Sitamarhi, Bihar - 843302
                                     </p>
 
-                                    <a href={import.meta.env.VITE_LIBRARY_LOCATION_URL || '#'} target="_blank" rel="noopener noreferrer" className="block w-full">
-                                        <motion.button
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            className="w-full flex items-center justify-center gap-3 py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-xl text-white font-bold shadow-lg shadow-orange-500/25 transition-all group text-sm"
-                                        >
-                                            <IoShieldCheckmark size={20} className="text-white" />
-                                            CHECK IN LOCATION
-                                        </motion.button>
-                                    </a>
+                                    <motion.button
+                                        onClick={() => setShowMap(prev => !prev)}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        className="w-full flex items-center justify-center gap-3 py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 rounded-xl text-white font-bold shadow-lg shadow-orange-500/25 transition-all text-sm"
+                                    >
+                                        <IoShieldCheckmark size={20} className="text-white" />
+                                        {showMap ? 'HIDE MAP' : 'CHECK IN LOCATION'}
+                                    </motion.button>
+
+                                    <AnimatePresence>
+                                        {showMap && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                                                className="overflow-hidden mt-4"
+                                            >
+                                                <div className="relative rounded-2xl overflow-hidden border border-orange-200 shadow-lg">
+                                                    {/* Map header bar */}
+                                                    <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500">
+                                                        <div className="flex items-center gap-2 text-white text-sm font-bold">
+                                                            <IoNavigate size={16} />
+                                                            Apna Lakshya Library
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <a
+                                                                href="https://maps.google.com/?q=Apna+Lakshya+Library+Sitamarhi"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-white/90 hover:text-white text-xs font-semibold underline"
+                                                            >
+                                                                Open in Google Maps ↗
+                                                            </a>
+                                                            <button
+                                                                onClick={() => setShowMap(false)}
+                                                                className="ml-2 p-1 rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+                                                            >
+                                                                <IoClose size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    {/* Embedded Map */}
+                                                    <iframe
+                                                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2977.556561511588!2d85.51155217449308!3d26.60061867343488!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39ecf10029354d93%3A0x8b4252d4f2a1305!2sApna%20Lakshya%20Library!5e1!3m2!1sen!2sin!4v1789836157315!5m2!1sen!2sin"
+                                                        width="100%"
+                                                        height="300"
+                                                        style={{ border: 0, display: 'block' }}
+                                                        allowFullScreen
+                                                        loading="lazy"
+                                                        referrerPolicy="strict-origin-when-cross-origin"
+                                                        title="Apna Lakshya Library Location"
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             </div>
 
