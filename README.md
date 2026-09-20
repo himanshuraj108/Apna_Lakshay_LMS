@@ -1,401 +1,362 @@
-# Apna Lakshay LMS — Full Stack Learning Management System | Serving 100+ Users
+# Apna Lakshay — Library Management System
 
-**Live:** https://apnalakshay.com &nbsp;|&nbsp; **GitHub:** https://github.com/himanshuraj108/Apna_Lakshay_LMS
-
-**Apna Lakshay LMS** is a production-grade, full-stack Learning Management System that I independently designed, developed, and deployed from scratch for a competitive exam coaching institute. The application is currently live at apnalakshay.com and is actively used by **100+ students**, administrators, and sub-admins on a daily basis — handling real fee transactions, real attendance records, and real student data every single day.
-
-The entire system is built using **React.js** on the frontend and **Node.js with Express.js** on the backend, with **MongoDB** as the primary database managed through Mongoose ODM. The frontend uses **Vite** for fast builds, **Tailwind CSS** for a fully responsive mobile-first UI, and **Framer Motion** for smooth animations across 30+ screens. Every API call goes through **Axios** with centralized interceptors that attach JWT tokens and handle session expiry automatically.
-
-I implemented a complete **role-based authentication system** supporting three user roles — Super Admin, Sub-Admin, and Student. Each role has protected routes on both the frontend (React Context with code-split lazy routes) and the backend (Express.js JWT middleware that validates tokens and enforces role-level access). Passwords are hashed with **bcrypt**, and every sensitive API endpoint is locked behind role guards, making the system secure at every layer.
-
-One of the most technically complex modules I built is the **Fee Management System**. It handles full payments, partial installment payments with accumulated tracking across multiple transactions, automated monthly fee generation for all active students, and overdue detection. I wrote custom **MongoDB aggregation pipelines** using `$group`, `$cond`, and `$lookup` to compute real-time KPIs — Total Fees Collected, This Month's Revenue, Pending Dues, and Overdue Risk — served live through a dedicated REST endpoint. I also integrated the **Razorpay Payment Gateway** so students can pay fees online directly through the platform.
-
-I integrated the **GROQ AI API** to power an intelligent Doubt Board for students. The system uses GROQ's compound model with built-in web retrieval, so students can ask questions about current affairs and get accurate, real-time answers from the live web. The Doubt Board supports three languages — English, Hindi, and Hinglish — covers nine academic subjects, includes session management with pinned and renamed chats, daily credit limits, and a text-to-speech feature. Admins can enforce a "Force Doubt Board" mode that redirects students into the AI assistant immediately upon login.
-
-The **Attendance System** supports four modes — QR code scanning, PIN-based check-in, login-based attendance, and optional location-based geofencing — all configurable from the admin panel without touching a single line of code. The **Student Management** module handles enrollment, activation, reactivation with admission date tracking, printable student ID cards with QR codes, Cloudinary-powered profile photo uploads, referral tracking, and a reward points system. Students also get access to a Study Planner, Mock Tests with auto-grading, Discussion Rooms, and Notes Management — making it a truly all-in-one learning platform.
-
-This is not a tutorial clone or a college project. It is a real, deployed application serving **100+ users**. I independently made every architectural decision — database schema design, REST API structure, aggregation pipeline logic, third-party API integrations (Razorpay, GROQ, Cloudinary), and production deployment — and managed the full development lifecycle from requirements to live deployment using **Git and GitHub** throughout. The codebase spans **40+ API endpoints** and **30+ frontend screens**, and I continue to maintain, debug, and improve it based on real-world usage.
-
-**Tech Stack:** React.js · Node.js · Express.js · MongoDB · Mongoose · JWT · bcrypt · Razorpay · GROQ AI · Cloudinary · Tailwind CSS · Vite · Framer Motion · Axios · React Router v6 · Git
+A full-stack, production-grade Library Management System designed for competitive exam coaching institutes and reading libraries. The platform manages seat allocation, student lifecycle, fee collection, attendance, AI-powered learning tools, and real-time operations through a role-based multi-tenant architecture.
 
 ---
 
-## Master System Architecture and Enterprise Design
+## Overview
 
-The Apna Lakshay LMS system is built with a decoupled, layered software architecture. Each layer handles a distinct operational responsibility, from client-side interface rendering to resilient data persistence and external service pipelines.
-
-### Layer 1: Presentation Layer (Client Application)
-- Framework: React 18 Single Page Application powered by Vite.
-- Styling and Animation: Tailwind CSS with custom design tokens, CSS variables, and Framer Motion transitions.
-- Client State Management: Centralized authentication context (AuthContext) with persistent localStorage synchronization and route guard protections.
-- Specialized Components:
-  - Interactive Multi-Floor Seating Canvas: Real-time desk occupancy visualization.
-  - Digital 3D ID Card: Two-sided flip card with high-contrast zoomable barcode and SVG QR code rendering.
-  - Pomodoro and Study Planner Suite: Time tracking, daily target setting, and personal checklists.
-  - Public Seating Availability Board: Unauthenticated live desk view for prospective student inquiries.
-
-### Layer 2: API Ingress and Security Gateway
-- Routing Multiplexer: Express.js REST API router handling versioned endpoint dispatch.
-- Authentication Guards: JSON Web Token (JWT) verification middleware with cryptographic signature checks. Standard session lifetimes for students and 365-day persistent tokens for designated sub-admin staff.
-- Role-Based Access Control (RBAC): Hierarchical authorization layer enforcing Super Admin, Sub-Admin (with granular capability bitmasks), and Student scopes.
-- Geofencing Verification: Haversine spherical distance calculation engine validating device GPS coordinates against library geographic coordinates prior to check-in acceptance.
-- Real-Time Communication Broker: Socket.IO WebSocket server managing bidirectional event loops for live occupancy telemetry and online presence indicators.
-
-### Layer 3: Controller and Business Logic Layer
-- Decoupled Model-View-Controller (MVC) architecture separating HTTP transport from business logic.
-- Authentication Controller: Seat-based login verification, credential management, password reset flows, and profile target hydration.
-- Seat and Shift Controller: Conflict-free interval allocation logic, atomic seat transfers, multi-shift combinations, and room pricing calculations.
-- Student Controller: Attendance metrics, fee ledger queries, personal analytics, and doubt session state management.
-- Fee Controller: Automated billing cycle generation, partial and full settlement handling, cash transaction audits, and receipt generation.
-- Sub-Admin Controller: Granular staff account provisioning, PIN-based access restrictions, and administrative action delegation.
-- Engagement Controller: Study streak calculations, experience point (XP) algorithms, and active-student leaderboard generators.
-- Settings Controller: Dynamic campus toggles, maintenance mode, geofencing enforcement, and doubt board launch policies.
-
-### Layer 4: Data and Persistence Layer
-- Database Engine: MongoDB Atlas with Mongoose Object Data Modeling (ODM).
-- Schema Design:
-  - User: Student credentials, contact information, role definitions, exam targets, and account status flags.
-  - Seat: Floor identification, room assignments, physical desk numbering, and nested shift allocation subdocuments.
-  - Shift: Shift names, start times, end times, and active capacity limits.
-  - Fee: Billing cycles, total dues, amount paid, balance pending, settlement status, and transaction histories.
-  - Attendance: Daily timestamps, check-in methods (QR, PIN, manual), verification coordinates, and duration counters.
-  - StudyStreak: Consecutive study days, accumulated XP, activity dates, and weekly performance milestones.
-  - DoubtSession: Subject categorization, conversation history, token counts, and language configurations.
-  - MockTestAttempt: Exam metadata, question states, response logs, timing breakdowns, and final scorecards.
-  - SystemSetting: Key-value configuration documents for application-wide policies and card layouts.
-  - AIActivityLog: Audit logs of student interactions across all artificial intelligence tools.
-
-### Layer 5: Caching and Acceleration Layer
-- In-Memory Cache: Redis via the ioredis client for high-frequency read operations.
-- Eviction Strategies: Automated key invalidation on database write operations (allocations, swaps, XP updates).
-- Resilient Fallback: Built-in in-memory map store fallback if Redis connectivity is interrupted, ensuring zero downtime in standalone and offline environments.
-
-### Layer 6: External Integration Pipelines
-- Payment Gateway: Razorpay webhook and order integration with cryptographic signature verification for online fee settlements.
-- Transactional Messaging: Brevo (formerly Sendinblue) SMTP and Nodemailer for automated HTML fee receipts and broadcast notices.
-- Artificial Intelligence Pipeline: High-speed Groq API (Compound and Llama models) with automatic failover to Google Gemini API for uninterrupted academic support.
+Apna Lakshay replaces manual library operations with a centralised digital platform. Super admins manage the entire institution. Sub-admins handle day-to-day floor operations. Students interact with a self-service portal covering seat bookings, fee status, study tools, and AI-assisted learning — all from a single authenticated session.
 
 ---
 
-## Core Operational Workflows
+## Architecture
 
-### 1. GPS-Restricted QR and PIN Attendance Control Flow
-
-Attendance integrity is enforced through a two-layer verification loop combining device geolocation validation and cryptographic token checks.
-
-1. Handshake and Coordinate Acquisition:
-   - When a student initiates a check-in, the client requests high-accuracy device geolocation coordinates using the browser Geolocation API.
-   - Concurrently, the client retrieves the active student identifier and security token.
-2. QR Code Generation and Ingress:
-   - The student presents their digital ID card containing an encoded barcode and QR payload (prefixed with designated campus identifiers).
-   - The scanning terminal or kiosk captures the payload and dispatches a secure POST request to the API gateway along with scanner coordinates.
-3. Cryptographic and Geofencing Verification:
-   - The gateway parses the student identifier and queries the database for the active student profile, assigned shift, and campus geofencing configuration.
-   - The system executes the Haversine spherical distance calculation:
-     d = 2 * R * asin(sqrt(sin^2((lat2 - lat1)/2) + cos(lat1) * cos(lat2) * sin^2((lon2 - lon1)/2)))
-   - If the calculated distance exceeds the configured threshold (default: 15 meters), the transaction is rejected with a Location Violation response.
-4. Time Window and State Upsert:
-   - If geographic verification passes, the server checks the student's assigned shift time window.
-   - The attendance controller creates or updates the daily Attendance document for the current calendar day in Indian Standard Time (IST).
-   - The system updates the live attendance counter in Redis and emits a WebSocket event to update administrative dashboards in real time.
-5. Offline PIN Fallback:
-   - If student device camera or GPS capabilities are unavailable, authorized administrators can provide a daily rotating 4-8 digit attendance PIN, allowing validated manual check-in through the student dashboard.
-
-### 2. Multi-Shift Seat Overlap Verification Flow
-
-The library supports assigning a single physical desk to multiple students across distinct, non-overlapping time shifts. Conflicts are prevented via deterministic interval intersection logic.
-
-1. Allocation Request:
-   - An administrator selects a physical seat and one or more target shifts for a student.
-2. Interval Intersection Check:
-   - The controller retrieves all existing active assignments for the designated seat from the Seat collection.
-   - For every existing assignment and requested assignment pair, the system computes interval overlap using normalized minutes from midnight:
-     Overlap = max(0, min(EndA, EndB) - max(StartA, StartB))
-   - If any pair returns an overlap greater than zero, the allocation is aborted with an HTTP 409 Conflict error specifying the conflicting time window.
-3. Transactional Assignment and Pricing:
-   - If zero conflicts exist, the assignments array is constructed.
-   - Base seat pricing is applied to the primary shift, with discounted or zeroed rates for contiguous multi-shift bundles according to institutional policy.
-   - The Seat document is updated atomically.
-4. Financial Ledger Synchronization:
-   - A Fee record is generated for the current billing cycle matching the calculated multi-shift total.
-   - An email confirmation detailing shift hours and seat assignment is dispatched to the student.
-
-### 3. Automated Fee Management and Ledger Lifecycle
-
-Fee tracking supports enterprise multi-cycle billing, partial payments, and split administrative responsibilities.
-
-1. Billing Cycle Anchoring:
-   - Each student account is anchored to an admission date. Billing intervals generate recurring monthly or custom fee records.
-2. Payment Collection:
-   - Online settlements trigger via Razorpay integration with server-side signature validation.
-   - Physical desk collections can be recorded by administrators and authorized sub-administrators.
-3. Sub-Admin Ledger Restrictions:
-   - Sub-administrators operate in a restricted fee management view:
-     - Direct visibility limited to Pending Dues and Settled Paid tabs.
-     - Access to single total pending dues metric without enterprise KPI leakage.
-     - Search bars, inactive student filters, and receipt slip generators are suppressed.
-     - Single-action Collect Fee modal for direct payment processing.
-4. Super Admin Enterprise View:
-   - Full KPI matrix: Total Fees Collected, Today Collections, Pending Dues Defaulters Count, Total Outstanding Amount.
-   - Six comprehensive filter tabs: All Records, Paid, Pending, Expired, Inactive, and Advance.
-   - Individual student payment history modal, printable thermal receipt slips, and custom PDF ledger exports.
-
----
-
-## 20 Enterprise Admin Modules
-
-The Super Admin dashboard provides a centralized management console comprising 20 enterprise modules organized into three operational categories.
-
-### Library Operations (10 Modules)
-1. Student Directory (/admin/students): Complete student roster, detailed profiles, seat assignments, status toggles, and document management.
-2. Floor and Seat Matrix (/admin/floors): Visual grid editor for library floors, rooms, desk numbering, AC and Non-AC categorization, and pricing tiers.
-3. Attendance Tracking (/admin/attendance): Daily check-in logs, biometric punches, manual attendance toggles, and date-filtered attendance registers.
-4. Fee Management (/admin/fees): Complete financial ledger, billing cycles, partial payments, dues collection, and PDF receipts.
-5. Shift Operations (/admin/shifts): Configuration of study shifts, batch timings, operational windows, and hourly quotas.
-6. Vacant Seats (/admin/vacant-seats): Real-time vacancy matrix displaying unoccupied desks filtered by shift, room, and floor.
-7. QR Entry Kiosk (/admin/kiosk): Full-screen entrance kiosk interface optimized for automated QR code scanning at front desks.
-8. Notice and Announcements (/admin/notifications): Broadcast notice dispatch system delivering alerts directly to student dashboards.
-9. Discussion Rooms (/admin/chat): Real-time academic chat spaces organized by competitive examination subjects.
-10. Student Chat History (/admin/chat-history): Moderation panel and audit repository for artificial intelligence queries and student room discussions.
-
-### Analytics and Insights (4 Modules)
-11. Reports and Analytics (/admin/analytics): High-level operational dashboards, revenue charts, seat utilization curves, and student retention reports.
-12. Student Activities and XP (/admin/activities): Gamification tracking displaying study streaks, focus hours, and student experience point leaderboards.
-13. AI Study Logs (/admin/ai-activity): Telemetry and usage records across all artificial intelligence tools, tracking student engagement and credit consumption.
-14. Referral and Wallet (/admin/referral-wallet): Campus referral system tracking reward balances, payout requests, and incentive coin distributions.
-
-### Administration and Governance (6 Modules)
-15. Sub-Admin Roles (/admin/sub-admins): Staff user provisioning, credential management, PIN assignments, and capability permissions.
-16. Student Requests (/admin/requests): Workflow approval inbox for seat transfer requests, shift changes, and student feedback.
-17. Action History Logs (/admin/history): Immutable audit log recording all administrative modifications, deletions, and operational updates.
-18. Password Activity (/admin/password-activity): Security monitor tracking student credential resets, password modifications, and security events.
-19. Manage Cards and Layout (/admin/manage-cards): Student application interface manager controlling card visibility, ordering, new badges, and AI credit quotas.
-20. System Settings (/admin/settings): Global institutional controls including maintenance mode, geofencing enforcement, PIN attendance, and WhatsApp group links.
-
----
-
-## Artificial Intelligence Academic Suite
-
-The platform includes seven artificial intelligence features powered by Groq API (Compound and Llama 3.1 8B models) with automatic failover to Google Gemini.
-
-### 1. Multi-Lingual AI Doubt Board
-- Interactive doubt solver supporting English, Hindi, and Hinglish.
-- Equipped with web-aware retrieval capabilities for current affairs, recent events, and contemporary general knowledge questions.
-- Configurable auto-launch policy triggered upon successful attendance check-in.
-- Daily credit allowance allocated dynamically based on student fee arrangements.
-
-### 2. AI Study Plan Generator
-- Generates structured multi-week daily schedules based on target examinations (UPSC, BPSC, SSC, Banking, Railway, JEE, NEET).
-- Formulates daily study blocks, subject priorities, and designated rest days.
-
-### 3. Mock Test Performance Analyzer
-- Evaluates test scorecards section-by-section.
-- Pinpoints weak subject areas, provides targeted explanations for incorrect responses, and generates a concrete three-day corrective study roadmap.
-
-### 4. AI Notes Summarizer
-- Condenses raw academic text (up to 4000 characters) into five bullet points, key facts, and three auto-generated multiple-choice questions with answer keys.
-
-### 5. Current Affairs Quiz Generator
-- Analyzes editorial and news article titles to generate three exam-style multiple-choice questions with rationale explanations.
-
-### 6. Smart Task Suggestion Engine
-- Reads the student database profile, current streak, and planned targets to suggest three actionable, time-estimated study tasks for the day.
-
-### 7. Exam Readiness Score Calculator
-- Computes an objective 0-100 readiness metric based on four weighted parameters:
-  - Study Streak consistency (25 points max)
-  - 30-day Attendance percentage (25 points max)
-  - Recent Mock Test average score (30 points max)
-  - Academic tool engagement (20 points max)
-
----
-
-## Technical Implementations and Solved Engineering Challenges
-
-### 1. Active Student Mapping in Leaderboard Queries
-- Problem: Conventional engagement aggregations only queried existing streak records, omitting newly enrolled students without logs.
-- Implementation: Re-engineered the engagement resolver to query the primary User collection for all active students, joining StudyStreak documents via left outer joins. Missing records default safely to Level 1, 0 XP, and 0 days, preventing pagination and sorting failures.
-
-### 2. State Hydration and Target Configuration Persistence
-- Problem: Partial payload returns during seat logins caused client state to reset customized examination targets to default values upon page refresh.
-- Implementation: Updated the authentication controller to include complete profile objects (including explicit examTarget and remaining AI test credits) and added a hydration guard in AuthContext to preserve localized preferences.
-
-### 3. Multi-Key Round-Robin AI Resilience Pipeline
-- Problem: Strict rate limits on third-party AI endpoints during peak study hours resulted in service interruptions.
-- Implementation: Constructed a dynamic key rotator that cycles through a pool of Groq API keys. Upon encountering an HTTP 429 response across all keys, requests automatically route to the Google Gemini API fallback pipeline, ensuring uninterrupted availability.
-
-### 4. Mongoose Timestamp Lock Bypass for Backdated Records
-- Problem: Standard Mongoose models with timestamps enabled overwrite createdAt values with system time on save, preventing backdated admission records.
-- Implementation: Bypassed schema-level hooks using native MongoDB collection updates:
-```javascript
-await User.collection.updateOne(
-    { _id: userId },
-    { $set: { createdAt: new Date(backdatedAdmissionDate) } }
-);
+```
+Client (React + Vite)
+        |
+        |  HTTPS / WSS
+        v
+API Server (Node.js + Express)
+        |              |
+   MongoDB Atlas    Redis (Upstash)
+   (Primary DB)    (Session Cache)
+        |
+   Cloudinary (Media Storage)
+   Razorpay   (Payment Gateway)
+   Nodemailer (Transactional Email)
+   Groq API   (AI / LLM Layer)
 ```
 
-### 5. High-Performance Redis Caching with Resilient Fallback
-- Problem: Heavy read traffic on public seating availability grids and vacancy endpoints placed excessive load on MongoDB.
-- Implementation: Integrated an ioredis caching layer with short time-to-live (TTL) limits:
-  - Leaderboards: 60-second TTL, invalidated on XP changes.
-  - Vacant Seats: 30-second TTL, invalidated on seat allocation or transfer.
-  - Public Seating Grid: 30-second TTL, invalidated on seat mutations.
-  - Resilience: If Redis is unreachable, the system transparently defaults to an in-memory Map store, preventing application crashes.
-
-### 6. Progressive Batch Question Loading for Examination Engines
-- Problem: Generating 150 questions for comprehensive examination patterns (such as BPSC Prelims) simultaneously caused API timeouts and heavy client payload sizes.
-- Implementation: Built a progressive batch loading system:
-  - Parallel generation of sections in batches of 3.
-  - Initial load of 5 questions per section.
-  - Progressive retrieval of 5 additional questions as the student approaches the end of a section, strictly respecting quota weights.
+**Frontend:** React 18, Vite, Tailwind CSS, Framer Motion, Socket.io Client, KaTeX, jsPDF  
+**Backend:** Node.js, Express.js, Socket.io, node-cron  
+**Database:** MongoDB Atlas (Mongoose ODM)  
+**Cache:** Redis via ioredis  
+**Auth:** JWT (access + refresh token pattern), bcryptjs  
+**Security:** Helmet, express-rate-limit, express-mongo-sanitize, xss-clean, HPP  
+**Media:** Cloudinary (profile photos, uploaded notes)  
+**Payments:** Razorpay payment gateway  
+**AI:** Groq API (LLaMA, Compound, Qwen model family) with multi-model fallback chain  
+**Email:** Nodemailer (SMTP)
 
 ---
 
-## Technology Stack
+## Roles and Access
 
-| Architecture Layer | Technology | Specification and Usage |
-|---|---|---|
-| Frontend Framework | React.js (v18.x) | Single Page Application built with Vite |
-| Styling Framework | Tailwind CSS | Utility-first CSS, custom design tokens, CSS variables |
-| Client Animations | Framer Motion | Interface transitions and micro-interactions |
-| Icons Library | React Icons (Ionicons 5) | Consistent, lightweight vector icons |
-| Backend Runtime | Node.js (v18.x+) | Event-driven server runtime |
-| Web Application Framework | Express.js (v4.x) | RESTful API routing, middleware, and controllers |
-| Database Engine | MongoDB | Document database via Mongoose ODM |
-| In-Memory Caching | Redis / ioredis | Fast key-value caching with memory fallback |
-| Real-Time Communication | Socket.IO | Bidirectional WebSocket event communication |
-| Authentication | JSON Web Tokens and bcrypt | Stateless token verification with salted hashing |
-| Payment Gateway | Razorpay Node SDK | Online payment processing and webhook validation |
-| Transactional Email | Brevo SMTP and Nodemailer | Automated HTML receipts and notification delivery |
-| Artificial Intelligence | Groq API and Google Gemini | High-speed LLM processing with automated failover |
+| Role | Scope |
+|------|-------|
+| Super Admin | Full system access — student management, seats, fees, shifts, settings, analytics, sub-admin management |
+| Sub Admin | Floor operations — attendance, seat check, student ID card printing, inactivation requests routed to super admin |
+| Student | Self-service portal — dashboard, seat view, fees, AI tools, mock tests, discussion, doubt board, wallet |
 
 ---
 
-## Installation and Setup Guide
+## Feature Modules
+
+### Seat and Floor Management
+
+- Multi-floor, multi-room seat matrix
+- Shift-based assignment (morning, afternoon, evening, full-day, custom)
+- Shift overlap detection for all seat operations
+- Temporary seat allocation when original seat is occupied
+- Inactivation and reinstatement workflow with seat restoration and conflict resolution
+- Vacant seat real-time matrix view
+- QR Entry Kiosk — full-screen entrance scanner for attendance marking
+
+### Student Lifecycle
+
+- Admin-registered and self-registered student flows
+- Aadhar number, date of birth, gender, address, locker number fields
+- Student ID card generation with QR code (PDF export via jsPDF)
+- Profile photo upload (Cloudinary)
+- Archive and soft-delete with restoration support
+- Status history log per student
+- Sub-admin inactivation request routed to super admin with approval or disapproval
+- Seat restoration on disapproval with conflict-aware relocation
+
+### Attendance
+
+- QR code scan-based daily check-in
+- PIN-based attendance mode
+- Location-bound attendance (geofence)
+- Login-triggered attendance
+- Attendance trend graphs and monthly report
+- Absent tracking and daily log
+
+### Fee Management
+
+- Fee record creation, due tracking, and settlement
+- Razorpay online payment integration
+- Physical receipt generation (jsPDF + autotable)
+- Pending dues dashboard for admin
+- Per-student fee history and session ledger
+- Admin referral wallet
+
+### Shifts
+
+- Configurable shifts with start time, end time, and quota
+- Shift-level seat allocation enforcement
+- Custom mode and legacy shift support
+
+### AI Learning Suite (Student Portal)
+
+| Tool | Description |
+|------|-------------|
+| Daily Challenge | AI-generated bilingual MCQ quiz (English + Hindi) via Groq; XP reward on completion |
+| Mock Test Engine | Full MCQ test engine with timer, subject selection, bilingual support, detailed solution review |
+| Doubt Board | Conversational AI doubt resolution with subject tagging, language selection (English, Hindi, Hinglish), pinned conversations, dark/light theme |
+| AI Study Planner | Goal-based study plan generation for competitive exams |
+| AI Note Summarizer | Upload or paste notes; AI returns structured summary |
+| AI Readiness Score | Assesses exam readiness based on activity data |
+| AI Task Suggestions | Recommends daily tasks based on study patterns |
+| AI Test Analyzer | Analyses mock test performance and highlights weak areas |
+| Current Affairs | AI-curated current affairs feed with quiz |
+| Exam Alerts | Upcoming exam notifications and reminders |
+
+### Engagement and Gamification
+
+- Study streak tracking
+- XP and coin reward system
+- Pomodoro session tracker
+- Daily challenge with bilingual language selector
+- Monthly performance report
+- Wallet with coin history and redemption
+
+### Real-Time Features (Socket.io)
+
+- Live seat status updates
+- Discussion room (public chat)
+- Real-time notifications
+- Admin live dashboard metrics
+
+### Notifications
+
+- In-app notification centre per role
+- Email notifications via Nodemailer (seat assignment, fee due, inactivation, approval)
+- Push-style real-time alerts via Socket.io
+
+### Admin Analytics
+
+- Dashboard metrics: total seats, active students, daily check-ins, pending requests, pending dues, total revenue
+- Attendance trend chart
+- Shift distribution breakdown
+- Floor occupancy heatmap
+- Recent transactions panel
+- AI-assisted admin query (natural language dashboard queries)
+- AI Activity Logs and action audit trail
+
+### Settings and Configuration
+
+- System status toggle (maintenance mode)
+- Location attendance toggle
+- PIN attendance toggle
+- Login attendance toggle
+- WhatsApp group link
+- AI tools visibility toggle
+- Force doubt board mode
+- Referral and reward configuration
+- Online payment enable/disable
+
+### Sub Admin Management
+
+- Create and manage sub-admin accounts
+- Permission scopes per sub-admin
+- Sub-admin PIN guard for sensitive operations
+- Sub-admin inactivation request workflow
+
+---
+
+## Project Structure
+
+```
+lms/
+  backend/
+    controllers/        Business logic (admin, student, auth, AI, fees, seats, etc.)
+    models/             Mongoose schemas (32 models)
+    routes/             Express route definitions
+    middleware/         Auth guard, error handler, rate limiting
+    services/           Email service
+    utils/              Cron jobs, time utilities, action logger
+    sockets/            Socket.io event handlers
+    config/             Database and Redis connection
+    scripts/            Seed scripts
+    server.js           Application entry point
+
+  frontend/
+    src/
+      pages/
+        admin/          Super admin pages (23 pages)
+        student/        Student portal pages (23 pages)
+        common/         Shared pages
+      components/
+        admin/          Admin UI components (ShiftManager, QRScanner, IdCard, etc.)
+        student/        Student UI components
+        common/         Shared components (QuizTextFormatter, StructuredAIResponse, etc.)
+      context/          AuthContext, ShiftContext
+      utils/            API client, helpers
+```
+
+---
+
+## Data Models
+
+| Model | Purpose |
+|-------|---------|
+| User | Students, sub-admins, super admin |
+| Seat | Seat assignments per shift with active/expired/temporary status |
+| TempSeatAssignment | Temporary seat allocation records |
+| Shift | Shift definitions and time windows |
+| Floor / Room | Physical library layout |
+| Fee | Fee records, payment status, transaction history |
+| Attendance | Daily check-in records |
+| Request | Seat change, shift change, inactivation requests |
+| Notification | Per-user in-app notifications |
+| DailyQuiz / DailyQuizAttempt | AI-generated quiz with bilingual fields |
+| MockTestAttempt | Mock test sessions and answer records |
+| DoubtSession | AI doubt conversation threads |
+| StudyTask | Daily task list per student |
+| PomodoroSession | Focus session records |
+| StudyStreak | Streak tracking per student |
+| CoinTransaction | Gamification coin ledger |
+| Referral | Referral tracking |
+| ChatRoom / Message | Public discussion room |
+| ActionLog | Admin audit trail |
+| AIActivityLog | AI query and response logs |
+| Settings | Global system configuration |
+| SubAdmin | Sub-admin extended profile |
+| ArchivedStudent | Soft-deleted student records |
+| Holiday | Library holiday calendar |
+
+---
+
+## Security
+
+- JWT authentication with HTTP-only cookie support
+- Helmet security headers on all responses
+- Rate limiting: 1000 requests per 15 minutes per IP on all API routes
+- MongoDB query sanitization (express-mongo-sanitize)
+- XSS input sanitization (xss-clean)
+- HTTP Parameter Pollution prevention (HPP)
+- Role-based route guards on all protected endpoints
+- Sub-admin PIN guard for destructive operations
+- CORS restricted to whitelisted origins
+
+---
+
+## Environment Variables
+
+### Backend (.env)
+
+```
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=
+REDIS_URL=
+JWT_SECRET=
+JWT_EXPIRE=7d
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_USER=
+EMAIL_PASS=
+GROQ_API_KEY=
+CLIENT_URL=
+```
+
+### Frontend (.env)
+
+```
+VITE_API_URL=
+```
+
+---
+
+## Local Development
 
 ### Prerequisites
-- Node.js version 18.0.0 or higher
-- MongoDB instance (local server or MongoDB Atlas connection string)
-- Redis instance (optional; system falls back to in-memory cache if omitted)
-- Razorpay API credentials (for payment processing)
-- Groq and Google Gemini API keys (for AI features)
 
-### 1. Repository Clone and Dependency Installation
+- Node.js 18 or higher
+- MongoDB Atlas cluster (or local MongoDB)
+- Redis instance (Upstash free tier or local)
+- Cloudinary account
+- Groq API key
+
+### Backend
 
 ```bash
-# Clone the repository
-git clone https://github.com/himanshuraj108/Apna_Lakshay_LMS.git
-cd Apna_Lakshay_LMS
-
-# Install backend dependencies
 cd backend
 npm install
-
-# Install frontend dependencies
-cd ../frontend
-npm install
+cp .env.example .env   # fill in all variables
+npm run dev            # starts with nodemon on port 5000
 ```
 
-### 2. Environment Variable Configuration
-
-Create a configuration file named .env in the backend/ directory:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/apna_lakshay_lms
-JWT_SECRET=your_jwt_cryptographic_secret_key_here
-JWT_EXPIRE=30d
-
-# Primary Email Configuration
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_google_app_password
-EMAIL_FROM_ADDRESS=noreply@apnalakshay.com
-
-# Secondary Transactional Email (Brevo SMTP)
-BREVO_HOST=smtp-relay.brevo.com
-BREVO_PORT=587
-BREVO_USER=your_brevo_username
-BREVO_PASS=your_brevo_password
-
-# Client and Host URLs
-FRONTEND_URL=http://localhost:5173
-APK_DOWNLOAD_URL=https://apnalakshay.com/download
-
-# Default Administrator Account (Seed Setup)
-ADMIN_EMAIL=admin@apnalakshay.com
-ADMIN_PASSWORD=your_secure_admin_password
-
-# Geofence Configuration (Library Campus Coordinates)
-LIBRARY_LAT=26.5890
-LIBRARY_LNG=85.5000
-LIBRARY_RADIUS_M=15
-
-# Payment Integration (Razorpay)
-RAZORPAY_KEY_ID=your_razorpay_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-
-# AI Engine API Keys
-GROQ_API_KEY=your_primary_groq_api_key
-GROQ_API_KEY_2=your_secondary_groq_api_key
-GROQ_API_KEY_3=your_tertiary_groq_api_key
-GEMINI_API_KEY=your_google_gemini_api_key
-
-# Redis Caching (Optional - Prefix with rediss:// for TLS connections)
-REDIS_URL=redis://localhost:6379
-```
-
-### 3. Database Seeding and Local Launch
+### Frontend
 
 ```bash
-# Seed default floors, shifts, and master admin account
-cd backend
-node scripts/seedData.js
-
-# Launch the backend development server
-npm start
-
-# In a separate terminal, launch the frontend development client
-cd ../frontend
-npm run dev
-```
-
-- Backend API Endpoint: http://localhost:5000
-- Frontend Web Interface: http://localhost:5173
-
----
-
-## Production Deployment with PM2
-
-For Linux VPS deployments (Ubuntu/Debian):
-
-```bash
-# Build the production frontend bundle
 cd frontend
-npm run build
-
-# Start backend cluster with PM2 process manager
-cd ../backend
-pm2 start server.js --name "apna-lakshay-backend" -i max
-pm2 save
-pm2 startup
+npm install
+cp .env.example .env   # set VITE_API_URL
+npm run dev            # starts Vite dev server on port 5173
 ```
 
-Configure Nginx as a reverse proxy to route port 80/443 traffic to the frontend distribution build and the /api route to port 5000.
+---
+
+## Deployment
+
+### Backend (Render / Railway / Fly.io)
+
+The server is configured for any Node.js hosting provider. Key points:
+
+- `server.js` binds to `0.0.0.0` and reads `PORT` from the environment.
+- `trust proxy` is enabled for providers that terminate TLS upstream.
+- A `Dockerfile` is included for container-based deployments.
+- A `vercel.json` is included for Vercel serverless deployment (functions mode).
+
+### Frontend (Vercel)
+
+```bash
+cd frontend
+npm run build          # outputs to dist/
+```
+
+Deploy the `dist/` directory to Vercel, Netlify, or any static host. Set `VITE_API_URL` to your backend URL before building.
 
 ---
 
-## Default System Credentials
+## Cron Jobs
 
-| Role | Identifier / Email | Password | Access Scope |
-|---|---|---|---|
-| Global Super Admin | admin | admin123 | Complete access to all 20 modules and settings |
-| Seed Student Account | student@apnalakshay.com | Delivered via email | Student portal and study suite access |
+The following scheduled tasks run automatically on server start:
 
-Important: Default administrative credentials must be updated immediately upon initial deployment using the System Settings or Sub-Admin management panels.
+| Job | Schedule | Purpose |
+|-----|----------|---------|
+| Daily quiz generation | Daily | Generates AI MCQ for each active exam category |
+| Fee due reminders | Daily | Emails students with overdue fees |
+| Streak reset | Daily | Resets inactive study streaks |
+| Temporary seat expiry | Hourly | Expires overdue temp seat assignments |
+| Attendance summary | Daily | Computes and stores daily attendance totals |
 
 ---
 
-## License and Governance
+## API Structure
 
-Proprietary Software - Apna Lakshay Library Management System.
-All Rights Reserved 2026. Designed, engineered, and maintained for live enterprise library operations.
+All API routes are prefixed with `/api`.
+
+| Prefix | Module |
+|--------|--------|
+| /api/auth | Login, register, forgot password, token refresh |
+| /api/admin | All super admin and sub-admin operations |
+| /api/student | All student self-service operations |
+| /api/public | Public endpoints (landing page data) |
+| /api/settings | System settings read and update |
+| /api/chat | Discussion room messages |
+| /api/study | Study planner operations |
+
+---
+
+## License
+
+This project is proprietary software. All rights reserved. Unauthorised copying, distribution, or modification is prohibited.
