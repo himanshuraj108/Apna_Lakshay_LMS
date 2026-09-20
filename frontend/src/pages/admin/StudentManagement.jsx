@@ -74,7 +74,7 @@ const StudentManagement = () => {
     const [deletePassword, setDeletePassword] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState(tabParam || ((isSubAdmin && !user?.permissions?.includes('students')) ? 'id-cards' : 'all')); // Initialize from URL or default
+    const [activeTab, setActiveTab] = useState(tabParam || (isSubAdmin ? 'id-cards' : 'active')); // Sub admin → ID Cards only; others → Active
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showIdCardModal, setShowIdCardModal] = useState(false);
@@ -1710,7 +1710,7 @@ const StudentManagement = () => {
                                     { id: 'inactive', label: 'Inactive', count: metrics.inactive },
                                     { id: 'id-cards', label: 'ID Cards Grid', icon: <IoIdCard size={13} />, count: metrics.active },
                                     { id: 'history', label: 'Deleted Archives', icon: <IoTrashOutline size={13} />, count: archivedStudents.length }
-                                ].map(tab => {
+                                ].filter(tab => isSubAdmin ? tab.id === 'id-cards' : true).map(tab => {
                                     const isActive = activeTab === tab.id;
                                     return (
                                         <button

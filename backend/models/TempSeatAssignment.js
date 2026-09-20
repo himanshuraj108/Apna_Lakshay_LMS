@@ -17,7 +17,7 @@ const tempSeatAssignmentSchema = new mongoose.Schema({
     shift: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Shift',
-        required: true
+        default: null
     },
     // The original owner of this seat (the absent student)
     originalOwner: {
