@@ -245,32 +245,81 @@ lms/
 
 ## Environment Variables
 
-### Backend (.env)
+### Backend (`backend/.env`)
 
-```
-NODE_ENV=production
-PORT=5000
+```env
+# Server
+PORT=
+
+# Database
 MONGODB_URI=
-REDIS_URL=
+
+# Authentication
 JWT_SECRET=
-JWT_EXPIRE=7d
+JWT_EXPIRE=
+
+# Primary Email (Gmail App Password)
+EMAIL_USER=
+EMAIL_PASSWORD=
+EMAIL_FROM_ADDRESS=
+
+# Backup Email (Brevo SMTP)
+BREVO_HOST=
+BREVO_PORT=
+BREVO_USER=
+BREVO_PASS=
+
+# Frontend URL (used for CORS and email links)
+FRONTEND_URL=
+
+# Admin Seed Credentials
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+
+# Cloudinary (media storage)
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
+
+# Groq AI (primary and fallback keys)
+GROQ_API_KEY=
+GROQ_API_KEY_2=
+GROQ_API_KEY_3=
+
+# Razorpay (payment gateway)
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
-EMAIL_HOST=
-EMAIL_PORT=
-EMAIL_USER=
-EMAIL_PASS=
-GROQ_API_KEY=
-CLIENT_URL=
+
+# Redis (cache layer)
+REDIS_URL=
+
+# Library Geofence (for location-based attendance)
+LIBRARY_LAT=
+LIBRARY_LNG=
+LIBRARY_RADIUS_M=
+
+# External APIs
+RSS2JSON_KEY=
+GOOGLE_BOOKS_API_KEY=
+
+# App download link (optional, shown to mobile users)
+APK_DOWNLOAD_URL=
 ```
 
-### Frontend (.env)
+### Frontend (`frontend/.env`)
 
-```
+```env
+# Backend API base URL
 VITE_API_URL=
+
+# Razorpay public key (same key as backend RAZORPAY_KEY_ID)
+VITE_RAZORPAY_KEY_ID=
+
+# Google Maps link for library location shown to students
+VITE_LIBRARY_LOCATION_URL=
+
+# WhatsApp group invite link (shown in student portal if enabled)
+VITE_WHATSAPP_GROUP_URL=
 ```
 
 ---
