@@ -4209,42 +4209,46 @@ exports.bulkResetPasswordsToMobile = async (req, res) => {
 // @route   GET /api/admin/requests
 exports.getRequests = async (req, res) => {
     try {
-        const requests = await Request.find()
+        const allRequests = await Request.find()
             .populate('student', 'name email mobile phoneNumber studentId shift shifts seat isActive inactivationStatus')
             .populate('reviewedBy', 'name email')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
-        // Filter out orphaned requests
-        const filteredRequests = requests.filter(req => req.student);
+        // Filter out orphaned requests (deleted student)
+        const filteredRequests = allRequests.filter(r => r.student);
 
-        const studentIds = filteredRequests.map(r => r.student._id);
-        const activeSeats = await Seat.find({ 
-            'assignments.student': { $in: studentIds }, 
-            'assignments.status': 'active' 
-        });
+        // Enrich with current seat price — wrapped so a slow/failed seat lookup never 500s the whole endpoint
+        let requestsWithPrice = filteredRequests;
+        try {
+            const studentIds = filteredRequests.map(r => r.student._id);
+            if (studentIds.length > 0) {
+                const activeSeats = await Seat.find({
+                    'assignments.student': { $in: studentIds },
+                    'assignments.status': 'active'
+                }).lean();
 
-        // Map requests to include current active price
-        const requestsWithPrice = filteredRequests.map(req => {
-            const reqObj = req.toObject();
-            const studentSeat = activeSeats.find(s => 
-                s.assignments.some(a => a.student.toString() === req.student._id.toString() && a.status === 'active')
-            );
-            if (studentSeat) {
-                const activeAssignment = studentSeat.assignments.find(a => 
-                    a.student.toString() === req.student._id.toString() && a.status === 'active'
-                );
-                reqObj.studentPrice = activeAssignment ? activeAssignment.price : 0;
-            } else {
-                reqObj.studentPrice = 0;
+                requestsWithPrice = filteredRequests.map(r => {
+                    const studentSeat = activeSeats.find(s =>
+                        s.assignments.some(a => a.student.toString() === r.student._id.toString() && a.status === 'active')
+                    );
+                    const activeAssignment = studentSeat
+                        ? studentSeat.assignments.find(a => a.student.toString() === r.student._id.toString() && a.status === 'active')
+                        : null;
+                    return { ...r, studentPrice: activeAssignment ? activeAssignment.price : 0 };
+                });
             }
-            return reqObj;
-        });
+        } catch (seatErr) {
+            console.error('getRequests seat enrichment error (non-fatal):', seatErr.message);
+            // Continue without price enrichment
+        }
 
         res.status(200).json({
             success: true,
             requests: requestsWithPrice
         });
     } catch (error) {
+        console.error('getRequests error:', error.message, '\n', error.stack);
         res.status(500).json({
             success: false,
             message: 'Server error',
