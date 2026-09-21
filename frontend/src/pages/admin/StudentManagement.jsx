@@ -1773,7 +1773,7 @@ const StudentManagement = () => {
                                     { id: 'inactive', label: 'Inactive', count: metrics.inactive },
                                     { id: 'id-cards', label: 'ID Cards Grid', icon: <IoIdCard size={13} />, count: metrics.active },
                                     { id: 'history', label: 'Deleted Archives', icon: <IoTrashOutline size={13} />, count: archivedStudents.length }
-                                ].filter(tab => isSubAdmin ? tab.id === 'id-cards' : true).map(tab => {
+                                ].filter(tab => isSubAdmin ? tab.id === 'active' : true).map(tab => {
                                     const isActive = activeTab === tab.id;
                                     return (
                                         <button
