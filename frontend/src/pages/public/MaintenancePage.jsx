@@ -28,17 +28,17 @@ const MaintenancePage = () => {
     const [studentNotice, setStudentNotice] = useState('');
     const [shake, setShake] = useState(false);
 
-    // Particles array
+    // Particles array — colors read from CSS custom properties
     const particles = Array.from({ length: 18 }, (_, i) => ({
         width: `${Math.random() * 8 + 4}px`,
         height: `${Math.random() * 8 + 4}px`,
         left: `${Math.random() * 100}%`,
         top: `${Math.random() * 100}%`,
         background: i % 3 === 0
-            ? 'rgba(249,115,22,0.4)'
+            ? 'rgba(var(--primary-rgb, 249,115,22), 0.4)'
             : i % 3 === 1
-            ? 'rgba(251,146,60,0.25)'
-            : 'rgba(255,237,213,0.3)',
+            ? 'rgba(var(--primary-rgb, 249,115,22), 0.25)'
+            : 'rgba(253,186,116,0.3)',
         duration: 3 + Math.random() * 4,
         delay: Math.random() * 3,
     }));
@@ -88,7 +88,7 @@ const MaintenancePage = () => {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden select-none p-4"
-            style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #111 40%, #1a0f00 70%, #0f0a00 100%)' }}>
+            style={{ background: 'var(--maintenance-bg, linear-gradient(135deg, #0a0a0a 0%, #111 40%, #1a0f00 70%, #0f0a00 100%))' }}>
 
             {/* Ambient bg glows */}
             <div className="absolute inset-0 pointer-events-none">

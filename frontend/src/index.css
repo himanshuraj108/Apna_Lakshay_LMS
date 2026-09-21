@@ -2,10 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Brand Color Tokens (single source of truth) ───────────────────────── */
+:root {
+  /* Primary — warm orange */
+  --primary-50:  #fff7ed;
+  --primary-100: #ffedd5;
+  --primary-200: #fed7aa;
+  --primary-300: #fdba74;
+  --primary-400: #fb923c;
+  --primary-500: #f97316;
+  --primary-600: #ea580c;
+  --primary-700: #c2410c;
+  --primary-800: #9a3412;
+  --primary-900: #7c2d12;
+
+  /* Raw RGB channels for rgba() usage: rgba(var(--primary-rgb), 0.4) */
+  --primary-rgb: 249, 115, 22;
+  --primary-400-rgb: 251, 146, 60;
+
+  /* Surface / background */
+  --bg-root:     #FAF6F0;
+  --bg-dark:     #0a0a0a;
+  --text-root:   #1A1A1A;
+
+  /* Maintenance page dark surface */
+  --maintenance-bg: linear-gradient(135deg, #0a0a0a 0%, #111 40%, #1a0f00 70%, #0f0a00 100%);
+}
+
 @layer base {
   body {
-    background-color: #FAF6F0;
-    color: #1A1A1A;
+    background-color: var(--bg-root);
+    color: var(--text-root);
     font-family:
       "Inter",
       -apple-system,
@@ -89,7 +116,7 @@
   }
 
   .input {
-    @apply w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 dark:bg-white/10 dark:border-white/20 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/50 transition-all;
+    @apply w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 dark:bg-white/10 dark:border-white/20 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/50 transition-all;
   }
 
   .input:focus {
