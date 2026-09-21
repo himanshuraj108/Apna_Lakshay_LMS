@@ -14,8 +14,15 @@ const { callGroq } = require('../services/aiService');
  * Gather live operational metrics across the platform (100% REAL from MongoDB)
  */
 const getLiveOperationalMetrics = async () => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    // IST midnight — attendance records are stored at IST 00:00 via getISTDate()
+    // IST = UTC+5:30, so IST midnight = UTC 18:30 of PREVIOUS day
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+    // IST date string e.g. "2026-09-21"
+    const istDateStr = nowIST.toISOString().split('T')[0];
+    // Parse as UTC midnight → this is how getISTDate() stores the date (UTC midnight of the IST date)
+    const startOfTodayIST = new Date(`${istDateStr}T00:00:00.000Z`);
+    const endOfTodayIST   = new Date(`${istDateStr}T23:59:59.999Z`);
 
     const [
         totalStudents,
@@ -42,8 +49,8 @@ const getLiveOperationalMetrics = async () => {
                 }
             }
         ]),
-        Attendance.countDocuments({ date: { $gte: startOfToday } }),
-        Attendance.countDocuments({ date: { $gte: startOfToday }, isActive: true }),
+        Attendance.countDocuments({ date: { $gte: startOfTodayIST, $lte: endOfTodayIST }, status: 'present' }),
+        Attendance.countDocuments({ date: { $gte: startOfTodayIST, $lte: endOfTodayIST }, status: 'present', isActive: true }),
         Fee.aggregate([
             { $match: { status: { $in: ['paid', 'partial'] } } },
             {
@@ -66,8 +73,8 @@ const getLiveOperationalMetrics = async () => {
                 $match: {
                     status: { $in: ['paid', 'partial'] },
                     $or: [
-                        { paidDate: { $gte: startOfToday } },
-                        { paidDate: null, updatedAt: { $gte: startOfToday } }
+                        { paidDate: { $gte: startOfTodayIST } },
+                        { paidDate: null, updatedAt: { $gte: startOfTodayIST } }
                     ]
                 }
             },
@@ -286,43 +293,38 @@ ADMINISTRATOR GUIDELINES:
  */
 exports.getLiveDashboardData = async (req, res) => {
     try {
-        const startOfToday = new Date();
-        startOfToday.setHours(0, 0, 0, 0);
 
         // 1. Core Metrics
         const metrics = await getLiveOperationalMetrics();
 
-        // 2. Real 7-Day Attendance Trends (IST +05:30 aligned to match aggregation timezone)
-        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // +05:30 in ms
-        // sevenDaysAgo = IST midnight of 6 days ago = UTC 18:30 of 7 days ago
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-        // Set to IST midnight (00:00 IST = 18:30 UTC previous day)
-        sevenDaysAgo.setHours(0, 0, 0, 0); // local midnight UTC
-        const sevenDaysAgoIST = new Date(sevenDaysAgo.getTime() - IST_OFFSET_MS); // convert to IST midnight in UTC
+        // 2. Real 7-Day Attendance Trends — IST aligned, present-only
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+        const nowIST = new Date(Date.now() + IST_OFFSET_MS);
+
+        // Get IST date string for N days ago
+        const getISTDateStrDaysAgo = (daysAgo) => {
+            const d = new Date(Date.now() + IST_OFFSET_MS - daysAgo * 86400000);
+            return d.toISOString().split('T')[0]; // "YYYY-MM-DD" in IST
+        };
+
+        // 6 days ago IST date as UTC midnight (how dates are stored)
+        const sevenDaysAgoUTC = new Date(`${getISTDateStrDaysAgo(6)}T00:00:00.000Z`);
 
         const rawTrends = await Attendance.aggregate([
-            { $match: { date: { $gte: sevenDaysAgoIST } } },
+            { $match: { date: { $gte: sevenDaysAgoUTC }, status: 'present' } },
             {
                 $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } },
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
                     count: { $sum: 1 }
                 }
             },
             { $sort: { _id: 1 } }
         ]);
 
-        // Helper: get YYYY-MM-DD in IST for a given UTC Date object
-        const toISTDateStr = (utcDate) => {
-            const istDate = new Date(utcDate.getTime() + IST_OFFSET_MS);
-            return istDate.toISOString().split('T')[0];
-        };
-
         const attendanceTrends = [];
         for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const dateStr = toISTDateStr(d);  // IST date string, matches aggregation timezone
+            const dateStr = getISTDateStrDaysAgo(i);
+            const d = new Date(`${dateStr}T00:00:00.000Z`);
             const dayName = new Date(d.getTime() + IST_OFFSET_MS).toLocaleDateString('en-US', { weekday: 'short' });
             const match = rawTrends.find(t => t._id === dateStr);
             attendanceTrends.push({
