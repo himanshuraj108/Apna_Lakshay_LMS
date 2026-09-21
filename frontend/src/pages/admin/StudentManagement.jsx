@@ -74,7 +74,7 @@ const StudentManagement = () => {
     const [deletePassword, setDeletePassword] = useState('');
     const [hardDelete, setHardDelete] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState(tabParam || (isSubAdmin ? 'id-cards' : 'active')); // Sub admin → ID Cards only; others → Active
+    const [activeTab, setActiveTab] = useState(tabParam || 'active'); // Always default to Active Students tab
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [showIdCardModal, setShowIdCardModal] = useState(false);
