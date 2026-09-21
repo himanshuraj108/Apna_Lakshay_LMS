@@ -1232,41 +1232,61 @@ const StudentDashboard = () => {
                 {/* -- DYNAMIC DASHBOARD UPDATE TICKER -- */}
                 {activeUpdate && (
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: -12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.45 }}
-                        className="mb-5 overflow-hidden rounded-2xl border flex items-center justify-between p-2 sm:p-2.5 bg-gradient-to-r from-orange-50/70 via-white to-pink-50/50 border-orange-200 shadow-sm"
+                        transition={{ duration: 0.4, type: 'spring', stiffness: 180 }}
+                        className="mb-5 overflow-hidden rounded-2xl flex items-center gap-0"
+                        style={{
+                            background: 'linear-gradient(135deg, #fff7ed 0%, #ffffff 60%, #fff7ed 100%)',
+                            border: '1.5px solid #fed7aa',
+                            boxShadow: '0 2px 16px rgba(249,115,22,0.10)',
+                        }}
                     >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            {/* Compact Badge */}
-                            <span className="flex items-center gap-1.5 shrink-0 text-[10px] font-black px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white uppercase tracking-wider shadow-sm">
-                                <IoGiftOutline size={11} className="animate-bounce" />
-                                {language === 'hi' ? 'अपडेट' : 'Update'}
-                            </span>
-                            
-                            {/* Compact Ticker (Marquee) */}
-                            <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0 rounded-lg px-2 border" style={{ background: 'rgba(249,115,22,0.04)', borderColor: 'rgba(249,115,22,0.12)' }}>
-                                <div className="absolute left-0 top-0 bottom-0 w-3 z-10 pointer-events-none" style={{ background: 'linear-gradient(90deg,#FFF8F0,transparent)' }} />
-                                <div className="absolute right-0 top-0 bottom-0 w-3 z-10 pointer-events-none" style={{ background: 'linear-gradient(270deg,#FFF8F0,transparent)' }} />
-                                <div className="animate-ref-mini-ticker text-[11px] sm:text-xs font-black text-orange-600 select-none cursor-pointer flex gap-12 whitespace-nowrap">
+                        {/* Left accent stripe */}
+                        <div style={{ width: '4px', alignSelf: 'stretch', background: 'linear-gradient(180deg, #f97316, #ea580c)', borderRadius: '12px 0 0 12px', flexShrink: 0 }} />
+
+                        <div className="flex items-center gap-3 flex-1 min-w-0 px-3 py-2.5">
+                            {/* Badge */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {/* Pulsing live dot */}
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#f97316' }} />
+                                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: '#f97316' }} />
+                                </span>
+                                <span
+                                    className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg"
+                                    style={{ background: '#f97316', color: '#ffffff', letterSpacing: '0.14em' }}
+                                >
+                                    {language === 'hi' ? 'अपडेट' : 'UPDATE'}
+                                </span>
+                            </div>
+
+                            {/* Divider */}
+                            <div style={{ width: '1px', height: '18px', background: '#fed7aa', flexShrink: 0 }} />
+
+                            {/* Scrolling ticker */}
+                            <div className="relative flex-1 overflow-hidden h-5 flex items-center min-w-0">
+                                <div className="absolute left-0 top-0 bottom-0 w-4 z-10 pointer-events-none" style={{ background: 'linear-gradient(90deg,#fff7ed,transparent)' }} />
+                                <div className="absolute right-0 top-0 bottom-0 w-4 z-10 pointer-events-none" style={{ background: 'linear-gradient(270deg,#fff7ed,transparent)' }} />
+                                <div className="animate-ref-mini-ticker text-[11px] font-semibold select-none whitespace-nowrap flex gap-16" style={{ color: '#7c3a04' }}>
                                     <span>{language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}</span>
                                     <span>{language === 'hi' ? activeUpdate.tickerHi : activeUpdate.tickerEn}</span>
                                 </div>
                             </div>
 
+                            {/* View button */}
+                            <button
+                                onClick={() => {
+                                    setModalLang(language);
+                                    setShowUpdateModal(true);
+                                }}
+                                className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[11px] font-black text-white transition-all active:scale-95 hover:opacity-90"
+                                style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 2px 10px rgba(249,115,22,0.30)' }}
+                            >
+                                {language === 'hi' ? 'देखें' : 'View'}
+                                <IoArrowForward size={10} />
+                            </button>
                         </div>
-                        
-                        {/* Action Button */}
-                        <button
-                            onClick={() => {
-                                setModalLang(language);
-                                setShowUpdateModal(true);
-                            }}
-                            className="ml-3 px-3 py-1 text-[10px] sm:text-xs font-black rounded-xl text-white hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 shrink-0 bg-gradient-to-r from-orange-500 to-pink-500 animate-view-pulse"
-                        >
-                            {language === 'hi' ? 'देखें' : 'View'}
-                            <IoArrowForward size={11} />
-                        </button>
                     </motion.div>
                 )}
 
@@ -2868,67 +2888,100 @@ const StudentDashboard = () => {
                 )}
             </AnimatePresence>
 
-            {/* Dynamic System Update Details Modal */}
             <AnimatePresence>
                 {showUpdateModal && activeUpdate && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
                         <motion.div
-                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 50, scale: 0.95 }}
-                            className="w-full max-w-lg bg-white border border-gray-200 rounded-3xl shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                            initial={{ opacity: 0, scale: 0.92, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 30 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+                            className="w-full max-w-md relative overflow-hidden flex flex-col"
+                            style={{
+                                background: '#ffffff',
+                                borderRadius: '20px',
+                                boxShadow: '0 24px 64px rgba(0,0,0,0.18), 0 0 0 1px rgba(249,115,22,0.12)',
+                                maxHeight: '88vh',
+                            }}
                         >
-                            {/* Glowing Accent Line top */}
-                            <div className="h-1.5 w-full bg-gradient-to-r from-orange-500 to-pink-500 animate-pulse" />
+                            {/* Top orange bar */}
+                            <div style={{ height: '3px', background: 'linear-gradient(90deg, #f97316, #fb923c, #fdba74)', flexShrink: 0 }} />
 
                             {/* Header */}
-                            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-b from-orange-50/40 to-transparent">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg shadow-orange-500/20 text-white shrink-0">
-                                        <IoGiftOutline size={20} className="animate-pulse" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-gray-900 font-black text-base sm:text-lg">
-                                            {modalLang === 'hi' ? activeUpdate.titleHi : activeUpdate.titleEn}
-                                        </h3>
-                                    </div>
+                            <div
+                                className="px-5 pt-5 pb-4 flex items-start gap-4"
+                                style={{ background: 'linear-gradient(160deg, #fff7ed 0%, #ffffff 100%)', borderBottom: '1px solid #fed7aa' }}
+                            >
+                                {/* Icon */}
+                                <div
+                                    className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                                    style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 4px 14px rgba(249,115,22,0.30)' }}
+                                >
+                                    <img src="/app-icon-192.png" alt="AL" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover' }} />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {/* Language selector inside modal */}
-                                    <div className="relative shrink-0 select-none">
+
+                                {/* Title + subtitle */}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <span
+                                            className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md"
+                                            style={{ background: 'rgba(249,115,22,0.12)', color: '#c2410c' }}
+                                        >
+                                            {language === 'hi' ? 'अपडेट' : 'SYSTEM UPDATE'}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base font-black text-gray-900 leading-tight">
+                                        {modalLang === 'hi' ? activeUpdate.titleHi : activeUpdate.titleEn}
+                                    </h3>
+                                </div>
+
+                                {/* Controls */}
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* Language selector */}
+                                    <div className="relative select-none">
                                         <select
                                             value={modalLang}
                                             onChange={(e) => setModalLang(e.target.value)}
-                                            className="appearance-none pl-6 pr-3 py-1 rounded-xl text-[10px] font-black text-orange-600 bg-orange-50 border border-orange-200 outline-none cursor-pointer focus:ring-1 focus:ring-orange-500/35"
+                                            className="appearance-none pl-5 pr-2 py-1 rounded-lg text-[9px] font-black outline-none cursor-pointer"
+                                            style={{ background: 'rgba(249,115,22,0.08)', color: '#c2410c', border: '1px solid #fed7aa' }}
                                         >
                                             <option value="en">ENG</option>
                                             <option value="hi">हिंदी</option>
                                         </select>
-                                        <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-orange-500 flex items-center">
-                                            <IoLanguageOutline size={12} />
+                                        <div className="absolute left-1.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#f97316' }}>
+                                            <IoLanguageOutline size={10} />
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => setShowUpdateModal(false)}
-                                        className="p-1 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                                        className="w-7 h-7 rounded-xl flex items-center justify-center transition-colors"
+                                        style={{ background: '#f3f4f6', color: '#6b7280' }}
                                     >
-                                        <IoCloseOutline size={20} />
+                                        <IoCloseOutline size={16} />
                                     </button>
                                 </div>
                             </div>
 
                             {/* Content */}
-                            <div className="p-6 overflow-y-auto flex-1 bg-white">
-                                <div className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-wrap">
+                            <div className="px-5 py-5 overflow-y-auto flex-1">
+                                <div
+                                    className="text-sm leading-relaxed"
+                                    style={{ color: '#374151', fontWeight: 500, whiteSpace: 'pre-wrap' }}
+                                >
                                     {modalLang === 'hi' ? activeUpdate.contentHi : activeUpdate.contentEn}
                                 </div>
                             </div>
 
                             {/* Footer */}
-                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+                            <div
+                                className="px-5 py-4 flex items-center justify-between"
+                                style={{ borderTop: '1px solid #f3f4f6', background: '#fafafa' }}
+                            >
+                                <span className="text-[10px] font-semibold" style={{ color: '#9ca3af' }}>Apna Lakshay — Official Notice</span>
                                 <button
                                     onClick={() => setShowUpdateModal(false)}
-                                    className="px-5 py-2.5 rounded-xl font-extrabold text-sm text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
+                                    className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-black text-white transition-all active:scale-95 hover:opacity-90"
+                                    style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', boxShadow: '0 3px 12px rgba(249,115,22,0.30)' }}
                                 >
                                     {modalLang === 'hi' ? 'ठीक है, समझ गया' : 'Got it!'}
                                 </button>
