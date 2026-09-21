@@ -292,13 +292,17 @@ exports.getLiveDashboardData = async (req, res) => {
         // 1. Core Metrics
         const metrics = await getLiveOperationalMetrics();
 
-        // 2. Real 7-Day Attendance Trends
+        // 2. Real 7-Day Attendance Trends (IST +05:30 aligned to match aggregation timezone)
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // +05:30 in ms
+        // sevenDaysAgo = IST midnight of 6 days ago = UTC 18:30 of 7 days ago
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-        sevenDaysAgo.setHours(0, 0, 0, 0);
+        // Set to IST midnight (00:00 IST = 18:30 UTC previous day)
+        sevenDaysAgo.setHours(0, 0, 0, 0); // local midnight UTC
+        const sevenDaysAgoIST = new Date(sevenDaysAgo.getTime() - IST_OFFSET_MS); // convert to IST midnight in UTC
 
         const rawTrends = await Attendance.aggregate([
-            { $match: { date: { $gte: sevenDaysAgo } } },
+            { $match: { date: { $gte: sevenDaysAgoIST } } },
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } },
@@ -308,12 +312,18 @@ exports.getLiveDashboardData = async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
+        // Helper: get YYYY-MM-DD in IST for a given UTC Date object
+        const toISTDateStr = (utcDate) => {
+            const istDate = new Date(utcDate.getTime() + IST_OFFSET_MS);
+            return istDate.toISOString().split('T')[0];
+        };
+
         const attendanceTrends = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+            const dateStr = toISTDateStr(d);  // IST date string, matches aggregation timezone
+            const dayName = new Date(d.getTime() + IST_OFFSET_MS).toLocaleDateString('en-US', { weekday: 'short' });
             const match = rawTrends.find(t => t._id === dateStr);
             attendanceTrends.push({
                 date: dateStr,
