@@ -736,28 +736,91 @@ const StudentManagement = () => {
         if (!element) return;
 
         try {
-            const canvas = await html2canvas(element, {
+            // --- Step 1: Capture the front face ---
+            const frontCanvas = await html2canvas(element, {
                 scale: 3,
                 useCORS: true,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
             });
-            const imgData = canvas.toDataURL('image/png');
+            const frontImg = frontCanvas.toDataURL('image/png');
 
-            // card dimensions (portrait)
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const componentWidth = canvas.width;
-            const componentHeight = canvas.height;
+            // --- Step 2: Temporarily flip the card to capture back face ---
+            const flipContainer = element.querySelector('[style*="rotateY"]') ||
+                element.querySelector('[class*="motion"]');
 
-            // Calculate width to fit PDF cleanly (e.g., 80mm wide card)
-            const targetWidth = 80;
-            const targetHeight = (componentHeight * targetWidth) / componentWidth;
+            // Inject a temporary "back face only" container beside the main one
+            const backWrapper = document.createElement('div');
+            backWrapper.style.cssText = `
+                position: fixed; top: -9999px; left: -9999px;
+                width: 380px; height: 240px; overflow: hidden;
+                background: white; z-index: -1;
+            `;
+            document.body.appendChild(backWrapper);
 
-            // Center in A4
-            const x = (pdfWidth - targetWidth) / 2;
-            const y = 20;
+            // Clone the element and force the back face visible
+            const cloned = element.cloneNode(true);
+            cloned.style.cssText = 'width:380px;height:240px;position:relative;';
 
-            pdf.addImage(imgData, 'PNG', x, y, targetWidth, targetHeight);
+            // Find the motion div (flip container) and force it to show the back
+            const motionDivs = cloned.querySelectorAll('div');
+            motionDivs.forEach(div => {
+                const s = div.getAttribute('style') || '';
+                // Force backfaceVisibility:hidden divs to be visible for capture
+                if (s.includes('backfaceVisibility') || s.includes('backface-visibility')) {
+                    div.style.backfaceVisibility = 'visible';
+                    div.style.webkitBackfaceVisibility = 'visible';
+                }
+                // Force the inner flipper to be rotated 180deg (shows back)
+                if (s.includes('transformStyle') || s.includes('transform-style')) {
+                    div.style.transform = 'rotateY(180deg)';
+                }
+            });
+
+            backWrapper.appendChild(cloned);
+            const backCanvas = await html2canvas(backWrapper, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                width: 380,
+                height: 240,
+            });
+            const backImg = backCanvas.toDataURL('image/png');
+            document.body.removeChild(backWrapper);
+
+            // --- Step 3: Build landscape A4 PDF — front left, back right ---
+            const pdf = new jsPDF('l', 'mm', 'a4');   // landscape: 297mm × 210mm
+            const pdfW = pdf.internal.pageSize.getWidth();   // 297
+            const pdfH = pdf.internal.pageSize.getHeight();  // 210
+
+            // Card physical: 85.6mm × 54mm (CR80); scale up slightly for clarity
+            const cardW = 120;
+            const cardH = (frontCanvas.height / frontCanvas.width) * cardW;
+            const gap    = 14;   // mm gap between cards
+            const totalW = cardW * 2 + gap;
+
+            const startX = (pdfW - totalW) / 2;
+            const startY = (pdfH - cardH) / 2;
+
+            // White card backgrounds with subtle shadow line
+            pdf.setFillColor(255, 255, 255);
+            pdf.roundedRect(startX - 2, startY - 2, cardW + 4, cardH + 4, 3, 3, 'F');
+            pdf.roundedRect(startX + cardW + gap - 2, startY - 2, cardW + 4, cardH + 4, 3, 3, 'F');
+
+            // Label: FRONT / BACK
+            pdf.setFontSize(6);
+            pdf.setTextColor(150, 150, 150);
+            pdf.text('FRONT', startX + cardW / 2, startY - 4, { align: 'center' });
+            pdf.text('BACK',  startX + cardW + gap + cardW / 2, startY - 4, { align: 'center' });
+
+            // Card images
+            pdf.addImage(frontImg, 'PNG', startX, startY, cardW, cardH);
+            pdf.addImage(backImg,  'PNG', startX + cardW + gap, startY, cardW, cardH);
+
+            // Footer line
+            pdf.setFontSize(5);
+            pdf.setTextColor(180, 180, 180);
+            pdf.text('Apna Lakshay Library Management System — Official ID Card', pdfW / 2, pdfH - 6, { align: 'center' });
+
             pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.pdf`);
         } catch (err) {
             console.error('PDF Download failed', err);
@@ -1869,7 +1932,7 @@ const StudentManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-[repeat(auto-fit,minmax(350px,1fr))] gap-6">
+                                    <div className="grid grid-cols-[repeat(auto-fit,minmax(390px,1fr))] gap-6">
                                         {shiftFilter && (
                                             <div className="col-span-full bg-orange-50 border border-orange-200 rounded-2xl p-4 flex justify-between items-center">
                                                 <p className="text-orange-950 text-xs font-semibold">
@@ -3130,11 +3193,18 @@ const StudentManagement = () => {
                                     </div>
                                     <div className="mt-5 flex flex-col sm:flex-row gap-3 w-full">
                                         <button onClick={() => setShowIdCardModal(false)} className={BTN_SECONDARY + ' flex-1'}>Close</button>
-                                        <button onClick={handleDownloadPNG} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold shadow-lg shadow-orange-500/20 transition-all">
-                                            <IoDownload size={14} /> PNG
+                                        <button
+                                            onClick={handleDownloadPNG}
+                                            className={BTN_PRIMARY + ' flex-1'}
+                                        >
+                                            <IoDownload size={14} /> Download PNG
                                         </button>
-                                        <button onClick={handleDownloadPDF} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm bg-gradient-to-r from-red-500 to-rose-500 text-white font-bold shadow-lg shadow-red-500/20">
-                                            <IoDownload size={14} /> PDF
+                                        <button
+                                            onClick={handleDownloadPDF}
+                                            className={BTN_PRIMARY + ' flex-1'}
+                                            style={{ background: 'linear-gradient(135deg, #f97316 0%, #c2410c 100%)', boxShadow: '0 4px 16px rgba(249,115,22,0.25)' }}
+                                        >
+                                            <IoDownload size={14} /> Download PDF
                                         </button>
                                     </div>
                                 </>
