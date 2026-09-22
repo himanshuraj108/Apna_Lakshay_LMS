@@ -410,6 +410,9 @@ const SubAdminDashboard = () => {
                                 <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.2 rounded text-[10px]">
                                     Non-AC: {stats?.nonAcVacantSeats ?? 0}
                                 </span>
+                                <span className="font-bold text-orange-700 bg-orange-50 border border-orange-200/80 px-1.5 py-0.2 rounded text-[10px]">
+                                    Active Scholars: {stats?.activeStudents ?? 0}
+                                </span>
                             </div>
                         }
                         gradient="from-emerald-500 to-teal-500"

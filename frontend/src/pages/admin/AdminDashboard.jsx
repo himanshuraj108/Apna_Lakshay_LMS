@@ -1809,6 +1809,12 @@ const AdminDashboard = () => {
                                     </span>
                                     <span className="font-black text-stone-900">{vacantDesksReal}</span>
                                 </div>
+                                <div className="col-span-2 flex items-center justify-between p-2 rounded-xl bg-emerald-50 border border-emerald-200/70">
+                                    <span className="flex items-center gap-1.5 text-emerald-700 font-semibold text-[11px]">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> Active Students
+                                    </span>
+                                    <span className="font-black text-emerald-800">{metrics.activeStudents || 0}</span>
+                                </div>
                                 {shiftDistribution.slice(0, 2).map((s, idx) => (
                                     <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-[#FAF6F0] border border-[#EDE8E0]/70">
                                         <span className="flex items-center gap-1.5 text-stone-600 font-semibold text-[11px] truncate max-w-[90px]">
