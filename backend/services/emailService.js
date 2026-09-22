@@ -161,7 +161,8 @@ const sendEmail = async (to, subject, templateOptions) => {
     if (!t) continue;
     try {
       await tryTransport(t, label, ms);
-      console.log(`✅ Email sent via ${label} to ${to}`);
+      console.log(`Email delivered via ${label} to ${to}`);
+
       return true;
     } catch (e) {
       console.warn(`${label} failed: ${e.message}`);

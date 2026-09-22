@@ -1,16 +1,19 @@
 const Redis = require('ioredis');
+const { createLogger } = require('./logger');
+
+const log = createLogger('redis');
 
 let redisClient = null;
 let isRedisConnected = false;
 
 if (process.env.REDIS_URL || process.env.REDIS_HOST) {
     const redisUrl = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || '127.0.0.1'}:${process.env.REDIS_PORT || 6379}`;
-    
+
     redisClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 1,
         retryStrategy: (times) => {
             if (times > 3) {
-                console.warn('⚠️ Redis connection failed. Falling back to Mock store.');
+                log.warn('Redis connection failed after retries. Falling back to in-memory mock store.');
                 isRedisConnected = false;
                 return null;
             }
@@ -19,16 +22,16 @@ if (process.env.REDIS_URL || process.env.REDIS_HOST) {
     });
 
     redisClient.on('connect', () => {
-        console.log('✅ Connected to Redis successfully');
+        log.ok('Redis connected successfully', { url: redisUrl.replace(/:\/\/.*@/, '://***@') });
         isRedisConnected = true;
     });
 
     redisClient.on('error', (err) => {
-        console.warn('⚠️ Redis error:', err.message);
+        log.warn('Redis error — falling back to mock store', { error: err.message });
         isRedisConnected = false;
     });
 } else {
-    console.log('ℹ️ No REDIS_URL or REDIS_HOST env variable found. Using Mock Redis store.');
+    log.info('No REDIS_URL or REDIS_HOST configured. In-memory mock store will be used.');
 }
 
 // Simple In-memory Mock Redis Client fallback
