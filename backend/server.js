@@ -1,211 +1,244 @@
+/**
+ * Apna Lakshay LMS — Application Bootstrap
+ * ------------------------------------------
+ * Initializes Express, security middleware, routes,
+ * database connection, socket layer, and scheduled workers.
+ */
+
+'use strict';
+
 require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
-const xss = require('xss-clean');
-const hpp = require('hpp');
-const path = require('path');
 
-// Import routes
-const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const studentRoutes = require('./routes/studentRoutes');
-const publicRoutes = require('./routes/publicRoutes');
-const settingsRoutes = require('./routes/settingsRoutes');
-const chatRoutes = require('./routes/chatRoutes');
+const { printBanner, section, status, createLogger } = require('./utils/logger');
+const log = createLogger('server');
+
+// ── Boot Banner ───────────────────────────────────────────────────────────────
+printBanner();
+
+const express        = require('express');
+const mongoose       = require('mongoose');
+const cors           = require('cors');
+const helmet         = require('helmet');
+const rateLimit      = require('express-rate-limit');
+const mongoSanitize  = require('express-mongo-sanitize');
+const xss            = require('xss-clean');
+const hpp            = require('hpp');
+const path           = require('path');
+const http           = require('http');
+const { Server }     = require('socket.io');
+
+// ── Route Modules ─────────────────────────────────────────────────────────────
+const authRoutes         = require('./routes/authRoutes');
+const adminRoutes        = require('./routes/adminRoutes');
+const studentRoutes      = require('./routes/studentRoutes');
+const publicRoutes       = require('./routes/publicRoutes');
+const settingsRoutes     = require('./routes/settingsRoutes');
+const chatRoutes         = require('./routes/chatRoutes');
 const studyPlannerRoutes = require('./routes/studyPlannerRoutes');
+const errorHandler       = require('./middleware/errorHandler');
+const socketHandler      = require('./sockets/socketHandler');
+const startCronJobs      = require('./utils/cronJobs');
 
-// Import error handler
-const errorHandler = require('./middleware/errorHandler');
+// ── Express Init ──────────────────────────────────────────────────────────────
+section('Express');
 
 const app = express();
-
-// Trust proxy for Render/Vercel/Heroku
 app.set('trust proxy', 1);
+status('Reverse Proxy Trust', 'enabled');
 
-// Middleware
+// ── CORS ──────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
-  'http://localhost:5173',
-  'https://hamaralakshay.vercel.app',
-  'https://apnalakshay.com',
-  'https://www.apnalakshay.com'
-
-];
-
-app.use(cors({
-  origin: [
     'http://localhost:5173',
     'https://hamaralakshay.vercel.app',
     'https://apnalakshay.com',
     'https://www.apnalakshay.com',
     /\.vercel\.app$/
-  ],
-  credentials: true
+];
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+status('CORS Policy',          `${allowedOrigins.filter(o => typeof o === 'string').length} explicit origins + *.vercel.app`);
+
+// ── Security Middleware ───────────────────────────────────────────────────────
+section('Security');
+
+app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
+status('Helmet (HTTP Headers)', 'Content-Security-Policy + HSTS active');
+
+const limiter = rateLimit({
+    windowMs     : 15 * 60 * 1000,
+    max          : 1000,
+    message      : 'Rate limit exceeded. Retry after 15 minutes.',
+    standardHeaders : true,
+    legacyHeaders   : false,
+});
+app.use('/api/', limiter);
+status('Rate Limiter',         '1000 req / 15 min per IP on /api/*');
+
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true }));
+status('Body Parser',          'JSON limit: 10 KB | URL-encoded: enabled');
+
+app.use(mongoSanitize());
+status('NoSQL Injection Guard', 'express-mongo-sanitize active');
+
+app.use(xss());
+status('XSS Filter',           'xss-clean active');
+
+app.use(hpp());
+status('HPP Guard',            'HTTP Parameter Pollution blocked');
+
+// ── Static Assets ─────────────────────────────────────────────────────────────
+section('Static');
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+status('Uploads Mount',        '/uploads -> ./uploads/');
+
+// ── API Routes ────────────────────────────────────────────────────────────────
+section('Routes');
+
+app.use('/api/auth',    authRoutes);         status('Route Registered', '/api/auth');
+app.use('/api/admin',   adminRoutes);        status('Route Registered', '/api/admin');
+app.use('/api/student', studentRoutes);      status('Route Registered', '/api/student');
+app.use('/api/public',  publicRoutes);       status('Route Registered', '/api/public');
+app.use('/api/settings',settingsRoutes);     status('Route Registered', '/api/settings');
+app.use('/api/chat',    chatRoutes);         status('Route Registered', '/api/chat');
+app.use('/api/study',   studyPlannerRoutes); status('Route Registered', '/api/study');
+
+app.get('/', (_req, res) => res.json({
+    service : 'apna-lakshay-lms',
+    status  : 'healthy',
+    version : process.env.npm_package_version || '1.0.0',
+    ts      : new Date().toISOString()
 }));
 
-// Security Headers
-app.use(helmet());
-
-// Cross-Origin Resource Policy (CORP) fix for images/assets if needed
-app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
-
-// Rate Limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs (relaxed for dashboard usage)
-  message: 'Too many requests from this IP, please try again after 15 minutes',
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-});
-app.use('/api/', limiter); // Apply to all API routes
-
-app.use(express.json({ limit: '10kb' })); // Body limit
-app.use(express.urlencoded({ extended: true }));
-
-// Data Sanitization
-app.use(mongoSanitize()); // Prevent NoSQL Injection
-app.use(xss()); // Prevent XSS
-app.use(hpp()); // Prevent HTTP Parameter Pollution
-
-// Static folder for uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/student', studentRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/settings', settingsRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/study', studyPlannerRoutes);
-
-// Error handler
 app.use(errorHandler);
+status('Error Handler',        'global error boundary mounted');
 
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is undefined in .env');
-    }
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ MongoDB connected successfully');
-
-    // Run database self-healing migration for student avatars
-    try {
-      const User = require('./models/User');
-      const students = await User.find({ role: 'student' });
-      let healCount = 0;
-      
-      const getDeterministicAvatar = (id, gender) => {
-        const str = String(id || '');
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-          hash += str.charCodeAt(i);
-        }
-        const index = (hash % 10) + 1;
-        const g = gender || 'male';
-        if (g === 'female') {
-          return `/uploads/avatars/avatar_female${index}.svg`;
-        } else if (g === 'other') {
-          if (hash % 2 === 0) {
-            return `/uploads/avatars/avatar_female${index}.svg`;
-          } else {
-            return `/uploads/avatars/avatar_male${index}.svg`;
-          }
-        } else {
-          return `/uploads/avatars/avatar_male${index}.svg`;
-        }
-      };
-
-      for (const student of students) {
-        const isDefault = !student.profileImage || student.profileImage.startsWith('/uploads/avatars/');
-        if (isDefault) {
-          const correctAvatar = getDeterministicAvatar(student._id, student.gender);
-          if (student.profileImage !== correctAvatar) {
-            student.profileImage = correctAvatar;
-            await student.save({ validateBeforeSave: false });
-            healCount++;
-          }
-        }
-      }
-      if (healCount > 0) {
-        console.log(`⚡ Healed default avatars for ${healCount} student(s) out of 10`);
-      }
-    } catch (migrationError) {
-      console.error('⚠️ Avatar self-healing migration error:', migrationError);
-    }
-
-    // Initialize public chat room
-    try {
-      const { initializePublicRoom } = require('./controllers/chatInitializer');
-      await initializePublicRoom();
-    } catch (chatError) {
-      console.error('Chat Init Warning:', chatError.message);
-    }
-  } catch (err) {
-    console.error('❌ MongoDB connection error:', err);
-    // process.exit(1); // REMOVED: Do not exit in serverless environment
-  }
-};
-
-// Root Route for Health Check
-app.get('/', (req, res) => {
-  res.send('API is running...');
-});
-
-// Socket.io Setup (Enabled for all environments)
-const http = require('http');
-const { Server } = require('socket.io');
-const socketHandler = require('./sockets/socketHandler');
+// ── HTTP + Socket.io Layer ────────────────────────────────────────────────────
+section('Transport');
 
 const server = http.createServer(app);
 
-// Use the same origins as Express CORS but adapt for Socket.io format
-// Socket.io expects an array or strings, regex is supported
 const socketOrigins = [
-  'http://localhost:5173',
-  'https://hamaralakshay.vercel.app',
-  'https://apnalakshay.com',
-  'https://www.apnalakshay.com',
-  /\.vercel\.app$/
+    'http://localhost:5173',
+    'https://hamaralakshay.vercel.app',
+    'https://apnalakshay.com',
+    'https://www.apnalakshay.com',
+    /\.vercel\.app$/
 ];
 
 const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL ? [process.env.CLIENT_URL, ...socketOrigins] : socketOrigins,
-    credentials: true,
-    methods: ["GET", "POST"]
-  }
+    cors: {
+        origin  : process.env.CLIENT_URL ? [process.env.CLIENT_URL, ...socketOrigins] : socketOrigins,
+        credentials : true,
+        methods     : ['GET', 'POST']
+    }
 });
 
-// Make io accessible to our routers
 app.set('io', io);
-
-// Initialize socket handlers
 socketHandler(io);
 
-// Initialize Scheduled Jobs
-const startCronJobs = require('./utils/cronJobs');
+status('HTTP Server',   'http.createServer(app)');
+status('Socket.io',     'WebSocket + long-polling transport enabled');
 
-// Start Server
+// ── Database Connection ───────────────────────────────────────────────────────
+const connectDB = async () => {
+    section('Database');
+
+    if (!process.env.MONGODB_URI) {
+        log.fatal('MONGODB_URI is not defined in environment variables');
+        process.exit(1);
+    }
+
+    try {
+        const conn = await mongoose.connect(process.env.MONGODB_URI);
+        const dbName = conn.connection.db.databaseName;
+        const host   = conn.connection.host;
+        status('MongoDB Atlas',   `Connected to "${dbName}" on ${host}`);
+    } catch (err) {
+        log.fatal('MongoDB connection failed', { error: err.message });
+        // Do not exit — allow health-check routes to remain accessible on serverless
+        return;
+    }
+
+    // ── DB Migration: Avatar Self-Healing ─────────────────────────────────────
+    section('Migrations');
+
+    try {
+        const User = require('./models/User');
+
+        const getDeterministicAvatar = (id, gender) => {
+            const str = String(id || '');
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash += str.charCodeAt(i);
+            const index = (hash % 10) + 1;
+            const g = gender || 'male';
+            if (g === 'female')      return `/uploads/avatars/avatar_female${index}.svg`;
+            if (g === 'other')       return hash % 2 === 0
+                ? `/uploads/avatars/avatar_female${index}.svg`
+                : `/uploads/avatars/avatar_male${index}.svg`;
+            return `/uploads/avatars/avatar_male${index}.svg`;
+        };
+
+        const students  = await User.find({ role: 'student' });
+        let healCount   = 0;
+
+        for (const student of students) {
+            const isDefault = !student.profileImage || student.profileImage.startsWith('/uploads/avatars/');
+            if (isDefault) {
+                const correct = getDeterministicAvatar(student._id, student.gender);
+                if (student.profileImage !== correct) {
+                    student.profileImage = correct;
+                    await student.save({ validateBeforeSave: false });
+                    healCount++;
+                }
+            }
+        }
+
+        status('Avatar Migration', healCount > 0
+            ? `${healCount} avatar(s) self-healed`
+            : `All ${students.length} student avatar(s) consistent`
+        );
+    } catch (migrationError) {
+        log.warn('Avatar migration skipped', { error: migrationError.message });
+    }
+
+    // ── Chat Room Init ────────────────────────────────────────────────────────
+    try {
+        const { initializePublicRoom } = require('./controllers/chatInitializer');
+        await initializePublicRoom();
+        status('Chat Initializer', 'Public room verified / created');
+    } catch (chatError) {
+        log.warn('Chat initializer warning', { error: chatError.message });
+    }
+};
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
 connectDB().then(() => {
-  // Start hourly/daily workers
-  startCronJobs();
+    section('Workers');
 
-  // Only listen if we are in a runtime that expects it (not Vercel serverless export)
-  // However, for Render/VPS we MUST listen.
-  // Standard Node pattern:
-  if (require.main === module || process.env.NODE_ENV === 'production') {
-    const PORT = process.env.PORT || 8080; // Fly.io default is 8080
-    server.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📡 Socket.io enabled on port ${PORT}`);
-    });
-  }
+    startCronJobs();
+    status('Cron Workers', 'Scheduled job queue started');
+
+    if (require.main === module || process.env.NODE_ENV === 'production') {
+        const PORT = Number(process.env.PORT) || 5000;
+
+        server.listen(PORT, '0.0.0.0', () => {
+            section('Ready');
+
+            const env = (process.env.NODE_ENV || 'development').toUpperCase();
+            status('Environment',   env);
+            status('Listening',     `0.0.0.0:${PORT}`);
+            status('Health Check',  `http://localhost:${PORT}/`);
+            status('API Base',      `http://localhost:${PORT}/api`);
+            status('State',         'ACCEPTING CONNECTIONS');
+
+            process.stdout.write('\n');
+            log.ok(`Process ${process.pid} is fully initialized and serving traffic on port ${PORT}`);
+            process.stdout.write('\n');
+        });
+    }
 });
 
 module.exports = app;
