@@ -67,7 +67,7 @@ const StudentManagement = () => {
     });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
-        shift: 'full',
+        shifts: [],
         negotiatedPrice: ''
     });
     const [assigningSeat, setAssigningSeat] = useState(false);
@@ -446,11 +446,17 @@ const StudentManagement = () => {
         setSuccess('');
         setAssigningSeat(true);
 
+        if (!seatFormData.shifts || seatFormData.shifts.length === 0) {
+            setError('Please select at least one shift.');
+            setAssigningSeat(false);
+            return;
+        }
+
         try {
             await api.post('/admin/seats/assign', {
                 seatId: seatFormData.seatId,
                 studentId: selectedStudent._id,
-                shift: seatFormData.shift,
+                shifts: seatFormData.shifts,
                 negotiatedPrice: seatFormData.negotiatedPrice ? Number(seatFormData.negotiatedPrice) : undefined
             });
 
@@ -458,7 +464,7 @@ const StudentManagement = () => {
             fetchStudents();
             fetchFloors();
             setShowSeatModal(false);
-            setSeatFormData({ seatId: '', shift: 'full', negotiatedPrice: '' });
+            setSeatFormData({ seatId: '', shifts: [], negotiatedPrice: '' });
             setTimeout(() => setSuccess(''), 3000);
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to assign seat');
@@ -602,7 +608,7 @@ const StudentManagement = () => {
 
     const openSeatAssignModal = (student) => {
         setSelectedStudent(student);
-        setSeatFormData({ seatId: '', shift: 'full', negotiatedPrice: '' });
+        setSeatFormData({ seatId: '', shifts: [], negotiatedPrice: '' });
         setShowSeatModal(true);
     };
 
@@ -3670,36 +3676,59 @@ const StudentManagement = () => {
                                 )}
                             </div>
 
-                            {/* Shift Selection */}
+                            {/* Shift Selection — multi-select */}
                             <div>
                                 <label className={LABEL}>
-                                    <span className="flex items-center gap-1.5"><IoTimeOutline size={14} className="text-orange-500" /> Shift Window *</span>
+                                    <span className="flex items-center gap-1.5"><IoTimeOutline size={14} className="text-orange-500" /> Shift Window(s) * <span className="text-slate-400 font-normal">(select one or more)</span></span>
                                 </label>
-                                <select
-                                    value={seatFormData.shift}
-                                    onChange={(e) => setSeatFormData({ ...seatFormData, shift: e.target.value })}
-                                    className={INPUT}
-                                    required
-                                >
-                                    <option value="">Select shift window...</option>
-                                    {(() => {
-                                        const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
-                                        return availableShifts.map(shift => (
-                                            <option key={shift.id} value={shift.id}>
-                                                {shift.name} ({getShiftTimeRange(shift)})
-                                            </option>
-                                        ));
-                                    })()}
-                                    {!isCustom && !shifts.some(s => s.id === 'full') &&
-                                        (!seatFormData.seatId || getAvailableShiftsForSeat(seatFormData.seatId).some(s => s.id !== 'full')) && (
-                                            <option value="full">Full Day (9 AM - 9 PM)</option>
-                                        )}
-                                </select>
-                                {seatFormData.seatId && getAvailableShiftsForSeat(seatFormData.seatId).length === 0 && (
-                                    <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-amber-800 text-xs font-medium">
-                                        <IoWarningOutline size={15} className="shrink-0 text-amber-600" />
-                                        <span>All shift slots for this desk are currently occupied.</span>
-                                    </div>
+                                {(() => {
+                                    const availableShifts = getAvailableShiftsForSeat(seatFormData.seatId);
+                                    const selectedShifts = seatFormData.shifts || [];
+                                    const toggleShift = (shiftId) => {
+                                        const already = selectedShifts.includes(shiftId);
+                                        setSeatFormData({
+                                            ...seatFormData,
+                                            shifts: already
+                                                ? selectedShifts.filter(id => id !== shiftId)
+                                                : [...selectedShifts, shiftId]
+                                        });
+                                    };
+                                    if (availableShifts.length === 0) {
+                                        return (
+                                            <div className="mt-1 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-amber-800 text-xs font-medium">
+                                                <IoWarningOutline size={15} className="shrink-0 text-amber-600" />
+                                                <span>{seatFormData.seatId ? 'All shift slots for this desk are currently occupied.' : 'Select a desk first to see available shifts.'}</span>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div className="mt-1 flex flex-col gap-1.5 border border-slate-200 rounded-xl p-2 bg-slate-50">
+                                            {availableShifts.map(shift => {
+                                                const id = shift._id || shift.id;
+                                                const checked = selectedShifts.includes(id);
+                                                return (
+                                                    <label
+                                                        key={id}
+                                                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg cursor-pointer transition-colors ${checked ? 'bg-orange-50 border border-orange-300' : 'bg-white border border-slate-200 hover:border-orange-200'}`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() => toggleShift(id)}
+                                                            className="accent-orange-500 w-3.5 h-3.5"
+                                                        />
+                                                        <span className="flex-1 text-sm font-medium text-slate-700">{shift.name}</span>
+                                                        <span className="text-xs text-slate-500">{getShiftTimeRange(shift)}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
+                                {seatFormData.shifts && seatFormData.shifts.length > 0 && (
+                                    <p className="text-[11px] text-orange-600 font-medium mt-1.5">
+                                        {seatFormData.shifts.length} shift{seatFormData.shifts.length > 1 ? 's' : ''} selected
+                                    </p>
                                 )}
                             </div>
 
