@@ -1,5 +1,7 @@
 # Apna Lakshay — Library Management System
 
+> Used by 100+ students across active reading libraries.
+
 A full-stack, production-grade Library Management System designed for competitive exam coaching institutes and reading libraries. The platform manages seat allocation, student lifecycle, fee collection, attendance, AI-powered learning tools, and real-time operations through a role-based multi-tenant architecture.
 
 ---
