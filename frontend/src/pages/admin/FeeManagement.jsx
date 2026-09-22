@@ -47,7 +47,7 @@ const FeeManagement = () => {
     const [fees, setFees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [onlinePaymentEnabled, setOnlinePaymentEnabled] = useState(true);
-    const [filter, setFilter] = useState(isSubAdmin ? 'pending' : 'all');
+    const [filter, setFilter] = useState(isSubAdmin ? 'pending_partial' : 'all');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
     const [sortBy, setSortBy] = useState('dueDate_asc');
@@ -406,6 +406,7 @@ const FeeManagement = () => {
             online: visibleFees.filter(f => f.razorpayOrderId).length,
             pending: visibleFees.filter(f => f.status === 'pending').length,
             partial: visibleFees.filter(f => f.status === 'partial').length,
+            pending_partial: visibleFees.filter(f => f.status === 'pending' || f.status === 'partial').length,
             overdue: visibleFees.filter(f => f.status === 'overdue').length,
             cancelled: visibleFees.filter(f => f.status === 'cancelled').length
         };
@@ -430,6 +431,7 @@ const FeeManagement = () => {
                 if (filter === 'online') return !!fee.razorpayOrderId;
                 if (filter === 'partial') return fee.status === 'partial';
                 if (filter === 'pending') return fee.status === 'pending';
+                if (filter === 'pending_partial') return fee.status === 'pending' || fee.status === 'partial';
                 if (filter === 'overdue') return fee.status === 'overdue';
                 if (filter === 'cancelled') return fee.status === 'cancelled';
                 return true;
@@ -457,9 +459,7 @@ const FeeManagement = () => {
 
 
     const TABS = isSubAdmin ? [
-        { key: 'pending',   label: 'Pending Dues',  count: metrics.counts.pending },
-        { key: 'partial',   label: 'Partial Pay',   count: metrics.counts.partial },
-        { key: 'paid',      label: 'Settled Paid',  count: metrics.counts.paid },
+        { key: 'pending_partial', label: 'Unpaid Dues', count: metrics.counts.pending_partial },
     ] : [
         { key: 'all',       label: 'All Invoices',  count: metrics.counts.all },
         { key: 'paid',      label: 'Settled Paid',  count: metrics.counts.paid },
@@ -471,8 +471,8 @@ const FeeManagement = () => {
     ];
 
     useEffect(() => {
-        if (isSubAdmin && (filter === 'all' || filter === 'online' || filter === 'overdue' || filter === 'cancelled')) {
-            setFilter('pending');
+        if (isSubAdmin && filter !== 'pending_partial') {
+            setFilter('pending_partial');
         } else if (!onlinePaymentEnabled && filter === 'online') {
             setFilter('all');
         }
