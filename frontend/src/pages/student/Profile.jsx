@@ -249,25 +249,15 @@ const Profile = () => {
     };
 
     const fetchAvailableShifts = async () => {
-        console.log('🔍 Fetching available shifts...', { hasSeat: !!profile?.seat, seatNumber: profile?.seat });
-
-        if (!profile?.seat) {
-            console.warn('❌ No seat assigned, cannot fetch shifts');
-            return;
-        }
+        if (!profile?.seat) return;
 
         setLoadingShifts(true);
         try {
             const response = await api.get('/student/available-shifts');
-            console.log('✅ Available shifts response:', response.data);
             setAvailableShifts(response.data.availableShifts || []);
             setOccupiedShifts(response.data.occupiedShifts || []);
-            console.log('📊 State updated:', {
-                availableCount: response.data.availableShifts?.length || 0,
-                occupiedCount: response.data.occupiedShifts?.length || 0
-            });
         } catch (error) {
-            console.error('❌ Error fetching available shifts:', error);
+            console.error('Error fetching available shifts:', error);
             setError('Failed to load shift availability');
             setTimeout(() => setError(''), 3000);
         } finally {

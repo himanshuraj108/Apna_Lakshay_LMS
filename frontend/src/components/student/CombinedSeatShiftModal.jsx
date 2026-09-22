@@ -49,13 +49,9 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
 
         const selectedShiftData = shifts.find(s => s.id === selectedShift);
         if (!selectedShiftData) {
-            console.warn('⚠️ Selected shift not found in shifts array');
             setFilteredFloors(floors);
             return;
         }
-
-        console.log('✅ Selected shift data:', selectedShiftData);
-        console.log('🔍 Shift ID type:', typeof selectedShift, 'Value:', selectedShift);
 
         // Filter seats based on shift availability
         let processedSeatsCount = 0;
@@ -68,10 +64,9 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                 seats: room.seats.map(seat => {
                     processedSeatsCount++;
 
-                    // Debug: Check if seat has assignments
+                    // Check if seat has active assignments
                     if (seat.assignments && seat.assignments.length > 0) {
                         seatsWithAssignments++;
-                        console.log(`📋 Seat ${seat.number} assignments:`, seat.assignments);
                     }
 
                     // Check if this seat has any active assignments that overlap with selected shift
@@ -90,18 +85,6 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                             assignment.shift.startTime,
                             assignment.shift.endTime
                         );
-
-                        console.log(`🔍 Seat ${seat.number} overlap check:`, {
-                            assignmentShift: assignment.shift.name,
-                            assignmentTime: `${assignment.shift.startTime}-${assignment.shift.endTime}`,
-                            selectedShift: selectedShiftData.name,
-                            selectedTime: `${selectedShiftData.startTime}-${selectedShiftData.endTime}`,
-                            overlaps
-                        });
-
-                        if (overlaps) {
-                            console.log(`🔴 Seat ${seat.number} occupied - ${assignment.shift.name} overlaps with ${selectedShiftData.name}`);
-                        }
 
                         return overlaps;
                     });
@@ -125,13 +108,6 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
             ), 0
         );
 
-        console.log(`📊 Filtering results:`, {
-            totalProcessed: processedSeatsCount,
-            seatsWithAssignments,
-            occupiedForShift: occupiedSeats,
-            availableForShift: totalSeats - occupiedSeats,
-            shiftName: selectedShiftData.name
-        });
 
         setFilteredFloors(filtered);
     }, [selectedShift, floors, shifts]);
@@ -139,11 +115,9 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
     const fetchSeats = async () => {
         try {
             const response = await api.get('/public/seats');
-            console.log('🏢 Fetched seat data:', response.data);
-            console.log('📊 Sample seat structure:', response.data.floors[0]?.rooms[0]?.seats[0]);
             setFloors(response.data.floors);
         } catch (error) {
-            console.error('❌ Error fetching seats:', error);
+            console.error('Error fetching seats:', error);
             setError('Failed to load seats');
         } finally {
             setLoading(false);

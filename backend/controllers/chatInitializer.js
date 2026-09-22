@@ -1,33 +1,34 @@
 const ChatRoom = require('../models/ChatRoom');
 const User = require('../models/User');
+const { createLogger } = require('../utils/logger');
 
-// Initialize public chat room
+const log = createLogger('chat-init');
+
+// Initialize public chat room on server boot
 exports.initializePublicRoom = async () => {
     try {
-        // Check if public room exists
         let publicRoom = await ChatRoom.findOne({ type: 'public', name: 'Public Study Chat' });
 
         if (!publicRoom) {
-            // Find an admin user to be the creator
             const admin = await User.findOne({ role: 'admin' });
 
             if (admin) {
                 publicRoom = await ChatRoom.create({
-                    type: 'public',
-                    name: 'Public Study Chat',
-                    participants: [], // Empty for public
-                    createdBy: admin._id,
-                    isActive: true
+                    type        : 'public',
+                    name        : 'Public Study Chat',
+                    participants: [],
+                    createdBy   : admin._id,
+                    isActive    : true
                 });
 
-                console.log('✅ Public chat room created');
+                log.ok('Public chat room created');
             }
         } else {
-            console.log('✅ Public chat room already exists');
+            log.info('Public chat room verified');
         }
 
         return publicRoom;
     } catch (error) {
-        console.error('Error initializing public room:', error);
+        log.error('Failed to initialize public chat room', { error: error.message });
     }
 };
