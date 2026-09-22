@@ -2362,11 +2362,17 @@ exports.assignSeat = async (req, res) => {
 
             // Send seat assignment email
             try {
-                // Resolve shift name
-                let shiftName = shift;
+                // Resolve shift name(s) from shiftIds array
+                let shiftName = 'N/A';
                 try {
-                    const shiftObj = await Shift.findById(shift);
-                    if (shiftObj) shiftName = shiftObj.name;
+                    const resolvedShifts = await Shift.find({ _id: { $in: shiftIds } });
+                    if (resolvedShifts.length > 0) {
+                        shiftName = resolvedShifts.map(s => s.name).join(' + ');
+                    } else if (shift) {
+                        // Fallback: single shift passed directly
+                        const shiftObj = await Shift.findById(shift);
+                        if (shiftObj) shiftName = shiftObj.name;
+                    }
                 } catch (ignore) {
                     console.log('Could not resolve shift name');
                 }
