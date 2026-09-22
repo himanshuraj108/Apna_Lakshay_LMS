@@ -109,6 +109,12 @@ const StudentManagement = () => {
     const [subAdminInactiveLoading, setSubAdminInactiveLoading] = useState(false);
     const [inactiveCountdown, setInactiveCountdown] = useState(3);
 
+    // Reactivation Modal State
+    const [showReactivateModal, setShowReactivateModal] = useState(false);
+    const [reactivateStudent, setReactivateStudent] = useState(null);
+    const [reactivateDate, setReactivateDate] = useState('');
+    const [reactivateLoading, setReactivateLoading] = useState(false);
+
     useEffect(() => {
         let timer;
         if (showSubAdminInactiveModal) {
@@ -261,15 +267,36 @@ const StudentManagement = () => {
         }
     };
 
-    const handleReactivate = async (student) => {
-        if (window.confirm(`Are you sure you want to reactivate ${student.name}?`)) {
-            try {
-                await api.put(`/admin/students/${student._id}`, { isActive: true, inactivationStatus: 'none' });
-                setSuccess('Student reactivated successfully');
-                fetchStudents();
-            } catch (err) {
-                setError('Failed to reactivate student');
-            }
+    const openReactivateModal = (student) => {
+        setReactivateStudent(student);
+        setReactivateDate(new Date().toISOString().split('T')[0]); // Default to today
+        setShowReactivateModal(true);
+        setError('');
+    };
+
+    const confirmReactivate = async () => {
+        if (!reactivateStudent) return;
+        if (!reactivateDate) {
+            setError('Please select a new admission date.');
+            return;
+        }
+        setReactivateLoading(true);
+        setError('');
+        try {
+            await api.put(`/admin/students/${reactivateStudent._id}`, {
+                isActive: true,
+                inactivationStatus: 'none',
+                joinedAt: reactivateDate
+            });
+            setSuccess(`${reactivateStudent.name} reactivated successfully.`);
+            setShowReactivateModal(false);
+            setReactivateStudent(null);
+            fetchStudents();
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to reactivate student');
+        } finally {
+            setReactivateLoading(false);
         }
     };
 
@@ -2457,7 +2484,7 @@ const StudentManagement = () => {
                                                                 ) : (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => handleReactivate(student)}
+                                                                            onClick={() => openReactivateModal(student)}
                                                                             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
                                                                         >
                                                                             <IoRefresh size={14} />
@@ -2841,7 +2868,7 @@ const StudentManagement = () => {
                                                                     ) : (
                                                                         <>
                                                                             <button
-                                                                                onClick={() => handleReactivate(student)}
+                                                                                onClick={() => openReactivateModal(student)}
                                                                                 className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                                                                                 title="Reactivate Scholar"
                                                                             >
@@ -3882,6 +3909,102 @@ const StudentManagement = () => {
                                 </button>
                             </div>
                         </form>
+                    </Modal>
+
+                    {/* Reactivation Modal */}
+                    <Modal
+                        theme="light"
+                        isOpen={showReactivateModal}
+                        onClose={() => {
+                            if (!reactivateLoading) {
+                                setShowReactivateModal(false);
+                                setReactivateStudent(null);
+                                setError('');
+                            }
+                        }}
+                        title="Reactivate Scholar"
+                        maxWidth="max-w-md"
+                        accentColor="from-emerald-500 via-green-500 to-emerald-600"
+                    >
+                        {reactivateStudent && (
+                            <div className="space-y-4">
+                                {/* Scholar Context Card */}
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-4">
+                                    {reactivateStudent.avatar ? (
+                                        <img
+                                            src={reactivateStudent.avatar}
+                                            alt={reactivateStudent.name}
+                                            className="w-14 h-14 rounded-2xl object-cover border-2 border-emerald-200 shadow-sm shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-extrabold text-xl shrink-0 shadow-sm">
+                                            {reactivateStudent.name?.charAt(0)?.toUpperCase() || 'S'}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        <h4 className="text-base font-bold text-slate-900 truncate">{reactivateStudent.name}</h4>
+                                        <p className="text-xs text-slate-500 mt-0.5">{reactivateStudent.email}</p>
+                                        <span className="inline-block mt-1.5 px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-full">
+                                            Inactive → Active
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* New Admission Date */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
+                                        New Admission Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={reactivateDate}
+                                        onChange={(e) => setReactivateDate(e.target.value)}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-800 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
+                                    />
+                                    <p className="text-[11px] text-slate-400 mt-1.5">
+                                        Previous admission date is saved in the scholar's status history.
+                                    </p>
+                                </div>
+
+                                {/* Info note */}
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
+                                    <IoAlertCircleOutline size={16} className="text-amber-500 shrink-0 mt-px" />
+                                    <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                                        All pending and overdue fees from the previous enrollment will be cleared. A new fee cycle begins from the new admission date.
+                                    </p>
+                                </div>
+
+                                {/* Error */}
+                                {error && (
+                                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold">
+                                        {error}
+                                    </div>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex gap-2.5 pt-1">
+                                    <button
+                                        onClick={() => { setShowReactivateModal(false); setReactivateStudent(null); setError(''); }}
+                                        disabled={reactivateLoading}
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all cursor-pointer disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={confirmReactivate}
+                                        disabled={reactivateLoading || !reactivateDate}
+                                        className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-sm shadow-emerald-500/30 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {reactivateLoading ? (
+                                            <><IoRefresh size={13} className="animate-spin" /><span>Activating...</span></>
+                                        ) : (
+                                            <><IoRefresh size={13} /><span>Confirm Reactivation</span></>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </Modal>
 
                     {/* Sub-Admin Inactivation Request Modal */}

@@ -1308,31 +1308,20 @@ exports.updateStudent = async (req, res) => {
                     console.log(`Healed ${healed.modifiedCount} fee record(s) for reactivated student: ${student.name}`);
                 }
 
-                // Auto-cancel all pending/overdue fees generated during the inactive period.
-                // Find when the student was last deactivated using statusHistory.
-                let inactiveFrom = null;
-                if (student.statusHistory && student.statusHistory.length > 0) {
-                    // Walk history from newest to oldest and find the last 'inactive' entry
-                    const lastInactive = [...student.statusHistory].reverse().find(h => h.status === 'inactive');
-                    if (lastInactive) inactiveFrom = new Date(lastInactive.date);
-                }
-                // Fallback: if no history entry, use updatedAt as approximate deactivation time
-                if (!inactiveFrom) inactiveFrom = new Date(student.updatedAt || student.createdAt);
-
-                // Cancel all pending/overdue fees created ON OR AFTER the deactivation date
+                // Cancel ALL remaining pending/overdue fees — the student is starting fresh
+                // with a new admission date, so old unpaid dues should not carry forward.
                 const cancelled = await Fee.updateMany(
                     {
                         student: student._id,
-                        status: { $in: ['pending', 'overdue'] },
-                        createdAt: { $gte: inactiveFrom }
+                        status: { $in: ['pending', 'overdue'] }
                     },
                     { $set: { status: 'cancelled', cancelledReason: 'inactive_period' } }
                 );
                 if (cancelled.modifiedCount > 0) {
-                    console.log(`Auto-cancelled ${cancelled.modifiedCount} inactive-period fee(s) for reactivated student: ${student.name}`);
+                    console.log(`Auto-cancelled ${cancelled.modifiedCount} outstanding fee(s) on reactivation for: ${student.name}`);
                 }
 
-                // Inactive -> active transition: set admissionDate to current date/time
+                // Inactive -> active transition: set admissionDate from request or default to now
                 if (!joinedAt) {
                     targetAdmissionDate = new Date();
                     updateData.admissionDate = targetAdmissionDate;
