@@ -22,6 +22,9 @@ const PWAInstallPrompt = () => {
     const [installed, setInstalled] = useState(false);
 
     useEffect(() => {
+        // Don't show on laptop / desktop
+        if (typeof window !== 'undefined' && window.innerWidth >= 768) return;
+
         // Don't show if already running as standalone PWA
         const isStandalone =
             window.matchMedia('(display-mode: standalone)').matches ||
@@ -36,6 +39,7 @@ const PWAInstallPrompt = () => {
         }
 
         const handler = (e) => {
+            if (window.innerWidth >= 768) return;
             e.preventDefault();
             setDeferredPrompt(e);
             // Small delay so user is settled on the page
@@ -45,6 +49,10 @@ const PWAInstallPrompt = () => {
         window.addEventListener('beforeinstallprompt', handler);
         return () => window.removeEventListener('beforeinstallprompt', handler);
     }, []);
+
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        return null;
+    }
 
     const handleInstall = async () => {
         if (!deferredPrompt) return;

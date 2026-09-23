@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    IoGridOutline, IoDownload, IoClose,
+    IoDownload, IoClose,
     IoFlashOutline, IoCloudOfflineOutline, IoPhonePortraitOutline,
     IoSparkles, IoInformationCircleOutline
 } from 'react-icons/io5';
@@ -10,30 +10,29 @@ const PwaInstallBanner = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(window.deferredPwaPrompt || null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
     const [hint, setHint] = useState('');
-    const laterTimerRef = useRef(null);
 
     useEffect(() => {
+        // Completely removed from laptop & desktop (>= 768px)
+        if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+            return;
+        }
+
         // Do not show if already in standalone / installed PWA mode
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
             return;
         }
 
-        // Desktop / laptop only (>= 768px) — mobile gets no install banner
-        const isDesktop = window.innerWidth >= 768;
-        if (!isDesktop) return;
-
-        // Show after brief delay on page load
-        const timer = setTimeout(() => {
-            setShowInstallBanner(true);
-        }, 800);
+        // Do not show if dismissed in this session
+        if (sessionStorage.getItem('pwa_banner_dismissed')) {
+            return;
+        }
 
         const handleBeforeInstallPrompt = (e) => {
+            if (window.innerWidth >= 768) return;
             e.preventDefault();
             window.deferredPwaPrompt = e;
             setDeferredPrompt(e);
-            if (window.innerWidth >= 768) {
-                setShowInstallBanner(true);
-            }
+            setShowInstallBanner(true);
         };
 
         const handleAppInstalled = () => {
@@ -42,33 +41,33 @@ const PwaInstallBanner = () => {
             window.deferredPwaPrompt = null;
         };
 
+        const handleResize = () => {
+            if (window.innerWidth >= 768) {
+                setShowInstallBanner(false);
+            }
+        };
+
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.addEventListener('appinstalled', handleAppInstalled);
+        window.addEventListener('resize', handleResize);
+
+        // On mobile, show if deferred prompt already captured
+        if (window.deferredPwaPrompt && window.innerWidth < 768) {
+            setShowInstallBanner(true);
+        }
 
         return () => {
-            clearTimeout(timer);
-            if (laterTimerRef.current) clearTimeout(laterTimerRef.current);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
+            window.removeEventListener('resize', handleResize);
         };
     }, []);
 
     const dismissPrompt = () => {
         setShowInstallBanner(false);
-
-        // On desktop/laptop (>= 768px): re-show after 2 minutes
-        const isDesktop = window.innerWidth >= 768;
-        if (isDesktop) {
-            if (laterTimerRef.current) clearTimeout(laterTimerRef.current);
-            laterTimerRef.current = setTimeout(() => {
-                // Only re-show if not yet installed
-                const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-                    || window.navigator.standalone === true;
-                if (!isStandalone) {
-                    setShowInstallBanner(true);
-                }
-            }, 2 * 60 * 1000); // 2 minutes
-        }
+        try {
+            sessionStorage.setItem('pwa_banner_dismissed', 'true');
+        } catch (e) {}
     };
 
     const handleInstallClick = async () => {
@@ -86,12 +85,15 @@ const PwaInstallBanner = () => {
             setDeferredPrompt(null);
             window.deferredPwaPrompt = null;
         } else {
-            // If browser doesn't expose beforeinstallprompt directly (e.g. desktop Chrome already showed address bar icon, or iOS)
-            setHint('Click the install icon in your browser address bar or menu to install.');
+            setHint('Click the install icon in your browser menu to install.');
             setTimeout(() => setHint(''), 6000);
         }
     };
 
+    // Guarantee: never render on laptop or desktop views
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        return null;
+    }
 
     return (
         <AnimatePresence>
@@ -101,7 +103,7 @@ const PwaInstallBanner = () => {
                     animate={{ y: 0, opacity: 1, scale: 1 }}
                     exit={{ y: 80, opacity: 0, scale: 0.95 }}
                     transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-                    className="fixed bottom-4 sm:bottom-6 left-0 sm:left-6 w-full sm:w-[390px] z-[9999] p-3 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
+                    className="md:hidden fixed bottom-4 left-0 w-full z-[9999] p-3 flex items-end justify-center pointer-events-none"
                     style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}
                 >
                     <div
