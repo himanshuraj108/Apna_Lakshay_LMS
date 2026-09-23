@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     IoDownload, IoClose,
@@ -6,68 +6,94 @@ import {
     IoSparkles, IoInformationCircleOutline
 } from 'react-icons/io5';
 
+const SNOOZE_STORAGE_KEY = 'pwa_banner_snooze_until';
+const SNOOZE_DURATION_MS = 2 * 60 * 1000; // 2 minutes
+
+const isInstalled = () => {
+    if (typeof window === 'undefined') return true;
+    return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true ||
+        localStorage.getItem('pwa_app_installed') === 'true'
+    );
+};
+
 const PwaInstallBanner = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(window.deferredPwaPrompt || null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
     const [hint, setHint] = useState('');
+    const timerRef = useRef(null);
 
     useEffect(() => {
-        // Completely removed from laptop & desktop (>= 768px)
-        if (typeof window !== 'undefined' && window.innerWidth >= 768) {
-            return;
-        }
+        if (isInstalled()) return;
 
-        // Do not show if already in standalone / installed PWA mode
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
-            return;
-        }
+        const now = Date.now();
+        const snoozeUntil = Number(localStorage.getItem(SNOOZE_STORAGE_KEY) || 0);
 
-        // Do not show if dismissed in this session
-        if (sessionStorage.getItem('pwa_banner_dismissed')) {
-            return;
+        if (snoozeUntil > now) {
+            // Still in the 2-minute snooze window from clicking "Later"
+            const remaining = snoozeUntil - now;
+            timerRef.current = setTimeout(() => {
+                if (!isInstalled()) {
+                    setShowInstallBanner(true);
+                }
+            }, remaining);
+        } else {
+            // Snooze expired or first visit — show after 2 seconds
+            timerRef.current = setTimeout(() => {
+                if (!isInstalled()) {
+                    setShowInstallBanner(true);
+                }
+            }, 2000);
         }
 
         const handleBeforeInstallPrompt = (e) => {
-            if (window.innerWidth >= 768) return;
             e.preventDefault();
             window.deferredPwaPrompt = e;
             setDeferredPrompt(e);
-            setShowInstallBanner(true);
+
+            // Only show if not currently snoozed
+            const currentSnooze = Number(localStorage.getItem(SNOOZE_STORAGE_KEY) || 0);
+            if (Date.now() >= currentSnooze && !isInstalled()) {
+                setShowInstallBanner(true);
+            }
         };
 
         const handleAppInstalled = () => {
             setShowInstallBanner(false);
             setDeferredPrompt(null);
             window.deferredPwaPrompt = null;
-        };
-
-        const handleResize = () => {
-            if (window.innerWidth >= 768) {
-                setShowInstallBanner(false);
-            }
+            try {
+                localStorage.setItem('pwa_app_installed', 'true');
+            } catch (err) {}
         };
 
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
         window.addEventListener('appinstalled', handleAppInstalled);
-        window.addEventListener('resize', handleResize);
-
-        // On mobile, show if deferred prompt already captured
-        if (window.deferredPwaPrompt && window.innerWidth < 768) {
-            setShowInstallBanner(true);
-        }
 
         return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
-            window.removeEventListener('resize', handleResize);
         };
     }, []);
 
     const dismissPrompt = () => {
         setShowInstallBanner(false);
+
+        // Snooze for exactly 2 minutes (persists in localStorage across page reloads)
+        const snoozeUntil = Date.now() + SNOOZE_DURATION_MS;
         try {
-            sessionStorage.setItem('pwa_banner_dismissed', 'true');
+            localStorage.setItem(SNOOZE_STORAGE_KEY, snoozeUntil.toString());
         } catch (e) {}
+
+        // Schedule re-appearance after 2 minutes
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+            if (!isInstalled()) {
+                setShowInstallBanner(true);
+            }
+        }, SNOOZE_DURATION_MS);
     };
 
     const handleInstallClick = async () => {
@@ -78,6 +104,9 @@ const PwaInstallBanner = () => {
                 const { outcome } = await promptToUse.userChoice;
                 if (outcome === 'accepted') {
                     setShowInstallBanner(false);
+                    try {
+                        localStorage.setItem('pwa_app_installed', 'true');
+                    } catch (e) {}
                 }
             } catch (err) {
                 console.error('PWA install error:', err);
@@ -85,15 +114,10 @@ const PwaInstallBanner = () => {
             setDeferredPrompt(null);
             window.deferredPwaPrompt = null;
         } else {
-            setHint('Click the install icon in your browser menu to install.');
+            setHint('Click the install icon in your browser address bar or menu to install.');
             setTimeout(() => setHint(''), 6000);
         }
     };
-
-    // Guarantee: never render on laptop or desktop views
-    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
-        return null;
-    }
 
     return (
         <AnimatePresence>
@@ -103,7 +127,7 @@ const PwaInstallBanner = () => {
                     animate={{ y: 0, opacity: 1, scale: 1 }}
                     exit={{ y: 80, opacity: 0, scale: 0.95 }}
                     transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-                    className="md:hidden fixed bottom-4 left-0 w-full z-[9999] p-3 flex items-end justify-center pointer-events-none"
+                    className="fixed bottom-4 sm:bottom-6 left-0 sm:left-6 w-full sm:w-[390px] z-[9999] p-3 sm:p-0 flex items-end justify-center sm:block pointer-events-none"
                     style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}
                 >
                     <div
