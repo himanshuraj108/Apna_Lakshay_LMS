@@ -18,7 +18,11 @@ const PwaInstallBanner = () => {
             return;
         }
 
-        // Show on every refresh!
+        // Desktop / laptop only (>= 768px) — mobile gets no install banner
+        const isDesktop = window.innerWidth >= 768;
+        if (!isDesktop) return;
+
+        // Show after brief delay on page load
         const timer = setTimeout(() => {
             setShowInstallBanner(true);
         }, 800);
@@ -27,7 +31,9 @@ const PwaInstallBanner = () => {
             e.preventDefault();
             window.deferredPwaPrompt = e;
             setDeferredPrompt(e);
-            setShowInstallBanner(true);
+            if (window.innerWidth >= 768) {
+                setShowInstallBanner(true);
+            }
         };
 
         const handleAppInstalled = () => {
