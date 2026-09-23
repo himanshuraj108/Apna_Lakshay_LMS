@@ -2286,9 +2286,16 @@ exports.assignSeat = async (req, res) => {
 
             const now = new Date();
 
-            // Calculate billing cycle based on student's JOINED date (not today)
-            // If student joined Apr 30 and today is May 1, first fee should be Apr 30 cycle
-            const joinedDate = student.createdAt ? new Date(student.createdAt) : new Date();
+            // Calculate billing cycle based on student's ADMISSION date (not account creation date).
+            // For reactivated students, admissionDate is set to the new activation date.
+            // Fallback chain: admissionDate → seatAssignedAt → createdAt → today
+            const joinedDate = student.admissionDate
+                ? new Date(student.admissionDate)
+                : student.seatAssignedAt
+                    ? new Date(student.seatAssignedAt)
+                    : student.createdAt
+                        ? new Date(student.createdAt)
+                        : new Date();
             const joinedDay  = joinedDate.getDate();
 
             // Determine which month/year the fee belongs to
@@ -2315,7 +2322,9 @@ exports.assignSeat = async (req, res) => {
             // dueDate = the joinedDay of feeMonth/feeYear
             const dueDate = new Date(feeYear, feeMonth - 1, joinedDay);
 
-            // Create or update fee record — but NEVER overwrite a fee that's already paid
+            // Create or update fee record
+            // NEVER overwrite a fee that's already paid.
+            // If fee was cancelled (e.g. from reactivation cleanup), restore it to pending.
             const existingFee = await Fee.findOne({
                 student: studentId,
                 month: feeMonth,
@@ -2331,14 +2340,21 @@ exports.assignSeat = async (req, res) => {
                     dueDate,
                     status: 'pending'
                 });
-            } else if (existingFee.status !== 'paid') {
-                // Update amount only — never reset status to pending
+            } else if (existingFee.status === 'paid') {
+                // Already paid — only update amount if it changed, leave status alone
+                if (existingFee.amount !== _newAssignmentPrice) {
+                    await Fee.findByIdAndUpdate(existingFee._id, { amount: _newAssignmentPrice || 0 });
+                }
+            } else {
+                // pending / overdue / cancelled / partial → restore to pending with new amount
                 await Fee.findByIdAndUpdate(existingFee._id, {
                     amount: _newAssignmentPrice || 0,
-                    dueDate
+                    dueDate,
+                    status: 'pending',
+                    $unset: { cancelledReason: '' }
                 });
             }
-            // If already paid → do nothing
+
 
 
             await Notification.create({
