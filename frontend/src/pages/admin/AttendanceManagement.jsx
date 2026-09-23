@@ -75,6 +75,7 @@ const AttendanceManagement = () => {
     const [lastSaved, setLastSaved] = useState(null);
     const [lastLiveSync, setLastLiveSync] = useState(null);
     const [newSelfMarkDetected, setNewSelfMarkDetected] = useState(false);
+    const [highlightTop5, setHighlightTop5] = useState(false);
     
     const pollRef = useRef(null);
     const autoSavingRef = useRef(false);
@@ -438,82 +439,99 @@ const AttendanceManagement = () => {
     const generateMonthlyPDF = async () => {
         setSaving(true);
         try {
-            const dateObj = new Date(selectedDate);
-            const year = dateObj.getFullYear();
-            const month = dateObj.getMonth() + 1;
-            const res = await api.get('/admin/attendance/monthly?year=' + year + '&month=' + month);
-            const records = res.data.attendance;
+            const dateObj    = new Date(selectedDate);
+            const year       = dateObj.getFullYear();
+            const month      = dateObj.getMonth() + 1;
+            const monthName  = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
             const daysInMonth = new Date(year, month, 0).getDate();
 
-            const doc = new jsPDF('landscape');
-            const tableColumn = ['Name', 'Seat'];
-            for (let i = 1; i <= daysInMonth; i++) {
-                tableColumn.push(i.toString());
-            }
-            tableColumn.push('%');
+            // Fix: use path params as backend route expects
+            const res     = await api.get(`/admin/attendance/monthly/${year}/${month}`);
+            const records = res.data.attendance || [];
+            const seatMap = res.data.seatMap    || {};
 
-            const tableRows = [];
-            filteredStudents.forEach(student => {
-                const row = [student.name, student.seat ? student.seat.number.toString() : '-'];
-                let presents = 0;
-                for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = year + '-' + String(month).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-                    const rec = records.find(r => {
-                        const rDate = new Date(r.date).toISOString().split('T')[0];
-                        return rDate === dateStr && r.student._id.toString() === student._id.toString();
-                    });
-                    if (rec) {
-                        if (rec.status === 'present') {
-                            row.push('P');
-                            presents++;
-                        } else if (rec.status === 'holiday') {
-                            row.push('H');
-                            presents++;
-                        } else {
-                            row.push('A');
-                        }
-                    } else {
-                        row.push('-');
-                    }
-                }
-                const pct = Math.round((presents / daysInMonth) * 100);
-                row.push(pct + '%');
-                tableRows.push(row);
+            // Build per-student summary
+            const summaryMap = {};
+            records.forEach(r => {
+                if (!r.student || !r.student.isActive) return;
+                const sid = r.student._id.toString();
+                if (!summaryMap[sid]) summaryMap[sid] = { student: r.student, days: {}, presents: 0 };
+                const day = new Date(r.date).getDate();
+                const isPresent = r.status === 'present' || r.status === 'holiday';
+                summaryMap[sid].days[day] = isPresent ? 'P' : 'A';
+                if (isPresent) summaryMap[sid].presents++;
             });
 
-            const monthName = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+            // Compute attendance % and sort descending for top-5 detection
+            const rows = Object.values(summaryMap).map(s => ({
+                ...s,
+                pct: Math.round((s.presents / daysInMonth) * 100)
+            })).sort((a, b) => b.pct - a.pct);
+
+            // Top-5 student IDs for highlight
+            const top5Ids = new Set(rows.slice(0, 5).map(r => r.student._id.toString()));
+
+            const doc = new jsPDF('landscape');
             doc.setFontSize(16);
-            doc.text('Monthly Attendance Matrix Report - ' + monthName, 14, 15);
+            doc.text('Monthly Attendance Report — ' + monthName, 14, 14);
+            doc.setFontSize(9);
+            doc.setTextColor(120);
+            doc.text('Apna Lakshay Library Management System', 14, 20);
+            if (highlightTop5) {
+                doc.setTextColor(22, 163, 74);
+                doc.text('Top 5 attendees highlighted in green', 14, 26);
+            }
+            doc.setTextColor(0);
+
+            const tableColumn = ['#', 'Name', 'Seat', 'Shift'];
+            for (let i = 1; i <= daysInMonth; i++) tableColumn.push(String(i));
+            tableColumn.push('Att %');
+
+            const tableRows = rows.map((s, idx) => {
+                const sid  = s.student._id.toString();
+                const info = seatMap[sid] || {};
+                const row  = [
+                    String(idx + 1),
+                    s.student.name,
+                    info.seatNumber ? String(info.seatNumber) : '-',
+                    info.shifts?.length ? info.shifts.join('+') : '-'
+                ];
+                for (let d = 1; d <= daysInMonth; d++) row.push(s.days[d] || '-');
+                row.push(s.pct + '%');
+                return row;
+            });
 
             autoTable(doc, {
-                head: [tableColumn],
-                body: tableRows,
-                startY: 20,
-                styles: { fontSize: 7, cellPadding: 1 },
-                headStyles: { fillColor: [234, 88, 12], halign: 'center' },
-                columnStyles: { 0: { halign: 'left', minCellWidth: 25 }, 1: { halign: 'center' } },
+                head        : [tableColumn],
+                body        : tableRows,
+                startY      : highlightTop5 ? 30 : 24,
+                styles      : { fontSize: 6, cellPadding: 1 },
+                headStyles  : { fillColor: [234, 88, 12], halign: 'center', fontStyle: 'bold' },
+                columnStyles: {
+                    0: { halign: 'center', minCellWidth: 6 },
+                    1: { halign: 'left',   minCellWidth: 28 },
+                    2: { halign: 'center', minCellWidth: 10 },
+                    3: { halign: 'center', minCellWidth: 18 },
+                },
                 didParseCell: (data) => {
-                    if (data.section === 'body') {
-                        if (data.column.index === tableColumn.length - 1) {
-                            const pct = parseInt(data.cell.raw);
-                            if (!isNaN(pct)) {
-                                if (pct >= 75) data.cell.styles.textColor = [34, 197, 94];
-                                else if (pct >= 50) data.cell.styles.textColor = [245, 158, 11];
-                                else data.cell.styles.textColor = [239, 68, 68];
-                                data.cell.styles.fontStyle = 'bold';
-                            }
-                        } else if (data.column.index >= 2 && data.column.index < 2 + daysInMonth) {
-                            if (data.cell.raw === 'P') {
-                                data.cell.styles.textColor = [34, 197, 94];
-                                data.cell.styles.fontStyle = 'bold';
-                            } else if (data.cell.raw === 'A') {
-                                data.cell.styles.textColor = [239, 68, 68];
-                                data.cell.styles.fontStyle = 'bold';
-                            } else if (data.cell.raw === 'H') {
-                                data.cell.styles.textColor = [245, 158, 11];
-                                data.cell.styles.fontStyle = 'bold';
-                            }
+                    if (data.section !== 'body') return;
+                    const rowIdx = data.row.index;
+                    const isTop5 = highlightTop5 && top5Ids.has(rows[rowIdx]?.student._id.toString());
+                    const lastCol = data.column.index === tableColumn.length - 1;
+                    const dayCol  = data.column.index >= 4 && data.column.index < 4 + daysInMonth;
+
+                    if (isTop5) {
+                        data.cell.styles.fillColor = [220, 252, 231]; // light green row
+                    }
+                    if (lastCol) {
+                        const pct = parseInt(data.cell.raw);
+                        if (!isNaN(pct)) {
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.textColor = pct >= 75 ? [22, 163, 74] : pct >= 50 ? [245, 158, 11] : [239, 68, 68];
                         }
+                    } else if (dayCol) {
+                        if (data.cell.raw === 'P') data.cell.styles.textColor = [22, 163, 74];
+                        else if (data.cell.raw === 'A') data.cell.styles.textColor = [239, 68, 68];
                     }
                 }
             });
@@ -521,7 +539,7 @@ const AttendanceManagement = () => {
             doc.save('Monthly_Attendance_' + monthName.replace(' ', '_') + '.pdf');
         } catch (e) {
             setError(e.response?.data?.message || 'Failed to generate monthly report');
-            setTimeout(() => setError(''), 3000);
+            setTimeout(() => setError(''), 4000);
         } finally {
             setSaving(false);
         }
@@ -531,57 +549,92 @@ const AttendanceManagement = () => {
         setSaving(true);
         try {
             const year = new Date(selectedDate).getFullYear();
-            const res = await api.get('/admin/attendance/yearly?year=' + year);
-            const records = res.data.attendance;
 
-            const doc = new jsPDF('landscape');
+            // Fix: use path params as backend route expects
+            const res     = await api.get(`/admin/attendance/yearly/${year}`);
+            const records = res.data.attendance || [];
+            const seatMap = res.data.seatMap    || {};
+
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const tableColumn = ['Name', 'Seat', ...months, 'Avg %'];
-            const tableRows = [];
 
-            filteredStudents.forEach(student => {
-                const row = [student.name, student.seat ? student.seat.number.toString() : '-'];
-                let totalPct = 0;
-                let activeMonths = 0;
-
-                months.forEach((m, mIdx) => {
-                    const monthRecs = records.filter(r => {
-                        const rDate = new Date(r.date);
-                        return rDate.getMonth() === mIdx && r.student._id.toString() === student._id.toString();
-                    });
-                    if (monthRecs.length > 0) {
-                        const presents = monthRecs.filter(r => r.status === 'present' || r.status === 'holiday').length;
-                        const pct = Math.round((presents / monthRecs.length) * 100);
-                        row.push(pct + '%');
-                        totalPct += pct;
-                        activeMonths++;
-                    } else {
-                        row.push('-');
-                    }
-                });
-
-                const avg = activeMonths > 0 ? Math.round(totalPct / activeMonths) : 0;
-                row.push(avg + '%');
-                tableRows.push(row);
+            // Build per-student monthly summary
+            const summaryMap = {};
+            records.forEach(r => {
+                if (!r.student || !r.student.isActive) return;
+                const sid  = r.student._id.toString();
+                const mIdx = new Date(r.date).getMonth();
+                if (!summaryMap[sid]) summaryMap[sid] = { student: r.student, months: {} };
+                if (!summaryMap[sid].months[mIdx]) summaryMap[sid].months[mIdx] = { P: 0, total: 0 };
+                summaryMap[sid].months[mIdx].total++;
+                if (r.status === 'present' || r.status === 'holiday') summaryMap[sid].months[mIdx].P++;
             });
 
+            const rows = Object.values(summaryMap).map(s => {
+                let totalPct = 0, activeMonths = 0;
+                const monthPcts = months.map((_, mIdx) => {
+                    const m = s.months[mIdx];
+                    if (!m || m.total === 0) return '-';
+                    const pct = Math.round((m.P / m.total) * 100);
+                    totalPct += pct;
+                    activeMonths++;
+                    return pct + '%';
+                });
+                const avg = activeMonths > 0 ? Math.round(totalPct / activeMonths) : 0;
+                return { student: s.student, monthPcts, avg };
+            }).sort((a, b) => b.avg - a.avg);
+
+            const top5Ids = new Set(rows.slice(0, 5).map(r => r.student._id.toString()));
+
+            const doc = new jsPDF('landscape');
             doc.setFontSize(16);
-            doc.text('Yearly Attendance Summary - ' + year, 14, 15);
+            doc.text('Yearly Attendance Summary — ' + year, 14, 14);
+            doc.setFontSize(9);
+            doc.setTextColor(120);
+            doc.text('Apna Lakshay Library Management System', 14, 20);
+            if (highlightTop5) {
+                doc.setTextColor(22, 163, 74);
+                doc.text('Top 5 attendees highlighted in green', 14, 26);
+            }
+            doc.setTextColor(0);
+
+            const tableColumn = ['#', 'Name', 'Seat', 'Shift', ...months, 'Avg %'];
+            const tableRows = rows.map((s, idx) => {
+                const sid  = s.student._id.toString();
+                const info = seatMap[sid] || {};
+                return [
+                    String(idx + 1),
+                    s.student.name,
+                    info.seatNumber ? String(info.seatNumber) : '-',
+                    info.shifts?.length ? info.shifts.join('+') : '-',
+                    ...s.monthPcts,
+                    s.avg + '%'
+                ];
+            });
 
             autoTable(doc, {
-                head: [tableColumn],
-                body: tableRows,
-                startY: 20,
-                styles: { fontSize: 8, cellPadding: 2 },
-                headStyles: { fillColor: [234, 88, 12] },
+                head        : [tableColumn],
+                body        : tableRows,
+                startY      : highlightTop5 ? 30 : 24,
+                styles      : { fontSize: 7, cellPadding: 2 },
+                headStyles  : { fillColor: [234, 88, 12], fontStyle: 'bold' },
+                columnStyles: {
+                    0: { halign: 'center', minCellWidth: 6 },
+                    1: { halign: 'left',   minCellWidth: 28 },
+                    2: { halign: 'center', minCellWidth: 10 },
+                    3: { halign: 'center', minCellWidth: 18 },
+                },
                 didParseCell: (data) => {
-                    if (data.section === 'body' && data.column.index === tableColumn.length - 1) {
+                    if (data.section !== 'body') return;
+                    const rowIdx = data.row.index;
+                    const isTop5 = highlightTop5 && top5Ids.has(rows[rowIdx]?.student._id.toString());
+                    const lastCol = data.column.index === tableColumn.length - 1;
+
+                    if (isTop5) data.cell.styles.fillColor = [220, 252, 231];
+                    if (lastCol || data.column.index >= 4) {
                         const pct = parseInt(data.cell.raw);
                         if (!isNaN(pct)) {
-                            if (pct >= 75) data.cell.styles.textColor = [34, 197, 94];
-                            else if (pct >= 50) data.cell.styles.textColor = [245, 158, 11];
-                            else data.cell.styles.textColor = [239, 68, 68];
                             data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.textColor = pct >= 75 ? [22, 163, 74] : pct >= 50 ? [245, 158, 11] : [239, 68, 68];
                         }
                     }
                 }
@@ -590,11 +643,12 @@ const AttendanceManagement = () => {
             doc.save('Yearly_Attendance_' + year + '.pdf');
         } catch (e) {
             setError(e.response?.data?.message || 'Failed to generate yearly report');
-            setTimeout(() => setError(''), 3000);
+            setTimeout(() => setError(''), 4000);
         } finally {
             setSaving(false);
         }
     };
+
 
     // Filter calculations
     const filteredStudents = students.filter(s => {
@@ -1178,7 +1232,7 @@ const AttendanceManagement = () => {
                                     disabled={saving}
                                     className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                                 >
-                                    <IoDownloadOutline size={15} /> Monthly Matrix
+                                    <IoDownloadOutline size={15} /> Monthly Report
                                 </button>
                                 <button
                                     onClick={generateYearlyPDF}
@@ -1186,6 +1240,19 @@ const AttendanceManagement = () => {
                                     className="flex items-center gap-1.5 px-3.5 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
                                 >
                                     <IoDownloadOutline size={15} /> Yearly Summary
+                                </button>
+                                {/* Top 5 highlight toggle */}
+                                <button
+                                    onClick={() => setHighlightTop5(h => !h)}
+                                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                                        highlightTop5
+                                            ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-300'
+                                            : 'bg-slate-50 border-slate-200 text-slate-500'
+                                    }`}
+                                    title="Highlight top 5 students by attendance in PDF exports"
+                                >
+                                    <IoCheckmark size={14} className={highlightTop5 ? 'text-emerald-600' : 'text-slate-400'} />
+                                    Top 5 Highlight {highlightTop5 ? 'ON' : 'OFF'}
                                 </button>
                                 <button
                                     onClick={() => setShowHolidayModal(true)}

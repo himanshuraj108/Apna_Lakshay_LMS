@@ -2642,98 +2642,104 @@ exports.getAttendance = async (req, res) => {
 };
 
 // Get monthly attendance report
-exports.getMonthlyAttendance = async (req, res) => {
+ exports.getMonthlyAttendance = async (req, res) => {
     try {
-        const year = parseInt(req.params.year);
-        const month = parseInt(req.params.month); // 1-12
+        // Accept both path params (:year/:month) and query params (?year=&month=)
+        const year  = parseInt(req.params.year  || req.query.year);
+        const month = parseInt(req.params.month || req.query.month); // 1-12
+
+        if (!year || !month || month < 1 || month > 12) {
+            return res.status(400).json({ success: false, message: 'Valid year and month (1-12) are required' });
+        }
 
         const startOfMonth = new Date(year, month - 1, 1);
-        const endOfMonth = new Date(year, month, 1);
+        const endOfMonth   = new Date(year, month, 1);
 
         const attendance = await Attendance.find({
             date: { $gte: startOfMonth, $lt: endOfMonth }
-        }).populate('student', 'name email mobile createdAt isActive');
+        }).populate('student', 'name email mobile isActive');
 
-        // Group by student
-        const report = {};
+        // Fetch seat + shift data for every student in the records
+        const studentIds = [...new Set(attendance.map(r => r.student?._id?.toString()).filter(Boolean))];
+        const seatMap = {};
+        if (studentIds.length > 0) {
+            const seats = await Seat.find({
+                'assignments.student': { $in: studentIds },
+                'assignments.status': 'active'
+            }).populate('assignments.shift', 'name');
 
-        attendance.forEach(record => {
-            if (!record.student || !record.student.isActive) return;
-            const sId = record.student._id.toString();
-
-            if (!report[sId]) {
-                report[sId] = {
-                    student: record.student,
-                    totalDays: 0,
-                    present: 0,
-                    absent: 0,
-                    days: {}
-                };
-            }
-
-            const day = new Date(record.date).getDate();
-            report[sId].days[day] = record.status === 'present' ? 'P' : record.status === 'holiday' ? 'H' : 'A';
-
-            report[sId].totalDays++;
-            if (record.status === 'present' || record.status === 'holiday') report[sId].present++;
-            if (record.status === 'absent') report[sId].absent++;
-        });
+            seats.forEach(seat => {
+                seat.assignments.filter(a => a.status === 'active').forEach(a => {
+                    const sid = a.student?.toString();
+                    if (sid) {
+                        if (!seatMap[sid]) seatMap[sid] = { seatNumber: seat.number, shifts: [] };
+                        if (a.shift?.name) seatMap[sid].shifts.push(a.shift.name);
+                    }
+                });
+            });
+        }
 
         res.status(200).json({
-            success: true,
-            report: Object.values(report)
+            success    : true,
+            attendance,          // flat records array — frontend iterates these
+            seatMap,             // { studentId: { seatNumber, shifts[] } }
+            year,
+            month
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
 
 // Get yearly attendance report
 exports.getYearlyAttendance = async (req, res) => {
     try {
-        const year = parseInt(req.params.year);
+        // Accept both path params (:year) and query params (?year=)
+        const year = parseInt(req.params.year || req.query.year);
+
+        if (!year) {
+            return res.status(400).json({ success: false, message: 'Valid year is required' });
+        }
 
         const startOfYear = new Date(year, 0, 1);
-        const endOfYear = new Date(year + 1, 0, 1);
+        const endOfYear   = new Date(year + 1, 0, 1);
 
         const attendance = await Attendance.find({
             date: { $gte: startOfYear, $lt: endOfYear }
-        }).populate('student', 'name email mobile createdAt isActive');
+        }).populate('student', 'name email mobile isActive');
 
-        // Group by student
-        const report = {};
+        // Fetch seat + shift data for every student in the records
+        const studentIds = [...new Set(attendance.map(r => r.student?._id?.toString()).filter(Boolean))];
+        const seatMap = {};
+        if (studentIds.length > 0) {
+            const seats = await Seat.find({
+                'assignments.student': { $in: studentIds },
+                'assignments.status': 'active'
+            }).populate('assignments.shift', 'name');
 
-        attendance.forEach(record => {
-            if (!record.student || !record.student.isActive) return;
-            const sId = record.student._id.toString();
-
-            if (!report[sId]) {
-                report[sId] = {
-                    student: record.student,
-                    totalDays: 0,
-                    present: 0,
-                    absent: 0,
-                    months: {}
-                };
-            }
-
-            const mIdx = new Date(record.date).getMonth();
-            if (!report[sId].months[mIdx]) report[sId].months[mIdx] = { P: 0, A: 0 };
-            report[sId].months[mIdx][(record.status === 'present' || record.status === 'holiday') ? 'P' : 'A']++;
-
-            report[sId].totalDays++;
-            if (record.status === 'present' || record.status === 'holiday') report[sId].present++;
-            if (record.status === 'absent') report[sId].absent++;
-        });
+            seats.forEach(seat => {
+                seat.assignments.filter(a => a.status === 'active').forEach(a => {
+                    const sid = a.student?.toString();
+                    if (sid) {
+                        if (!seatMap[sid]) seatMap[sid] = { seatNumber: seat.number, shifts: [] };
+                        if (a.shift?.name) seatMap[sid].shifts.push(a.shift.name);
+                    }
+                });
+            });
+        }
 
         res.status(200).json({
-            success: true,
-            report: Object.values(report)
+            success    : true,
+            attendance,          // flat records array
+            seatMap,             // { studentId: { seatNumber, shifts[] } }
+            year
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
 
 // Quick check-in (mark entry with current time)
 exports.quickCheckIn = async (req, res) => {
