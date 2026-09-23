@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     IoGridOutline, IoDownload, IoClose,
@@ -10,6 +10,7 @@ const PwaInstallBanner = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(window.deferredPwaPrompt || null);
     const [showInstallBanner, setShowInstallBanner] = useState(false);
     const [hint, setHint] = useState('');
+    const laterTimerRef = useRef(null);
 
     useEffect(() => {
         // Do not show if already in standalone / installed PWA mode
@@ -40,6 +41,7 @@ const PwaInstallBanner = () => {
 
         return () => {
             clearTimeout(timer);
+            if (laterTimerRef.current) clearTimeout(laterTimerRef.current);
             window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
             window.removeEventListener('appinstalled', handleAppInstalled);
         };
@@ -47,6 +49,20 @@ const PwaInstallBanner = () => {
 
     const dismissPrompt = () => {
         setShowInstallBanner(false);
+
+        // On desktop/laptop (>= 768px): re-show after 2 minutes
+        const isDesktop = window.innerWidth >= 768;
+        if (isDesktop) {
+            if (laterTimerRef.current) clearTimeout(laterTimerRef.current);
+            laterTimerRef.current = setTimeout(() => {
+                // Only re-show if not yet installed
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+                if (!isStandalone) {
+                    setShowInstallBanner(true);
+                }
+            }, 2 * 60 * 1000); // 2 minutes
+        }
     };
 
     const handleInstallClick = async () => {
@@ -65,10 +81,11 @@ const PwaInstallBanner = () => {
             window.deferredPwaPrompt = null;
         } else {
             // If browser doesn't expose beforeinstallprompt directly (e.g. desktop Chrome already showed address bar icon, or iOS)
-            setHint('Click the install icon (⬇️) in your browser address bar or menu (⋮) to install.');
+            setHint('Click the install icon in your browser address bar or menu to install.');
             setTimeout(() => setHint(''), 6000);
         }
     };
+
 
     return (
         <AnimatePresence>
