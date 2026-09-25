@@ -495,134 +495,181 @@ const SubAdminDashboard = () => {
                                 <IoGridOutline size={16} />
                             </div>
                             <h2 className="text-sm font-black uppercase tracking-wider text-[#0F172A]">
-                                Accessible Modules
+                                All Modules
                             </h2>
                         </div>
-                        <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700">
-                            {allowedCards.length} Enabled
-                        </span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700">
+                                {allowedCards.length} Enabled
+                            </span>
+                            {lockedCards.length > 0 && (
+                                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-stone-500">
+                                    {lockedCards.length} Locked
+                                </span>
+                            )}
+                        </div>
                     </div>
 
-                    {allowedCards.length === 0 ? (
+                    {/* One unified grid — active cards first, locked cards after */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
+
+                        {/* Active / Unlocked cards */}
+                        {allowedCards.map((card, i) => (
+                            <Link key={card.path} to={card.path} className="block">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.08 + i * 0.02, type: 'spring', stiffness: 120 }}
+                                    whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                                    className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group bg-white"
+                                    style={{
+                                        border: `1.5px solid ${card.color}25`,
+                                        padding: '14px 13px 14px',
+                                        minHeight: '124px',
+                                        boxShadow: `0 2px 10px ${card.color}10`,
+                                        transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.borderColor = `${card.color}60`;
+                                        e.currentTarget.style.boxShadow = `0 8px 28px -4px ${card.color}30`;
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.borderColor = `${card.color}25`;
+                                        e.currentTarget.style.boxShadow = `0 2px 10px ${card.color}10`;
+                                    }}
+                                >
+                                    {/* Top accent bar */}
+                                    <div
+                                        className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+                                        style={{ background: `linear-gradient(90deg, ${card.color}, ${card.color}60, transparent)` }}
+                                    />
+                                    {/* Ghost watermark */}
+                                    <card.icon
+                                        size={56}
+                                        className="absolute -bottom-1 -right-1 opacity-[0.05] transition-opacity group-hover:opacity-[0.10] pointer-events-none"
+                                        style={{ color: card.color }}
+                                    />
+                                    {/* Icon pill + Tag */}
+                                    <div className="flex items-center justify-between mb-2.5 relative">
+                                        <div
+                                            className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-transform duration-200 group-hover:scale-110 shrink-0"
+                                            style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}bb)` }}
+                                        >
+                                            <card.icon size={16} className="text-white" />
+                                        </div>
+                                        <span
+                                            className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border truncate max-w-[90px]"
+                                            style={{
+                                                background: `${card.color}15`,
+                                                color: card.color,
+                                                borderColor: `${card.color}35`
+                                            }}
+                                        >
+                                            {card.tag}
+                                        </span>
+                                    </div>
+                                    {/* Text info */}
+                                    <div className="mt-auto">
+                                        <h4 className="text-[12.5px] font-bold leading-snug text-gray-900 group-hover:text-orange-600 transition-colors truncate">
+                                            {card.title}
+                                        </h4>
+                                        <p className="text-[10px] mt-0.5 font-medium leading-relaxed line-clamp-2 text-stone-500">
+                                            {card.desc}
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            </Link>
+                        ))}
+
+                        {/* Locked cards — same layout, dimmed + lock overlay */}
+                        {lockedCards.map((card, i) => (
+                            <div
+                                key={card.path}
+                                className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-not-allowed select-none bg-white"
+                                style={{
+                                    border: `1.5px solid ${card.color}20`,
+                                    padding: '14px 13px 14px',
+                                    minHeight: '124px',
+                                    boxShadow: `0 2px 8px ${card.color}08`,
+                                    filter: 'grayscale(0.5)',
+                                    opacity: 0.68,
+                                }}
+                            >
+                                {/* Top accent bar */}
+                                <div
+                                    className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+                                    style={{ background: `linear-gradient(90deg, ${card.color}70, ${card.color}30, transparent)` }}
+                                />
+                                {/* Ghost watermark */}
+                                <card.icon
+                                    size={56}
+                                    className="absolute -bottom-1 -right-1 opacity-[0.04] pointer-events-none"
+                                    style={{ color: card.color }}
+                                />
+                                {/* Lock badge overlay */}
+                                <div
+                                    className="absolute inset-0 rounded-2xl flex items-center justify-center z-10"
+                                    style={{ background: 'rgba(247,243,236,0.50)' }}
+                                >
+                                    <div
+                                        className="flex items-center gap-1 px-2 py-1 rounded-full"
+                                        style={{
+                                            background: '#FFFFFF',
+                                            border: '1.5px solid #EDE8E0',
+                                            boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
+                                        }}
+                                    >
+                                        <IoLockClosedOutline size={10} style={{ color: '#9B7B5A' }} />
+                                        <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#9B7B5A', fontFamily: "'DM Sans','Inter',sans-serif" }}>
+                                            Locked
+                                        </span>
+                                    </div>
+                                </div>
+                                {/* Icon pill + Tag */}
+                                <div className="flex items-center justify-between mb-2.5 relative">
+                                    <div
+                                        className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm shrink-0"
+                                        style={{ background: `linear-gradient(135deg, ${card.color}70, ${card.color}44)` }}
+                                    >
+                                        <card.icon size={16} className="text-white" />
+                                    </div>
+                                    <span
+                                        className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border truncate max-w-[90px]"
+                                        style={{
+                                            background: `${card.color}0d`,
+                                            color: `${card.color}88`,
+                                            borderColor: `${card.color}22`
+                                        }}
+                                    >
+                                        {card.tag}
+                                    </span>
+                                </div>
+                                {/* Text info */}
+                                <div className="mt-auto">
+                                    <h4 className="text-[12.5px] font-bold leading-snug text-gray-400 truncate">
+                                        {card.title}
+                                    </h4>
+                                    <p className="text-[10px] mt-0.5 font-medium leading-relaxed line-clamp-2 text-stone-300">
+                                        {card.desc}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+
+                    </div>
+
+                    {allowedCards.length === 0 && lockedCards.length === 0 && (
                         <div className="text-center py-16 bg-white rounded-2xl border border-[#EDE8E0] shadow-sm">
                             <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center mx-auto mb-3 text-orange-500">
                                 <IoShieldCheckmarkOutline size={26} />
                             </div>
-                            <h3 className="text-base font-black text-[#0F172A]">No Modules Assigned</h3>
-                            <p className="text-xs text-[#786D62] mt-1">Please ask the Super Admin to grant your sub-admin account role permissions.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
-                            {allowedCards.map((card, i) => (
-                                <Link key={card.path} to={card.path} className="block">
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 12 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.08 + i * 0.02, type: 'spring', stiffness: 120 }}
-                                        whileHover={{ y: -3, transition: { duration: 0.15 } }}
-                                        className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group bg-white"
-                                        style={{
-                                            border: `1.5px solid ${card.color}25`,
-                                            padding: '14px 13px 14px',
-                                            minHeight: '124px',
-                                            boxShadow: `0 2px 10px ${card.color}10`,
-                                            transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
-                                        }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.borderColor = `${card.color}60`;
-                                            e.currentTarget.style.boxShadow = `0 8px 28px -4px ${card.color}30`;
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.borderColor = `${card.color}25`;
-                                            e.currentTarget.style.boxShadow = `0 2px 10px ${card.color}10`;
-                                        }}
-                                    >
-                                        {/* Top accent bar */}
-                                        <div
-                                            className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
-                                            style={{ background: `linear-gradient(90deg, ${card.color}, ${card.color}60, transparent)` }}
-                                        />
-
-                                        {/* Ghost watermark */}
-                                        <card.icon
-                                            size={56}
-                                            className="absolute -bottom-1 -right-1 opacity-[0.05] transition-opacity group-hover:opacity-[0.10] pointer-events-none"
-                                            style={{ color: card.color }}
-                                        />
-
-                                        {/* Icon pill + Tag */}
-                                        <div className="flex items-center justify-between mb-2.5 relative">
-                                            <div
-                                                className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-transform duration-200 group-hover:scale-110 shrink-0"
-                                                style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}bb)` }}
-                                            >
-                                                <card.icon size={16} className="text-white" />
-                                            </div>
-                                            <span
-                                                className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border truncate max-w-[90px]"
-                                                style={{
-                                                    background: `${card.color}15`,
-                                                    color: card.color,
-                                                    borderColor: `${card.color}35`
-                                                }}
-                                            >
-                                                {card.tag}
-                                            </span>
-                                        </div>
-
-                                        {/* Text info */}
-                                        <div className="mt-auto">
-                                            <h4 className="text-[12.5px] font-bold leading-snug text-gray-900 group-hover:text-orange-600 transition-colors truncate">
-                                                {card.title}
-                                            </h4>
-                                            <p className="text-[10px] mt-0.5 font-medium leading-relaxed line-clamp-2 text-stone-500">
-                                                {card.desc}
-                                            </p>
-                                        </div>
-                                    </motion.div>
-                                </Link>
-                            ))}
+                            <h3 className="text-base font-black text-[#0F172A]">No Modules Available</h3>
+                            <p className="text-xs text-[#786D62] mt-1">Please ask the Super Admin to configure module permissions.</p>
                         </div>
                     )}
                 </section>
 
 
-                {/* ─── Locked Modules Section (Clear, Scoped & Non-Intrusive) ─── */}
-                {lockedCards.length > 0 && (
-                    <section className="space-y-3 pt-2">
-                        <div className="flex items-center gap-2 px-1 text-[#786D62]">
-                            <IoLockClosedOutline size={14} />
-                            <h3 className="text-xs font-black uppercase tracking-wider">
-                                Locked Modules (Requires Clearance)
-                            </h3>
-                            <div className="flex-1 h-px bg-[#EDE8E0]" />
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {lockedCards.map((card) => (
-                                <div
-                                    key={card.path}
-                                    className="flex items-center gap-3 p-3.5 rounded-2xl select-none"
-                                    style={{
-                                        background: '#F5EFE6',
-                                        border: '1.5px solid #EDE8E0'
-                                    }}
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-stone-200/80 border border-stone-300/80 flex items-center justify-center shrink-0 text-stone-500 grayscale opacity-60">
-                                        <card.icon size={18} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5">
-                                            <p className="font-bold text-xs text-stone-600 truncate">{card.title}</p>
-                                            <IoLockClosedOutline size={12} className="text-stone-400 shrink-0" />
-                                        </div>
-                                        <p className="text-[10px] text-stone-500 mt-0.5">Contact Super Admin for clearance</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
 
                 {/* ─── Enterprise Security & System Telemetry Footer ─── */}
                 <div
