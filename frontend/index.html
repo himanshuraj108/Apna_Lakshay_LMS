@@ -3,19 +3,46 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/app-icon-192.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ── Preconnect to external domains for faster DNS + TLS ─────────────── -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://checkout.razorpay.com" crossorigin />
+  <link rel="dns-prefetch" href="https://api.cloudinary.com" />
+  <link rel="dns-prefetch" href="https://api.groq.com" />
+
+  <!-- ── App metadata ─────────────────────────────────────────────────────── -->
+  <link rel="icon" type="image/png" href="/app-icon-192.png" />
+  <link rel="apple-touch-icon" href="/app-icon-192.png" />
   <link rel="manifest" href="/manifest.json" />
+
   <title>Apna Lakshay - Library Management System</title>
-  <!-- KaTeX for high-performance math & formula rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <meta name="description" content="Apna Lakshay — Smart library seat management, attendance tracking, and AI-powered study tools." />
+  <meta name="theme-color" content="#F97316" />
+
+  <!-- ── KaTeX CSS — load async so it doesn't block render ───────────────── -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+    crossorigin="anonymous"
+    media="print"
+    onload="this.media='all'"
+  />
+  <noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
+  </noscript>
+
+  <!-- ── KaTeX JS — deferred so it doesn't block HTML parsing ────────────── -->
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+
+  <!-- ── Razorpay — deferred so it never blocks first paint ──────────────── -->
+  <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </head>
 
 <body style="background-color: #FAF6F0; margin: 0;">
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </body>
 
 </html>

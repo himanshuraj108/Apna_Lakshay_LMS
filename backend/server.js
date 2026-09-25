@@ -18,6 +18,7 @@ printBanner();
 const express        = require('express');
 const mongoose       = require('mongoose');
 const cors           = require('cors');
+const compression    = require('compression');
 const helmet         = require('helmet');
 const rateLimit      = require('express-rate-limit');
 const mongoSanitize  = require('express-mongo-sanitize');
@@ -45,6 +46,18 @@ section('Express');
 const app = express();
 app.set('trust proxy', 1);
 status('Reverse Proxy Trust', 'enabled');
+
+// ── Gzip Compression (reduces response size by 60-80%) ────────────────────────
+app.use(compression({
+    level: 6,          // balanced speed vs ratio (1=fast, 9=max)
+    threshold: 1024,   // only compress responses > 1KB
+    filter: (req, res) => {
+        // Don't compress already-compressed image responses
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+status('Compression', 'Gzip level 6 — threshold 1 KB');
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
