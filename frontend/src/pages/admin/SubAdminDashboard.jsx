@@ -10,9 +10,8 @@ import {
     IoLockClosedOutline, IoBedOutline, IoIdCard,
     IoAlertCircleOutline, IoRefreshOutline,
     IoGridOutline, IoTimeOutline, IoCheckmarkCircle,
-    IoArrowForward, IoSparklesOutline, IoPulseOutline,
     IoScanOutline, IoChatbubblesOutline, IoBarChartOutline,
-    IoRibbonOutline, IoTrophy, IoWalletOutline, IoMegaphoneOutline,
+    IoRibbonOutline, IoTrophy, IoWalletOutline, IoMegaphoneOutline, IoSparklesOutline, IoPulseOutline,
 } from 'react-icons/io5';
 
 /* ─── All modules — mirrors AdminDashboard exactly ─────────────────────────── */
@@ -22,10 +21,7 @@ const PERM_CARDS = {
         title: 'Student Directory',
         path: '/admin/students',
         icon: IoPersonOutline,
-        gradient: 'from-blue-500 to-indigo-600',
-        bg: 'bg-blue-50',
-        border: 'border-blue-200/80',
-        iconColor: 'text-blue-600',
+        color: '#2563eb',
         desc: 'Student rosters, profiles, seat allocations & documents',
         tag: 'Roster',
     },
@@ -33,10 +29,7 @@ const PERM_CARDS = {
         title: 'Floor & Seat Matrix',
         path: '/admin/floors',
         icon: IoBedOutline,
-        gradient: 'from-emerald-500 to-teal-500',
-        bg: 'bg-emerald-50',
-        border: 'border-emerald-200/80',
-        iconColor: 'text-emerald-600',
+        color: '#10b981',
         desc: 'Visual desk layout, hall occupancy, rooms & seat pricing',
         tag: 'Seats',
     },
@@ -44,10 +37,7 @@ const PERM_CARDS = {
         title: 'Attendance Tracking',
         path: '/admin/attendance',
         icon: IoCalendarOutline,
-        gradient: 'from-amber-400 to-orange-500',
-        bg: 'bg-amber-50',
-        border: 'border-amber-200/80',
-        iconColor: 'text-amber-500',
+        color: '#f59e0b',
         desc: 'Daily check-in logs, biometric punches & absent tracking',
         tag: 'Daily Log',
     },
@@ -55,10 +45,7 @@ const PERM_CARDS = {
         title: 'Fee Management',
         path: '/admin/fees',
         icon: IoCashOutline,
-        gradient: 'from-violet-500 to-purple-600',
-        bg: 'bg-violet-50',
-        border: 'border-violet-200/80',
-        iconColor: 'text-violet-600',
+        color: '#8b5cf6',
         desc: 'Automated billing, dues settlement & physical receipts',
         tag: 'Finance',
     },
@@ -66,10 +53,7 @@ const PERM_CARDS = {
         title: 'Shift Operations',
         path: '/admin/shifts',
         icon: IoTimeOutline,
-        gradient: 'from-cyan-500 to-blue-500',
-        bg: 'bg-cyan-50',
-        border: 'border-cyan-200/80',
-        iconColor: 'text-cyan-600',
+        color: '#06b6d4',
         desc: 'Configure shift timings, hourly quotas & batch schedules',
         tag: 'Timings',
     },
@@ -77,10 +61,7 @@ const PERM_CARDS = {
         title: 'Vacant Seats',
         path: '/admin/vacant-seats',
         icon: IoSearchOutline,
-        gradient: 'from-teal-500 to-emerald-600',
-        bg: 'bg-teal-50',
-        border: 'border-teal-200/80',
-        iconColor: 'text-teal-600',
+        color: '#0d9488',
         desc: 'Real-time vacant desks matrix across shifts and rooms',
         tag: 'Available',
     },
@@ -88,10 +69,7 @@ const PERM_CARDS = {
         title: 'QR Entry Kiosk',
         path: '/admin/kiosk',
         icon: IoScanOutline,
-        gradient: 'from-pink-500 to-rose-500',
-        bg: 'bg-pink-50',
-        border: 'border-pink-200/80',
-        iconColor: 'text-pink-600',
+        color: '#ec4899',
         desc: 'Full-screen entrance kiosk for instant QR code attendance',
         tag: 'Kiosk',
     },
@@ -99,10 +77,7 @@ const PERM_CARDS = {
         title: 'Notice & Announcements',
         path: '/admin/notifications',
         icon: IoMegaphoneOutline,
-        gradient: 'from-orange-500 to-amber-500',
-        bg: 'bg-orange-50',
-        border: 'border-orange-200/80',
-        iconColor: 'text-orange-600',
+        color: '#f97316',
         desc: 'Broadcast alerts, exam updates & campus announcements',
         tag: 'Broadcast',
     },
@@ -110,10 +85,7 @@ const PERM_CARDS = {
         title: 'Discussion Rooms',
         path: '/admin/chat',
         icon: IoChatbubblesOutline,
-        gradient: 'from-indigo-500 to-purple-600',
-        bg: 'bg-indigo-50',
-        border: 'border-indigo-200/80',
-        iconColor: 'text-indigo-600',
+        color: '#6366f1',
         desc: 'Real-time subject study rooms & community chat groups',
         tag: 'Community',
     },
@@ -121,10 +93,7 @@ const PERM_CARDS = {
         title: 'Student Chat History',
         path: '/admin/chat-history',
         icon: IoDocumentTextOutline,
-        gradient: 'from-slate-500 to-gray-600',
-        bg: 'bg-slate-50',
-        border: 'border-slate-200/80',
-        iconColor: 'text-slate-600',
+        color: '#475569',
         desc: 'Audit AI doubt queries, chat transcripts & moderation',
         tag: 'Audit',
     },
@@ -132,10 +101,7 @@ const PERM_CARDS = {
         title: 'Student ID Cards',
         path: '/admin/students?tab=id-cards',
         icon: IoIdCard,
-        gradient: 'from-purple-500 to-pink-500',
-        bg: 'bg-purple-50',
-        border: 'border-purple-200/80',
-        iconColor: 'text-purple-600',
+        color: '#a855f7',
         desc: 'Generate, verify & print official library ID cards',
         tag: 'Credentials',
     },
@@ -143,10 +109,7 @@ const PERM_CARDS = {
         title: 'Requests',
         path: '/admin/requests',
         icon: IoShieldCheckmarkOutline,
-        gradient: 'from-rose-500 to-pink-600',
-        bg: 'bg-rose-50',
-        border: 'border-rose-200/80',
-        iconColor: 'text-rose-600',
+        color: '#e11d48',
         desc: 'Process seat shifting, student approvals & requests',
         tag: 'Approvals',
     },
@@ -156,10 +119,7 @@ const PERM_CARDS = {
         title: 'Reports & Analytics',
         path: '/admin/analytics',
         icon: IoBarChartOutline,
-        gradient: 'from-blue-600 to-indigo-600',
-        bg: 'bg-blue-50',
-        border: 'border-blue-200/80',
-        iconColor: 'text-blue-600',
+        color: '#2563eb',
         desc: 'In-depth charts, revenue forecasting & library growth',
         tag: 'Executive',
     },
@@ -167,10 +127,7 @@ const PERM_CARDS = {
         title: 'Student Activities & XP',
         path: '/admin/activities',
         icon: IoRibbonOutline,
-        gradient: 'from-rose-500 to-pink-500',
-        bg: 'bg-rose-50',
-        border: 'border-rose-200/80',
-        iconColor: 'text-rose-600',
+        color: '#e11d48',
         desc: 'Gamification leaderboard, study streaks & student XP',
         tag: 'Streaks',
     },
@@ -178,10 +135,7 @@ const PERM_CARDS = {
         title: 'AI Study Logs',
         path: '/admin/ai-activity',
         icon: IoTrophy,
-        gradient: 'from-amber-500 to-yellow-500',
-        bg: 'bg-amber-50',
-        border: 'border-amber-200/80',
-        iconColor: 'text-amber-600',
+        color: '#d97706',
         desc: 'Telemetry on AI Doubt Solver, quiz tests & study planner',
         tag: 'Telemetry',
     },
@@ -189,10 +143,7 @@ const PERM_CARDS = {
         title: 'Referral & Wallet',
         path: '/admin/referral-wallet',
         icon: IoWalletOutline,
-        gradient: 'from-emerald-500 to-green-600',
-        bg: 'bg-emerald-50',
-        border: 'border-emerald-200/80',
-        iconColor: 'text-emerald-600',
+        color: '#059669',
         desc: 'Student referral payouts, coin ledger & reward balance',
         tag: 'Rewards',
     },
@@ -561,56 +512,80 @@ const SubAdminDashboard = () => {
                             <p className="text-xs text-[#786D62] mt-1">Please ask the Super Admin to grant your sub-admin account role permissions.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
                             {allowedCards.map((card, i) => (
-                                <motion.div
-                                    key={card.path}
-                                    initial={{ opacity: 0, y: 16 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.04 * i, duration: 0.3 }}
-                                >
-                                    <Link
-                                        to={card.path}
-                                        className="relative flex flex-col justify-between rounded-2xl p-5 bg-white border border-[#EDE8E0] shadow-2xs hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group overflow-hidden block h-full"
+                                <Link key={card.path} to={card.path} className="block">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 12 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.08 + i * 0.02, type: 'spring', stiffness: 120 }}
+                                        whileHover={{ y: -3, transition: { duration: 0.15 } }}
+                                        className="relative flex flex-col justify-between overflow-hidden rounded-2xl cursor-pointer group bg-white"
+                                        style={{
+                                            border: `1.5px solid ${card.color}25`,
+                                            padding: '14px 13px 14px',
+                                            minHeight: '124px',
+                                            boxShadow: `0 2px 10px ${card.color}10`,
+                                            transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.15s',
+                                        }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.borderColor = `${card.color}60`;
+                                            e.currentTarget.style.boxShadow = `0 8px 28px -4px ${card.color}30`;
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.borderColor = `${card.color}25`;
+                                            e.currentTarget.style.boxShadow = `0 2px 10px ${card.color}10`;
+                                        }}
                                     >
-                                        {/* Top Accent Line */}
-                                        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.gradient}`} />
+                                        {/* Top accent bar */}
+                                        <div
+                                            className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+                                            style={{ background: `linear-gradient(90deg, ${card.color}, ${card.color}60, transparent)` }}
+                                        />
 
-                                        {/* Top Card Row: Icon & Tag */}
-                                        <div>
-                                            <div className="flex items-start justify-between gap-3 mb-3.5">
-                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.bg} ${card.border} border shadow-2xs group-hover:scale-105 transition-transform shrink-0`}>
-                                                    <card.icon size={22} className={card.iconColor} />
-                                                </div>
-                                                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200 group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-700 transition-colors">
-                                                    {card.tag}
-                                                </span>
+                                        {/* Ghost watermark */}
+                                        <card.icon
+                                            size={56}
+                                            className="absolute -bottom-1 -right-1 opacity-[0.05] transition-opacity group-hover:opacity-[0.10] pointer-events-none"
+                                            style={{ color: card.color }}
+                                        />
+
+                                        {/* Icon pill + Tag */}
+                                        <div className="flex items-center justify-between mb-2.5 relative">
+                                            <div
+                                                className="w-8 h-8 rounded-xl flex items-center justify-center shadow-md transition-transform duration-200 group-hover:scale-110 shrink-0"
+                                                style={{ background: `linear-gradient(135deg, ${card.color}, ${card.color}bb)` }}
+                                            >
+                                                <card.icon size={16} className="text-white" />
                                             </div>
+                                            <span
+                                                className="text-[9.5px] font-extrabold px-2 py-0.5 rounded-full border truncate max-w-[90px]"
+                                                style={{
+                                                    background: `${card.color}15`,
+                                                    color: card.color,
+                                                    borderColor: `${card.color}35`
+                                                }}
+                                            >
+                                                {card.tag}
+                                            </span>
+                                        </div>
 
-                                            {/* Title & Desc */}
-                                            <h3 className="font-black text-base text-[#0F172A] group-hover:text-orange-600 transition-colors leading-tight mb-1">
+                                        {/* Text info */}
+                                        <div className="mt-auto">
+                                            <h4 className="text-[12.5px] font-bold leading-snug text-gray-900 group-hover:text-orange-600 transition-colors truncate">
                                                 {card.title}
-                                            </h3>
-                                            <p className="text-xs text-[#786D62] leading-relaxed line-clamp-2">
+                                            </h4>
+                                            <p className="text-[10px] mt-0.5 font-medium leading-relaxed line-clamp-2 text-stone-500">
                                                 {card.desc}
                                             </p>
                                         </div>
-
-                                        {/* Bottom Action Footer */}
-                                        <div className="pt-4 mt-4 border-t border-[#F5EFE6] flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-orange-600 group-hover:text-orange-700 transition-colors flex items-center gap-1">
-                                                Launch Module
-                                            </span>
-                                            <div className="w-7 h-7 rounded-lg bg-[#FAF6F0] border border-[#EDE8E0] group-hover:bg-orange-500 group-hover:text-white group-hover:border-orange-500 transition-all flex items-center justify-center text-stone-500 shadow-2xs">
-                                                <IoArrowForward size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                                            </div>
-                                        </div>
-                                    </Link>
-                                </motion.div>
+                                    </motion.div>
+                                </Link>
                             ))}
                         </div>
                     )}
                 </section>
+
 
                 {/* ─── Locked Modules Section (Clear, Scoped & Non-Intrusive) ─── */}
                 {lockedCards.length > 0 && (

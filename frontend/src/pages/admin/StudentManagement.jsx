@@ -1965,9 +1965,9 @@ const StudentManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-[repeat(auto-fit,minmax(390px,1fr))] gap-6">
+                                    <div className="flex flex-wrap justify-center gap-6">
                                         {shiftFilter && (
-                                            <div className="col-span-full bg-orange-50 border border-orange-200 rounded-2xl p-4 flex justify-between items-center">
+                                            <div className="w-full bg-orange-50 border border-orange-200 rounded-2xl p-4 flex justify-between items-center">
                                                 <p className="text-orange-950 text-xs font-semibold">
                                                     Showing ID cards for shift:{' '}
                                                     <span className="font-bold text-orange-600">
@@ -2014,14 +2014,14 @@ const StudentManagement = () => {
                                             });
 
                                             return filtered.length === 0 ? (
-                                                <div className="col-span-full text-center p-12 bg-white rounded-2xl border border-slate-200">
+                                                <div className="w-full text-center p-12 bg-white rounded-2xl border border-slate-200">
                                                     <IoIdCard size={36} className="mx-auto text-slate-300 mb-2" />
                                                     <p className="text-slate-500 text-xs font-medium">
                                                         {shiftFilter ? 'No students found for this shift.' : idCardSearchSeat ? 'No students match this seat number.' : 'No active student ID cards found.'}
                                                     </p>
                                                 </div>
                                             ) : filtered.map(student => (
-                                                <div key={student._id} className="flex flex-col items-center p-2 gap-2">
+                                                <div key={student._id} className="flex flex-col items-center p-2 gap-2" style={{ width: '380px', maxWidth: '100%' }}>
                                                     <StudentIdCard
                                                         student={{
                                                             ...student,
@@ -2041,21 +2041,22 @@ const StudentManagement = () => {
                                                                 gap: '7px',
                                                                 padding: '9px 22px',
                                                                 borderRadius: '10px',
-                                                                background: 'linear-gradient(135deg,#16a34a,#15803d)',
+                                                                background: 'linear-gradient(135deg,#F97316,#EA580C)',
                                                                 color: '#ffffff',
                                                                 fontFamily: "'DM Sans','Inter',sans-serif",
                                                                 fontSize: '13px',
                                                                 fontWeight: 700,
                                                                 letterSpacing: '0.01em',
                                                                 textDecoration: 'none',
-                                                                boxShadow: '0 2px 12px rgba(22,163,74,0.28)',
-                                                                border: '1px solid #15803d',
-                                                                width: '380px',
+                                                                boxShadow: '0 2px 12px rgba(249,115,22,0.30)',
+                                                                border: '1px solid #EA580C',
+                                                                width: '100%',
+                                                                maxWidth: '380px',
                                                                 justifyContent: 'center',
                                                                 transition: 'all 0.18s ease',
                                                             }}
-                                                            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#15803d,#166534)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(22,163,74,0.38)'; }}
-                                                            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#16a34a,#15803d)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(22,163,74,0.28)'; }}
+                                                            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#EA580C,#C2410C)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(249,115,22,0.44)'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#F97316,#EA580C)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(249,115,22,0.30)'; }}
                                                         >
                                                             <IoCallOutline size={16} />
                                                             Call {student.name?.split(' ')[0]}
