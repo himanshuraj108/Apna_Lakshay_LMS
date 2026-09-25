@@ -334,6 +334,7 @@ const QrKiosk = () => {
                                     className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-[#FAF6F0] border border-[#EDE8E0] text-stone-700 transition-all disabled:opacity-40 cursor-pointer shadow-2xs">
                                     <IoDownload size={15} /> PDF (HI)
                                 </motion.button>
+                            </div>
                         </div>
 
                     </div>
