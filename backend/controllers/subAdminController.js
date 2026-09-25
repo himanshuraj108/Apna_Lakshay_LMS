@@ -2,7 +2,10 @@ const SubAdmin = require('../models/SubAdmin');
 const jwt = require('jsonwebtoken');
 
 const ALLOWED_PERMISSIONS = [
-    'attendance', 'students', 'id_cards', 'fees', 'notifications', 'requests', 'vacant_seats'
+    'attendance', 'students', 'id_cards', 'fees', 'notifications', 'requests',
+    'vacant_seats', 'floors', 'shifts', 'kiosk', 'chat', 'chat_history',
+    'analytics', 'activities', 'ai_activity', 'referral_wallet',
+    'sub_admins', 'history', 'password_activity', 'manage_cards', 'settings',
 ];
 
 // ─── GET /admin/sub-admins ────────────────────────────────────────────────────

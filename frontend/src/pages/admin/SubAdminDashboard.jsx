@@ -12,6 +12,7 @@ import {
     IoGridOutline, IoTimeOutline, IoCheckmarkCircle,
     IoScanOutline, IoChatbubblesOutline, IoBarChartOutline,
     IoRibbonOutline, IoTrophy, IoWalletOutline, IoMegaphoneOutline, IoSparklesOutline, IoPulseOutline,
+    IoSettingsOutline, IoKey,
 } from 'react-icons/io5';
 
 /* ─── All modules — mirrors AdminDashboard exactly ─────────────────────────── */
@@ -146,6 +147,48 @@ const PERM_CARDS = {
         color: '#059669',
         desc: 'Student referral payouts, coin ledger & reward balance',
         tag: 'Rewards',
+    },
+
+    /* ── Administration & Governance ──────────────────────── */
+    sub_admins: {
+        title: 'Sub-Admin Roles',
+        path: '/admin/sub-admins',
+        icon: IoShieldCheckmarkOutline,
+        color: '#4f46e5',
+        desc: 'Manage staff accounts, PIN passcodes & granular permissions',
+        tag: 'Roles',
+    },
+    history: {
+        title: 'Action History Logs',
+        path: '/admin/history',
+        icon: IoTimeOutline,
+        color: '#0891b2',
+        desc: 'Immutable audit trail of staff actions, edits & deletes',
+        tag: 'Logs',
+    },
+    password_activity: {
+        title: 'Password Activity',
+        path: '/admin/password-activity',
+        icon: IoKey,
+        color: '#dc2626',
+        desc: 'Live security log of student password resets & credential updates',
+        tag: 'Security',
+    },
+    manage_cards: {
+        title: 'Manage Cards & Layout',
+        path: '/admin/manage-cards',
+        icon: IoGridOutline,
+        color: '#7c3aed',
+        desc: 'Customize student app cards order, visibility & AI credits',
+        tag: 'Student App',
+    },
+    settings: {
+        title: 'System Settings',
+        path: '/admin/settings',
+        icon: IoSettingsOutline,
+        color: '#334155',
+        desc: 'Campus maintenance mode, geofence & attendance rules',
+        tag: 'System',
     },
 };
 
