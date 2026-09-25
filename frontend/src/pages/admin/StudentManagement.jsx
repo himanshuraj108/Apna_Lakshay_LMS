@@ -2815,6 +2815,17 @@ const StudentManagement = () => {
                                                                             >
                                                                                 <IoIdCard size={16} />
                                                                             </button>
+                                                                            {student.mobile && (
+                                                                                <a
+                                                                                    href={`tel:${student.mobile}`}
+                                                                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 transition-all select-none"
+                                                                                    title={`Call ${student.name}`}
+                                                                                    style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+                                                                                >
+                                                                                    <IoCallOutline size={13} />
+                                                                                    Call {student.name?.split(' ')[0]}
+                                                                                </a>
+                                                                            )}
                                                                             <button
                                                                                 onClick={() => openSeatAssignModal(student)}
                                                                                 className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
