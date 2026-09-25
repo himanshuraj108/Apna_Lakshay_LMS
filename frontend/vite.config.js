@@ -87,10 +87,10 @@ export default defineConfig({
                         return 'vendor-qr';
                     }
 
-                    // ── Misc remaining node_modules → single shared vendor ─────
-                    if (id.includes('node_modules/')) {
-                        return 'vendor-misc';
-                    }
+                    // All other node_modules: let Rollup decide automatically.
+                    // DO NOT use a catch-all here — it breaks React context
+                    // initialization order when React-dependent libs land in a
+                    // chunk that loads before vendor-react.
                 }
             }
         }
