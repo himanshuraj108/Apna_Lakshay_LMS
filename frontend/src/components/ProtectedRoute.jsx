@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import PWAInstallPrompt from './ui/PWAInstallPrompt';
 import SubAdminPinGuard from './admin/SubAdminPinGuard';
 
-const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false, requireSeat = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false, requireSeat = false, allowSubAdmin = false }) => {
     const { user, loading, isAdmin } = useAuth();
 
     if (loading) {
@@ -21,7 +21,8 @@ const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false, r
     const isSubAdmin = user.role === 'subadmin';
 
     // Super-admin-only routes: sub-admins get bounced to their own dashboard
-    if (superAdminOnly && !isAdmin) {
+    // unless allowSubAdmin=true (e.g. kiosk page)
+    if (superAdminOnly && !isAdmin && !(allowSubAdmin && isSubAdmin)) {
         return <Navigate to={isSubAdmin ? '/sub-admin' : '/'} replace />;
     }
 

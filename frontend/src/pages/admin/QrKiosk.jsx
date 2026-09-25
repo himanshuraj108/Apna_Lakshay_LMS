@@ -5,10 +5,13 @@ import { Link } from 'react-router-dom';
 import { IoRefresh, IoDownload, IoArrowBack, IoWifiOutline, IoTimeOutline } from 'react-icons/io5';
 import { motion } from 'framer-motion';
 import html2canvas from 'html2canvas';
+import { useAuth } from '../../context/AuthContext';
 
 const PAGE_BG = { background: '#FAF6F0' };
 
 const QrKiosk = () => {
+    const { user } = useAuth();
+    const isSuperAdmin = user?.role !== 'subadmin';
     const [qrData, setQrData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -335,6 +338,17 @@ const QrKiosk = () => {
                                     <IoDownload size={15} /> PDF (HI)
                                 </motion.button>
                             </div>
+                            {isSuperAdmin && (
+                                <>
+                                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => fetchQrToken(true)}
+                                        disabled={loading}
+                                        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md shadow-orange-500/25 transition-all disabled:opacity-40 cursor-pointer">
+                                        <IoRefresh size={15} className={loading ? 'animate-spin' : ''} /> Refresh QR
+                                    </motion.button>
+                                    <p className="text-[11px] text-stone-400 mt-4">Manual refresh only • QR stays valid until refreshed</p>
+                                </>
+                            )}
                         </div>
 
                     </div>

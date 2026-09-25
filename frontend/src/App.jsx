@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, lazy, Suspense, useRef, useState } from 'react';
+import { useEffect, lazy, Suspense, useRef, useState, Component } from 'react';
 import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SubAdminPinGuard from './components/admin/SubAdminPinGuard';
@@ -7,6 +7,28 @@ import { useSocket } from './hooks/useSocket';
 import PwaInstallBanner from './components/ui/PwaInstallBanner';
 import PinLockScreen from './components/ui/PinLockScreen';
 import ForcedDoubtOverlay from './components/ForcedDoubtOverlay';
+
+// Error boundary — catches lazy-load failures so they don't silently redirect
+class RouteErrorBoundary extends Component {
+    constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+    static getDerivedStateFromError(error) { return { hasError: true, error }; }
+    componentDidCatch(error, info) { console.error('[RouteErrorBoundary]', error, info); }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F7F3EC', fontFamily: "'DM Sans','Inter',sans-serif", gap: 16, padding: 24 }}>
+                    <div style={{ fontSize: 40 }}>⚠️</div>
+                    <p style={{ fontSize: 16, fontWeight: 700, color: '#1A1A1A', margin: 0 }}>Page failed to load</p>
+                    <p style={{ fontSize: 13, color: '#9B7B5A', margin: 0, textAlign: 'center' }}>{this.state.error?.message || 'An unexpected error occurred.'}</p>
+                    <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} style={{ padding: '10px 24px', borderRadius: 10, background: 'linear-gradient(135deg,#F97316,#EA580C)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                        Reload Page
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 // ==========================================
 // PERFORMANCE OPTIMIZATION: Code Splitting with React.lazy()
@@ -215,6 +237,7 @@ const AICurrentAffairsQuiz = lazy(() => import('./pages/student/AICurrentAffairs
 const AITaskSuggestions = lazy(() => import('./pages/student/AITaskSuggestions'));
 const AIReadinessScore = lazy(() => import('./pages/student/AIReadinessScore'));
 const WalletPage = lazy(() => import('./pages/student/WalletPage'));
+const VideoLearning = lazy(() => import('./pages/student/VideoLearning'));
 
 function App() {
     const { user, loading, systemStatus, forceDoubtBoard } = useAuth();
@@ -280,6 +303,7 @@ function App() {
 
     return (
         <PinLockScreen>
+            <RouteErrorBoundary>
             <Suspense key={location.pathname} fallback={<PageLoader />}>
                 <Routes>
                     {/* Public Routes */}
@@ -300,7 +324,7 @@ function App() {
                     <Route path="/admin" element={<ProtectedRoute superAdminOnly><AdminDashboard /></ProtectedRoute>} />
                     <Route path="/admin/floors" element={<ProtectedRoute superAdminOnly><FloorManagement /></ProtectedRoute>} />
                     <Route path="/admin/analytics" element={<ProtectedRoute superAdminOnly><AnalyticsDashboard /></ProtectedRoute>} />
-                    <Route path="/admin/kiosk" element={<ProtectedRoute superAdminOnly><QrKiosk /></ProtectedRoute>} />
+                    <Route path="/admin/kiosk" element={<ProtectedRoute superAdminOnly allowSubAdmin><QrKiosk /></ProtectedRoute>} />
                     <Route path="/admin/shifts" element={<ProtectedRoute superAdminOnly><ShiftManagement /></ProtectedRoute>} />
                     <Route path="/admin/history" element={<ProtectedRoute superAdminOnly><ActionHistory /></ProtectedRoute>} />
                     <Route path="/admin/password-activity" element={<ProtectedRoute superAdminOnly><PasswordActivity /></ProtectedRoute>} />
@@ -351,12 +375,14 @@ function App() {
                     <Route path="/student/ai/task-suggestions" element={<ProtectedRoute><AITaskSuggestions /></ProtectedRoute>} />
                     <Route path="/student/ai/readiness-score" element={<ProtectedRoute><AIReadinessScore /></ProtectedRoute>} />
                     <Route path="/student/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+                    <Route path="/student/videos" element={<ProtectedRoute><VideoLearning /></ProtectedRoute>} />
 
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
                 <PwaInstallBanner />
             </Suspense>
+            </RouteErrorBoundary>
             {/* Doubt Board launcher & tour: shown ONLY to active students with assigned seat */}
             {user?.role === 'student' && user?.isActive && (user?.seat || user?.seatNumber) && !doubtDismissed && location.pathname !== '/student/doubt' && (
                 <ForcedDoubtOverlay onClose={() => setDoubtDismissed(true)} />
