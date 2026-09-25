@@ -438,7 +438,10 @@ const SubAdminDashboard = () => {
                                     {greeting}, {user?.name?.split(' ')[0] || 'Staff'}!
                                 </h1>
                                 <p className="text-xs font-medium text-[#786D62] mt-0.5">
-                                    You have authorization for <span className="font-bold text-[#0F172A]">{allowedCards.length} module{allowedCards.length !== 1 ? 's' : ''}</span> in the library system.
+                                    {allowedCards.length > 0
+                                        ? <>You have access to <span className="font-bold text-[#0F172A]">{allowedCards.length} module{allowedCards.length !== 1 ? 's' : ''}</span>. <span className="text-stone-400">{lockedCards.length} locked by admin.</span></>
+                                        : <span className="text-amber-700 font-semibold">No modules enabled yet — contact the Super Admin to assign permissions.</span>
+                                    }
                                 </p>
                             </div>
                         </div>
@@ -447,8 +450,14 @@ const SubAdminDashboard = () => {
                         <div className="flex items-center gap-2 flex-wrap self-stretch sm:self-auto justify-end">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/90 text-emerald-800 text-xs font-bold shadow-2xs">
                                 <IoCheckmarkCircle size={15} className="text-emerald-600" />
-                                <span>{allowedCards.length} Active Modules</span>
+                                <span>{allowedCards.length} Active</span>
                             </div>
+                            {lockedCards.length > 0 && (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200 text-stone-500 text-xs font-bold shadow-2xs">
+                                    <IoLockClosedOutline size={13} />
+                                    <span>{lockedCards.length} Locked</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </motion.div>
@@ -494,13 +503,18 @@ const SubAdminDashboard = () => {
                             <div className="p-1.5 rounded-lg bg-orange-100 text-orange-600">
                                 <IoGridOutline size={16} />
                             </div>
-                            <h2 className="text-sm font-black uppercase tracking-wider text-[#0F172A]">
-                                All Modules
-                            </h2>
+                            <div>
+                                <h2 className="text-sm font-black uppercase tracking-wider text-[#0F172A]">
+                                    All Modules
+                                </h2>
+                                <p className="text-[10px] font-medium text-[#9B7B5A] mt-0.5">
+                                    Unlocked modules first, locked below
+                                </p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700">
-                                {allowedCards.length} Enabled
+                                {allowedCards.length} Unlocked
                             </span>
                             {lockedCards.length > 0 && (
                                 <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-stone-500">
