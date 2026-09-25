@@ -2021,7 +2021,7 @@ const StudentManagement = () => {
                                                     </p>
                                                 </div>
                                             ) : filtered.map(student => (
-                                                <div key={student._id} className="flex justify-center p-2">
+                                                <div key={student._id} className="flex flex-col items-center p-2 gap-2">
                                                     <StudentIdCard
                                                         student={{
                                                             ...student,
@@ -2031,6 +2031,36 @@ const StudentManagement = () => {
                                                             isTemporarySeat: !!(student.isTemporary || student.isTemporarySeat || student.tempAssignments?.length > 0 || getStudentSeatDetails(student._id)?.isTemporary)
                                                         }}
                                                     />
+                                                    {student.mobile && (
+                                                        <a
+                                                            href={`tel:${student.mobile}`}
+                                                            onClick={e => e.stopPropagation()}
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                gap: '7px',
+                                                                padding: '9px 22px',
+                                                                borderRadius: '10px',
+                                                                background: 'linear-gradient(135deg,#16a34a,#15803d)',
+                                                                color: '#ffffff',
+                                                                fontFamily: "'DM Sans','Inter',sans-serif",
+                                                                fontSize: '13px',
+                                                                fontWeight: 700,
+                                                                letterSpacing: '0.01em',
+                                                                textDecoration: 'none',
+                                                                boxShadow: '0 2px 12px rgba(22,163,74,0.28)',
+                                                                border: '1px solid #15803d',
+                                                                width: '380px',
+                                                                justifyContent: 'center',
+                                                                transition: 'all 0.18s ease',
+                                                            }}
+                                                            onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#15803d,#166534)'; e.currentTarget.style.boxShadow = '0 4px 18px rgba(22,163,74,0.38)'; }}
+                                                            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg,#16a34a,#15803d)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(22,163,74,0.28)'; }}
+                                                        >
+                                                            <IoCallOutline size={16} />
+                                                            Call {student.name?.split(' ')[0]}
+                                                        </a>
+                                                    )}
                                                 </div>
                                             ));
                                         })()}
