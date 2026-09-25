@@ -9,13 +9,22 @@ import {
 import api from '../../utils/api';
 
 const ALL_PERMISSIONS = [
-    { key: 'attendance',    label: 'Attendance Management',  desc: 'Mark & view daily attendance' },
-    { key: 'students',      label: 'View Students',          desc: 'View student list & details' },
-    { key: 'id_cards',      label: 'Student ID Cards',       desc: 'View and print student ID cards' },
-    { key: 'fees',          label: 'Fee Status',             desc: 'View fee records (read-only)' },
-    { key: 'notifications', label: 'Send Notifications',     desc: 'Send announcements to students' },
-    { key: 'requests',      label: 'Student Requests',       desc: 'View & handle seat/shift requests' },
-    { key: 'vacant_seats',  label: 'Vacant Seats',           desc: 'View available seat-shift slots' },
+    { key: 'attendance',     label: 'Attendance Management',  desc: 'Mark & view daily attendance' },
+    { key: 'students',       label: 'View Students',          desc: 'View student list & details' },
+    { key: 'id_cards',       label: 'Student ID Cards',       desc: 'View and print student ID cards' },
+    { key: 'fees',           label: 'Fee Management',         desc: 'View fee records & collect dues' },
+    { key: 'notifications',  label: 'Send Notifications',     desc: 'Send announcements to students' },
+    { key: 'requests',       label: 'Student Requests',       desc: 'View & handle seat/shift requests' },
+    { key: 'vacant_seats',   label: 'Vacant Seats',           desc: 'View available seat-shift slots' },
+    { key: 'floors',         label: 'Floor & Seat Matrix',    desc: 'View floor layout and seat management' },
+    { key: 'shifts',         label: 'Shift Operations',       desc: 'View & manage shift timings' },
+    { key: 'kiosk',          label: 'QR Entry Kiosk',         desc: 'Access full-screen QR attendance kiosk' },
+    { key: 'chat',           label: 'Discussion Rooms',       desc: 'Moderate student study chat rooms' },
+    { key: 'chat_history',   label: 'Student Chat History',   desc: 'Audit AI doubt queries & chat logs' },
+    { key: 'analytics',      label: 'Reports & Analytics',    desc: 'View revenue charts & growth reports' },
+    { key: 'activities',     label: 'Student Activities & XP',desc: 'View gamification leaderboard & XP' },
+    { key: 'ai_activity',    label: 'AI Study Logs',          desc: 'Monitor AI quiz & study planner usage' },
+    { key: 'referral_wallet',label: 'Referral & Wallet',      desc: 'Manage referral payouts & coin ledger' },
 ];
 
 const EMPTY_FORM = { name: '', username: '', password: '', pin: '', permissions: [], isActive: true };
