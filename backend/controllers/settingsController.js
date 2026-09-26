@@ -40,7 +40,8 @@ exports.updateSettings = async (req, res) => {
             shiftMode, systemStatus, activeModes, locationAttendance,
             onlinePaymentEnabled, pinAttendanceEnabled, attendancePin,
             timeRestrictionEnabled, loginAttendanceEnabled,
-            showWhatsAppGroup, showAITools, forceDoubtBoard, referral
+            showWhatsAppGroup, showAITools, forceDoubtBoard, referral,
+            flexibleEntry
         } = req.body;
 
         let settings = await Settings.findOne();
@@ -54,6 +55,7 @@ exports.updateSettings = async (req, res) => {
         if (pinAttendanceEnabled !== undefined) updateFields.pinAttendanceEnabled = !!pinAttendanceEnabled;
         if (attendancePin !== undefined) updateFields.attendancePin = String(attendancePin).trim();
         if (timeRestrictionEnabled !== undefined) updateFields.timeRestrictionEnabled = !!timeRestrictionEnabled;
+        if (flexibleEntry !== undefined) updateFields.flexibleEntry = !!flexibleEntry;
         if (loginAttendanceEnabled !== undefined) updateFields.loginAttendanceEnabled = !!loginAttendanceEnabled;
         if (showWhatsAppGroup !== undefined) updateFields.showWhatsAppGroup = !!showWhatsAppGroup;
         if (showAITools !== undefined) updateFields.showAITools = !!showAITools;
