@@ -176,7 +176,7 @@ const NoCameraIcon = ({ size = 32 }) => (
 );
 
 /* ─── Speed Dial FAB — expands to Camera / No-Camera sub-buttons ─── */
-const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
+const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled, qrLocked, qrWindowText }) => {
     const [open, setOpen] = useState(false);
     const [hiddenByDoubt, setHiddenByDoubt] = useState(!!window.__doubtBoardOpen);
 
@@ -189,7 +189,7 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
     if (hiddenByDoubt) return null;
 
     const toggle = () => { if (!loading) setOpen(o => !o); };
-    const doCamera = () => { setOpen(false); onCamera(); };
+    const doCamera = () => { if (qrLocked) return; setOpen(false); onCamera(); };
     const doManual = () => { setOpen(false); onManual(); };
 
     const subBtns = [
@@ -206,9 +206,9 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
             key: 'camera',
             icon: <IoCameraOutline size={32} color="#111" />,
             label: 'With Camera',
-            labelClass: 'font-black text-emerald-600',
+            labelClass: `font-black ${qrLocked ? 'text-gray-400' : 'text-emerald-600'}`,
             bgBtn: '#ffffff',
-            shadow: 'rgba(34,197,94,0.2)',
+            shadow: qrLocked ? 'rgba(0,0,0,0.08)' : 'rgba(34,197,94,0.2)',
             onClick: doCamera,
         },
     ].filter(Boolean);
@@ -237,9 +237,10 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                                 className="flex items-center gap-4 cursor-pointer bg-white rounded-2xl p-3.5 w-[240px]"
                                 style={{
                                     pointerEvents: 'auto',
-                                    boxShadow: `0 12px 30px ${btn.shadow}, 0 0 0 1px rgba(0,0,0,0.03)`
+                                    boxShadow: `0 12px 30px ${btn.shadow}, 0 0 0 1px rgba(0,0,0,0.03)`,
+                                    opacity: btn.key === 'camera' && qrLocked ? 0.72 : 1,
                                 }}
-                                whileHover={{ scale: 1.03, x: -5 }}
+                                whileHover={btn.key === 'camera' && qrLocked ? {} : { scale: 1.03, x: -5 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={btn.onClick}
                             >
@@ -247,7 +248,9 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
                                 <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden"
                                     style={{ background: btn.bgBtn, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)' }}>
                                     {btn.key === 'camera'
-                                        ? <IoCameraOutline size={28} color="#111" />
+                                        ? (qrLocked
+                                            ? <IoLockClosedOutline size={26} color="#9ca3af" />
+                                            : <IoCameraOutline size={28} color="#111" />)
                                         : <NoCameraIcon size={28} />
                                     }
                                     {btn.key === 'manual' && (
@@ -257,9 +260,13 @@ const SpeedDialFAB = ({ loading, onCamera, onManual, manualEnabled }) => {
 
                                 {/* Text */}
                                 <div className="flex-1 text-left">
-                                    <span className={`text-[15px] font-extrabold ${btn.labelClass}`}>{btn.label}</span>
+                                    <span className={`text-[15px] ${btn.labelClass}`}>
+                                        {btn.key === 'camera' && qrLocked ? 'QR Locked' : btn.label}
+                                    </span>
                                     <p className="text-[11px] text-gray-500 font-medium mt-0.5 tracking-wide">
-                                        {btn.key === 'camera' ? 'Scan QR Code' : 'Enter manually'}
+                                        {btn.key === 'camera'
+                                            ? (qrLocked ? (qrWindowText || 'Outside allowed window') : 'Scan QR Code')
+                                            : 'Enter manually'}
                                     </p>
                                 </div>
                             </motion.div>
@@ -511,6 +518,7 @@ const StudentDashboard = () => {
     const [showWhatsAppGroup, setShowWhatsAppGroup]   = useState(true);
     const [showAITools, setShowAITools]               = useState(true);
     const [referralEnabled, setReferralEnabled]       = useState(true);
+    const [flexibleEntry, setFlexibleEntry]           = useState(false);
     const [showPinModal, setShowPinModal]             = useState(false);
     const [pinValue, setPinValue]                     = useState('');
     const [pinLoading, setPinLoading]                 = useState(false);
@@ -674,7 +682,6 @@ const StudentDashboard = () => {
         bustCache('dashboard');
         setLoading(true);
         fetchDashboardData();
-        loadSettingsCache();
         fetchCardConfig();
         fetchPinStatus();
         fetchPendingFeedback();
@@ -696,6 +703,7 @@ const StudentDashboard = () => {
             setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
             setShowAITools(s.showAITools !== false);
             setReferralEnabled(!!s.referral?.enabled);
+            setFlexibleEntry(!!s.flexibleEntry);
             return;
         }
         try {
@@ -707,6 +715,7 @@ const StudentDashboard = () => {
                 setShowWhatsAppGroup(s.showWhatsAppGroup !== false);
                 setShowAITools(s.showAITools !== false);
                 setReferralEnabled(!!s.referral?.enabled);
+                setFlexibleEntry(!!s.flexibleEntry);
                 setCache('settings', s);
                 // also update the location localStorage key
                 localStorage.setItem(SETTINGS_KEY, String(s.locationAttendance !== false));
@@ -732,21 +741,25 @@ const StudentDashboard = () => {
 
     const fetchDashboardData = async () => {
         if (isFresh('dashboard')) {
-            setDashboardData(_cache.dashboard.data);
+            const cached = _cache.dashboard.data;
+            setDashboardData(cached);
+            if (cached?.flexibleEntry !== undefined) setFlexibleEntry(!!cached.flexibleEntry);
             setLoading(false);
             return;
         }
         try { 
             const res = await api.get('/student/dashboard'); 
-            setDashboardData(res.data.data);
-            const isMarked = !!res.data.data?.attendance?.markedToday;
+            const data = res.data.data;
+            setDashboardData(data);
+            if (data?.flexibleEntry !== undefined) setFlexibleEntry(!!data.flexibleEntry);
+            const isMarked = !!data?.attendance?.markedToday;
             setAttendanceMarkedToday(isMarked);
             if (isMarked) {
                 localStorage.setItem('attendance_marked_date', new Date().toDateString());
             } else {
                 localStorage.removeItem('attendance_marked_date');
             }
-            setCache('dashboard', res.data.data);
+            setCache('dashboard', data);
             fetchEngagementData();
         } catch (e) { 
             console.error(e); 
@@ -869,6 +882,48 @@ const StudentDashboard = () => {
     const initials  = (user?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     const today     = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
+    // ── Attendance time-window check (IST) ──────────────────────────────────
+    const attendanceTimeCheck = (() => {
+        // Read flexibleEntry directly from dashboardData (most reliable source)
+        const isFlexible = !!(dashboardData?.flexibleEntry ?? flexibleEntry);
+        if (!isFlexible) return { locked: false, windowText: '' };
+
+        const nowIST  = new Date(Date.now() + (5 * 60 + 30) * 60000);
+        const nowMins = nowIST.getHours() * 60 + nowIST.getMinutes();
+
+        const rawShifts = Array.isArray(dashboardData?.seat?.shifts)
+            ? dashboardData.seat.shifts.filter(s => s?.startTime && s?.endTime)
+            : [];
+        const details = dashboardData?.seat?.shiftDetails;
+        if (!rawShifts.length && details?.startTime && details?.endTime) rawShifts.push(details);
+
+        const tempShifts = (dashboardData?.tempAssignments || [])
+            .filter(ta => ta?.startTime && ta?.endTime)
+            .map(ta => ({ startTime: ta.startTime, endTime: ta.endTime }));
+
+        const allShifts = [...rawShifts, ...tempShifts];
+        if (!allShifts.length) return { locked: false, windowText: '' };
+
+        const fmt = (m) => {
+            const h = Math.floor(m / 60) % 24, mn = m % 60;
+            const hh = h % 12 === 0 ? 12 : h % 12;
+            return mn === 0 ? `${hh}:00 ${h >= 12 ? 'PM' : 'AM'}` : `${hh}:${String(mn).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`;
+        };
+
+        let inWindow = false, minOpen = Infinity, maxClose = -Infinity;
+        allShifts.forEach(sh => {
+            const [sH, sM] = sh.startTime.split(':').map(Number);
+            const [eH, eM] = sh.endTime.split(':').map(Number);
+            const open = sH * 60 + sM - 60, close = eH * 60 + eM + 60;
+            if (nowMins >= open && nowMins < close) inWindow = true;
+            if (open < minOpen) minOpen = open;
+            if (close > maxClose) maxClose = close;
+        });
+
+        return { locked: !inWindow, windowText: `You can only mark attendance between ${fmt(minOpen)} and ${fmt(maxClose)}.` };
+    })();
+
+
     /* â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     if (loading) return (
         <div className="relative min-h-screen" style={{ background: '#F7F3EC', fontFamily: "'DM Sans','Inter','Segoe UI',sans-serif" }}>
@@ -881,7 +936,7 @@ const StudentDashboard = () => {
             {/* Subtle dot grid */}
             <div className="fixed inset-0 pointer-events-none z-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(180,120,60,0.06) 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             <div className="relative z-10"><DashboardSkeleton /></div>
-            {!showScanner && <SpeedDialFAB loading={loadingScanner} onCamera={handleOpenScanner} onManual={handleWithoutCamera} manualEnabled={manualMarkEnabled} />}
+            {!showScanner && <SpeedDialFAB loading={loadingScanner} onCamera={handleOpenScanner} onManual={handleWithoutCamera} manualEnabled={manualMarkEnabled} qrLocked={attendanceTimeCheck.locked} qrWindowText={attendanceTimeCheck.windowText} />}
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
         </div>
     );
@@ -1062,15 +1117,33 @@ const StudentDashboard = () => {
 
                             {/* Direct mode info — shown when PIN is OFF */}
                             {!pinEnabled && (
-                                <div className="rounded-2xl p-4 mb-5 border border-orange-200/70 bg-gradient-to-br from-orange-50/70 via-amber-50/30 to-white relative z-10">
-                                    <div className="flex items-center gap-1.5 mb-1 text-orange-800">
-                                        <IoCheckmarkCircleOutline size={16} className="text-orange-600" />
-                                        <span className="text-xs font-black uppercase tracking-wider">Ready to Check In</span>
+                                attendanceTimeCheck.locked ? (
+                                    /* ── LOCKED: outside shift window ── */
+                                    <div className="rounded-2xl p-4 mb-5 border relative z-10 overflow-hidden"
+                                        style={{ background: '#FFF7ED', borderColor: '#FDDCAE' }}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                                style={{ background: 'rgba(249,115,22,0.12)' }}>
+                                                <IoLockClosedOutline size={15} className="text-orange-600" />
+                                            </div>
+                                            <span className="text-xs font-black uppercase tracking-wider text-orange-800">Attendance Locked</span>
+                                        </div>
+                                        <p className="text-[12px] font-semibold text-orange-900 leading-snug">
+                                            {attendanceTimeCheck.windowText}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-orange-950 font-medium leading-relaxed">
-                                        Your attendance will be logged instantly for your current shift without requiring a PIN or camera scan.
-                                    </p>
-                                </div>
+                                ) : (
+                                    /* ── UNLOCKED: inside shift window ── */
+                                    <div className="rounded-2xl p-4 mb-5 border border-orange-200/70 bg-gradient-to-br from-orange-50/70 via-amber-50/30 to-white relative z-10">
+                                        <div className="flex items-center gap-1.5 mb-1 text-orange-800">
+                                            <IoCheckmarkCircleOutline size={16} className="text-orange-600" />
+                                            <span className="text-xs font-black uppercase tracking-wider">Ready to Check In</span>
+                                        </div>
+                                        <p className="text-xs text-orange-950 font-medium leading-relaxed">
+                                            Your attendance will be logged instantly for your current shift without requiring a PIN or camera scan.
+                                        </p>
+                                    </div>
+                                )
                             )}
 
                             {/* Error notification */}
@@ -1084,17 +1157,26 @@ const StudentDashboard = () => {
                             <div className="relative z-10">
                                 <button
                                     onClick={pinEnabled ? handlePinAttendance : handleDirectMark}
-                                    disabled={pinEnabled ? (pinLoading || !pinValue) : directMarkLoading}
+                                    disabled={pinEnabled ? (pinLoading || !pinValue) : (directMarkLoading || attendanceTimeCheck.locked)}
                                     className="w-full py-3.5 px-5 rounded-2xl font-extrabold text-sm text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     style={{
-                                        background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                                        boxShadow: '0 8px 20px -4px rgba(249,115,22,0.45)'
+                                        background: attendanceTimeCheck.locked && !pinEnabled
+                                            ? 'linear-gradient(135deg,#9ca3af,#6b7280)'
+                                            : 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                                        boxShadow: attendanceTimeCheck.locked && !pinEnabled
+                                            ? 'none'
+                                            : '0 8px 20px -4px rgba(249,115,22,0.45)'
                                     }}
                                 >
                                     {(pinEnabled ? pinLoading : directMarkLoading) ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             <span>Marking Attendance...</span>
+                                        </>
+                                    ) : (attendanceTimeCheck.locked && !pinEnabled) ? (
+                                        <>
+                                            <IoLockClosedOutline size={18} />
+                                            <span>Attendance Locked</span>
                                         </>
                                     ) : (
                                         <>
@@ -3014,6 +3096,8 @@ const StudentDashboard = () => {
                     onCamera={handleOpenScanner}
                     onManual={handleWithoutCamera}
                     manualEnabled={manualMarkEnabled}
+                    qrLocked={attendanceTimeCheck.locked}
+                    qrWindowText={attendanceTimeCheck.windowText}
                 />
             )}
         </div>

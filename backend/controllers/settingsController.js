@@ -123,7 +123,7 @@ exports.updateSettings = async (req, res) => {
 // @route   GET /api/public/settings
 exports.getPublicSettings = async (req, res) => {
     try {
-        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup showAITools referral rewards forceDoubtBoard');
+        let settings = await Settings.findOne().select('shiftMode systemStatus locationAttendance onlinePaymentEnabled pinAttendanceEnabled loginAttendanceEnabled showWhatsAppGroup showAITools referral rewards forceDoubtBoard flexibleEntry timeRestrictionEnabled');
 
 
         if (!settings) {

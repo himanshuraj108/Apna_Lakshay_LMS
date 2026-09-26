@@ -510,7 +510,8 @@ exports.getDashboard = async (req, res) => {
                     return Math.max(0, student?.doubtCredits ?? maxLimit);
                 })(),
                 maxDoubtCredits: Math.max(student?.maxDoubtCredits || 0, student?.doubtCredits || 0, 10),
-                onlinePaymentEnabled: settings ? settings.onlinePaymentEnabled !== false : true
+                onlinePaymentEnabled: settings ? settings.onlinePaymentEnabled !== false : true,
+                flexibleEntry: settings ? !!settings.flexibleEntry : false
             }
         });
     } catch (error) {
