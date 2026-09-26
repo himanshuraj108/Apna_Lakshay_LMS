@@ -47,6 +47,10 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    flexibleEntry: {
+        type: Boolean,
+        default: false   // false = 5 AM – 10 PM fixed window; true = 1 hr before/after shift
+    },
     loginAttendanceEnabled: {
         type: Boolean,
         default: false

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
-import { IoSettings, IoPower, IoTime, IoSave, IoCheckmarkCircle, IoLocationOutline, IoLogoWhatsapp, IoSparklesOutline, IoArrowBack } from 'react-icons/io5';
+import { IoSettings, IoPower, IoTime, IoSave, IoCheckmarkCircle, IoLocationOutline, IoLogoWhatsapp, IoSparklesOutline, IoArrowBack, IoTimerOutline } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 
 const PAGE_BG = { background: '#FAF6F0' };
@@ -107,7 +107,7 @@ const Settings = () => {
 
                 {/* Additional Settings Row */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                    className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
                     {/* Location Attendance Toggle */}
                     <div className="bg-white border border-[#EDE8E0] rounded-2xl p-5 flex items-center justify-between gap-4 shadow-xs">
                         <div className="flex items-center gap-3">
@@ -162,6 +162,29 @@ const Settings = () => {
                             className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 cursor-pointer ${settings.showAITools !== false ? 'bg-orange-500 shadow-md shadow-orange-500/20' : 'bg-stone-300'}`}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${settings.showAITools !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+
+                    {/* Flexible Entry Toggle */}
+                    <div className="bg-white border border-[#EDE8E0] rounded-2xl p-5 flex items-center justify-between gap-4 shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2.5 rounded-xl ${settings.flexibleEntry ? 'bg-violet-500/10 text-violet-600' : 'bg-stone-100 text-stone-400'}`}>
+                                <IoTimerOutline size={20} />
+                            </div>
+                            <div>
+                                <h2 className="font-bold text-[#0F172A] text-xs">Flexible Entry</h2>
+                                <p className="text-[11px] text-stone-500 leading-snug mt-0.5">
+                                    {settings.flexibleEntry
+                                        ? 'Students mark within 1 hr of their shift window.'
+                                        : 'Students mark only between 5 AM and 10 PM.'}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => handleSave({ ...settings, flexibleEntry: !settings.flexibleEntry })}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shrink-0 cursor-pointer ${settings.flexibleEntry ? 'bg-violet-500 shadow-md shadow-violet-500/20' : 'bg-stone-300'}`}
+                        >
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${settings.flexibleEntry ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
                     </div>
                 </motion.div>

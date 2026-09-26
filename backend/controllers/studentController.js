@@ -71,6 +71,85 @@ const checkGeoFence = async (latitude, longitude) => {
     return { error: null, distance: Math.round(dist) };
 };
 
+// ─── Attendance Time Window Helper ────────────────────────────────────────────
+// Returns { allowed: bool, message: string }
+// Rules:
+//   timeRestrictionEnabled = false  → always allowed (bypass all checks)
+//   flexibleEntry = false (default) → 05:00 – 22:00 IST fixed window
+//   flexibleEntry = true            → shiftStart-1hr … shiftEnd+1hr
+//                                     (if no shift assigned → 05:00 – 22:00 fallback)
+const checkAttendanceTimeWindow = async (studentId, settings, now) => {
+    // If time restriction is completely disabled by admin, always allow
+    if (settings.timeRestrictionEnabled === false) {
+        return { allowed: true, message: '' };
+    }
+
+    const nowH = now.getHours();
+    const nowM = now.getMinutes();
+    const nowTotalMins = nowH * 60 + nowM;
+
+    if (!settings.flexibleEntry) {
+        // Fixed window: 05:00 – 22:00 IST
+        const windowStart = 5 * 60;   // 05:00
+        const windowEnd   = 22 * 60;  // 22:00
+        if (nowTotalMins < windowStart || nowTotalMins >= windowEnd) {
+            return {
+                allowed: false,
+                message: 'Attendance can only be marked between 5:00 AM and 10:00 PM.'
+            };
+        }
+        return { allowed: true, message: '' };
+    }
+
+    // flexibleEntry = true — use shift-based window (1 hr buffer each side)
+    try {
+        const seat = await Seat.findOne({
+            assignments: { $elemMatch: { student: studentId, status: 'active' } }
+        }).populate('assignments.shift');
+
+        if (seat) {
+            const assignment = seat.assignments.find(
+                a => a.student.toString() === studentId.toString() && a.status === 'active'
+            );
+            if (assignment && assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
+                const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
+                const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
+                const shiftStartMins = sH * 60 + sM;
+                const shiftEndMins   = eH * 60 + eM;
+
+                // 1 hour buffer before start and after end
+                const allowedStartMins = shiftStartMins - 60;
+                const allowedEndMins   = shiftEndMins   + 60;
+
+                if (nowTotalMins < allowedStartMins || nowTotalMins >= allowedEndMins) {
+                    const fmt = (mins) => {
+                        const h = Math.floor(mins / 60), m = mins % 60;
+                        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    };
+                    return {
+                        allowed: false,
+                        message: `Attendance for shift ${assignment.shift.startTime}–${assignment.shift.endTime} is allowed between ${fmt(allowedStartMins)} and ${fmt(allowedEndMins)}.`
+                    };
+                }
+                return { allowed: true, message: '' };
+            }
+        }
+    } catch (err) {
+        console.error('[TIME-WINDOW] Error fetching seat for shift check:', err.message);
+    }
+
+    // Fallback (no shift assigned yet): fixed 05:00 – 22:00
+    const windowStart = 5 * 60;
+    const windowEnd   = 22 * 60;
+    if (nowTotalMins < windowStart || nowTotalMins >= windowEnd) {
+        return {
+            allowed: false,
+            message: 'Attendance can only be marked between 5:00 AM and 10:00 PM.'
+        };
+    }
+    return { allowed: true, message: '' };
+};
+
 // @desc    Get student dashboard data
 // @route   GET /api/student/dashboard
 exports.getDashboard = async (req, res) => {
@@ -1835,36 +1914,20 @@ exports.markAttendanceByQr = async (req, res) => {
             const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             let shiftLabel = 'N/A';
 
-            // Check Shift Logic
+            // ── Attendance Time Window Check ──────────────────────────────
+            const qrSettings = await Settings.findOne();
+            const timeCheck = await checkAttendanceTimeWindow(studentId, qrSettings || {}, now);
+            if (!timeCheck.allowed) {
+                return res.status(403).json({ success: false, message: timeCheck.message });
+            }
+
+            // Fetch seat for shift label (window already validated above)
             const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
 
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
                 if (assignment) {
                     shiftLabel = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'Assigned');
-
-                    // Check Shift Timing
-                    if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
-                        const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
-                        const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
-
-                        const allowedStart = getISTDate();
-                        allowedStart.setHours(sH, sM - 180, 0, 0); // 3 hours before
-                        const allowedEnd = getISTDate();
-                        allowedEnd.setHours(eH, eM, 0, 0);
-
-                        if (allowedEnd < allowedStart) {
-                            if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
-                            else allowedEnd.setDate(allowedEnd.getDate() + 1);
-                        }
-
-                        if (now < allowedStart || now > allowedEnd) {
-                            return res.status(403).json({
-                                success: false,
-                                message: `Entry allowed only 3:00 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})`
-                            });
-                        }
-                    }
                 }
             }
 
@@ -1996,28 +2059,20 @@ exports.markSelfAttendance = async (req, res) => {
             const entryTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             let shiftLabel = 'Self Marked';
 
-            // Check Shift Timing
+            // ── Attendance Time Window Check ──────────────────────────────
+            const selfSettings = await Settings.findOne();
+            const selfTimeCheck = await checkAttendanceTimeWindow(studentId, selfSettings || {}, now);
+            if (!selfTimeCheck.allowed) {
+                return res.status(403).json({ success: false, message: selfTimeCheck.message });
+            }
+
+            // Fetch seat for shift label (window already validated above)
             const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
 
             if (seat) {
                 const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
                 if (assignment) {
                     shiftLabel = assignment.shift ? assignment.shift.name : (assignment.legacyShift || 'Assigned');
-
-                    if (assignment.shift && assignment.shift.startTime && assignment.shift.endTime) {
-                        const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
-                        const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
-                        const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 180, 0, 0); // 3 hours before
-                        const allowedEnd = getISTDate(); allowedEnd.setHours(eH, eM, 0, 0);
-
-                        if (allowedEnd < allowedStart) {
-                            if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
-                            else allowedEnd.setDate(allowedEnd.getDate() + 1);
-                        }
-                        if (now < allowedStart || now > allowedEnd) {
-                            return res.status(403).json({ success: false, message: `Entry allowed only 3:00 hr before shift (${assignment.shift.startTime} - ${assignment.shift.endTime})` });
-                        }
-                    }
                 }
             }
 
@@ -2097,36 +2152,10 @@ exports.markAttendanceByPin = async (req, res) => {
 
         const now = getISTDate();
 
-        // ── Time Restriction (only if enabled by admin) ───────────────────
-        if (settings.timeRestrictionEnabled !== false) {
-            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
-
-            if (seat) {
-                const assignment = seat.assignments.find(
-                    a => a.student.toString() === studentId.toString() && a.status === 'active'
-                );
-                if (assignment?.shift?.startTime && assignment?.shift?.endTime) {
-                    const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
-                    const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
-
-                    const allowedStart = getISTDate();
-                    allowedStart.setHours(sH, sM - 180, 0, 0); // 3 hours before shift
-                    const allowedEnd = getISTDate();
-                    allowedEnd.setHours(eH, eM, 0, 0);
-
-                    if (allowedEnd < allowedStart) {
-                        if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
-                        else allowedEnd.setDate(allowedEnd.getDate() + 1);
-                    }
-
-                    if (now < allowedStart || now > allowedEnd) {
-                        return res.status(403).json({
-                            success: false,
-                            message: `Entry allowed only 3 hrs before shift (${assignment.shift.startTime} – ${assignment.shift.endTime})`
-                        });
-                    }
-                }
-            }
+        // ── Attendance Time Window Check ──────────────────────────────────
+        const pinTimeCheck = await checkAttendanceTimeWindow(studentId, settings, now);
+        if (!pinTimeCheck.allowed) {
+            return res.status(403).json({ success: false, message: pinTimeCheck.message });
         }
 
         // ── Date for today: IST date string → UTC midnight ───────────────
@@ -2238,25 +2267,10 @@ exports.markAttendanceDirectly = async (req, res) => {
         };
         const now = getISTDate();
 
-        // ── Time Restriction ──────────────────────────────────────────────
-        if (settings.timeRestrictionEnabled !== false) {
-            const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } }).populate('assignments.shift');
-            if (seat) {
-                const assignment = seat.assignments.find(a => a.student.toString() === studentId.toString() && a.status === 'active');
-                if (assignment?.shift?.startTime && assignment?.shift?.endTime) {
-                    const [sH, sM] = assignment.shift.startTime.split(':').map(Number);
-                    const [eH, eM] = assignment.shift.endTime.split(':').map(Number);
-                    const allowedStart = getISTDate(); allowedStart.setHours(sH, sM - 180, 0, 0);
-                    const allowedEnd = getISTDate(); allowedEnd.setHours(eH, eM, 0, 0);
-                    if (allowedEnd < allowedStart) {
-                        if (now.getHours() < 12) allowedStart.setDate(allowedStart.getDate() - 1);
-                        else allowedEnd.setDate(allowedEnd.getDate() + 1);
-                    }
-                    if (now < allowedStart || now > allowedEnd) {
-                        return res.status(403).json({ success: false, message: `Entry allowed only 3 hrs before shift (${assignment.shift.startTime} – ${assignment.shift.endTime})` });
-                    }
-                }
-            }
+        // ── Attendance Time Window Check ──────────────────────────────────
+        const directTimeCheck = await checkAttendanceTimeWindow(studentId, settings, now);
+        if (!directTimeCheck.allowed) {
+            return res.status(403).json({ success: false, message: directTimeCheck.message });
         }
 
         // ── Today (UTC midnight of IST date — matches admin query) ─────────
