@@ -897,65 +897,77 @@ exports.getFees = async (req, res) => {
             .sort({ year: -1, month: -1 });
 
         // Auto-generate missing next-month fee on the due date limit
+        // NOTE: Only chain from non-cancelled fees — cancelled fees are from inactive periods
+        // and must NOT trigger new pending fee generation.
         const student = await User.findById(req.user.id);
-        if (student && student.createdAt && fees.length > 0) {
-            let currentFee = fees[0]; // Latest fee
-            const joinedDate = new Date(student.createdAt);
-            const billingDay = joinedDate.getDate();
+        if (student && fees.length > 0) {
+            // Find the latest NON-cancelled fee to use as the chain base
+            const nonCancelledFees = fees.filter(f => f.status !== 'cancelled');
+            if (nonCancelledFees.length > 0) {
+                let currentFee = nonCancelledFees[0]; // Latest non-cancelled fee
+                const joinedDate = new Date(student.admissionDate || student.createdAt);
+                const billingDay = joinedDate.getDate();
 
-            const now = new Date();
-            now.setHours(0, 0, 0, 0);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
 
-            let iter = 0;
-            let generatedNew = false;
-            
-            while (iter < 6) {
-                const cycleEnd = new Date(currentFee.year, currentFee.month, billingDay - 1);
-                cycleEnd.setHours(0, 0, 0, 0);
+                let iter = 0;
+                let generatedNew = false;
 
-                // Generate next fee 5 days before cycleStart (= cycleEnd - 4 days)
-                const triggerDate = new Date(cycleEnd);
-                triggerDate.setDate(triggerDate.getDate() - 4);
+                while (iter < 6) {
+                    const cycleEnd = new Date(currentFee.year, currentFee.month, billingDay - 1);
+                    cycleEnd.setHours(0, 0, 0, 0);
 
-                if (now < triggerDate) break; // Not yet within 5-day window
+                    const triggerDate = new Date(cycleEnd);
+                    triggerDate.setDate(triggerDate.getDate() - 4);
 
-                let nextMonth = currentFee.month + 1;
-                let nextYear = currentFee.year;
-                if (nextMonth > 12) {
-                    nextMonth = 1;
-                    nextYear++;
+                    if (now < triggerDate) break; // Not yet within 5-day window
+
+                    let nextMonth = currentFee.month + 1;
+                    let nextYear = currentFee.year;
+                    if (nextMonth > 12) {
+                        nextMonth = 1;
+                        nextYear++;
+                    }
+
+                    const exists = await Fee.findOne({ student: student.id, month: nextMonth, year: nextYear });
+                    if (!exists) {
+                        const nextCycleEnd = new Date(nextYear, nextMonth, billingDay - 1);
+                        currentFee = await Fee.create({
+                            student: student.id,
+                            month: nextMonth,
+                            year: nextYear,
+                            amount: currentFee.amount,
+                            dueDate: nextCycleEnd,
+                            status: 'pending'
+                        });
+                        generatedNew = true;
+                    } else if (exists.status === 'cancelled') {
+                        // Skip cancelled records — don't chain from inactive-period fees
+                        break;
+                    } else {
+                        currentFee = exists;
+                    }
+                    iter++;
                 }
 
-                const exists = await Fee.findOne({ student: student.id, month: nextMonth, year: nextYear });
-                if (!exists) {
-                    const nextCycleEnd = new Date(nextYear, nextMonth, billingDay - 1);
-                    currentFee = await Fee.create({
-                        student: student.id,
-                        month: nextMonth,
-                        year: nextYear,
-                        amount: currentFee.amount,
-                        dueDate: nextCycleEnd,
-                        status: 'pending'
-                    });
-                    generatedNew = true;
-                } else {
-                    currentFee = exists;
+                if (generatedNew) {
+                    fees = await Fee.find({ student: req.user.id })
+                        .sort({ year: -1, month: -1 });
                 }
-                iter++;
-            }
-
-            if (generatedNew) {
-                fees = await Fee.find({ student: req.user.id })
-                    .sort({ year: -1, month: -1 });
             }
         }
 
         const settings = await Settings.findOne() || { onlinePaymentEnabled: true };
 
+        // Exclude fees cancelled due to inactive period — those are internal cleanup records
+        // and should not show in the student's fee history (they never actually owed those).
+        const visibleFees = fees.filter(f => !(f.status === 'cancelled' && f.cancelledReason === 'inactive_period'));
+
         res.status(200).json({
             success: true,
-            fees,
-            onlinePaymentEnabled: settings.onlinePaymentEnabled !== false 
+            fees: visibleFees,
+            onlinePaymentEnabled: settings.onlinePaymentEnabled !== false
         });
     } catch (error) {
         res.status(500).json({

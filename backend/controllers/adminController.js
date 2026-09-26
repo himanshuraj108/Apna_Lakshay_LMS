@@ -3292,12 +3292,14 @@ exports.getFees = async (req, res) => {
         let filteredFees = fees.filter(fee => fee.student && fee.student.isActive !== false);
 
         // Auto-generate missing next-month fees on the due date
+        // NOTE: Only chain from non-cancelled fees — after reactivation, cancelled fees from
+        // the inactive period must NOT trigger new pending fee generation.
         let generatedNew = false;
         const latestFees = {};
         for (const fee of filteredFees) {
             const studentId = fee.student._id.toString();
-            // Since fees are sorted descending, the first one encountered is the latest
-            if (!latestFees[studentId]) {
+            // Since fees are sorted descending, pick the latest NON-cancelled fee per student
+            if (!latestFees[studentId] && fee.status !== 'cancelled') {
                 latestFees[studentId] = fee;
             }
         }
@@ -3308,7 +3310,7 @@ exports.getFees = async (req, res) => {
         for (const studentId in latestFees) {
             let currentFee = latestFees[studentId];
             if (!currentFee.student.createdAt && !currentFee.student.admissionDate) continue;
-            
+
             const joinedDate = new Date(currentFee.student.admissionDate || currentFee.student.createdAt);
             const billingDay = joinedDate.getDate();
 
@@ -3343,6 +3345,9 @@ exports.getFees = async (req, res) => {
                         status: 'pending'
                     });
                     generatedNew = true;
+                } else if (exists.status === 'cancelled') {
+                    // Skip cancelled records (inactive-period fees) — stop chaining
+                    break;
                 } else {
                     currentFee = exists;
                 }
