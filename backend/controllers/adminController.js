@@ -640,14 +640,52 @@ exports.getStudents = async (req, res) => {
             tempMap[sid].push(ta);
         });
 
+        // Fetch ALL active seat assignments for these students across ALL seats
+        // (needed for split-assigned students who appear on multiple seats)
+        const allActiveSeats = await Seat.find({
+            'assignments': { $elemMatch: { student: { $in: studentIds }, status: 'active' } }
+        }).populate('assignments.shift', 'name startTime endTime').populate('room', 'name roomId hasAc').populate('floor', 'name').lean();
+
+        // Build map: studentId -> [{ seat, assignment }]
+        const studentSeatMap = {};
+        for (const seat of allActiveSeats) {
+            for (const a of seat.assignments) {
+                if (a.status !== 'active') continue;
+                const sid = a.student.toString();
+                if (!studentSeatMap[sid]) studentSeatMap[sid] = [];
+                studentSeatMap[sid].push({ seat, assignment: a });
+            }
+        }
+
         // Transform students to include resolved shift info and ensure registrationSource
         const studentsWithShift = students.map(student => {
             let shiftInfo = null;
             let shiftDetails = null;
             let shiftsArr = [];
+            const seatNumbers = [];
 
-            if (student.seat && student.seat.assignments) {
-                // Find ALL active assignments for this student
+            const mySeatAssignments = studentSeatMap[student._id.toString()] || [];
+            if (mySeatAssignments.length > 0) {
+                const seenSeats = new Set();
+                for (const { seat: aSeat, assignment: a } of mySeatAssignments) {
+                    const sNum = aSeat.number;
+                    if (sNum && !seenSeats.has(sNum)) { seenSeats.add(sNum); seatNumbers.push(sNum); }
+                    let shiftEntry = null;
+                    if (a.shift && a.shift.name) {
+                        shiftEntry = { _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime, price: a.price, seatNumber: sNum };
+                    } else if (a.legacyShift) {
+                        shiftEntry = { name: a.legacyShift, price: a.price, seatNumber: sNum };
+                    } else if (a.type === 'full_day') {
+                        shiftEntry = { name: 'Full Day', price: a.price, seatNumber: sNum };
+                    }
+                    if (shiftEntry) shiftsArr.push(shiftEntry);
+                }
+                if (shiftsArr.length > 0) {
+                    shiftInfo = shiftsArr.map(s => s.name).join(' + ');
+                    shiftDetails = { startTime: shiftsArr[0].startTime, endTime: shiftsArr[0].endTime };
+                }
+            } else if (student.seat && student.seat.assignments) {
+                // Fallback: only primary seat (no split assignments found)
                 const myAssignments = student.seat.assignments.filter(a =>
                     a.status === 'active' && a.student.toString() === student._id.toString()
                 );
@@ -672,7 +710,7 @@ exports.getStudents = async (req, res) => {
 
             let isTemporarySeat = false;
             let resolvedSeat = student.seat;
-            let resolvedSeatNumber = student.seat?.number || null;
+            let resolvedSeatNumber = seatNumbers.length > 0 ? seatNumbers[0] : (student.seat?.number || null);
 
             if (shiftsArr.length === 0 && tempMap[student._id.toString()]?.length > 0) {
                 const firstTemp = tempMap[student._id.toString()][0];
@@ -698,9 +736,10 @@ exports.getStudents = async (req, res) => {
                 ...student,
                 seat: resolvedSeat,
                 seatNumber: resolvedSeatNumber,
+                seatNumbers,                   // all seat numbers for split-assigned students
                 shift: shiftInfo,              // backward compat: "Shift 1 + Shift 3"
                 shiftDetails,                  // backward compat: first shift times
-                shifts: shiftsArr,             // NEW: full array [{name, startTime, endTime}]
+                shifts: shiftsArr,             // full array [{name, startTime, endTime, seatNumber}]
                 isTemporary: isTemporarySeat,
                 isTemporarySeat,
                 registrationSource: student.registrationSource || 'admin',

@@ -150,14 +150,6 @@ const PERM_CARDS = {
     },
 
     /* ── Administration & Governance ──────────────────────── */
-    sub_admins: {
-        title: 'Sub-Admin Roles',
-        path: '/admin/sub-admins',
-        icon: IoShieldCheckmarkOutline,
-        color: '#4f46e5',
-        desc: 'Manage staff accounts, PIN passcodes & granular permissions',
-        tag: 'Roles',
-    },
     history: {
         title: 'Action History Logs',
         path: '/admin/history',

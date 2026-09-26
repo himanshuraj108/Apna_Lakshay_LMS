@@ -169,7 +169,8 @@ const StudentManagement = () => {
     // Split Seat Assignment States
     const [showSplitModal, setShowSplitModal] = useState(false);
     const [splitStudent, setSplitStudent] = useState(null);
-    const [splitPairs, setSplitPairs] = useState([{ seatId: '', shiftId: '', price: '' }, { seatId: '', shiftId: '', price: '' }]);
+    const [splitPairs, setSplitPairs] = useState([{ seatId: '', shiftId: '' }, { seatId: '', shiftId: '' }]);
+    const [splitFee, setSplitFee] = useState('');
     const [splitLoading, setSplitLoading] = useState(false);
 
     // Scholar Activity & Status History Modal States
@@ -718,7 +719,8 @@ const StudentManagement = () => {
     // ─── Split Seat Handlers ─────────────────────────────────────────────────
     const openSplitSeatModal = (student) => {
         setSplitStudent(student);
-        setSplitPairs([{ seatId: '', shiftId: '', price: '' }, { seatId: '', shiftId: '', price: '' }]);
+        setSplitPairs([{ seatId: '', shiftId: '' }, { seatId: '', shiftId: '' }]);
+        setSplitFee('');
         setShowSplitModal(true);
     };
 
@@ -729,15 +731,15 @@ const StudentManagement = () => {
         try {
             await api.post('/admin/seats/split-assign', {
                 studentId: splitStudent._id,
+                totalFee: splitFee ? Number(splitFee) : 0,
                 assignments: splitPairs.map(p => ({
                     seatId: p.seatId,
-                    shiftId: p.shiftId,
-                    price: p.price ? Number(p.price) : 0
+                    shiftId: p.shiftId
                 }))
             });
             setSuccess(`Split seat assigned to ${splitStudent.name}!`);
             setShowSplitModal(false);
-            fetchStudents(); fetchFloors();
+            await fetchStudents(); await fetchFloors();
             setTimeout(() => setSuccess(''), 4000);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to create split assignment');
@@ -1219,6 +1221,7 @@ const StudentManagement = () => {
                 return st.tempAssignments[0].seat.number;
             }
             if (st.seatNumber) return st.seatNumber;
+            if (st.seatNumbers?.length > 0) return st.seatNumbers[0];
             if (st.seat?.number) return st.seat.number;
         }
 
@@ -2318,7 +2321,14 @@ const StudentManagement = () => {
                                                                         {seatDetails ? (
                                                                             <>
                                                                                 <p className="font-black text-sm text-[#0F172A] flex items-center gap-1.5">
-                                                                                    <span>Desk {seatDetails.seatNumber}</span>
+                                                                                    {(student.seatNumbers && student.seatNumbers.length > 1)
+                                                                                        ? student.seatNumbers.map((sn, i) => (
+                                                                                            <span key={i} style={{ fontSize: '11px', fontWeight: 800, background: i === 0 ? '#FFF0E6' : '#EFF6FF', color: i === 0 ? '#EA580C' : '#1D4ED8', border: `1px solid ${i === 0 ? '#FDDCAE' : '#BFDBFE'}`, borderRadius: '4px', padding: '1px 6px' }}>
+                                                                                                Desk {sn}
+                                                                                            </span>
+                                                                                        ))
+                                                                                        : <span>Desk {seatDetails.seatNumber}</span>
+                                                                                    }
                                                                                     {(seatDetails.isTemporary || student.isTemporarySeat || student.isTemporary || student.tempAssignments?.length > 0) && (
                                                                                         <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold text-[9px] border border-amber-300">
                                                                                             Temporary
@@ -5058,9 +5068,9 @@ const StudentManagement = () => {
                         {/* Pair Rows */}
                         <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
                             {splitPairs.map((pair, i) => (
-                                <div key={i} className="border border-slate-200 bg-slate-50/60 rounded-xl p-3 space-y-2.5">
+                                <div key={i} className="border border-[#EDE8E0] bg-[#FFFAF5] rounded-xl p-3 space-y-2.5">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Slot {i + 1} Assignment</span>
+                                        <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">Slot {i + 1} Assignment</span>
                                         {splitPairs.length > 2 && (
                                             <button
                                                 type="button"
@@ -5071,7 +5081,7 @@ const StudentManagement = () => {
                                             </button>
                                         )}
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <div>
                                             <label className={LABEL}>Desk *</label>
                                             <select
@@ -5095,32 +5105,38 @@ const StudentManagement = () => {
                                                 className={INPUT}
                                             >
                                                 <option value="">Select shift...</option>
-                                                {shifts.map(s => (
+                                                {getAvailableShiftsForSeat(pair.seatId).map(s => (
                                                     <option key={s.id} value={s.id}>{s.name} ({s.startTime}–{s.endTime})</option>
                                                 ))}
                                             </select>
-                                        </div>
-                                        <div>
-                                            <label className={LABEL}>Rate (₹)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={pair.price}
-                                                placeholder="0"
-                                                onChange={e => setSplitPairs(p => p.map((x, idx) => idx === i ? { ...x, price: e.target.value } : x))}
-                                                className={INPUT}
-                                            />
                                         </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
+                        {/* Single Fee Input */}
+                        <div className="border border-[#FDDCAE] bg-orange-50/40 rounded-xl p-3.5">
+                            <label className="block text-[11px] font-bold text-orange-700 uppercase tracking-wider mb-2">Monthly Fee (₹)</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-orange-500">₹</span>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={splitFee}
+                                    placeholder="0"
+                                    onChange={e => setSplitFee(e.target.value)}
+                                    className="w-full pl-7 pr-4 py-2.5 border border-[#EDE8E0] rounded-xl text-sm font-semibold text-stone-800 bg-white focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
+                                />
+                            </div>
+                            <p className="text-[10px] text-orange-600 mt-1.5 font-medium">This amount will be added as a pending fee for this student.</p>
+                        </div>
+
                         {/* Add more pairs */}
                         {splitPairs.length < 4 && (
                             <button
                                 type="button"
-                                onClick={() => setSplitPairs(p => [...p, { seatId: '', shiftId: '', price: '' }])}
+                                onClick={() => setSplitPairs(p => [...p, { seatId: '', shiftId: '' }])}
                                 className="w-full py-2.5 border border-dashed border-orange-300 hover:border-orange-400 bg-orange-50/30 hover:bg-orange-50 text-orange-600 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                             >
                                 <IoAdd size={16} />

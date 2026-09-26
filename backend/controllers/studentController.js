@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Seat = require('../models/Seat');
 const Attendance = require('../models/Attendance');
@@ -80,11 +81,11 @@ exports.getDashboard = async (req, res) => {
         // PERFORMANCE OPTIMIZATION: Run independent queries in parallel
         // ==========================================
         const [seat, student, unreadCount, activeRequestsCount, settings, rawTempAssignments] = await Promise.all([
-            // Query 1: Get seat info
+            // Query 1: Get primary seat (first active seat for this student)
             Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
                 .populate('floor room')
                 .populate('assignments.shift')
-                .lean(), // Use lean() for faster read-only query
+                .lean(),
 
             // Query 2: Get student details
             User.findById(studentId)
@@ -117,35 +118,62 @@ exports.getDashboard = async (req, res) => {
         ]);
 
         let assignedSeatData = null;
+
         if (seat) {
-            // Find ALL active assignments for this student
+            // Find all active assignments on this primary seat for this student
             const myAssignments = seat.assignments.filter(
                 a => a.student.toString() === studentId.toString() && a.status === 'active'
             );
 
-            const shiftsArr = myAssignments.map(a => {
-                if (a.shift && a.shift.name) {
-                    return { _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime };
-                } else if (a.legacyShift) {
-                    return { name: a.legacyShift };
-                } else if (a.type === 'full_day') {
-                    return { name: 'Full Day' };
+            // Also find any other seats (split assignment) — lightweight query
+            let allSeatNumbers = seat.number ? [seat.number] : [];
+            let allShiftsArr = [];
+            try {
+                const extraSeats = await Seat.find({
+                    assignments: { $elemMatch: { student: studentId, status: 'active' } },
+                    _id: { $ne: seat._id }
+                }).populate('assignments.shift').lean();
+                for (const es of extraSeats) {
+                    if (es.number && !allSeatNumbers.includes(es.number)) allSeatNumbers.push(es.number);
+                    const esAssignments = es.assignments.filter(
+                        a => a.student.toString() === studentId.toString() && a.status === 'active'
+                    );
+                    for (const a of esAssignments) {
+                        if (a.shift && a.shift.name) {
+                            allShiftsArr.push({ _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime, seatNumber: es.number });
+                        } else if (a.legacyShift) {
+                            allShiftsArr.push({ name: a.legacyShift, seatNumber: es.number });
+                        } else if (a.type === 'full_day') {
+                            allShiftsArr.push({ name: 'Full Day', seatNumber: es.number });
+                        }
+                    }
                 }
-                return null;
-            }).filter(Boolean);
+            } catch (_) {}
 
-            const shiftName = shiftsArr.map(s => s.name).join(' + ') || 'N/A';
+            // Build shifts from primary seat
+            for (const a of myAssignments) {
+                if (a.shift && a.shift.name) {
+                    allShiftsArr.unshift({ _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime, seatNumber: seat.number });
+                } else if (a.legacyShift) {
+                    allShiftsArr.unshift({ name: a.legacyShift, seatNumber: seat.number });
+                } else if (a.type === 'full_day') {
+                    allShiftsArr.unshift({ name: 'Full Day', seatNumber: seat.number });
+                }
+            }
+
+            const shiftName = allShiftsArr.map(s => s.name).join(' + ') || 'N/A';
 
             assignedSeatData = {
                 number: seat.number,
+                seatNumbers: allSeatNumbers,
                 floor: seat.floor?.name,
                 room: seat.room?.name,
                 roomId: seat.room?.roomId || null,
                 roomHasAc: seat.room?.hasAc || false,
                 roomHasFan: seat.room?.hasFan || false,
-                shift: shiftName,          // backward compat
-                shifts: shiftsArr,         // NEW: all shifts
-                shiftDetails: shiftsArr[0] ? { startTime: shiftsArr[0].startTime, endTime: shiftsArr[0].endTime } : null,
+                shift: shiftName,
+                shifts: allShiftsArr,
+                shiftDetails: allShiftsArr[0] ? { startTime: allShiftsArr[0].startTime, endTime: allShiftsArr[0].endTime } : null,
                 price: myAssignments[0]?.price || 0,
                 assignedAt: myAssignments[0]?.assignedAt,
                 isTemporary: false,
@@ -162,6 +190,7 @@ exports.getDashboard = async (req, res) => {
 
             assignedSeatData = {
                 number: firstTemp.seat?.number,
+                seatNumbers: firstTemp.seat?.number ? [firstTemp.seat.number] : [],
                 floor: firstTemp.seat?.floor?.name,
                 room: firstTemp.seat?.room?.name,
                 roomId: firstTemp.seat?.room?.roomId || null,
@@ -419,8 +448,8 @@ exports.getDashboard = async (req, res) => {
 exports.getMySeat = async (req, res) => {
     try {
         const studentId = req.user.id;
-        // Updated query for new assignments structure
-        const seat = await Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
+        // Find ALL seats with an active assignment for this student
+        const allSeats = await Seat.find({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
             .populate('floor')
             .populate('assignments.shift')
             .populate({
@@ -439,29 +468,46 @@ exports.getMySeat = async (req, res) => {
             .populate('shift')
             .lean();
 
-        if (!seat && tempAssignments.length === 0) {
+        if (allSeats.length === 0 && tempAssignments.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'No seat assigned'
             });
         }
 
-        // Find ALL active assignments for this student if permanent seat exists
+        // Gather all active assignments across all seats for this student
+        const allShiftsArr = [];
+        const allSeatNumbers = [];
+        const seenNums = new Set();
+        let firstSeatDoc = null;
+
+        for (const s of allSeats) {
+            const myAssignments = s.assignments.filter(
+                a => a.student.toString() === studentId.toString() && a.status === 'active'
+            );
+            if (myAssignments.length === 0) continue;
+            if (!firstSeatDoc) firstSeatDoc = s;
+            const sNum = s.number;
+            if (sNum && !seenNums.has(sNum)) { seenNums.add(sNum); allSeatNumbers.push(sNum); }
+            for (const a of myAssignments) {
+                if (a.shift && a.shift.name) {
+                    allShiftsArr.push({ _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime, seatNumber: sNum });
+                } else if (a.legacyShift) {
+                    allShiftsArr.push({ name: a.legacyShift, seatNumber: sNum });
+                } else if (a.type === 'full_day') {
+                    allShiftsArr.push({ name: 'Full Day', seatNumber: sNum });
+                }
+            }
+        }
+
+        // Use firstSeatDoc for backward compat fields
+        const seat = firstSeatDoc || (allSeats[0] || null);
         const myAssignments = seat?.assignments ? seat.assignments.filter(
             a => a.student.toString() === studentId.toString() && a.status === 'active'
         ) : [];
 
         // Build shifts[] array from all assignments
-        const shiftsArr = myAssignments.map(a => {
-            if (a.shift && a.shift.name) {
-                return { _id: a.shift._id, name: a.shift.name, startTime: a.shift.startTime, endTime: a.shift.endTime };
-            } else if (a.legacyShift) {
-                return { name: a.legacyShift };
-            } else if (a.type === 'full_day') {
-                return { name: 'Full Day' };
-            }
-            return null;
-        }).filter(Boolean);
+        const shiftsArr = allShiftsArr;
 
         // Backward compat: first shift as single string
         const shiftName = shiftsArr.map(s => s.name).join(' + ') || 'N/A';
@@ -486,15 +532,16 @@ exports.getMySeat = async (req, res) => {
         }));
 
         let seatResponse = null;
-        if (myAssignments.length > 0 && seat) {
+        if (allSeatNumbers.length > 0 && seat) {
             seatResponse = {
                 _id: seat._id,
-                number: seat.number,
+                number: allSeatNumbers[0] || seat.number,
+                seatNumbers: allSeatNumbers,     // all desks for split students
                 floor: seat.floor,
                 room: seat.room,
                 shift: shiftName,        // backward compat
                 shiftId: shiftId,        // backward compat
-                shifts: shiftsArr,       // NEW: all assigned shifts
+                shifts: shiftsArr,       // all assigned shifts across all desks
                 price: myAssignments[0]?.price || 0,
                 basePrices: seat.basePrices,
                 shiftPrices: seat.shiftPrices,
@@ -506,6 +553,7 @@ exports.getMySeat = async (req, res) => {
             seatResponse = {
                 _id: firstT.seat?._id || (seat ? seat._id : null),
                 number: firstT.seat?.number,
+                seatNumbers: [firstT.seat?.number].filter(Boolean),
                 floor: firstT.seat?.floor,
                 room: firstT.seat?.room,
                 shift: firstT.shift?.name || 'Temporary Shift',

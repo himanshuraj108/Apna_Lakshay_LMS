@@ -6,15 +6,15 @@ import {
 } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 
-const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupied = false }) => {
+const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, highlightSeatIds, highlightSeatNumbers, useDisplayOccupied = false }) => {
     const doorPosition = room.doorPosition || 'south';
     const { shifts } = useShifts();
 
     // Group seats by wall and sort by position index
     const northSeats = room.seats.filter(s => s.position?.wall === 'north').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
-    const eastSeats = room.seats.filter(s => s.position?.wall === 'east').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
+    const eastSeats  = room.seats.filter(s => s.position?.wall === 'east').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
     const southSeats = room.seats.filter(s => s.position?.wall === 'south').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
-    const westSeats = room.seats.filter(s => s.position?.wall === 'west').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
+    const westSeats  = room.seats.filter(s => s.position?.wall === 'west').sort((a, b) => (a.position?.index || 0) - (b.position?.index || 0));
 
     const totalSeats = room.seats.length;
     const hasAc = room.hasAc || false;
@@ -144,7 +144,12 @@ const StudentRoomGrid = ({ room, onSeatClick, highlightSeatId, useDisplayOccupie
 
     // ── Seat Card Component ─────────────────────────────────────────────────
     const SeatCard = ({ seat }) => {
-        const isHighlighted = seat._id === highlightSeatId;
+        const seatIdStr = seat._id?.toString();
+        const isHighlighted = highlightSeatNumbers
+            ? highlightSeatNumbers.some(n => String(n) === String(seat.number))
+            : highlightSeatIds
+                ? highlightSeatIds.some(id => id?.toString() === seatIdStr)
+                : seat._id === highlightSeatId;
 
         // Status determination logic (preserved 100%)
         let statusColor = 'green';

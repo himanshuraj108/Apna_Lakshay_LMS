@@ -70,6 +70,10 @@ router.get('/exam-alerts', getExamAlerts);
 // Books (Google Books API)
 router.get('/books', getBooks);
 
+// Video Learning (YouTube Data API v3 proxy)
+const { searchVideos } = require('../controllers/videoController');
+router.get('/videos', searchVideos);
+
 // Notes (Internet Archive API)
 router.get('/notes', getNotes);
 

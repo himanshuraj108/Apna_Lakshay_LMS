@@ -20,7 +20,7 @@ import {
     IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline,
     IoCheckmarkDoneOutline, IoCheckmarkOutline,
     IoLanguageOutline, IoWallet,
-    IoTrophyOutline, IoDesktopOutline
+    IoTrophyOutline, IoDesktopOutline, IoPlayCircleOutline,
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -943,9 +943,10 @@ const StudentDashboard = () => {
     const visibleLearningCards = (() => {
         // IDs must match backend DEFAULT_LEARNING exactly
         const BASE_L = [
-            { id: 'books',     icon: IoBookOutline,         label: t('Books'),        desc: t('Curated study books'), accentColor: '#3b82f6', to: '/student/books',     locked: false },
-            { id: 'notes',     icon: IoDocumentTextOutline, label: t('Notes'),        desc: t('Browse & download'),   accentColor: '#8b5cf6', to: '/student/notes',     locked: false },
-            { id: 'mock-test', icon: IoSparklesOutline,     label: t('AI Mock Test'), desc: t('Practice tests'),      accentColor: '#f59e0b', to: '/student/mock-test', locked: false },
+            { id: 'books',     icon: IoBookOutline,          label: t('Books'),           desc: t('Curated study books'),          accentColor: '#3b82f6', to: '/student/books',     locked: false },
+            { id: 'notes',     icon: IoDocumentTextOutline,  label: t('Notes'),           desc: t('Browse & download'),            accentColor: '#8b5cf6', to: '/student/notes',     locked: false },
+            { id: 'mock-test', icon: IoSparklesOutline,      label: t('AI Mock Test'),    desc: t('Practice tests'),               accentColor: '#f59e0b', to: '/student/mock-test', locked: false },
+            { id: 'videos',    icon: IoPlayCircleOutline,    label: t('Video Learning'),  desc: t('Exam-focused video search'),    accentColor: '#ef4444', to: '/student/videos',    locked: false },
         ];
         const cfg = cardConfig?.learning;
         if (!cfg || cfg.length === 0) return BASE_L;
@@ -1712,11 +1713,22 @@ const StudentDashboard = () => {
                             {(() => {
                                 const displaySeats = [];
                                 if (dashboardData?.seat) {
-                                    displaySeats.push({
-                                        isTemp: Boolean(dashboardData.seat.isTemporary),
-                                        number: dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}` : dashboardData.seat.number,
-                                        shifts: dashboardData.seat.shifts || (dashboardData.seat.shift ? [{ name: dashboardData.seat.shift }] : []),
-                                    });
+                                    const allShifts = dashboardData.seat.shifts || (dashboardData.seat.shift ? [{ name: dashboardData.seat.shift }] : []);
+                                    const seatNums = dashboardData.seat.seatNumbers || [dashboardData.seat.number];
+                                    if (seatNums.length > 1) {
+                                        // Split assignment: group shifts by seatNumber, one card per desk
+                                        seatNums.forEach((sn, i) => {
+                                            const deskShifts = allShifts.filter(m => m.seatNumber === sn || (!m.seatNumber && i === 0));
+                                            const label = dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${sn}` : sn;
+                                            displaySeats.push({ isTemp: false, number: label, shifts: deskShifts.length > 0 ? deskShifts : allShifts });
+                                        });
+                                    } else {
+                                        displaySeats.push({
+                                            isTemp: Boolean(dashboardData.seat.isTemporary),
+                                            number: dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}` : dashboardData.seat.number,
+                                            shifts: allShifts,
+                                        });
+                                    }
                                 }
                                 if (dashboardData?.tempAssignments?.length > 0) {
                                     dashboardData.tempAssignments.forEach(s => {
@@ -1734,7 +1746,11 @@ const StudentDashboard = () => {
                                 );
                                 return (
                                     <div className="flex flex-col gap-2.5 mt-1">
-                                        {displaySeats.map((s, r) => (
+                                        {[...displaySeats].sort((a, b) => {
+                                            const aT = a.shifts?.[0]?.startTime || '99:99';
+                                            const bT = b.shifts?.[0]?.startTime || '99:99';
+                                            return aT.localeCompare(bT);
+                                        }).map((s, r) => (
                                             <div key={r}>
                                                 <div className="flex items-center gap-2 flex-wrap mb-1">
                                                     <p className="text-2xl sm:text-3xl font-black truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : '#1A1A1A' }} title={s.number}>
@@ -1747,7 +1763,7 @@ const StudentDashboard = () => {
                                                     )}
                                                 </div>
                                                 <div className="flex flex-wrap gap-1 mt-1">
-                                                    {s.shifts.map((m, g) => (
+                                                    {[...s.shifts].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')).map((m, g) => (
                                                         <span key={g} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-full"
                                                             style={{ background: s.isTemp ? 'rgba(239,68,68,0.08)' : 'rgba(249,115,22,0.08)', border: `1px solid ${s.isTemp ? 'rgba(239,68,68,0.2)' : 'rgba(249,115,22,0.2)'}`, color: s.isTemp ? '#dc2626' : '#EA580C' }}>
                                                             {m.name}{m.startTime ? ` ${m.startTime}-${m.endTime}` : ''}

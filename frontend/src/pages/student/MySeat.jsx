@@ -80,15 +80,33 @@ const MySeat = () => {
 
     const displaySeats = [];
     if (seatData.seat && !seatData.seat.isTemporary && (seatData.seat.shifts?.length > 0 || (seatData.seat.shift && seatData.seat.shift !== 'N/A'))) {
-        displaySeats.push({
-            isTemp: false,
-            seat: seatData.seat,
-            number: seatData.seat.room?.roomId ? `${seatData.seat.room.roomId} - ${seatData.seat.number}` : seatData.seat.number,
-            shifts: seatData.seat.shifts || (seatData.seat.shift ? [{ name: seatData.seat.shift }] : []),
-            price: seatData.seat.shiftPrices?.[seatData.seat.shiftId] || seatData.seat.basePrices?.[seatData.seat.shiftId] || seatData.seat.price || 800,
-            floor: seatData.seat.floor,
-            room: seatData.seat.room,
-        });
+        const allShifts = seatData.seat.shifts || (seatData.seat.shift ? [{ name: seatData.seat.shift }] : []);
+        const seatNums = seatData.seat.seatNumbers || [seatData.seat.number];
+        if (seatNums.length > 1) {
+            seatNums.forEach((sn, i) => {
+                const deskShifts = allShifts.filter(m => m.seatNumber === sn || (!m.seatNumber && i === 0));
+                const label = seatData.seat.room?.roomId ? `${seatData.seat.room.roomId} - ${sn}` : sn;
+                displaySeats.push({
+                    isTemp: false,
+                    seat: seatData.seat,
+                    number: label,
+                    shifts: deskShifts.length > 0 ? deskShifts : allShifts,
+                    price: seatData.seat.price || 0,
+                    floor: seatData.seat.floor,
+                    room: seatData.seat.room,
+                });
+            });
+        } else {
+            displaySeats.push({
+                isTemp: false,
+                seat: seatData.seat,
+                number: seatData.seat.room?.roomId ? `${seatData.seat.room.roomId} - ${seatData.seat.number}` : seatData.seat.number,
+                shifts: allShifts,
+                price: seatData.seat.shiftPrices?.[seatData.seat.shiftId] || seatData.seat.basePrices?.[seatData.seat.shiftId] || seatData.seat.price || 800,
+                floor: seatData.seat.floor,
+                room: seatData.seat.room,
+            });
+        }
     }
     if (seatData.tempAssignments && seatData.tempAssignments.length > 0) {
         seatData.tempAssignments.forEach(ta => {
@@ -145,7 +163,11 @@ const MySeat = () => {
                     {/* LEFT COLUMN */}
                     <div className="lg:col-span-2 flex flex-col gap-4">
 
-                        {displaySeats.map((ds, idx) => (
+                        {[...displaySeats].sort((a, b) => {
+                            const aT = [...(a.shifts || [])].sort((x, y) => (x.startTime || '').localeCompare(y.startTime || ''))[0]?.startTime || '99:99';
+                            const bT = [...(b.shifts || [])].sort((x, y) => (x.startTime || '').localeCompare(y.startTime || ''))[0]?.startTime || '99:99';
+                            return aT.localeCompare(bT);
+                        }).map((ds, idx) => (
                             <div key={idx} className="flex flex-col gap-4">
                                 {/* Seat number hero */}
                                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + idx * 0.1 }}
@@ -316,13 +338,20 @@ const MySeat = () => {
                                     </span>
                                 </div>
                                 <div className="p-6 overflow-x-auto min-h-[600px] flex items-start justify-center">
-                                    <StudentRoomGrid room={room} highlightSeatId={primarySeat?._id || primarySeat?.id} onSeatClick={() => {}} />
+                                    <StudentRoomGrid
+                                        room={room}
+                                        highlightSeatNumbers={seatData.seat?.seatNumbers?.length > 0 ? seatData.seat.seatNumbers : (seatData.seat?.number ? [seatData.seat.number] : [])}
+                                        onSeatClick={() => {}}
+                                    />
                                 </div>
                                 <div className="mx-5 mb-5 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm"
                                     style={{ background: '#FEF3C7', border: '1px solid #FDDCAE' }}>
                                     <IoBedOutline size={15} style={{ color: '#EA580C' }} className="shrink-0" />
                                     <p className="text-sm" style={{ color: '#92400E' }}>
-                                        Your seat <strong className="font-black" style={{ color: '#78350F' }}>#{room.roomId ? `${room.roomId} - ${primarySeat.number}` : primarySeat.number}</strong> is highlighted on the map.
+                                        {(seatData.seat?.seatNumbers?.length > 1)
+                                             ? <>Your seats <strong className="font-black" style={{ color: '#78350F' }}>#{seatData.seat.seatNumbers.join(' & #')}</strong> are highlighted on the map.</>
+                                             : <>Your seat <strong className="font-black" style={{ color: '#78350F' }}>#{room.roomId ? `${room.roomId} - ${primarySeat.number}` : primarySeat.number}</strong> is highlighted on the map.</>
+                                        }
                                     </p>
                                 </div>
                             </motion.div>

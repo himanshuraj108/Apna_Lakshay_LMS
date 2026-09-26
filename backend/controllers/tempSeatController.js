@@ -3,6 +3,15 @@ const User = require('../models/User');
 const Seat = require('../models/Seat');
 const Shift = require('../models/Shift');
 const TempSeatAssignment = require('../models/TempSeatAssignment');
+const Fee = require('../models/Fee');
+
+let emailService;
+try {
+    emailService = require('../services/emailService');
+} catch (e) {
+    emailService = { sendSeatAssignmentEmail: async () => {} };
+}
+
 
 // ─── Helper: Populate temp assignments for a student ─────────────────────────
 const getStudentTempAssignments = async (studentId) => {
@@ -185,7 +194,7 @@ exports.getStudentTempAssignments = async (req, res) => {
 // Body: { studentId, assignments: [{ seatId, shiftId, price? }, ...] }
 exports.splitSeatAssign = async (req, res) => {
     try {
-        const { studentId, assignments: splitAssignments } = req.body;
+        const { studentId, assignments: splitAssignments, totalFee } = req.body;
 
         if (!studentId) return res.status(400).json({ success: false, message: 'Student ID is required' });
         if (!splitAssignments || !Array.isArray(splitAssignments) || splitAssignments.length < 2) {
@@ -200,7 +209,7 @@ exports.splitSeatAssign = async (req, res) => {
         // Validate all seat+shift combos and check for conflicts
         const validatedPairs = [];
         for (const pair of splitAssignments) {
-            const { seatId, shiftId, price } = pair;
+            const { seatId, shiftId } = pair;
             if (!seatId || !shiftId) {
                 return res.status(400).json({ success: false, message: 'Each pair must have seatId and shiftId' });
             }
@@ -237,7 +246,7 @@ exports.splitSeatAssign = async (req, res) => {
                 }
             }
 
-            validatedPairs.push({ seat, shift, price: price || 0 });
+            validatedPairs.push({ seat, shift });
         }
 
         // Remove student from ALL previous active seat assignments
@@ -266,16 +275,18 @@ exports.splitSeatAssign = async (req, res) => {
             }
         }
 
+        const feeAmount = totalFee ? Number(totalFee) : 0;
+
         // Create new assignments — one per seat-shift pair
         const assignedSeats = [];
-        for (const { seat, shift, price } of validatedPairs) {
+        for (const { seat, shift } of validatedPairs) {
             seat.assignments.push({
                 student: student._id,
                 shift: shift._id,
                 type: 'specific',
                 status: 'active',
                 assignedAt: new Date(),
-                price: price
+                price: feeAmount
             });
             seat.isOccupied = true;
             await seat.save();
@@ -287,6 +298,47 @@ exports.splitSeatAssign = async (req, res) => {
             seat: validatedPairs[0].seat._id,
             seatAssignedAt: student.seatAssignedAt || new Date()
         });
+
+        // Create a pending fee record if a fee was specified
+        if (feeAmount > 0) {
+            const now = new Date();
+            const feeMonth = now.getMonth() + 1;
+            const feeYear = now.getFullYear();
+            const joinedDate = new Date(student.admissionDate || student.createdAt || now);
+            const billingDay = joinedDate.getDate() || 10;
+            const dueDate = new Date(feeYear, feeMonth - 1, billingDay);
+
+            // Only create if no pending/overdue fee exists for this month already
+            const existing = await Fee.findOne({ student: studentId, month: feeMonth, year: feeYear });
+            if (!existing) {
+                await Fee.create({
+                    student: student._id,
+                    month: feeMonth,
+                    year: feeYear,
+                    amount: feeAmount,
+                    outstanding: feeAmount,
+                    dueDate,
+                    status: 'pending'
+                });
+            } else if (existing.status === 'pending' || existing.status === 'overdue') {
+                // Update the existing pending fee amount
+                existing.amount = feeAmount;
+                existing.outstanding = feeAmount;
+                await existing.save();
+            }
+        }
+
+        // Send seat assignment email (best-effort)
+        try {
+            const shiftLabel = assignedSeats.map(s => `${s.seatNumber} (${s.shiftName})`).join(' + ');
+            await emailService.sendSeatAssignmentEmail(
+                student,
+                { number: assignedSeats.map(s => s.seatNumber).join(' + '), currentPrice: feeAmount },
+                shiftLabel
+            );
+        } catch (emailErr) {
+            console.error('Split assign email failed:', emailErr.message);
+        }
 
         res.json({
             success: true,

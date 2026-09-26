@@ -503,12 +503,25 @@ const StudentIdCard = ({ student }) => {
                             </div>
                             {/* Seat */}
                             <div>
-                                <div style={LABEL_STYLE}>{isTemporary ? 'Temp Desk' : 'Seat No.'}</div>
-                                <div style={{ ...VAL_STYLE, color: isTemporary ? '#b45309' : (resolvedSeatNumber ? theme.accentText : '#9ca3af') }}>
-                                    {resolvedSeatNumber
-                                        ? (resolvedRoomId ? `${resolvedRoomId}-${resolvedSeatNumber}` : resolvedSeatNumber)
-                                        : 'N/A'}
-                                </div>
+                                <div style={LABEL_STYLE}>{isTemporary ? 'Temp Desk' : (student.seatNumbers?.length > 1 ? 'Desks' : 'Seat No.')}</div>
+                                {student.seatNumbers && student.seatNumbers.length > 1 ? (
+                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                                        {[...student.seatNumbers].sort((a, b) => Number(a) - Number(b)).map((sn, i) => {
+                                            const c = SEAT_COLORS[i % SEAT_COLORS.length];
+                                            return (
+                                                <span key={i} style={{ fontSize: '8px', fontWeight: 800, color: c.text, background: c.bg, border: `1px solid ${c.border}`, borderRadius: '3px', padding: '2px 5px' }}>
+                                                    {sn}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div style={{ ...VAL_STYLE, color: isTemporary ? '#b45309' : (resolvedSeatNumber ? theme.accentText : '#9ca3af') }}>
+                                        {resolvedSeatNumber
+                                            ? (resolvedRoomId ? `${resolvedRoomId}-${resolvedSeatNumber}` : resolvedSeatNumber)
+                                            : 'N/A'}
+                                    </div>
+                                )}
                             </div>
                             {/* Mobile */}
                             <div>
@@ -536,7 +549,7 @@ const StudentIdCard = ({ student }) => {
                                 <div style={{ ...LABEL_STYLE, marginBottom: '3px' }}>Shift</div>
                                 {student.shifts && student.shifts.length > 0 ? (
                                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                        {student.shifts.map((s, i) => {
+                                        {[...student.shifts].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')).map((s, i) => {
                                             const c = SEAT_COLORS[i % SEAT_COLORS.length];
                                             return (
                                                 <span key={i} style={{
