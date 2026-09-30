@@ -15,7 +15,7 @@ Apna Lakshay replaces manual library operations with a centralised digital platf
 ## Architecture
 
 ```
-Client (React + Vite)
+Client (React + Vite + PWA)
         |
         |  HTTPS / WSS
         v
@@ -39,7 +39,8 @@ API Server (Node.js + Express)
 **Media:** Cloudinary (profile photos, uploaded notes)  
 **Payments:** Razorpay payment gateway  
 **AI:** Groq API (LLaMA, Compound, Qwen model family) with multi-model fallback chain  
-**Email:** Nodemailer (SMTP)
+**Email:** Nodemailer (SMTP, dual-provider with Brevo fallback)  
+**PWA:** Service Worker, Web App Manifest, install prompt (desktop + mobile)
 
 ---
 
@@ -47,9 +48,9 @@ API Server (Node.js + Express)
 
 | Role | Scope |
 |------|-------|
-| Super Admin | Full system access — student management, seats, fees, shifts, settings, analytics, sub-admin management |
-| Sub Admin | Floor operations — attendance, seat check, student ID card printing, inactivation requests routed to super admin |
-| Student | Self-service portal — dashboard, seat view, fees, AI tools, mock tests, discussion, doubt board, wallet |
+| Super Admin | Full system access — student management, seats, fees, shifts, settings, analytics, sub-admin management, QR kiosk refresh |
+| Sub Admin | Floor operations — attendance, seat check, student ID card printing, kiosk access, all 16 module cards, inactivation requests routed to super admin |
+| Student | Self-service portal — dashboard, seat view, fees, AI tools, mock tests, discussion, doubt board, wallet, video learning |
 
 ---
 
@@ -63,7 +64,9 @@ API Server (Node.js + Express)
 - Temporary seat allocation when original seat is occupied
 - Inactivation and reinstatement workflow with seat restoration and conflict resolution
 - Vacant seat real-time matrix view
-- QR Entry Kiosk — full-screen entrance scanner for attendance marking
+- QR Entry Kiosk — full-screen entrance scanner for attendance marking (accessible to sub-admin)
+- Seats and shifts sorted ascending by start time across all views (dashboard, ID card, My Seat page)
+- Split-seat multi-desk display with correct per-seat numbers
 
 ### Student Lifecycle
 
@@ -75,15 +78,23 @@ API Server (Node.js + Express)
 - Status history log per student
 - Sub-admin inactivation request routed to super admin with approval or disapproval
 - Seat restoration on disapproval with conflict-aware relocation
+- Reactivation modal with configurable admission date; inactive-period pending fees cleared on reactivation
+- Call button on student list and ID card grid (opens phone dialer directly)
+- Active student count displayed inside occupied seat card
 
 ### Attendance
 
 - QR code scan-based daily check-in
 - PIN-based attendance mode
+- Manual instant check-in (no scan required)
 - Location-bound attendance (geofence)
 - Login-triggered attendance
-- Attendance trend graphs and monthly report
+- Attendance trend graphs and monthly/yearly report with seat and shift columns
+- Top-5 student highlight toggle in attendance report
 - Absent tracking and daily log
+- Shift Time Lock — configurable per-library:
+  - **Toggle OFF (default):** Backend enforces 5 AM – 10 PM window only; no frontend restriction
+  - **Toggle ON (Flexible Entry):** Students can mark attendance 1 hour before shift start to 1 hour after shift end; button and QR scanner locked outside this window with time display
 
 ### Fee Management
 
@@ -93,12 +104,15 @@ API Server (Node.js + Express)
 - Pending dues dashboard for admin
 - Per-student fee history and session ledger
 - Admin referral wallet
+- Sub-admin fee view shows Unpaid Dues tab (pending + partial combined)
+- Reactivation: inactive-period cancelled fees do not regenerate as new pending dues
 
 ### Shifts
 
 - Configurable shifts with start time, end time, and quota
 - Shift-level seat allocation enforcement
 - Custom mode and legacy shift support
+- Flexible entry time windows computed per shift (start − 60 min to end + 60 min)
 
 ### AI Learning Suite (Student Portal)
 
@@ -112,8 +126,9 @@ API Server (Node.js + Express)
 | AI Readiness Score | Assesses exam readiness based on activity data |
 | AI Task Suggestions | Recommends daily tasks based on study patterns |
 | AI Test Analyzer | Analyses mock test performance and highlights weak areas |
-| Current Affairs | AI-curated current affairs feed with quiz |
+| Current Affairs Quiz | AI-curated current affairs feed with bilingual quiz |
 | Exam Alerts | Upcoming exam notifications and reminders |
+| Video Learning | YouTube video search filtered by exam category and language; 2-minute minimum duration filter; invalid query guard |
 
 ### Engagement and Gamification
 
@@ -130,6 +145,7 @@ API Server (Node.js + Express)
 - Discussion room (public chat)
 - Real-time notifications
 - Admin live dashboard metrics
+- System status broadcast (maintenance mode change instantly reflected)
 
 ### Notifications
 
@@ -139,7 +155,7 @@ API Server (Node.js + Express)
 
 ### Admin Analytics
 
-- Dashboard metrics: total seats, active students, daily check-ins, pending requests, pending dues, total revenue
+- Dashboard metrics: total seats, active students, active student count in seat card, daily check-ins, pending requests, pending dues, total revenue
 - Attendance trend chart
 - Shift distribution breakdown
 - Floor occupancy heatmap
@@ -153,6 +169,7 @@ API Server (Node.js + Express)
 - Location attendance toggle
 - PIN attendance toggle
 - Login attendance toggle
+- Flexible Entry / Shift Time Lock toggle (1 hr before/after shift window with frontend lock when ON)
 - WhatsApp group link
 - AI tools visibility toggle
 - Force doubt board mode
@@ -162,9 +179,20 @@ API Server (Node.js + Express)
 ### Sub Admin Management
 
 - Create and manage sub-admin accounts
-- Permission scopes per sub-admin
+- All 16 permission modules visible (unlocked active, locked inactive)
 - Sub-admin PIN guard for sensitive operations
 - Sub-admin inactivation request workflow
+- Kiosk page access for sub-admin
+- Dual role badge in hero and section header
+
+### PWA and Performance
+
+- Progressive Web App with Service Worker and Web App Manifest
+- Install prompt on desktop and mobile with 2-minute snooze across page reloads
+- Gzip compression on all API and static responses
+- Code splitting with per-route lazy loading and optimised vendor chunks
+- Service Worker asset caching for offline support
+- Non-blocking third-party script loading
 
 ---
 
@@ -173,11 +201,11 @@ API Server (Node.js + Express)
 ```
 lms/
   backend/
-    controllers/        Business logic (admin, student, auth, AI, fees, seats, etc.)
-    models/             Mongoose schemas (32 models)
+    controllers/        Business logic (admin, student, auth, AI, fees, seats, settings, etc.)
+    models/             Mongoose schemas (32+ models)
     routes/             Express route definitions
     middleware/         Auth guard, error handler, rate limiting
-    services/           Email service
+    services/           Email service (dual-SMTP with Brevo fallback)
     utils/              Cron jobs, time utilities, action logger
     sockets/            Socket.io event handlers
     config/             Database and Redis connection
@@ -187,8 +215,8 @@ lms/
   frontend/
     src/
       pages/
-        admin/          Super admin pages (23 pages)
-        student/        Student portal pages (23 pages)
+        admin/          Super admin pages (25+ pages)
+        student/        Student portal pages (25+ pages)
         common/         Shared pages
       components/
         admin/          Admin UI components (ShiftManager, QRScanner, IdCard, etc.)
@@ -224,7 +252,7 @@ lms/
 | ChatRoom / Message | Public discussion room |
 | ActionLog | Admin audit trail |
 | AIActivityLog | AI query and response logs |
-| Settings | Global system configuration |
+| Settings | Global system configuration (includes flexibleEntry, timeRestrictionEnabled) |
 | SubAdmin | Sub-admin extended profile |
 | ArchivedStudent | Soft-deleted student records |
 | Holiday | Library holiday calendar |
@@ -342,7 +370,7 @@ VITE_WHATSAPP_GROUP_URL=
 cd backend
 npm install
 cp .env.example .env   # fill in all variables
-npm run dev            # starts with nodemon on port 5000
+node server.js         # starts on port 5000
 ```
 
 ### Frontend
@@ -366,6 +394,7 @@ The server is configured for any Node.js hosting provider. Key points:
 - `trust proxy` is enabled for providers that terminate TLS upstream.
 - A `Dockerfile` is included for container-based deployments.
 - A `vercel.json` is included for Vercel serverless deployment (functions mode).
+- Structured boot logger outputs environment, PID, port, and service status on startup.
 
 ### Frontend (Vercel)
 
@@ -401,7 +430,7 @@ All API routes are prefixed with `/api`.
 | /api/auth | Login, register, forgot password, token refresh |
 | /api/admin | All super admin and sub-admin operations |
 | /api/student | All student self-service operations |
-| /api/public | Public endpoints (landing page data) |
+| /api/public | Public endpoints (settings, landing page data) |
 | /api/settings | System settings read and update |
 | /api/chat | Discussion room messages |
 | /api/study | Study planner operations |
