@@ -159,6 +159,13 @@ const StudentManagement = () => {
     const [bulkResetLoading, setBulkResetLoading] = useState(false);
     const [bulkResetResult, setBulkResetResult] = useState(null);
 
+    // Make Due (manual due creation) States
+    const [showMakeDueModal, setShowMakeDueModal] = useState(false);
+    const [makeDueStudent, setMakeDueStudent] = useState(null);
+    const [makeDueForm, setMakeDueForm] = useState({ amount: '', reason: '', sendEmail: false });
+    const [makeDueLoading, setMakeDueLoading] = useState(false);
+    const [makeDueResult, setMakeDueResult] = useState(null);
+
     // Temporary Seat Assignment States
     const [showTempSeatModal, setShowTempSeatModal] = useState(false);
     const [tempSeatStudent, setTempSeatStudent] = useState(null);
@@ -481,19 +488,25 @@ const StudentManagement = () => {
         }
 
         try {
-            await api.post('/admin/seats/assign', {
+            const response = await api.post('/admin/seats/assign', {
                 seatId: seatFormData.seatId,
                 studentId: selectedStudent._id,
                 shifts: seatFormData.shifts,
-                negotiatedPrice: seatFormData.negotiatedPrice ? Number(seatFormData.negotiatedPrice) : undefined
+                negotiatedPrice: seatFormData.negotiatedPrice ? Number(seatFormData.negotiatedPrice) : undefined,
+                sendEmail: seatFormData.sendEmail || false,
             });
 
-            setSuccess(`Seat assigned to ${selectedStudent.name} successfully!`);
+            const upgradeDue = response.data?.upgradeDue;
+            if (upgradeDue && upgradeDue > 0) {
+                setSuccess(`Seat changed. Upgrade balance of Rs. ${upgradeDue} is now due and has been added to fee records.`);
+            } else {
+                setSuccess(`Seat assigned to ${selectedStudent.name} successfully!`);
+            }
             fetchStudents();
             fetchFloors();
             setShowSeatModal(false);
-            setSeatFormData({ seatId: '', shifts: [], negotiatedPrice: '' });
-            setTimeout(() => setSuccess(''), 3000);
+            setSeatFormData({ seatId: '', shifts: [], negotiatedPrice: '', sendEmail: false });
+            setTimeout(() => setSuccess(''), 4000);
         } catch (error) {
             setError(error.response?.data?.message || 'Failed to assign seat');
         } finally {
@@ -539,6 +552,44 @@ const StudentManagement = () => {
             setError(error.response?.data?.message || 'Failed to delete student');
         } finally {
             setDeleteLoading(false);
+        }
+    };
+
+    const openMakeDueModal = (student) => {
+        setMakeDueStudent(student);
+        // Pre-fill due date to last day of current month
+        const now = new Date();
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const dd = String(lastDay.getDate()).padStart(2, '0');
+        const mm = String(lastDay.getMonth() + 1).padStart(2, '0');
+        const defaultDate = `${lastDay.getFullYear()}-${mm}-${dd}`;
+        setMakeDueForm({ amount: '', reason: '', dueDate: defaultDate, sendEmail: false });
+        setMakeDueResult(null);
+        setShowMakeDueModal(true);
+    };
+
+    const handleMakeDue = async (e) => {
+        e.preventDefault();
+        if (!makeDueStudent) return;
+        setMakeDueLoading(true);
+        setMakeDueResult(null);
+        try {
+            const res = await api.post(`/admin/students/${makeDueStudent._id}/make-due`, {
+                amount:    Number(makeDueForm.amount),
+                reason:    makeDueForm.reason,
+                dueDate:   makeDueForm.dueDate,
+                sendEmail: makeDueForm.sendEmail
+            });
+            setMakeDueResult({ success: true, message: res.data.message });
+            fetchStudents();
+            setTimeout(() => {
+                setShowMakeDueModal(false);
+                setMakeDueStudent(null);
+            }, 1800);
+        } catch (err) {
+            setMakeDueResult({ success: false, message: err.response?.data?.message || 'Failed to add due' });
+        } finally {
+            setMakeDueLoading(false);
         }
     };
 
@@ -1911,7 +1962,11 @@ const StudentManagement = () => {
                                         setBulkFeeSendEmail(false);
                                         setBulkFeeAmount('');
                                         setBulkFeeOperation('increase');
-                                        setExcludedFeeManagementIds([]);
+                                        // Seed from students' actual showInFeeManagement value
+                                        const currentlyExcluded = students
+                                            .filter(s => selectedStudentIds.includes(s._id) && s.showInFeeManagement === false)
+                                            .map(s => s._id);
+                                        setExcludedFeeManagementIds(currentlyExcluded);
                                         setShowBulkFeeModal(true);
                                     }}
                                     className="px-4 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
@@ -2431,35 +2486,35 @@ const StudentManagement = () => {
                                                             </div>
 
                                                             {/* Footer Actions */}
-                                                            <div className="pt-2.5 border-t border-[#EDE8E0] flex items-center justify-between gap-1.5">
-                                                                {isSubAdmin ? (
-                                                                    student.isActive ? (
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setSubAdminInactiveStudent(student);
-                                                                                setShowSubAdminInactiveModal(true);
-                                                                            }}
-                                                                            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                                                                            title="Mark Student Inactive"
-                                                                        >
-                                                                            <IoTrashOutline size={14} />
-                                                                            <span>Mark Inactive</span>
-                                                                        </button>
-                                                                    ) : student.inactivationStatus === 'awaited' ? (
-                                                                        <div className="w-full text-center py-2 px-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] font-bold text-amber-700 flex items-center justify-center gap-1.5">
-                                                                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                                                            <span>Inactivation Awaited</span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <div className="w-full text-center py-2 px-3 bg-stone-100 border border-stone-200 rounded-xl text-[11px] font-bold text-stone-500 flex items-center justify-center gap-1.5">
-                                                                            <span>Inactive Scholar</span>
-                                                                        </div>
-                                                                    )
-                                                                ) : student.isActive ? (
-                                                                    <>
+                                                            <div className="pt-2.5 border-t border-[#EDE8E0] flex items-center gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                                                    {isSubAdmin ? (
+                                                                        student.isActive ? (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setSubAdminInactiveStudent(student);
+                                                                                    setShowSubAdminInactiveModal(true);
+                                                                                }}
+                                                                                className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                                                                                title="Mark Student Inactive"
+                                                                            >
+                                                                                <IoTrashOutline size={14} />
+                                                                                <span>Mark Inactive</span>
+                                                                            </button>
+                                                                        ) : student.inactivationStatus === 'awaited' ? (
+                                                                            <div className="shrink-0 text-center py-2 px-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] font-bold text-amber-700 flex items-center justify-center gap-1.5">
+                                                                                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                                                                <span>Inactivation Awaited</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="shrink-0 text-center py-2 px-3 bg-stone-100 border border-stone-200 rounded-xl text-[11px] font-bold text-stone-500 flex items-center justify-center gap-1.5">
+                                                                                <span>Inactive Scholar</span>
+                                                                            </div>
+                                                                        )
+                                                                    ) : student.isActive ? (
+                                                                        <>
                                                                         <button
                                                                             onClick={() => openSeatAssignModal(student)}
-                                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                                                                            className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                                                                             title="Assign or change desk"
                                                                         >
                                                                             <IoBedOutline size={14} />
@@ -2515,6 +2570,14 @@ const StudentManagement = () => {
                                                                         </button>
 
                                                                         <button
+                                                                            onClick={() => openMakeDueModal(student)}
+                                                                            className="p-2 text-stone-600 hover:text-amber-700 bg-[#FAF6F0] hover:bg-amber-50 border border-[#EDE8E0] hover:border-amber-300 rounded-xl transition-all cursor-pointer"
+                                                                            title="Make Due — Add manual fee due"
+                                                                        >
+                                                                            <IoCashOutline size={15} />
+                                                                        </button>
+
+                                                                        <button
                                                                             onClick={() => openDeleteModal(student)}
                                                                             className="p-2 text-stone-400 hover:text-rose-600 bg-[#FAF6F0] hover:bg-rose-50 border border-[#EDE8E0] hover:border-rose-200 rounded-xl transition-all cursor-pointer"
                                                                             title="Inactivate / Remove"
@@ -2526,7 +2589,7 @@ const StudentManagement = () => {
                                                                     <>
                                                                         <button
                                                                             onClick={() => openReactivateModal(student)}
-                                                                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                                                                            className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
                                                                         >
                                                                             <IoRefresh size={14} />
                                                                             <span>Reactivate Scholar</span>
@@ -2553,12 +2616,12 @@ const StudentManagement = () => {
                                                                         >
                                                                             <IoPencil size={15} />
                                                                         </button>
-                                                                    </>
-                                                                )}
+                                                                        </>
+                                                                    )}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                );
+                                                    );
                                             })}
                                         </div>
                                     )}
@@ -2908,6 +2971,13 @@ const StudentManagement = () => {
                                                                                 title="Edit Details"
                                                                             >
                                                                                 <IoPencil size={16} />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => openMakeDueModal(student)}
+                                                                                className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                                                                                title="Make Due — Add manual fee due"
+                                                                            >
+                                                                                <IoCashOutline size={16} />
                                                                             </button>
                                                                             <button
                                                                                 onClick={() => openDeleteModal(student)}
@@ -3824,6 +3894,23 @@ const StudentManagement = () => {
                                 <p className="text-[10px] text-slate-400 mt-1">Overrides default shift pricing for this student</p>
                             </div>
 
+                            {/* Send email toggle */}
+                            <div className="flex items-center gap-2.5 py-2 px-3 rounded-xl border" style={{ background: '#fffbf5', borderColor: '#fed7aa' }}>
+                                <input
+                                    id="sendSeatEmail"
+                                    type="checkbox"
+                                    checked={seatFormData.sendEmail || false}
+                                    onChange={(e) => setSeatFormData({ ...seatFormData, sendEmail: e.target.checked })}
+                                    className="w-4 h-4 accent-orange-500 cursor-pointer shrink-0"
+                                />
+                                <label htmlFor="sendSeatEmail" className="text-[12px] font-medium cursor-pointer select-none" style={{ color: '#7c2d12' }}>
+                                    Send email notification to student
+                                    <span className="block text-[10px] font-normal mt-0.5" style={{ color: '#9b7b5a' }}>
+                                        Unchecked = no email sent. If seat is an upgrade after payment, a balance-due email is sent (if checked).
+                                    </span>
+                                </label>
+                            </div>
+
                             {/* Actions */}
                             <div className="flex gap-2.5 pt-2">
                                 <button type="button" onClick={() => setShowSeatModal(false)} className={BTN_SECONDARY + ' flex-1'}>
@@ -4385,6 +4472,114 @@ const StudentManagement = () => {
                                     <button onClick={() => setShowArchiveModal(false)} className={BTN_SECONDARY}>Close Report</button>
                                 </div>
                             </div>
+                        )}
+                    </Modal>
+                    {/* Make Due Modal */}
+                    <Modal
+                        theme="light"
+                        isOpen={showMakeDueModal}
+                        onClose={() => { if (!makeDueLoading) { setShowMakeDueModal(false); setMakeDueStudent(null); setMakeDueResult(null); } }}
+                        title={`Make Due — ${makeDueStudent?.name || ''}`}
+                    >
+                        {makeDueStudent && (
+                            <form onSubmit={handleMakeDue} className="space-y-4">
+                                {/* Student header */}
+                                <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: '#FFFAF5', borderColor: '#EDE8E0' }}>
+                                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0" style={{ background: 'linear-gradient(135deg,#f97316,#c2410c)' }}>
+                                        {makeDueStudent.name?.charAt(0)?.toUpperCase() || 'S'}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold truncate" style={{ color: '#1A1A1A' }}>{makeDueStudent.name}</p>
+                                        <p className="text-xs truncate" style={{ color: '#9B7B5A' }}>{makeDueStudent.email || makeDueStudent.mobile}</p>
+                                    </div>
+                                    {makeDueStudent.currentFee != null && (
+                                        <div className="text-right shrink-0">
+                                            <p className="text-[10px] font-medium" style={{ color: '#9B7B5A' }}>Current Fee</p>
+                                            <p className="text-sm font-bold" style={{ color: '#EA580C' }}>Rs. {makeDueStudent.currentFee}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Amount */}
+                                <div>
+                                    <label className="block text-xs font-semibold mb-1" style={{ color: '#78350F' }}>
+                                        Due Amount (Rs.) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        required
+                                        value={makeDueForm.amount}
+                                        onChange={e => setMakeDueForm(f => ({ ...f, amount: e.target.value }))}
+                                        className="w-full text-sm rounded-lg px-3 py-2 border outline-none focus:ring-2 transition"
+                                        style={{ borderColor: '#EDE8E0', background: '#FFFAF5', color: '#1A1A1A', '--tw-ring-color': 'rgba(249,115,22,0.15)' }}
+                                        placeholder="e.g. 500"
+                                    />
+                                </div>
+
+                                {/* Reason */}
+                                <div>
+                                    <label className="block text-xs font-semibold mb-1" style={{ color: '#78350F' }}>
+                                        Reason *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={makeDueForm.reason}
+                                        onChange={e => setMakeDueForm(f => ({ ...f, reason: e.target.value }))}
+                                        className="w-full text-sm rounded-lg px-3 py-2 border outline-none transition"
+                                        style={{ borderColor: '#EDE8E0', background: '#FFFAF5', color: '#1A1A1A' }}
+                                        placeholder="e.g. Locker charge, damage fine, extra service..."
+                                    />
+                                </div>
+
+                                {/* Due Date */}
+                                <div>
+                                    <label className="block text-xs font-semibold mb-1" style={{ color: '#78350F' }}>
+                                        Due Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={makeDueForm.dueDate}
+                                        onChange={e => setMakeDueForm(f => ({ ...f, dueDate: e.target.value }))}
+                                        className="w-full text-sm rounded-lg px-3 py-2 border outline-none transition"
+                                        style={{ borderColor: '#EDE8E0', background: '#FFFAF5', color: '#1A1A1A' }}
+                                    />
+                                    <p className="text-[10px] mt-1" style={{ color: '#9B7B5A' }}>
+                                        The month of this date determines which month's fee record gets the due added to.
+                                    </p>
+                                </div>
+
+                                {/* Email toggle */}
+                                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={makeDueForm.sendEmail}
+                                        onChange={e => setMakeDueForm(f => ({ ...f, sendEmail: e.target.checked }))}
+                                        className="rounded"
+                                        style={{ accentColor: '#f97316', width: 15, height: 15 }}
+                                    />
+                                    <span className="text-xs font-medium" style={{ color: '#78350F' }}>Send email notification to student</span>
+                                </label>
+
+                                {/* Result feedback */}
+                                {makeDueResult && (
+                                    <div className={`text-xs font-semibold px-3 py-2 rounded-lg border ${makeDueResult.success ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                                        {makeDueResult.message}
+                                    </div>
+                                )}
+
+                                {/* Submit */}
+                                <button
+                                    type="submit"
+                                    disabled={makeDueLoading}
+                                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition"
+                                    style={{ background: makeDueLoading ? '#FDA974' : 'linear-gradient(135deg,#f97316,#c2410c)', cursor: makeDueLoading ? 'not-allowed' : 'pointer' }}
+                                >
+                                    {makeDueLoading ? 'Adding due...' : `Add Due of Rs. ${makeDueForm.amount || '—'}`}
+                                </button>
+                            </form>
                         )}
                     </Modal>
 

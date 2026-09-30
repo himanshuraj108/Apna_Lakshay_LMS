@@ -1332,6 +1332,7 @@ exports.updateStudent = async (req, res) => {
                 updateData.seat = null;
                 updateData.seatAssignedAt = null;
                 updateData.inactivationStatus = 'none';
+                updateData.showInFeeManagement = true; // always re-enable on reactivation
 
                 // Note: We don't have a direct 'shift' field on User (it's in seat assignments), 
                 // but clearing the seat link effectively removes the shift association for the student.
@@ -2295,6 +2296,10 @@ exports.assignSeat = async (req, res) => {
                 for (const shiftId of shiftIds) {
                     totalPrice += seat.shiftPrices?.get(shiftId) || seat.basePrices?.day || 0;
                 }
+                // Fallback: if no shift-level prices configured, use full seat price
+                if (totalPrice === 0) {
+                    totalPrice = seat.basePrices?.full || seat.basePrices?.day || 1200;
+                }
             }
 
             // Create one assignment per shift; only the first carries the total fee price
@@ -2405,21 +2410,23 @@ exports.assignSeat = async (req, res) => {
             });
 
             // Send seat assignment email
+            let shiftName = '';
             try {
                 // Resolve shift name(s) from shiftIds array
-                let shiftName = 'N/A';
+                let _resolvedName = 'N/A';
                 try {
                     const resolvedShifts = await Shift.find({ _id: { $in: shiftIds } });
                     if (resolvedShifts.length > 0) {
-                        shiftName = resolvedShifts.map(s => s.name).join(' + ');
+                        _resolvedName = resolvedShifts.map(s => s.name).join(' + ');
                     } else if (shift) {
                         // Fallback: single shift passed directly
                         const shiftObj = await Shift.findById(shift);
-                        if (shiftObj) shiftName = shiftObj.name;
+                        if (shiftObj) _resolvedName = shiftObj.name;
                     }
                 } catch (ignore) {
                     console.log('Could not resolve shift name');
                 }
+                shiftName = _resolvedName !== 'N/A' ? _resolvedName : '';
 
                 await emailService.sendSeatAssignmentEmail(
                     student,
@@ -2427,14 +2434,17 @@ exports.assignSeat = async (req, res) => {
                         ...seat.toObject(),
                         currentPrice: newAssignment.price
                     },
-                    shiftName
+                    shiftName || 'N/A'
                 );
             } catch (emailError) {
                 console.error('Seat assignment email failed:', emailError.message);
             }
 
-            // Log action
-            await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, `Assigned to ${student.name}`);
+            // Log action — include desk number and shift(s) in details
+            const logDetails = shiftName
+                ? `Desk ${seat.number} assigned to ${student.name} (${shiftName})`
+                : `Desk ${seat.number} assigned to ${student.name}`;
+            await logAction(req, 'seat_assigned', 'Seat', seat._id, seat.number, logDetails);
 
             try {
                 const redis = getClient();
