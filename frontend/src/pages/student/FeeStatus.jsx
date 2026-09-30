@@ -288,6 +288,12 @@ const FeeStatus = () => {
                                                     <span className="text-red-400 font-bold">₹{fee.outstanding} due</span>
                                                 </div>
                                             )}
+                                            {/* Seat upgrade context note */}
+                                            {fee.seatChangeDetails && fee.seatChangeDetails.fromSeat && (
+                                                <div className="mt-1 text-[10px] leading-snug font-medium" style={{ color: '#c2410c' }}>
+                                                    Desk {fee.seatChangeDetails.fromSeat} &rarr; Desk {fee.seatChangeDetails.toSeat} upgrade. Balance due: ₹{fee.outstanding}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Right side */}
