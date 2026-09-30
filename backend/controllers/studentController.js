@@ -439,6 +439,15 @@ exports.getDashboard = async (req, res) => {
                     console.error('Failed to update overdue fee status:', err.message);
                 }
             }
+            // Reverse-heal: if fee is overdue but dueDate is today or future, reset to pending
+            if (currentFee && currentFee.status === 'overdue' && currentFee.dueDate && new Date(currentFee.dueDate) >= today) {
+                try {
+                    await Fee.findByIdAndUpdate(currentFee._id, { status: 'pending' });
+                    currentFee.status = 'pending';
+                } catch (err) {
+                    console.error('Failed to reverse overdue fee status:', err.message);
+                }
+            }
 
             // 2. If all paid, fetch the most recent paid fee
             if (!currentFee) {
@@ -957,6 +966,15 @@ exports.getFees = async (req, res) => {
         await Fee.updateMany(
             { student: req.user.id, paidDate: { $ne: null }, status: { $in: ['pending', 'overdue'] } },
             { $set: { status: 'paid' } }
+        );
+
+        // Self-heal 1b: reset overdue fees whose dueDate is today or in the future back to pending
+        // (happens when student is reactivated on the same day as a previously overdue fee)
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        await Fee.updateMany(
+            { student: req.user.id, status: 'overdue', dueDate: { $gte: todayStart } },
+            { $set: { status: 'pending' } }
         );
 
         // Self-heal 2: sync pending/overdue fee amounts to current seat assignment price
