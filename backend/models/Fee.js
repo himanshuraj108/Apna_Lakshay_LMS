@@ -84,6 +84,18 @@ const feeSchema = new mongoose.Schema({
     lockerNo: {
         type: String,
         default: ''
+    },
+    // Mid-month seat upgrade: stores context about the change
+    note: {
+        type: String,
+        default: null
+    },
+    seatChangeDetails: {
+        fromSeat: { type: Number, default: null },
+        toSeat: { type: Number, default: null },
+        fromPrice: { type: Number, default: null },
+        toPrice: { type: Number, default: null },
+        changeDate: { type: Date, default: null }
     }
 }, {
     timestamps: true
