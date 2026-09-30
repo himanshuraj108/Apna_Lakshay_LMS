@@ -75,7 +75,7 @@ const AttendanceManagement = () => {
     const [lastSaved, setLastSaved] = useState(null);
     const [lastLiveSync, setLastLiveSync] = useState(null);
     const [newSelfMarkDetected, setNewSelfMarkDetected] = useState(false);
-    const [highlightTop5, setHighlightTop5] = useState(false);
+    const [highlight75, setHighlight75] = useState(false);
     
     const pollRef = useRef(null);
     const autoSavingRef = useRef(false);
@@ -439,16 +439,16 @@ const AttendanceManagement = () => {
     const generateMonthlyPDF = async () => {
         setSaving(true);
         try {
-            const dateObj    = new Date(selectedDate);
-            const year       = dateObj.getFullYear();
-            const month      = dateObj.getMonth() + 1;
-            const monthName  = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+            const dateObj     = new Date(selectedDate);
+            const year        = dateObj.getFullYear();
+            const month       = dateObj.getMonth() + 1;
+            const monthName   = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
             const daysInMonth = new Date(year, month, 0).getDate();
 
-            // Fix: use path params as backend route expects
-            const res     = await api.get(`/admin/attendance/monthly/${year}/${month}`);
-            const records = res.data.attendance || [];
-            const seatMap = res.data.seatMap    || {};
+            const res        = await api.get(`/admin/attendance/monthly/${year}/${month}`);
+            const records    = res.data.attendance || [];
+            const seatMap    = res.data.seatMap    || {};
+            const overallMap = res.data.overallMap || {};
 
             // Build per-student summary
             const summaryMap = {};
@@ -462,34 +462,127 @@ const AttendanceManagement = () => {
                 if (isPresent) summaryMap[sid].presents++;
             });
 
-            // Compute attendance % and sort descending for top-5 detection
+            // Compute attendance % and sort descending
             const rows = Object.values(summaryMap).map(s => ({
                 ...s,
                 pct: Math.round((s.presents / daysInMonth) * 100)
             })).sort((a, b) => b.pct - a.pct);
 
-            // Top-5 student IDs for highlight
-            const top5Ids = new Set(rows.slice(0, 5).map(r => r.student._id.toString()));
+            const totalStudents = rows.length;
+            const avgPct        = totalStudents > 0 ? Math.round(rows.reduce((sum, r) => sum + r.pct, 0) / totalStudents) : 0;
+            const above75Count  = rows.filter(r => r.pct >= 75).length;
+            const below50Count  = rows.filter(r => r.pct < 50).length;
+            const between50_74  = rows.filter(r => r.pct >= 50 && r.pct < 75).length;
 
-            const doc = new jsPDF('landscape');
-            doc.setFontSize(16);
-            doc.text('Monthly Attendance Report — ' + monthName, 14, 14);
-            doc.setFontSize(9);
-            doc.setTextColor(120);
-            doc.text('Apna Lakshay Library Management System', 14, 20);
-            if (highlightTop5) {
+            // Load logo as base64 for watermark + header
+            let logoBase64 = null;
+            try {
+                const imgRes = await fetch('/app-icon-192.png');
+                const blob   = await imgRes.blob();
+                logoBase64   = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (_) { /* watermark optional */ }
+
+            const doc   = new jsPDF('landscape');
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+
+            // ── Helper: draw header + watermark on every page ──────────────
+            const drawPageDecor = () => {
+                // Dim logo tiled as watermark
+                if (logoBase64) {
+                    const wmSize = 55, gapX = 85, gapY = 70;
+                    for (let wx = 10; wx < pageW - wmSize; wx += gapX) {
+                        for (let wy = 10; wy < pageH - wmSize; wy += gapY) {
+                            try {
+                                doc.saveGraphicsState();
+                                doc.setGState(new doc.GState({ opacity: 0.05 }));
+                                doc.addImage(logoBase64, 'PNG', wx, wy, wmSize, wmSize);
+                                doc.restoreGraphicsState();
+                            } catch (_) {}
+                        }
+                    }
+                }
+                // Orange top bar
+                doc.setFillColor(249, 115, 22);
+                doc.rect(0, 0, pageW, 12, 'F');
+                // Logo in bar
+                if (logoBase64) {
+                    try { doc.addImage(logoBase64, 'PNG', 3, 1, 10, 10); } catch (_) {}
+                }
+                // Name
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(255, 255, 255);
+                doc.text('Apna Lakshay Library', 15, 7.5);
+                doc.setFontSize(6.5);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Attendance Management System', 15, 11);
+                // Bottom bar
+                doc.setFillColor(249, 115, 22);
+                doc.rect(0, pageH - 5, pageW, 5, 'F');
+                doc.setFontSize(6);
+                doc.setTextColor(255, 255, 255);
+                doc.text('Apna Lakshay Library  |  Monthly Attendance Report', pageW / 2, pageH - 1.5, { align: 'center' });
+                doc.setTextColor(0);
+                doc.setFont('helvetica', 'normal');
+            };
+
+            // ── Page 1 ──────────────────────────────────────────────────────
+            drawPageDecor();
+
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 30, 30);
+            doc.text('Monthly Attendance Report — ' + monthName, 14, 20);
+
+            // Stat pills
+            const statY = 25;
+            const pills = [
+                { label: 'Students', value: String(totalStudents), bg: [59, 130, 246] },
+                { label: 'Avg',      value: avgPct + '%',          bg: avgPct >= 75 ? [22, 163, 74] : avgPct >= 50 ? [245, 158, 11] : [239, 68, 68] },
+                { label: '>= 75%',   value: String(above75Count),  bg: [22, 163, 74] },
+                { label: '50–74%',   value: String(between50_74),  bg: [245, 158, 11] },
+                { label: '< 50%',    value: String(below50Count),  bg: [239, 68, 68] },
+            ];
+            let px = 14;
+            pills.forEach(p => {
+                const pw = 42, ph = 10;
+                doc.setFillColor(...p.bg);
+                doc.roundedRect(px, statY, pw, ph, 1.5, 1.5, 'F');
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(255, 255, 255);
+                doc.text(p.value, px + pw / 2, statY + 5.5, { align: 'center' });
+                doc.setFontSize(5.5);
+                doc.setFont('helvetica', 'normal');
+                doc.text(p.label, px + pw / 2, statY + 9, { align: 'center' });
+                px += pw + 3;
+            });
+
+            if (highlight75) {
+                doc.setFontSize(6.5);
                 doc.setTextColor(22, 163, 74);
-                doc.text('Top 5 attendees highlighted in green', 14, 26);
+                doc.text('Students with >= 75% monthly attendance highlighted in green', 14, statY + 13);
+                doc.setTextColor(0);
             }
-            doc.setTextColor(0);
 
+            // ── Build table ─────────────────────────────────────────────────
             const tableColumn = ['#', 'Name', 'Seat', 'Shift'];
             for (let i = 1; i <= daysInMonth; i++) tableColumn.push(String(i));
             tableColumn.push('Att %');
+            tableColumn.push('Overall Att %');
+
+            const attColIdx     = tableColumn.length - 2;
+            const overallColIdx = tableColumn.length - 1;
 
             const tableRows = rows.map((s, idx) => {
-                const sid  = s.student._id.toString();
-                const info = seatMap[sid] || {};
+                const sid        = s.student._id.toString();
+                const info       = seatMap[sid] || {};
+                const overallVal = overallMap[sid] !== undefined ? overallMap[sid] : s.pct;
                 const row  = [
                     String(idx + 1),
                     s.student.name,
@@ -498,43 +591,179 @@ const AttendanceManagement = () => {
                 ];
                 for (let d = 1; d <= daysInMonth; d++) row.push(s.days[d] || '-');
                 row.push(s.pct + '%');
+                row.push(overallVal + '%');
                 return row;
             });
 
             autoTable(doc, {
-                head        : [tableColumn],
-                body        : tableRows,
-                startY      : highlightTop5 ? 30 : 24,
-                styles      : { fontSize: 6, cellPadding: 1 },
+                head: [tableColumn],
+                body: tableRows,
+                startY      : statY + (highlight75 ? 15 : 12),
+                styles      : { fontSize: 5.5, cellPadding: 0.8, halign: 'center' },
                 headStyles  : { fillColor: [234, 88, 12], halign: 'center', fontStyle: 'bold' },
                 columnStyles: {
-                    0: { halign: 'center', minCellWidth: 6 },
-                    1: { halign: 'left',   minCellWidth: 28 },
-                    2: { halign: 'center', minCellWidth: 10 },
-                    3: { halign: 'center', minCellWidth: 18 },
+                    0: { halign: 'center', minCellWidth: 5 },
+                    1: { halign: 'left',   minCellWidth: 26 },
+                    2: { halign: 'center', minCellWidth: 8 },
+                    3: { halign: 'center', minCellWidth: 14 },
+                    [attColIdx]:     { halign: 'center', minCellWidth: 12 },
+                    [overallColIdx]: { halign: 'center', minCellWidth: 18 },
                 },
+                margin: { bottom: 8 },
                 didParseCell: (data) => {
                     if (data.section !== 'body') return;
-                    const rowIdx = data.row.index;
-                    const isTop5 = highlightTop5 && top5Ids.has(rows[rowIdx]?.student._id.toString());
-                    const lastCol = data.column.index === tableColumn.length - 1;
-                    const dayCol  = data.column.index >= 4 && data.column.index < 4 + daysInMonth;
+                    const rowIdx     = data.row.index;
+                    const rowPct     = rows[rowIdx]?.pct ?? 0;
+                    const attCol     = data.column.index === attColIdx;
+                    const overallCol = data.column.index === overallColIdx;
+                    const dayCol     = data.column.index >= 4 && data.column.index < 4 + daysInMonth;
 
-                    if (isTop5) {
-                        data.cell.styles.fillColor = [220, 252, 231]; // light green row
-                    }
-                    if (lastCol) {
+                    // >= 75% rows get green background only when toggle is ON (filtered by monthly attendance)
+                    if (highlight75 && rowPct >= 75) data.cell.styles.fillColor = [220, 252, 231];
+
+                    if (attCol || overallCol) {
+                        data.cell.styles.halign = 'center';
                         const pct = parseInt(data.cell.raw);
                         if (!isNaN(pct)) {
                             data.cell.styles.fontStyle = 'bold';
                             data.cell.styles.textColor = pct >= 75 ? [22, 163, 74] : pct >= 50 ? [245, 158, 11] : [239, 68, 68];
                         }
                     } else if (dayCol) {
+                        data.cell.styles.halign = 'center';
                         if (data.cell.raw === 'P') data.cell.styles.textColor = [22, 163, 74];
                         else if (data.cell.raw === 'A') data.cell.styles.textColor = [239, 68, 68];
                     }
-                }
+                },
+                didDrawPage: () => { drawPageDecor(); }
             });
+
+            // ── LAST PAGE: Overall Attendance >= 75% (Admission to Date) ─────
+            const overall75Students = rows
+                .map(s => {
+                    const sid = s.student._id.toString();
+                    const overallVal = overallMap[sid] !== undefined ? overallMap[sid] : s.pct;
+                    return { ...s, overallVal };
+                })
+                .filter(s => s.overallVal >= 75)
+                .sort((a, b) => b.overallVal - a.overallVal);
+
+            doc.addPage();
+            drawPageDecor();
+
+            doc.setFontSize(13);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(22, 163, 74);
+            doc.text('Overall Attendance >= 75% (Admission to Date)', 14, 20);
+
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(80);
+            doc.text(
+                `Total ${overall75Students.length} student${overall75Students.length === 1 ? '' : 's'} have maintained >= 75% overall attendance from admission to today.`,
+                14,
+                25
+            );
+            doc.setTextColor(0);
+
+            // Stat pill
+            const oStatY = 29;
+            const oBoxW = 56, oBoxH = 11;
+            doc.setFillColor(22, 163, 74);
+            doc.roundedRect(14, oStatY, oBoxW, oBoxH, 1.5, 1.5, 'F');
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text(String(overall75Students.length) + ' Students', 14 + oBoxW / 2, oStatY + 5.5, { align: 'center' });
+            doc.setFontSize(5.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Overall Attendance >= 75%', 14 + oBoxW / 2, oStatY + 9, { align: 'center' });
+            doc.setTextColor(0);
+
+            const overallCols = ['#', 'Name', 'Seat', 'Shift', 'Monthly Att %', 'Overall Att %'];
+            const overallRows = overall75Students.length > 0
+                ? overall75Students.map((s, idx) => {
+                    const sid  = s.student._id.toString();
+                    const info = seatMap[sid] || {};
+                    return [
+                        String(idx + 1),
+                        s.student.name,
+                        info.seatNumber ? String(info.seatNumber) : '-',
+                        info.shifts?.length ? info.shifts.join('+') : '-',
+                        s.pct + '%',
+                        s.overallVal + '%'
+                    ];
+                })
+                : [['-', 'No students with overall >= 75%', '-', '-', '-', '-']];
+
+            autoTable(doc, {
+                head: [overallCols],
+                body: overallRows,
+                startY: oStatY + oBoxH + 4,
+                styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
+                headStyles: { fillColor: [22, 163, 74], halign: 'center', fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [240, 253, 244] },
+                columnStyles: {
+                    0: { halign: 'center', minCellWidth: 10 },
+                    1: { halign: 'left',   minCellWidth: 45 },
+                    2: { halign: 'center', minCellWidth: 16 },
+                    3: { halign: 'center', minCellWidth: 25 },
+                    4: { halign: 'center', minCellWidth: 25 },
+                    5: { halign: 'center', minCellWidth: 25 },
+                },
+                margin: { bottom: 8 },
+                didParseCell: (data) => {
+                    if (data.section !== 'body') return;
+                    if (data.column.index === 4 || data.column.index === 5) {
+                        data.cell.styles.fontStyle = 'bold';
+                        const pct = parseInt(data.cell.raw);
+                        if (!isNaN(pct)) {
+                            data.cell.styles.textColor = pct >= 75 ? [22, 163, 74] : pct >= 50 ? [245, 158, 11] : [239, 68, 68];
+                        }
+                    }
+                },
+                didDrawPage: () => { drawPageDecor(); }
+            });
+
+            // ── Footer note: Mistake in seat/shift contact link ─────────────
+            const contactUrl = (typeof window !== 'undefined' && window.location?.origin)
+                ? `${window.location.origin}/contact`
+                : 'https://apnalakshay.com/contact';
+
+            const lastY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 120;
+            let noteY = lastY + 6;
+            if (noteY + 14 > pageH - 8) {
+                doc.addPage();
+                drawPageDecor();
+                noteY = 22;
+            }
+
+            const noteBoxW = pageW - 28;
+            const noteBoxH = 11;
+            doc.setFillColor(255, 247, 237);
+            doc.setDrawColor(253, 186, 116);
+            doc.roundedRect(14, noteY, noteBoxW, noteBoxH, 2, 2, 'FD');
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(154, 52, 18);
+            const prefix = 'Any mistake in seat and shift? ';
+            doc.text(prefix, 20, noteY + 7);
+
+            const prefixW = doc.getTextWidth(prefix);
+            const clickText = 'Click here';
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(234, 88, 12);
+            doc.textWithLink(clickText, 20 + prefixW, noteY + 7, { url: contactUrl });
+
+            const clickW = doc.getTextWidth(clickText);
+            doc.setDrawColor(234, 88, 12);
+            doc.setLineWidth(0.3);
+            doc.line(20 + prefixW, noteY + 8, 20 + prefixW + clickW, noteY + 8);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(154, 52, 18);
+            const suffix = ' to contact administration or report corrections.';
+            doc.text(suffix, 20 + prefixW + clickW + 1.5, noteY + 7);
 
             doc.save('Monthly_Attendance_' + monthName.replace(' ', '_') + '.pdf');
         } catch (e) {
@@ -544,6 +773,7 @@ const AttendanceManagement = () => {
             setSaving(false);
         }
     };
+
 
     const generateYearlyPDF = async () => {
         setSaving(true);
@@ -591,9 +821,9 @@ const AttendanceManagement = () => {
             doc.setFontSize(9);
             doc.setTextColor(120);
             doc.text('Apna Lakshay Library Management System', 14, 20);
-            if (highlightTop5) {
+            if (highlight75) {
                 doc.setTextColor(22, 163, 74);
-                doc.text('Top 5 attendees highlighted in green', 14, 26);
+                doc.text('Students with >= 75% attendance highlighted in green', 14, 26);
             }
             doc.setTextColor(0);
 
@@ -614,7 +844,7 @@ const AttendanceManagement = () => {
             autoTable(doc, {
                 head        : [tableColumn],
                 body        : tableRows,
-                startY      : highlightTop5 ? 30 : 24,
+                startY      : highlight75 ? 30 : 24,
                 styles      : { fontSize: 7, cellPadding: 2 },
                 headStyles  : { fillColor: [234, 88, 12], fontStyle: 'bold' },
                 columnStyles: {
@@ -626,10 +856,10 @@ const AttendanceManagement = () => {
                 didParseCell: (data) => {
                     if (data.section !== 'body') return;
                     const rowIdx = data.row.index;
-                    const isTop5 = highlightTop5 && top5Ids.has(rows[rowIdx]?.student._id.toString());
+                    const isAbove75 = highlight75 && rows[rowIdx]?.avg >= 75;
                     const lastCol = data.column.index === tableColumn.length - 1;
 
-                    if (isTop5) data.cell.styles.fillColor = [220, 252, 231];
+                    if (isAbove75) data.cell.styles.fillColor = [220, 252, 231];
                     if (lastCol || data.column.index >= 4) {
                         const pct = parseInt(data.cell.raw);
                         if (!isNaN(pct)) {
@@ -639,6 +869,48 @@ const AttendanceManagement = () => {
                     }
                 }
             });
+
+            // ── Footer note: Mistake in seat/shift contact link ─────────────
+            const contactUrl = (typeof window !== 'undefined' && window.location?.origin)
+                ? `${window.location.origin}/contact`
+                : 'https://apnalakshay.com/contact';
+
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const lastY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 120;
+            let noteY = lastY + 6;
+            if (noteY + 14 > pageH - 8) {
+                doc.addPage();
+                noteY = 22;
+            }
+
+            const noteBoxW = pageW - 28;
+            const noteBoxH = 11;
+            doc.setFillColor(255, 247, 237);
+            doc.setDrawColor(253, 186, 116);
+            doc.roundedRect(14, noteY, noteBoxW, noteBoxH, 2, 2, 'FD');
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(154, 52, 18);
+            const prefix = 'Any mistake in seat and shift? ';
+            doc.text(prefix, 20, noteY + 7);
+
+            const prefixW = doc.getTextWidth(prefix);
+            const clickText = 'Click here';
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(234, 88, 12);
+            doc.textWithLink(clickText, 20 + prefixW, noteY + 7, { url: contactUrl });
+
+            const clickW = doc.getTextWidth(clickText);
+            doc.setDrawColor(234, 88, 12);
+            doc.setLineWidth(0.3);
+            doc.line(20 + prefixW, noteY + 8, 20 + prefixW + clickW, noteY + 8);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(154, 52, 18);
+            const suffix = ' to contact administration or report corrections.';
+            doc.text(suffix, 20 + prefixW + clickW + 1.5, noteY + 7);
 
             doc.save('Yearly_Attendance_' + year + '.pdf');
         } catch (e) {
@@ -1241,18 +1513,18 @@ const AttendanceManagement = () => {
                                 >
                                     <IoDownloadOutline size={15} /> Yearly Summary
                                 </button>
-                                {/* Top 5 highlight toggle */}
+                                {/* Top 75% highlight toggle */}
                                 <button
-                                    onClick={() => setHighlightTop5(h => !h)}
+                                    onClick={() => setHighlight75(h => !h)}
                                     className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
-                                        highlightTop5
+                                        highlight75
                                             ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-300'
                                             : 'bg-slate-50 border-slate-200 text-slate-500'
                                     }`}
-                                    title="Highlight top 5 students by attendance in PDF exports"
+                                    title="Highlight students with >= 75% attendance in green in PDF exports"
                                 >
-                                    <IoCheckmark size={14} className={highlightTop5 ? 'text-emerald-600' : 'text-slate-400'} />
-                                    Top 5 Highlight {highlightTop5 ? 'ON' : 'OFF'}
+                                    <IoCheckmark size={14} className={highlight75 ? 'text-emerald-600' : 'text-slate-400'} />
+                                    Top 75% Highlight {highlight75 ? 'ON' : 'OFF'}
                                 </button>
                                 <button
                                     onClick={() => setShowHolidayModal(true)}
