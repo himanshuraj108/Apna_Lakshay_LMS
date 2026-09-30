@@ -1279,6 +1279,21 @@ const FeeManagement = () => {
                                                 </div>
                                             )}
 
+                                            {/* Seat Upgrade Note Banner */}
+                                            {fee.note && fee.seatChangeDetails && (
+                                                <div className="mt-2.5 px-3 py-2.5 rounded-xl border text-[10.5px] leading-relaxed font-medium" style={{ background: '#fff7ed', borderColor: '#fed7aa', color: '#7c2d12' }}>
+                                                    <span className="font-extrabold uppercase tracking-wider block mb-0.5" style={{ color: '#c2410c', fontSize: '9px' }}>Seat Upgrade — Balance Due</span>
+                                                    {fee.seatChangeDetails.fromSeat && (
+                                                        <span className="block">
+                                                            Desk {fee.seatChangeDetails.fromSeat} (Rs.{fee.seatChangeDetails.fromPrice}) &rarr; Desk {fee.seatChangeDetails.toSeat} (Rs.{fee.seatChangeDetails.toPrice})
+                                                        </span>
+                                                    )}
+                                                    <span className="block mt-0.5" style={{ color: '#92400e' }}>
+                                                        Changed: {fee.seatChangeDetails.changeDate ? new Date(fee.seatChangeDetails.changeDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                                    </span>
+                                                </div>
+                                            )}
+
                                             {/* Online payment badge indicator */}
                                             {fee.razorpayOrderId && (
                                                 <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between text-[10px]">
