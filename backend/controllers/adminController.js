@@ -2203,7 +2203,7 @@ exports.deleteRoom = async (req, res) => {
 exports.assignSeat = async (req, res) => {
     try {
         // Accept shifts[] array OR single shift (backward compat)
-        const { seatId, studentId, shift, shifts: shiftsInput, negotiatedPrice } = req.body;
+        const { seatId, studentId, shift, shifts: shiftsInput, negotiatedPrice, sendEmail } = req.body;
         const shiftIds = (shiftsInput && shiftsInput.length > 0) ? shiftsInput : (shift ? [shift] : []);
 
         // Validate inputs
@@ -2366,16 +2366,20 @@ exports.assignSeat = async (req, res) => {
             // dueDate = the joinedDay of feeMonth/feeYear
             const dueDate = new Date(feeYear, feeMonth - 1, joinedDay);
 
-            // Create or update fee record
-            // NEVER overwrite a fee that's already paid.
-            // If fee was cancelled (e.g. from reactivation cleanup), restore it to pending.
+            // Get old seat number from previousSeats (captured before the move)
+            const oldSeatNumber = previousSeats.length > 0 ? (previousSeats[0].number || null) : null;
+
+            // Create or update fee record — handle mid-month seat UPGRADE
             const existingFee = await Fee.findOne({
                 student: studentId,
                 month: feeMonth,
                 year: feeYear
             });
 
+            let upgradeDifference = 0; // amount extra owed due to seat change
+
             if (!existingFee) {
+                // No fee yet for this month — create fresh pending
                 await Fee.create({
                     student: studentId,
                     month: feeMonth,
@@ -2385,62 +2389,121 @@ exports.assignSeat = async (req, res) => {
                     status: 'pending'
                 });
             } else if (existingFee.status === 'paid') {
-                // Already paid — only update amount if it changed, leave status alone
-                if (existingFee.amount !== _newAssignmentPrice) {
-                    await Fee.findByIdAndUpdate(existingFee._id, { amount: _newAssignmentPrice || 0 });
+                // Student FULLY PAID this month's fee already
+                const alreadyPaid = existingFee.amount; // what they paid
+                const newPrice    = _newAssignmentPrice || 0;
+
+                if (newPrice > alreadyPaid) {
+                    // UPGRADE — reopen as partial: difference is now due
+                    upgradeDifference = newPrice - alreadyPaid;
+                    await Fee.findByIdAndUpdate(existingFee._id, {
+                        amount:       newPrice,
+                        partialPaid:  alreadyPaid,
+                        outstanding:  upgradeDifference,
+                        status:       'partial',
+                        paidDate:     null,           // no longer fully paid
+                        note:         `Seat upgrade on ${new Date().toLocaleDateString('en-IN')}: Desk ${oldSeatNumber || '?'} (₹${alreadyPaid}) → Desk ${seat.number} (₹${newPrice}). Difference due: ₹${upgradeDifference}`,
+                        seatChangeDetails: {
+                            fromSeat:   oldSeatNumber || null,
+                            toSeat:     seat.number,
+                            fromPrice:  alreadyPaid,
+                            toPrice:    newPrice,
+                            changeDate: new Date()
+                        }
+                    });
+                } else if (newPrice < alreadyPaid) {
+                    // DOWNGRADE — student overpaid; mark as paid, record note
+                    const overpaid = alreadyPaid - newPrice;
+                    await Fee.findByIdAndUpdate(existingFee._id, {
+                        amount: newPrice,
+                        note:   `Seat change on ${new Date().toLocaleDateString('en-IN')}: Desk ${oldSeatNumber || '?'} (₹${alreadyPaid}) → Desk ${seat.number} (₹${newPrice}). Overpaid ₹${overpaid} — credit to student.`
+                    });
+                    // status stays 'paid', no extra due
                 }
-            } else {
-                // pending / overdue / cancelled / partial → restore to pending with new amount
+                // else same price — leave fee as-is
+            } else if (existingFee.status === 'partial') {
+                // Was already partial — update amount, keep partialPaid, recalculate outstanding
+                const newPrice  = _newAssignmentPrice || 0;
+                const paid      = existingFee.partialPaid || 0;
+                const newOutstanding = Math.max(0, newPrice - paid);
                 await Fee.findByIdAndUpdate(existingFee._id, {
-                    amount: _newAssignmentPrice || 0,
+                    amount:      newPrice,
+                    outstanding: newOutstanding,
                     dueDate,
-                    status: 'pending',
-                    $unset: { cancelledReason: '' }
+                    note: `Seat change on ${new Date().toLocaleDateString('en-IN')}: Desk ${oldSeatNumber || '?'} → Desk ${seat.number} (₹${newPrice}). Outstanding: ₹${newOutstanding}`
+                });
+                upgradeDifference = newOutstanding;
+            } else {
+                // pending / overdue / cancelled → restore to pending with new amount
+                await Fee.findByIdAndUpdate(existingFee._id, {
+                    amount:  _newAssignmentPrice || 0,
+                    dueDate,
+                    status:  'pending',
+                    $unset:  { cancelledReason: '' }
                 });
             }
 
 
 
+            // Send seat assignment notification
+            const notifMessage = upgradeDifference > 0
+                ? `Seat changed to Desk ${seat.number}. Upgrade due: Rs. ${upgradeDifference}.`
+                : `Your seat ${seat.number} has been assigned.`;
             await Notification.create({
                 recipient: studentId,
-                title: 'Seat Assigned',
-                message: `Your seat ${seat.number} has been assigned.`,
+                title: upgradeDifference > 0 ? 'Seat Upgraded — Balance Due' : 'Seat Assigned',
+                message: notifMessage,
                 type: 'seat',
                 createdBy: req.user.id
             });
 
-            // Send seat assignment email
+            // Resolve shift name(s) for email
             let shiftName = '';
             try {
-                // Resolve shift name(s) from shiftIds array
                 let _resolvedName = 'N/A';
                 try {
                     const resolvedShifts = await Shift.find({ _id: { $in: shiftIds } });
                     if (resolvedShifts.length > 0) {
                         _resolvedName = resolvedShifts.map(s => s.name).join(' + ');
                     } else if (shift) {
-                        // Fallback: single shift passed directly
                         const shiftObj = await Shift.findById(shift);
                         if (shiftObj) _resolvedName = shiftObj.name;
                     }
-                } catch (ignore) {
-                    console.log('Could not resolve shift name');
-                }
+                } catch (ignore) {}
                 shiftName = _resolvedName !== 'N/A' ? _resolvedName : '';
+            } catch (_) {}
 
-                await emailService.sendSeatAssignmentEmail(
-                    student,
-                    {
-                        ...seat.toObject(),
-                        currentPrice: newAssignment.price
-                    },
-                    shiftName || 'N/A'
-                );
-            } catch (emailError) {
-                console.error('Seat assignment email failed:', emailError.message);
+            // Send appropriate email (only if admin toggled sendEmail)
+            if (sendEmail === true) {
+                try {
+                    if (upgradeDifference > 0) {
+                        // Mid-month upgrade — send balance due email
+                        await emailService.sendSeatUpgradeDueEmail(
+                            student,
+                            {
+                                oldSeat: oldSeatNumber,
+                                newSeat: seat.number,
+                                oldPrice: existingFee ? existingFee.partialPaid || existingFee.amount : 0,
+                                newPrice: _newAssignmentPrice,
+                                difference: upgradeDifference,
+                                shiftName: shiftName || 'N/A',
+                                month: feeMonth,
+                                year: feeYear
+                            }
+                        );
+                    } else {
+                        await emailService.sendSeatAssignmentEmail(
+                            student,
+                            { ...seat.toObject(), currentPrice: _newAssignmentPrice },
+                            shiftName || 'N/A'
+                        );
+                    }
+                } catch (emailError) {
+                    console.error('Seat assignment/upgrade email failed:', emailError.message);
+                }
             }
 
-            // Log action — include desk number and shift(s) in details
+            // Log action
             const logDetails = shiftName
                 ? `Desk ${seat.number} assigned to ${student.name} (${shiftName})`
                 : `Desk ${seat.number} assigned to ${student.name}`;
@@ -2454,7 +2517,10 @@ exports.assignSeat = async (req, res) => {
 
             res.status(200).json({
                 success: true,
-                message: 'Seat assigned successfully'
+                message: upgradeDifference > 0
+                    ? `Seat changed. Upgrade balance due: Rs. ${upgradeDifference}`
+                    : 'Seat assigned successfully',
+                upgradeDue: upgradeDifference > 0 ? upgradeDifference : 0
             });
         } else {
             // This shouldn't happen as we validate at the start, but handle gracefully
@@ -5916,3 +5982,113 @@ exports.getAIActivityLogs = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
+// ─── MAKE DUE — Admin manually creates a due for a student ────────────────────
+exports.makeDue = async (req, res) => {
+    try {
+        const { id: studentId } = req.params;
+        const { amount, reason, dueDate, sendEmail: shouldSendEmail } = req.body;
+
+        if (!amount || isNaN(Number(amount)) || Number(amount) <= 0)
+            return res.status(400).json({ success: false, message: 'Valid amount is required' });
+        if (!reason || !reason.trim())
+            return res.status(400).json({ success: false, message: 'Reason is required' });
+        if (!dueDate)
+            return res.status(400).json({ success: false, message: 'Due date is required' });
+
+        const student = await User.findById(studentId);
+        if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
+
+        const parsedDue = new Date(dueDate);
+        const now = new Date();
+        const feeMonth = parsedDue.getMonth() + 1;
+        const feeYear  = parsedDue.getFullYear();
+        const dueAmt   = Number(amount);
+
+        // Check for existing fee for that month/year
+        let existingFee = await Fee.findOne({ student: studentId, month: feeMonth, year: feeYear });
+
+        let feeRecord;
+        if (existingFee) {
+            // If already pending/overdue — add to amount; if paid — reopen as partial
+            if (existingFee.status === 'paid') {
+                const alreadyPaid = existingFee.amount;
+                const newTotal    = alreadyPaid + dueAmt;
+                await Fee.findByIdAndUpdate(existingFee._id, {
+                    amount:      newTotal,
+                    status:      'partial',
+                    partialPaid: alreadyPaid,
+                    outstanding: dueAmt,
+                    paidDate:    null,
+                    note:        `Manual due added by admin on ${now.toLocaleDateString('en-IN')}: Rs. ${dueAmt}. Reason: ${reason.trim()}`
+                });
+            } else if (existingFee.status === 'partial') {
+                const newOutstanding = (existingFee.outstanding || 0) + dueAmt;
+                const newTotal       = existingFee.amount + dueAmt;
+                await Fee.findByIdAndUpdate(existingFee._id, {
+                    amount:      newTotal,
+                    outstanding: newOutstanding,
+                    note:        `Additional due added by admin on ${now.toLocaleDateString('en-IN')}: Rs. ${dueAmt}. Reason: ${reason.trim()}`
+                });
+            } else {
+                // pending / overdue — just bump amount
+                await Fee.findByIdAndUpdate(existingFee._id, {
+                    amount:  existingFee.amount + dueAmt,
+                    dueDate: parsedDue,
+                    status:  'pending',
+                    note:    `Additional due added by admin on ${now.toLocaleDateString('en-IN')}: Rs. ${dueAmt}. Reason: ${reason.trim()}`
+                });
+            }
+            feeRecord = await Fee.findById(existingFee._id);
+        } else {
+            // No fee for this month yet — create fresh pending
+            feeRecord = await Fee.create({
+                student:  studentId,
+                month:    feeMonth,
+                year:     feeYear,
+                amount:   dueAmt,
+                dueDate:  parsedDue,
+                status:   'pending',
+                note:     `Manual due created by admin on ${now.toLocaleDateString('en-IN')}: Rs. ${dueAmt}. Reason: ${reason.trim()}`
+            });
+        }
+
+        // Notification
+        await Notification.create({
+            recipient: studentId,
+            title:     'Fee Due Added',
+            message:   `A due of Rs. ${dueAmt} has been added to your account. Reason: ${reason.trim()}.`,
+            type:      'fee',
+            createdBy: req.user.id
+        });
+
+        // Email (only if toggled)
+        if (shouldSendEmail) {
+            try {
+                const emailService = require('../services/emailService');
+                await emailService.sendManualDueEmail(student, {
+                    amount:  dueAmt,
+                    reason:  reason.trim(),
+                    dueDate: parsedDue,
+                    month:   feeMonth,
+                    year:    feeYear
+                });
+            } catch (emailErr) {
+                console.error('Make due email failed:', emailErr.message);
+            }
+        }
+
+        // Log
+        await logAction(req, 'fee_due_added', 'Student', student._id, student.name,
+            `Manual due of Rs. ${dueAmt} added for ${student.name} (${reason.trim()})`);
+
+        res.status(200).json({
+            success: true,
+            message: `Due of Rs. ${dueAmt} added to ${student.name}'s account.`,
+            fee: feeRecord
+        });
+    } catch (error) {
+        console.error('makeDue error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

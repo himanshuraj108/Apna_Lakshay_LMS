@@ -65,7 +65,8 @@ const {
     swapSeats,
     getStudentEngagementActivities,
     getStudentEngagementDetails,
-    getAIActivityLogs
+    getAIActivityLogs,
+    makeDue
 } = require('../controllers/adminController');
 
 const { askAdminAI, getAdminAIBriefing, getLiveDashboardData } = require('../controllers/adminAiController');
@@ -148,6 +149,7 @@ router.post('/students/:id/inactivate-request', requestStudentInactivation);
 router.post('/students/:id/reset-password', resetStudentPassword);
 router.get('/students/:id/activity-history', getStudentActivityHistory);
 router.get('/students/:id/mock-tests', getStudentMockTests);
+router.post('/students/:id/make-due', makeDue);
 
 // Floor/Room/Seat management
 router.get('/floors', getFloors);

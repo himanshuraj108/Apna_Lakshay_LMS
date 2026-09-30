@@ -414,3 +414,60 @@ exports.sendProfileUpdateEmail = async (student) => {
     note: 'If you notice any discrepancy in your profile information, please contact the administration immediately.',
   });
 };
+
+// ─── 16. SEAT UPGRADE — BALANCE DUE ──────────────────────────────────────────
+exports.sendSeatUpgradeDueEmail = async (student, details) => {
+  // details: { oldSeat, newSeat, oldPrice, newPrice, difference, shiftName, month, year }
+  const monthName = MONTHS[(details.month || 1) - 1] || 'Current Month';
+  await sendEmail(
+    student.email,
+    `Seat upgrade — balance due for ${monthName} ${details.year}`,
+    {
+      badge: { text: 'Seat Upgrade — Balance Due', bg: '#fff7ed', color: '#c2410c' },
+      headline: 'Your seat has been upgraded — balance due',
+      body: `<p style="margin:0 0 16px;">Dear <strong>${student.name}</strong>,</p>
+<p style="margin:0 0 14px;">Your library seat has been upgraded mid-month. Since you had already paid the fee for your previous seat, the difference amount is now due. Please clear it at your earliest convenience to avoid any disruption.</p>`,
+      table: {
+        rows: [
+          { label: 'Billing Period',   value: `${monthName} ${details.year}`,                    bold: true },
+          { label: 'Previous Seat',    value: `Desk ${details.oldSeat || 'N/A'}`,                bold: true },
+          { label: 'New Seat',         value: `Desk ${details.newSeat} (${details.shiftName})`,  bold: true },
+          { label: 'Already Paid',     value: `Rs. ${details.oldPrice}`,                          bold: true },
+          { label: 'New Seat Fee',     value: `Rs. ${details.newPrice}`,                          bold: true },
+          { label: 'Balance Due',      value: `Rs. ${details.difference}`,                        bold: true, highlight: true },
+        ]
+      },
+      cta: { label: 'View Fee Portal', url: `${APP_URL}/student/fees` },
+      note: 'This balance due has been added to your fee record and is visible in your Fee Status page. Please contact the administration if you have any questions.',
+    }
+  );
+};
+
+// Send manual due notice email
+exports.sendManualDueEmail = async (student, details) => {
+  // details: { amount, reason, dueDate, month, year }
+  const monthName = MONTHS[(details.month || 1) - 1] || 'Current Month';
+  const dueDateStr = details.dueDate
+    ? new Date(details.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+    : 'As soon as possible';
+  await sendEmail(
+    student.email,
+    `Fee Due Notice — Rs. ${details.amount} due by ${dueDateStr}`,
+    {
+      badge: { text: 'Fee Due Notice', bg: '#fff7ed', color: '#c2410c' },
+      headline: `A fee due of Rs. ${details.amount} has been added to your account`,
+      body: `<p style="margin:0 0 16px;">Dear <strong>${student.name}</strong>,</p>
+<p style="margin:0 0 14px;">A fee due has been added to your account by the administration. Please clear the outstanding amount before the due date to avoid any late charges or service disruption.</p>`,
+      table: {
+        rows: [
+          { label: 'Billing Month',  value: `${monthName} ${details.year}`,  bold: true },
+          { label: 'Due Amount',     value: `Rs. ${details.amount}`,          bold: true, highlight: true },
+          { label: 'Due Date',       value: dueDateStr,                       bold: true },
+          { label: 'Reason',         value: details.reason,                   bold: false },
+        ]
+      },
+      cta: { label: 'View Fee Status', url: `${APP_URL}/student/fees` },
+      note: 'This due has been added to your fee record and is visible in your Fee Status page. Please contact the administration if you believe this is incorrect.',
+    }
+  );
+};
