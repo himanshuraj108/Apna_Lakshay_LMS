@@ -2788,11 +2788,13 @@ exports.getAttendance = async (req, res) => {
 
         const attendance = await Attendance.find({
             date: { $gte: startOfMonth, $lt: endOfMonth }
-        }).populate('student', 'name email mobile isActive');
+        }).populate('student', 'name email mobile isActive admissionDate createdAt');
 
         // Fetch seat + shift data for every student in the records
         const studentIds = [...new Set(attendance.map(r => r.student?._id?.toString()).filter(Boolean))];
         const seatMap = {};
+        const overallMap = {};
+
         if (studentIds.length > 0) {
             const seats = await Seat.find({
                 'assignments.student': { $in: studentIds },
@@ -2808,12 +2810,67 @@ exports.getAttendance = async (req, res) => {
                     }
                 });
             });
+
+            // Calculate overall attendance from admission date to today for these students
+            const now = new Date();
+            now.setHours(23, 59, 59, 999);
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            const studentObjIds = studentIds.map(id => new mongoose.Types.ObjectId(id));
+            const lifetimeAttendance = await Attendance.aggregate([
+                {
+                    $match: {
+                        student: { $in: studentObjIds },
+                        status: { $in: ['present', 'holiday'] },
+                        date: { $lte: now }
+                    }
+                },
+                {
+                    $group: {
+                        _id: {
+                            student: '$student',
+                            dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
+                        }
+                    }
+                },
+                {
+                    $group: {
+                        _id: '$_id.student',
+                        uniqueDays: { $sum: 1 }
+                    }
+                }
+            ]);
+
+            const lifetimePresentsMap = {};
+            lifetimeAttendance.forEach(item => {
+                lifetimePresentsMap[item._id.toString()] = item.uniqueDays;
+            });
+
+            const studentDocMap = {};
+            attendance.forEach(r => {
+                if (r.student && r.student._id) {
+                    studentDocMap[r.student._id.toString()] = r.student;
+                }
+            });
+
+            studentIds.forEach(sid => {
+                const stu = studentDocMap[sid];
+                if (!stu) return;
+                const admDate = new Date(stu.admissionDate || stu.createdAt || todayStart);
+                admDate.setHours(0, 0, 0, 0);
+                const diffMs = todayStart.getTime() - admDate.getTime();
+                const totalDays = diffMs >= 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1 : 1;
+                const presents = lifetimePresentsMap[sid] || 0;
+                overallMap[sid] = Math.min(100, Math.round((presents / totalDays) * 100));
+            });
         }
 
         res.status(200).json({
             success    : true,
             attendance,          // flat records array — frontend iterates these
             seatMap,             // { studentId: { seatNumber, shifts[] } }
+            overallMap,          // { [studentId]: overallPct }
             year,
             month
         });
