@@ -797,19 +797,180 @@ const StudentManagement = () => {
         } finally { setSplitLoading(false); }
     };
 
+    const captureCardFace = async (faceElement, isBack = false) => {
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `
+            position: fixed !important;
+            top: -9999px !important;
+            left: -9999px !important;
+            width: 380px !important;
+            height: 240px !important;
+            background: transparent !important;
+            z-index: -9999 !important;
+            overflow: hidden !important;
+            pointer-events: none !important;
+        `;
+
+        const clone = faceElement.cloneNode(true);
+        clone.removeAttribute('data-html2canvas-ignore');
+        clone.removeAttribute('id');
+
+        // Remove any flip hint text so card looks authentic and clean
+        clone.querySelectorAll('*').forEach(el => {
+            if (el.textContent && el.textContent.trim().toLowerCase() === 'click to flip') {
+                el.remove();
+            }
+        });
+
+        // Copy canvas elements (specifically QRCodeCanvas) as raster images so pixels are preserved
+        const origCanvases = faceElement.querySelectorAll('canvas');
+        const cloneCanvases = clone.querySelectorAll('canvas');
+        origCanvases.forEach((orig, idx) => {
+            const dest = cloneCanvases[idx];
+            if (dest) {
+                try {
+                    const img = document.createElement('img');
+                    img.src = orig.toDataURL('image/png');
+                    img.style.cssText = dest.style.cssText;
+                    if (dest.className) img.className = dest.className;
+                    const w = orig.clientWidth || orig.width || 56;
+                    const h = orig.clientHeight || orig.height || 56;
+                    img.style.width = `${w}px`;
+                    img.style.height = `${h}px`;
+                    img.style.display = 'block';
+                    dest.parentNode.replaceChild(img, dest);
+                } catch (e) {
+                    console.warn('Canvas raster clone failed', e);
+                }
+            }
+        });
+
+        // Neutralize 3D flip & absolute positioning on the cloned face so html2canvas renders it cleanly
+        clone.style.position = 'relative';
+        clone.style.top = '0';
+        clone.style.left = '0';
+        clone.style.right = 'auto';
+        clone.style.bottom = 'auto';
+        clone.style.transform = 'none';
+        clone.style.webkitTransform = 'none';
+        clone.style.backfaceVisibility = 'visible';
+        clone.style.webkitBackfaceVisibility = 'visible';
+        clone.style.width = '380px';
+        clone.style.height = '240px';
+        clone.style.borderRadius = '14px';
+        clone.style.boxShadow = 'none';
+
+        if (isBack) {
+            clone.querySelectorAll('*').forEach(child => {
+                if (child.style && child.style.transform && child.style.transform.includes('rotateY')) {
+                    child.style.transform = 'none';
+                    child.style.webkitTransform = 'none';
+                }
+            });
+        }
+
+        wrapper.appendChild(clone);
+        document.body.appendChild(wrapper);
+
+        // Ensure all cloned <img> tags are fully loaded before rendering
+        const imgs = Array.from(wrapper.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(res => {
+                img.onload = res;
+                img.onerror = res;
+            });
+        }));
+
+        await new Promise(r => setTimeout(r, 80));
+
+        const canvas = await html2canvas(wrapper, {
+            scale: 3,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null,
+            width: 380,
+            height: 240,
+            logging: false,
+        });
+
+        document.body.removeChild(wrapper);
+        return canvas;
+    };
+
     const handleDownloadPNG = async () => {
         const element = document.getElementById('student-id-card-preview');
-        if (!element) return;
+        if (!element || !selectedStudent) return;
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 3, // Higher resolution
-                useCORS: true,
-                backgroundColor: null
-            });
-            const dataUrl = canvas.toDataURL('image/png');
+            const frontEl = element.querySelector('#student-id-card-front') || element.querySelector('[data-card-face="front"]');
+            const backEl  = element.querySelector('#student-id-card-back')  || element.querySelector('[data-card-face="back"]');
+            if (!frontEl || !backEl) return;
+
+            // Capture both Front and Back faces at high resolution (scale: 3)
+            const frontCanvas = await captureCardFace(frontEl, false);
+            const backCanvas  = await captureCardFace(backEl, true);
+
+            // High-resolution combined canvas
+            const gap = 60;
+            const padX = 50;
+            const padTop = 130;
+            const padBottom = 70;
+
+            const totalW = padX * 2 + frontCanvas.width + backCanvas.width + gap;
+            const totalH = padTop + Math.max(frontCanvas.height, backCanvas.height) + padBottom;
+
+            const combinedCanvas = document.createElement('canvas');
+            combinedCanvas.width = totalW;
+            combinedCanvas.height = totalH;
+            const ctx = combinedCanvas.getContext('2d');
+
+            // Solid clean white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalW, totalH);
+
+            // Orange brand accent bar
+            const brandGrad = ctx.createLinearGradient(0, 0, totalW, 0);
+            brandGrad.addColorStop(0, '#f97316');
+            brandGrad.addColorStop(1, '#ea580c');
+            ctx.fillStyle = brandGrad;
+            ctx.fillRect(0, 0, totalW, 16);
+
+            // Header text
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 38px "DM Sans", "Inter", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('APNA LAKSHAY LIBRARY', totalW / 2, 64);
+
+            ctx.fillStyle = '#ea580c';
+            ctx.font = 'bold 18px "DM Sans", "Inter", sans-serif';
+            ctx.fillText('OFFICIAL STUDENT IDENTITY CARD', totalW / 2, 94);
+
+            // Positions for cards
+            const frontX = padX;
+            const frontY = padTop;
+            const backX = padX + frontCanvas.width + gap;
+            const backY = padTop;
+
+            // Draw cards with subtle shadow
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+            ctx.shadowBlur = 24;
+            ctx.shadowOffsetY = 8;
+            ctx.drawImage(frontCanvas, frontX, frontY);
+            ctx.drawImage(backCanvas, backX, backY);
+            ctx.restore();
+
+            // Card side badges / labels below each card
+            ctx.font = 'bold 20px "DM Sans", "Inter", sans-serif';
+            ctx.fillStyle = '#475569';
+            ctx.textAlign = 'center';
+            ctx.fillText('FRONT SIDE', frontX + frontCanvas.width / 2, frontY + frontCanvas.height + 42);
+            ctx.fillText('BACK SIDE', backX + backCanvas.width / 2, backY + backCanvas.height + 42);
+
+            const dataUrl = combinedCanvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = `ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.png`;
+            link.download = `ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}_Apna_Lakshay.png`;
             link.href = dataUrl;
             link.click();
         } catch (err) {
@@ -819,95 +980,536 @@ const StudentManagement = () => {
 
     const handleDownloadPDF = async () => {
         const element = document.getElementById('student-id-card-preview');
-        if (!element) return;
+        if (!element || !selectedStudent) return;
 
         try {
-            // --- Step 1: Capture the front face ---
-            const frontCanvas = await html2canvas(element, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-            });
+            const frontEl = element.querySelector('#student-id-card-front') || element.querySelector('[data-card-face="front"]');
+            const backEl  = element.querySelector('#student-id-card-back')  || element.querySelector('[data-card-face="back"]');
+            if (!frontEl || !backEl) return;
+
+            // Fetch library logo as base64 for header and watermark
+            let logoBase64 = null;
+            try {
+                const imgRes = await fetch('/app-icon-192.png');
+                const blob   = await imgRes.blob();
+                logoBase64   = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (_) { /* logo optional */ }
+
+            // Capture Front and Back in isolation with zero ghosting and crisp QR code
+            const frontCanvas = await captureCardFace(frontEl, false);
+            const backCanvas  = await captureCardFace(backEl, true);
+
             const frontImg = frontCanvas.toDataURL('image/png');
+            const backImg  = backCanvas.toDataURL('image/png');
 
-            // --- Step 2: Temporarily flip the card to capture back face ---
-            const flipContainer = element.querySelector('[style*="rotateY"]') ||
-                element.querySelector('[class*="motion"]');
+            const pdf = new jsPDF('p', 'mm', 'a4'); // Portrait A4: 210mm × 297mm
+            const pageW = pdf.internal.pageSize.getWidth();  // 210
+            const pageH = pdf.internal.pageSize.getHeight(); // 297
 
-            // Inject a temporary "back face only" container beside the main one
-            const backWrapper = document.createElement('div');
-            backWrapper.style.cssText = `
-                position: fixed; top: -9999px; left: -9999px;
-                width: 380px; height: 240px; overflow: hidden;
-                background: white; z-index: -1;
-            `;
-            document.body.appendChild(backWrapper);
-
-            // Clone the element and force the back face visible
-            const cloned = element.cloneNode(true);
-            cloned.style.cssText = 'width:380px;height:240px;position:relative;';
-
-            // Find the motion div (flip container) and force it to show the back
-            const motionDivs = cloned.querySelectorAll('div');
-            motionDivs.forEach(div => {
-                const s = div.getAttribute('style') || '';
-                // Force backfaceVisibility:hidden divs to be visible for capture
-                if (s.includes('backfaceVisibility') || s.includes('backface-visibility')) {
-                    div.style.backfaceVisibility = 'visible';
-                    div.style.webkitBackfaceVisibility = 'visible';
+            // Helper: draw tiled watermark
+            const drawWatermark = () => {
+                if (logoBase64) {
+                    const wmSize = 48, gapX = 68, gapY = 68;
+                    for (let wx = 12; wx < pageW - wmSize; wx += gapX) {
+                        for (let wy = 28; wy < pageH - wmSize; wy += gapY) {
+                            try {
+                                pdf.saveGraphicsState();
+                                pdf.setGState(new pdf.GState({ opacity: 0.04 }));
+                                pdf.addImage(logoBase64, 'PNG', wx, wy, wmSize, wmSize);
+                                pdf.restoreGraphicsState();
+                            } catch (_) {}
+                        }
+                    }
                 }
-                // Force the inner flipper to be rotated 180deg (shows back)
-                if (s.includes('transformStyle') || s.includes('transform-style')) {
-                    div.style.transform = 'rotateY(180deg)';
+            };
+
+            const contactBase = (typeof window !== 'undefined' && window.location?.origin)
+                ? `${window.location.origin}/contact`
+                : 'https://apnalakshay.com/contact';
+
+            // Student metadata resolution
+            const studentId = (selectedStudent._id || selectedStudent.id || '').slice(-8).toUpperCase() || '--------';
+            const tempAssignments = selectedStudent.tempAssignments || [];
+            const isTemporary = Boolean(
+                selectedStudent.isTemporary ||
+                selectedStudent.isTemporarySeat ||
+                selectedStudent.seat?.isTemporary ||
+                tempAssignments.length > 0
+            );
+            const firstTemp = tempAssignments[0];
+            const resolvedSeatNo = (typeof getStudentSeat === 'function' ? getStudentSeat(selectedStudent._id) : null) ||
+                selectedStudent.seat?.number || selectedStudent.seatNumber || firstTemp?.seat?.number || firstTemp?.seatNumber || null;
+            const seatDetails = typeof getStudentSeatDetails === 'function' ? getStudentSeatDetails(selectedStudent._id) : null;
+            const resolvedRoomId = selectedStudent.roomId || seatDetails?.roomId || selectedStudent.seat?.room?.roomId || selectedStudent.seat?.roomId || firstTemp?.seat?.room?.roomId || null;
+            const seatText = resolvedSeatNo ? (resolvedRoomId ? `Room ${resolvedRoomId} - Seat ${resolvedSeatNo}` : `Seat ${resolvedSeatNo}`) : 'Pending Allocation';
+
+            let shiftText = 'Not Assigned';
+            if (selectedStudent.shifts && selectedStudent.shifts.length > 0) {
+                shiftText = selectedStudent.shifts.map(s => `${s.name}${s.startTime && s.endTime ? ` (${s.startTime}-${s.endTime})` : ''}`).join(', ');
+            } else if (selectedStudent.shift) {
+                if (typeof selectedStudent.shift === 'string') shiftText = selectedStudent.shift;
+                else if (selectedStudent.shift.name) {
+                    const s = selectedStudent.shift.startTime;
+                    const e = selectedStudent.shift.endTime;
+                    shiftText = `${selectedStudent.shift.name}${s && e ? ` (${s}-${e})` : ''}`;
                 }
-            });
+            } else if (firstTemp?.shift?.name || firstTemp?.shiftName) {
+                shiftText = firstTemp.shift?.name || firstTemp.shiftName;
+            }
 
-            backWrapper.appendChild(cloned);
-            const backCanvas = await html2canvas(backWrapper, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                width: 380,
-                height: 240,
-            });
-            const backImg = backCanvas.toDataURL('image/png');
-            document.body.removeChild(backWrapper);
+            const joinedDate = (selectedStudent.admissionDate || selectedStudent.createdAt)
+                ? new Date(selectedStudent.admissionDate || selectedStudent.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                : 'N/A';
 
-            // --- Step 3: Build landscape A4 PDF — front left, back right ---
-            const pdf = new jsPDF('l', 'mm', 'a4');   // landscape: 297mm × 210mm
-            const pdfW = pdf.internal.pageSize.getWidth();   // 297
-            const pdfH = pdf.internal.pageSize.getHeight();  // 210
+            const membershipStatus = !selectedStudent.isActive ? 'INACTIVE' : isTemporary ? 'TEMPORARY ACCESS' : (!resolvedSeatNo ? 'PENDING ALLOCATION' : 'ACTIVE MEMBER');
 
-            // Card physical: 85.6mm × 54mm (CR80); scale up slightly for clarity
-            const cardW = 120;
-            const cardH = (frontCanvas.height / frontCanvas.width) * cardW;
-            const gap    = 14;   // mm gap between cards
-            const totalW = cardW * 2 + gap;
+            // ════════════════════════════════════════════════════════════════
+            // PAGE 1: OFFICIAL STUDENT ID CARD & CREDENTIALS
+            // ════════════════════════════════════════════════════════════════
+            drawWatermark();
 
-            const startX = (pdfW - totalW) / 2;
-            const startY = (pdfH - cardH) / 2;
+            // Top orange bar
+            pdf.setFillColor(234, 88, 12);
+            pdf.rect(0, 0, pageW, 22, 'F');
 
-            // White card backgrounds with subtle shadow line
-            pdf.setFillColor(255, 255, 255);
-            pdf.roundedRect(startX - 2, startY - 2, cardW + 4, cardH + 4, 3, 3, 'F');
-            pdf.roundedRect(startX + cardW + gap - 2, startY - 2, cardW + 4, cardH + 4, 3, 3, 'F');
+            // Header Logo
+            if (logoBase64) {
+                try { pdf.addImage(logoBase64, 'PNG', 12, 3, 16, 16); } catch (_) {}
+            }
 
-            // Label: FRONT / BACK
+            // Header Title
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('APNA LAKSHAY LIBRARY', 32, 10);
+
+            pdf.setFontSize(7.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(254, 215, 170);
+            pdf.text('PREMIER DIGITAL & SELF-STUDY LEARNING CENTER', 32, 15);
+
+            pdf.setFontSize(6.5);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Official Student Identity & Access Card', 32, 19);
+
+            // Right side badge
+            pdf.setFillColor(249, 115, 22);
+            pdf.roundedRect(pageW - 48, 6, 36, 10, 2, 2, 'F');
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('OFFICIAL ISSUANCE', pageW - 30, 12.5, { align: 'center' });
+
+            // Member Credential Record Card
+            const metaBoxY = 26;
+            const metaBoxH = 34;
+            pdf.setFillColor(255, 247, 237);
+            pdf.setDrawColor(254, 215, 170);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(12, metaBoxY, pageW - 24, metaBoxH, 2.5, 2.5, 'FD');
+
+            pdf.setFillColor(254, 240, 222);
+            pdf.roundedRect(12, metaBoxY, pageW - 24, 6.5, 2, 2, 'F');
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(154, 52, 18);
+            pdf.text('REGISTERED MEMBER CREDENTIAL RECORD', 16, metaBoxY + 4.5);
+
+            const col1X = 16;
+            const col2X = 76;
+            const col3X = 140;
+
+            const drawField = (label, val, x, y, isBoldVal = false, valColor = [15, 23, 42]) => {
+                pdf.setFontSize(6);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(154, 80, 20);
+                pdf.text(label.toUpperCase(), x, y);
+                pdf.setFontSize(7.5);
+                pdf.setFont('helvetica', isBoldVal ? 'bold' : 'normal');
+                pdf.setTextColor(valColor[0], valColor[1], valColor[2]);
+                const truncatedVal = pdf.splitTextToSize(String(val || 'N/A'), 56)[0];
+                pdf.text(truncatedVal, x, y + 4);
+            };
+
+            // Row 1
+            drawField('Student Name', selectedStudent.name, col1X, metaBoxY + 11.5, true, [15, 23, 42]);
+            drawField('Assigned Seat', seatText, col2X, metaBoxY + 11.5, true, [234, 88, 12]);
+            drawField('Membership Status', membershipStatus, col3X, metaBoxY + 11.5, true, selectedStudent.isActive ? [22, 101, 52] : [185, 28, 28]);
+
+            // Row 2
+            drawField('Student ID / Reg', studentId, col1X, metaBoxY + 22, true, [234, 88, 12]);
+            drawField('Assigned Shift', shiftText, col2X, metaBoxY + 22, false, [30, 41, 59]);
+            drawField('Admission Date', joinedDate, col3X, metaBoxY + 22, false, [71, 85, 105]);
+
+            // Cards section
+            const cardsHeaderY = 66;
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(30, 41, 59);
+            pdf.text('OFFICIAL PHYSICAL IDENTITY CARD', pageW / 2, cardsHeaderY, { align: 'center' });
+
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('Standard CR80 Specification (85.6 mm x 54 mm)  |  Direct Card Print & Lamination Ready', pageW / 2, cardsHeaderY + 4, { align: 'center' });
+
+            const cardW = 86;
+            const cardH = 54.3;
+            const cardsGap = 12;
+            const cardsStartX = (pageW - (cardW * 2 + cardsGap)) / 2;
+            const cardsY = cardsHeaderY + 12;
+
+            // FRONT & BACK Labels
+            pdf.setFontSize(7.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(234, 88, 12);
+            pdf.text('FRONT SIDE', cardsStartX + cardW / 2, cardsY - 3, { align: 'center' });
+            pdf.text('BACK SIDE', cardsStartX + cardW + cardsGap + cardW / 2, cardsY - 3, { align: 'center' });
+
+            // Cutting guide dashed borders
+            pdf.setDrawColor(203, 213, 225);
+            pdf.setLineWidth(0.3);
+            pdf.setLineDashPattern([1.5, 1.5], 0);
+            pdf.roundedRect(cardsStartX - 1, cardsY - 1, cardW + 2, cardH + 2, 2.5, 2.5, 'S');
+            pdf.roundedRect(cardsStartX + cardW + cardsGap - 1, cardsY - 1, cardW + 2, cardH + 2, 2.5, 2.5, 'S');
+            pdf.setLineDashPattern([], 0);
+
+            // Draw Cards
+            pdf.addImage(frontImg, 'PNG', cardsStartX, cardsY, cardW, cardH);
+            pdf.addImage(backImg,  'PNG', cardsStartX + cardW + cardsGap, cardsY, cardW, cardH);
+
+            // Notice & Discrepancy reporting box
+            const noticeY = cardsY + cardH + 7;
+            pdf.setFillColor(254, 252, 232);
+            pdf.setDrawColor(254, 240, 138);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(12, noticeY, pageW - 24, 21, 2, 2, 'FD');
+
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(161, 98, 7);
+            pdf.text('IMPORTANT INSTRUCTIONS & DISCREPANCY REPORTING', 16, noticeY + 4.5);
+
             pdf.setFontSize(6);
-            pdf.setTextColor(150, 150, 150);
-            pdf.text('FRONT', startX + cardW / 2, startY - 4, { align: 'center' });
-            pdf.text('BACK',  startX + cardW + gap + cardW / 2, startY - 4, { align: 'center' });
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(71, 85, 105);
+            pdf.text('1. Always carry and display this identity card while occupying your assigned desk inside the library.', 16, noticeY + 9);
+            pdf.text('2. Please verify your assigned seat number and shift hours printed on the card and credential record above.', 16, noticeY + 13);
 
-            // Card images
-            pdf.addImage(frontImg, 'PNG', startX, startY, cardW, cardH);
-            pdf.addImage(backImg,  'PNG', startX + cardW + gap, startY, cardW, cardH);
+            pdf.text('3. Any mistake in seat or shift? ', 16, noticeY + 17);
+            const prefixWidth = pdf.getTextWidth('3. Any mistake in seat or shift? ');
+            pdf.setTextColor(234, 88, 12);
+            pdf.setFont('helvetica', 'bold');
+            pdf.textWithLink('Click here to submit a correction request (/contact)', 16 + prefixWidth, noticeY + 17, { url: contactBase });
+            pdf.setDrawColor(234, 88, 12);
+            pdf.line(16 + prefixWidth, noticeY + 17.5, 16 + prefixWidth + pdf.getTextWidth('Click here to submit a correction request (/contact)'), noticeY + 17.5);
 
-            // Footer line
-            pdf.setFontSize(5);
-            pdf.setTextColor(180, 180, 180);
-            pdf.text('Apna Lakshay Library Management System — Official ID Card', pdfW / 2, pdfH - 6, { align: 'center' });
+            // Official Signatures and Seal
+            const signY = noticeY + 26;
 
-            pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}.pdf`);
+            // Student Signature Block
+            pdf.setDrawColor(148, 163, 184);
+            pdf.setLineDashPattern([1, 1], 0);
+            pdf.line(20, signY + 14, 70, signY + 14);
+            pdf.setLineDashPattern([], 0);
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(71, 85, 105);
+            pdf.text('Cardholder / Member Signature', 45, signY + 18, { align: 'center' });
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(148, 163, 184);
+            pdf.text('I confirm my credential details are accurate', 45, signY + 21.5, { align: 'center' });
+
+            // Center Seal Circle
+            pdf.setDrawColor(234, 88, 12);
+            pdf.setLineWidth(0.4);
+            pdf.circle(pageW / 2, signY + 11, 10);
+            pdf.circle(pageW / 2, signY + 11, 8.5);
+            pdf.setFontSize(4.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(234, 88, 12);
+            pdf.text('APNA LAKSHAY', pageW / 2, signY + 9, { align: 'center' });
+            pdf.text('LIBRARY SEAL', pageW / 2, signY + 12, { align: 'center' });
+            pdf.setFontSize(3.8);
+            pdf.text('VERIFIED & ISSUED', pageW / 2, signY + 14.5, { align: 'center' });
+
+            // Administrator Signature Block
+            pdf.setDrawColor(148, 163, 184);
+            pdf.setLineDashPattern([1, 1], 0);
+            pdf.line(pageW - 70, signY + 14, pageW - 20, signY + 14);
+            pdf.setLineDashPattern([], 0);
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(71, 85, 105);
+            pdf.text('Authorized Signatory / Admin', pageW - 45, signY + 18, { align: 'center' });
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(148, 163, 184);
+            pdf.text('Apna Lakshay Library Administration', pageW - 45, signY + 21.5, { align: 'center' });
+
+            // Security & QR Verification note box
+            const secY = signY + 26;
+            pdf.setFillColor(248, 250, 252);
+            pdf.setDrawColor(226, 232, 240);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(12, secY, pageW - 24, 14, 1.5, 1.5, 'FD');
+            pdf.setFontSize(5.8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(15, 23, 42);
+            pdf.text('SECURITY VERIFICATION NOTICE:', 16, secY + 4.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('The QR code on the card links directly to our real-time verification server. Administrative staff or authorities can scan the QR code to confirm live seat allotment, shift validity, and active membership status.', 16, secY + 8.5);
+
+            // Bottom Bar Page 1
+            pdf.setFillColor(234, 88, 12);
+            pdf.rect(0, pageH - 6, pageW, 6, 'F');
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Apna Lakshay Library  |  apnalakshay.com  |  Support: /contact  |  Page 1 of 2 (Member ID Card)', pageW / 2, pageH - 2, { align: 'center' });
+
+            // ════════════════════════════════════════════════════════════════
+            // PAGE 2: STRICT LIBRARY GUIDELINES & INSTRUCTIONS
+            // ════════════════════════════════════════════════════════════════
+            pdf.addPage('a4', 'p');
+            drawWatermark();
+
+            // Top orange bar
+            pdf.setFillColor(234, 88, 12);
+            pdf.rect(0, 0, pageW, 18, 'F');
+
+            if (logoBase64) {
+                try { pdf.addImage(logoBase64, 'PNG', 12, 2.5, 13, 13); } catch (_) {}
+            }
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(13);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('APNA LAKSHAY LIBRARY', 28, 8.5);
+
+            pdf.setFontSize(7.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(254, 215, 170);
+            pdf.text('OFFICIAL CODE OF CONDUCT & STRICT MEMBER GUIDELINES', 28, 13.5);
+
+            pdf.setFillColor(249, 115, 22);
+            pdf.roundedRect(pageW - 46, 4.5, 34, 9, 2, 2, 'F');
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('STRICT ENFORCEMENT', pageW - 29, 10, { align: 'center' });
+
+            // Preamble banner
+            const p2Start = 22;
+            pdf.setFillColor(248, 250, 252);
+            pdf.setDrawColor(226, 232, 240);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(12, p2Start, pageW - 24, 11, 2, 2, 'FD');
+
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(15, 23, 42);
+            pdf.text('MANDATORY COMPLIANCE NOTICE FOR ALL REGISTERED MEMBERS', 16, p2Start + 4);
+
+            pdf.setFontSize(5.6);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(71, 85, 105);
+            const preambleText = 'All admitted members are strictly required to observe exemplary discipline, silence, and academic decorum at Apna Lakshay Library. Any infraction or disorderly conduct will result in immediate suspension, seat deallocation, and permanent expulsion without refund.';
+            pdf.text(pdf.splitTextToSize(preambleText, pageW - 32), 16, p2Start + 7.5);
+
+            // 8 Strict Guidelines
+            const rules = [
+                {
+                    num: '01',
+                    title: 'MANDATORY ID CARD PRESENTATION & ENTRY VERIFICATION',
+                    items: [
+                        'Every member must carry and produce their physical ID card at the reception upon entering and exiting the library.',
+                        'Entry without a valid ID card may be refused. Lending, sharing, or forging an ID card is an offense leading to immediate forfeiture of membership and permanent blacklisting.',
+                    ]
+                },
+                {
+                    num: '02',
+                    title: 'ABSOLUTE ZERO-TOLERANCE SILENCE POLICY',
+                    items: [
+                        'Pindrop silence is mandatory in all reading halls at all times. Whispering, audible conversations, or discussions are strictly banned.',
+                        'Mobile phones must remain on SILENT or AIRPLANE MODE. Ringing phones or attending calls in study zones will incur an immediate fine or debarment.',
+                    ]
+                },
+                {
+                    num: '03',
+                    title: 'STRICT SHIFT DISCIPLINE & SEAT ALLOCATION',
+                    items: [
+                        'Members are strictly authorized to occupy ONLY their designated seat number and assigned shift timings.',
+                        'Overstaying beyond assigned shift hours is strictly prohibited. Members must vacate their desk 5 minutes before shift end to facilitate smooth transition.',
+                        'Unauthorized desk swapping, reserving chairs with bags, or occupying vacant seats is strictly forbidden.',
+                    ]
+                },
+                {
+                    num: '04',
+                    title: 'DESK HYGIENE, AMENITIES & INFRASTRUCTURE PROTECTION',
+                    items: [
+                        'Keep assigned desks, chairs, and study lights clean and orderly. Writing, carving, or defacing furniture or walls is strictly prohibited.',
+                        'Tampering with electrical wiring, switches, sockets, router fixtures, or AC remotes will result in heavy repair fines and instant seat cancellation.',
+                    ]
+                },
+                {
+                    num: '05',
+                    title: 'FOOD, BEVERAGE & LITTERING RESTRICTIONS',
+                    items: [
+                        'Consuming cooked meals, snacks, or open drinks inside the study rooms is strictly forbidden. Eating is permitted only in the pantry/reception area.',
+                        'Only spill-proof water bottles are allowed at desks. All personal trash and used stationery must be disposed of in designated waste bins.',
+                    ]
+                },
+                {
+                    num: '06',
+                    title: 'DIGITAL DEVICES & EDUCATIONAL WI-FI USAGE',
+                    items: [
+                        'Headphones or earphones are mandatory when listening to audio or video lectures; sound leakage disturbing neighbors is prohibited.',
+                        'High-speed Wi-Fi is provided solely for academic study, research, and test preparation. Gaming, non-academic streaming, or illegal downloads will result in permanent ban.',
+                    ]
+                },
+                {
+                    num: '07',
+                    title: 'PERSONAL BELONGINGS & SECURITY NOTICE',
+                    items: [
+                        'The library management assumes NO responsibility for lost, stolen, or damaged personal belongings, cash, laptops, or books.',
+                        'Never leave valuable electronics unattended. Lockers (where subscribed) must be properly locked with personal padlocks at all times.',
+                    ]
+                },
+                {
+                    num: '08',
+                    title: 'FEE RENEWAL, VALIDITY & DISCIPLINARY TERMINATION',
+                    items: [
+                        'Monthly fees must be cleared on or prior to the renewal due date. Unpaid dues will trigger automatic seat cancellation and re-allocation.',
+                        'Fees once deposited are strictly non-refundable and non-transferable under any circumstances.',
+                        'Management reserves the absolute authority to terminate membership for uncivil behavior, argument with staff, or violation of library ethics.',
+                    ]
+                },
+            ];
+
+            let curY = 36;
+            rules.forEach((rule) => {
+                // Rule number pill
+                pdf.setFillColor(234, 88, 12);
+                pdf.roundedRect(12, curY, 8, 4.5, 1, 1, 'F');
+                pdf.setFontSize(5.5);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(255, 255, 255);
+                pdf.text(rule.num, 16, curY + 3.2, { align: 'center' });
+
+                // Rule title
+                pdf.setFontSize(6.2);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(15, 23, 42);
+                pdf.text(rule.title, 22, curY + 3.3);
+
+                curY += 5.2;
+
+                // Rule items
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(5.3);
+                pdf.setTextColor(51, 65, 85);
+                rule.items.forEach(item => {
+                    pdf.setFillColor(234, 88, 12);
+                    pdf.circle(15, curY + 1.2, 0.6, 'F');
+                    const lines = pdf.splitTextToSize(item, pageW - 32);
+                    pdf.text(lines, 18, curY + 2);
+                    curY += (lines.length * 3.1) + 0.8;
+                });
+
+                curY += 1.8;
+            });
+
+            // Member Solemn Declaration & Pledge Box
+            const declY = Math.max(curY + 1, 196);
+            pdf.setFillColor(255, 247, 237);
+            pdf.setDrawColor(254, 215, 170);
+            pdf.setLineWidth(0.3);
+            pdf.roundedRect(12, declY, pageW - 24, 22, 2, 2, 'FD');
+
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(194, 65, 12);
+            pdf.text('MEMBER SOLEMN DECLARATION & PLEDGE', 16, declY + 4.5);
+
+            pdf.setFontSize(5.6);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(51, 65, 85);
+            const pledgeText = 'I hereby confirm that I have thoroughly read, understood, and accept all the rules, shift regulations, and guidelines of Apna Lakshay Library detailed above. I pledge to maintain strict silence, desk discipline, and decorum at all times. I understand that the library management reserves full rights to cancel my membership, forfeit my deposit, and revoke library access without refund in the event of any indiscipline or violation.';
+            pdf.text(pdf.splitTextToSize(pledgeText, pageW - 32), 16, declY + 8.5);
+
+            // Signatures on Page 2
+            const p2SignY = declY + 26;
+
+            // Member Signature
+            pdf.setDrawColor(148, 163, 184);
+            pdf.setLineDashPattern([1, 1], 0);
+            pdf.line(20, p2SignY + 14, 75, p2SignY + 14);
+            pdf.setLineDashPattern([], 0);
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(30, 41, 59);
+            pdf.text('Member / Student Signature', 47.5, p2SignY + 18, { align: 'center' });
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 116, 139);
+            pdf.text(`Student: ${selectedStudent.name || 'Member'}  |  Date: ____________`, 47.5, p2SignY + 22, { align: 'center' });
+
+            // Center Seal
+            pdf.setDrawColor(234, 88, 12);
+            pdf.setLineWidth(0.4);
+            pdf.circle(pageW / 2, p2SignY + 12, 10);
+            pdf.circle(pageW / 2, p2SignY + 12, 8.5);
+            pdf.setFontSize(4.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(234, 88, 12);
+            pdf.text('APNA LAKSHAY', pageW / 2, p2SignY + 10, { align: 'center' });
+            pdf.text('OFFICIAL SEAL', pageW / 2, p2SignY + 13, { align: 'center' });
+            pdf.setFontSize(3.8);
+            pdf.text('CODE OF CONDUCT', pageW / 2, p2SignY + 15.5, { align: 'center' });
+
+            // Authorized Administrator Signature
+            pdf.setDrawColor(148, 163, 184);
+            pdf.setLineDashPattern([1, 1], 0);
+            pdf.line(pageW - 75, p2SignY + 14, pageW - 20, p2SignY + 14);
+            pdf.setLineDashPattern([], 0);
+            pdf.setFontSize(6.5);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(30, 41, 59);
+            pdf.text('Authorized Administrator / Seal', pageW - 47.5, p2SignY + 18, { align: 'center' });
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('Apna Lakshay Library Administration', pageW - 47.5, p2SignY + 22, { align: 'center' });
+
+            // Support help bar
+            const helpY = p2SignY + 26;
+            pdf.setFillColor(241, 245, 249);
+            pdf.roundedRect(12, helpY, pageW - 24, 7.5, 1.5, 1.5, 'F');
+            pdf.setFontSize(5.8);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(71, 85, 105);
+            pdf.text('Need assistance, shift changes, or grievance support? Contact: ', 16, helpY + 4.8);
+            const cw = pdf.getTextWidth('Need assistance, shift changes, or grievance support? Contact: ');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(234, 88, 12);
+            pdf.textWithLink('apnalakshay.com/contact', 16 + cw, helpY + 4.8, { url: contactBase });
+
+            // Bottom Bar Page 2
+            pdf.setFillColor(234, 88, 12);
+            pdf.rect(0, pageH - 6, pageW, 6, 'F');
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Apna Lakshay Library  |  apnalakshay.com  |  Official Rules & Member Guidelines  |  Page 2 of 2', pageW / 2, pageH - 2, { align: 'center' });
+
+            pdf.save(`ID_Card_${selectedStudent.name.replace(/\s+/g, '_')}_Apna_Lakshay.pdf`);
         } catch (err) {
             console.error('PDF Download failed', err);
         }
