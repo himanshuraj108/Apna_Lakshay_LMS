@@ -280,6 +280,7 @@ const StudentIdCard = ({ student }) => {
             title="Click to flip card"
         >
             <motion.div
+                data-flipped={flipped ? 'true' : 'false'}
                 animate={{ rotateY: flipped ? 180 : 0 }}
                 transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
                 style={{
@@ -293,6 +294,8 @@ const StudentIdCard = ({ student }) => {
                     FRONT FACE
                 ════════════════════════════════════════════════════════════ */}
                 <div
+                    id="student-id-card-front"
+                    data-card-face="front"
                     style={{
                         position: 'absolute',
                         inset: 0,
@@ -640,13 +643,17 @@ const StudentIdCard = ({ student }) => {
                 {/* ════════════════════════════════════════════════════════════
                     BACK FACE
                 ════════════════════════════════════════════════════════════ */}
-                <div style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backfaceVisibility: 'hidden',
-                    WebkitBackfaceVisibility: 'hidden',
-                    transform: 'rotateY(180deg)',
-                }}>
+                <div
+                    id="student-id-card-back"
+                    data-card-face="back"
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)',
+                    }}
+                >
                     <CardBack theme={theme} studentId={studentId} validTillDate={validTillDate} validTillLabel={validTillLabel} />
                 </div>
             </motion.div>
