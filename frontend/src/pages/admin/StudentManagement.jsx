@@ -978,8 +978,7 @@ const StudentManagement = () => {
         return match ? parseInt(match[0], 10) : 0;
     };
 
-    const generateStudentTablePDF = () => {
-        const doc = new jsPDF('landscape');
+    const generateStudentTablePDF = async () => {
         const dateStr = new Date().toLocaleDateString('en-GB');
 
         let tabTitle = 'All Students';
@@ -991,37 +990,155 @@ const StudentManagement = () => {
             case 'history': tabTitle = 'Deleted Student Archives'; break;
         }
 
-        doc.setFontSize(16);
-        doc.text(`${tabTitle} Report - ${dateStr}`, 14, 15);
+        // Load logo as base64 for watermark and header
+        let logoBase64 = null;
+        try {
+            const imgRes = await fetch('/app-icon-192.png');
+            const blob   = await imgRes.blob();
+            logoBase64   = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+        } catch (_) { /* watermark optional */ }
+
+        const doc = new jsPDF('landscape');
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+
+        // ── Helper: draw header + watermark on every page ──────────────
+        const drawPageDecor = () => {
+            // Dim logo tiled as watermark
+            if (logoBase64) {
+                const wmSize = 55, gapX = 85, gapY = 70;
+                for (let wx = 10; wx < pageW - wmSize; wx += gapX) {
+                    for (let wy = 10; wy < pageH - wmSize; wy += gapY) {
+                        try {
+                            doc.saveGraphicsState();
+                            doc.setGState(new doc.GState({ opacity: 0.05 }));
+                            doc.addImage(logoBase64, 'PNG', wx, wy, wmSize, wmSize);
+                            doc.restoreGraphicsState();
+                        } catch (_) {}
+                    }
+                }
+            }
+            // Orange top bar
+            doc.setFillColor(249, 115, 22);
+            doc.rect(0, 0, pageW, 12, 'F');
+            // Logo in bar
+            if (logoBase64) {
+                try { doc.addImage(logoBase64, 'PNG', 3, 1, 10, 10); } catch (_) {}
+            }
+            // Name
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text('Apna Lakshay Library', 15, 7.5);
+            doc.setFontSize(6.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Student Management System', 15, 11);
+            // Bottom bar
+            doc.setFillColor(249, 115, 22);
+            doc.rect(0, pageH - 5, pageW, 5, 'F');
+            doc.setFontSize(6);
+            doc.setTextColor(255, 255, 255);
+            doc.text('Apna Lakshay Library  |  apnalakshay.com  |  Student Management Report', pageW / 2, pageH - 1.5, { align: 'center' });
+            doc.setTextColor(0);
+            doc.setFont('helvetica', 'normal');
+        };
+
+        const contactUrl = (typeof window !== 'undefined' && window.location?.origin)
+            ? `${window.location.origin}/contact`
+            : 'https://apnalakshay.com/contact';
+
+        // ── Draw Page 1 decor ──────────────────────────────────────────
+        drawPageDecor();
+
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 30, 30);
+        doc.text(`${tabTitle} Report — ${dateStr}`, 14, 20);
 
         if (activeTab === 'history') {
-            const tableColumn = ["Name", "Email", "Joined Date", "Deleted Date"];
-            const tableRows = [];
+            const tableColumn = ["#", "Name", "Mobile", "Email", "Joined Date", "Deleted Date"];
+            const tableRows = archivedStudents.map((student, index) => [
+                index + 1,
+                student.name,
+                student.mobile ? String(student.mobile) : 'N/A',
+                student.email || 'N/A',
+                new Date(student.joinedAt).toLocaleDateString('en-GB'),
+                new Date(student.deletedAt).toLocaleDateString('en-GB')
+            ]);
 
-            archivedStudents.forEach(student => {
-                tableRows.push([
-                    student.name,
-                    student.email || 'N/A',
-                    new Date(student.joinedAt).toLocaleDateString('en-GB'),
-                    new Date(student.deletedAt).toLocaleDateString('en-GB')
-                ]);
-            });
+            // Stat pill for archive
+            const statY = 25;
+            doc.setFillColor(239, 68, 68);
+            doc.roundedRect(14, statY, 48, 10, 1.5, 1.5, 'F');
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text(String(archivedStudents.length), 38, statY + 5.5, { align: 'center' });
+            doc.setFontSize(5.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Total Archived', 38, statY + 9, { align: 'center' });
+            doc.setTextColor(0);
 
             autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
-                startY: 20,
-                styles: { fontSize: 9 },
-                headStyles: { fillColor: [63, 81, 181] }
+                startY: statY + 14,
+                styles: { fontSize: 7, cellPadding: 1.5, halign: 'center' },
+                headStyles: { fillColor: [234, 88, 12], halign: 'center', fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [255, 247, 237] },
+                columnStyles: {
+                    0: { halign: 'center', minCellWidth: 10 },
+                    1: { halign: 'left',   minCellWidth: 45 },
+                    2: { halign: 'center', minCellWidth: 30 },
+                    3: { halign: 'left',   minCellWidth: 45 },
+                    4: { halign: 'center', minCellWidth: 30 },
+                    5: { halign: 'center', minCellWidth: 30 },
+                },
+                margin: { bottom: 8 },
+                didDrawPage: () => { drawPageDecor(); }
             });
-            doc.save(`Archived_Students_${dateStr}.pdf`);
+
+            doc.save(`Archived_Students_${dateStr.replace(/\//g, '-')}.pdf`);
             return;
         }
 
-        const tableColumn = ["S.No", "Name", "Mobile", "Email", "Status", "Presence", "Seat", "Shift", "Fee", "Joined", "Address"];
-        const tableRows = [];
+        // ── Main Student Report ─────────────────────────────────────────
+        const totalCount = filteredStudents.length;
+        const activeCount = filteredStudents.filter(s => s.isActive && getStudentSeat(s._id) && getStudentShifts(s._id)).length;
+        const assignedSeatsCount = filteredStudents.filter(s => getStudentSeat(s._id)).length;
+        const pendingCount = filteredStudents.filter(s => s.isActive && (!getStudentSeat(s._id) || !getStudentShifts(s._id))).length;
+        const inactiveCount = filteredStudents.filter(s => !s.isActive).length;
 
-        filteredStudents.forEach((student, index) => {
+        // Stat pills row
+        const statY = 25;
+        const pills = [
+            { label: 'Total Students',  value: String(totalCount),         bg: [59, 130, 246] },
+            { label: 'Active Assigned', value: String(activeCount),        bg: [22, 163, 74] },
+            { label: 'Seats Assigned',  value: String(assignedSeatsCount), bg: [16, 185, 129] },
+            { label: 'Pending Seat',    value: String(pendingCount),       bg: [245, 158, 11] },
+            { label: 'Inactive',        value: String(inactiveCount),      bg: [239, 68, 68] },
+        ];
+        let px = 14;
+        pills.forEach(p => {
+            const pw = 42, ph = 10;
+            doc.setFillColor(...p.bg);
+            doc.roundedRect(px, statY, pw, ph, 1.5, 1.5, 'F');
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text(p.value, px + pw / 2, statY + 5.5, { align: 'center' });
+            doc.setFontSize(5.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(p.label, px + pw / 2, statY + 9, { align: 'center' });
+            px += pw + 3;
+        });
+
+        const tableColumn = ["#", "Name", "Mobile", "Email", "Status", "Presence", "Seat", "Shift", "Fee", "Joined", "Address"];
+        const tableRows = filteredStudents.map((student, index) => {
             const hasSeat = getStudentSeat(student._id);
             const hasShifts = getStudentShifts(student._id);
             let statusStr = student.isActive ? 'Active' : 'Inactive';
@@ -1029,7 +1146,7 @@ const StudentManagement = () => {
                 statusStr = 'Pending';
             }
 
-            tableRows.push([
+            return [
                 index + 1,
                 student.name,
                 student.mobile ? String(student.mobile) : 'N/A',
@@ -1041,32 +1158,89 @@ const StudentManagement = () => {
                 getStudentFee(student),
                 new Date(student.createdAt).toLocaleDateString('en-GB'),
                 student.address || 'N/A'
-            ]);
+            ];
         });
 
         autoTable(doc, {
             head: [tableColumn],
             body: tableRows,
-            startY: 20,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [63, 81, 181] },
+            startY: statY + 14,
+            styles: { fontSize: 6.5, cellPadding: 1.2, halign: 'center' },
+            headStyles: { fillColor: [234, 88, 12], halign: 'center', fontStyle: 'bold', fontSize: 7 },
+            alternateRowStyles: { fillColor: [255, 247, 237] },
+            columnStyles: {
+                0:  { halign: 'center', minCellWidth: 7 },
+                1:  { halign: 'left',   minCellWidth: 28 },
+                2:  { halign: 'center', minCellWidth: 20 },
+                3:  { halign: 'left',   minCellWidth: 32 },
+                4:  { halign: 'center', minCellWidth: 15 },
+                5:  { halign: 'center', minCellWidth: 18 },
+                6:  { halign: 'center', minCellWidth: 12 },
+                7:  { halign: 'center', minCellWidth: 18 },
+                8:  { halign: 'center', minCellWidth: 14 },
+                9:  { halign: 'center', minCellWidth: 18 },
+                10: { halign: 'left',   minCellWidth: 28 },
+            },
+            margin: { bottom: 8 },
             didParseCell: (data) => {
-                if (data.section === 'body' && data.column.index === 4) {
+                if (data.section !== 'body') return;
+                // Status column
+                if (data.column.index === 4) {
+                    data.cell.styles.fontStyle = 'bold';
                     if (data.cell.raw === 'Active') {
-                        data.cell.styles.textColor = [34, 197, 94]; // Green
-                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.textColor = [22, 163, 74];
                     } else if (data.cell.raw === 'Inactive') {
-                        data.cell.styles.textColor = [239, 68, 68]; // Red
-                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.textColor = [239, 68, 68];
                     } else if (data.cell.raw === 'Pending') {
-                        data.cell.styles.textColor = [234, 179, 8]; // Yellow
-                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.textColor = [217, 119, 6];
                     }
                 }
-            }
+                // Seat & Fee
+                if (data.column.index === 6 || data.column.index === 8) {
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            },
+            didDrawPage: () => { drawPageDecor(); }
         });
 
-        doc.save(`Student_Report_${tabTitle.replace(/\s+/g, '_')}_${dateStr}.pdf`);
+        // ── Notice Box at end ──────────────────────────────────────────
+        const lastY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 120;
+        let noteY = lastY + 6;
+        if (noteY + 14 > pageH - 8) {
+            doc.addPage();
+            drawPageDecor();
+            noteY = 22;
+        }
+
+        const noteBoxW = pageW - 28;
+        const noteBoxH = 11;
+        doc.setFillColor(255, 247, 237);
+        doc.setDrawColor(253, 186, 116);
+        doc.roundedRect(14, noteY, noteBoxW, noteBoxH, 2, 2, 'FD');
+
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(154, 52, 18);
+        const prefix = 'Notice: For any corrections in student details, seat, or shift assignment, ';
+        doc.text(prefix, 20, noteY + 7);
+
+        const prefixW = doc.getTextWidth(prefix);
+        const clickText = 'Click here';
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(234, 88, 12);
+        doc.textWithLink(clickText, 20 + prefixW, noteY + 7, { url: contactUrl });
+
+        const clickW = doc.getTextWidth(clickText);
+        doc.setDrawColor(234, 88, 12);
+        doc.setLineWidth(0.3);
+        doc.line(20 + prefixW, noteY + 8, 20 + prefixW + clickW, noteY + 8);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(154, 52, 18);
+        const suffix = ' to contact administration.';
+        doc.text(suffix, 20 + prefixW + clickW + 1.5, noteY + 7);
+
+        doc.save(`Student_Report_${tabTitle.replace(/\s+/g, '_')}_${dateStr.replace(/\//g, '-')}.pdf`);
     };
 
     const handleViewArchive = async (archiveId) => {
