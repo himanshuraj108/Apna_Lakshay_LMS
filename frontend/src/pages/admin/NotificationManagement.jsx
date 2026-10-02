@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../utils/api';
@@ -6,8 +6,10 @@ import {
     IoArrowBack, IoSend, IoPeopleOutline, IoPersonOutline,
     IoNotificationsOutline, IoCheckmarkCircle, IoCloseCircle,
     IoMegaphoneOutline, IoCreateOutline, IoTrashOutline, IoAdd, IoClose,
-    IoCheckmarkCircleOutline, IoCloseCircleOutline, IoTimeOutline, IoRefreshOutline
+    IoCheckmarkCircleOutline, IoCloseCircleOutline, IoTimeOutline, IoRefreshOutline,
+    IoMailOutline, IoMailUnreadOutline
 } from 'react-icons/io5';
+
 import useBackPath from '../../hooks/useBackPath';
 
 const PAGE_BG = { background: '#FAF6F0' };
@@ -21,7 +23,7 @@ const NotificationManagement = () => {
     
     // In-app notifications state
     const [students, setStudents] = useState([]);
-    const [formData, setFormData] = useState({ title: '', message: '', sendToAll: true, recipientId: '' });
+    const [formData, setFormData] = useState({ title: '', message: '', sendToAll: true, recipientId: '', sendEmail: false });
     const [sending, setSending] = useState(false);
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
@@ -44,6 +46,11 @@ const NotificationManagement = () => {
     // Status states
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
+
+    // Send confirmation modal state
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [confirmCountdown, setConfirmCountdown] = useState(3);
+    const countdownRef = useRef(null);
 
     useEffect(() => {
         fetchStudents();
@@ -79,17 +86,49 @@ const NotificationManagement = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault(); setSending(true); setError(''); setSuccess('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setError(''); setSuccess('');
+        // Show confirm modal with 3s countdown
+        setConfirmCountdown(3);
+        setShowConfirm(true);
+        clearInterval(countdownRef.current);
+        countdownRef.current = setInterval(() => {
+            setConfirmCountdown(prev => {
+                if (prev <= 1) { clearInterval(countdownRef.current); return 0; }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const cancelConfirm = () => {
+        clearInterval(countdownRef.current);
+        setShowConfirm(false);
+        setConfirmCountdown(3);
+    };
+
+    const handleConfirmedSend = async () => {
+        clearInterval(countdownRef.current);
+        setShowConfirm(false);
+        setSending(true); setError(''); setSuccess('');
         try {
-            await api.post('/admin/notifications', formData);
-            setSuccess(formData.sendToAll ? `Announcement sent to all ${students.length} students!` : 'Notification sent successfully!');
-            setFormData({ title: '', message: '', sendToAll: true, recipientId: '' });
+            const res = await api.post('/admin/notifications', formData);
+            const emailSent = res.data?.emailSent;
+            const baseMsg = formData.sendToAll
+                ? `Announcement sent to all ${students.length} students!`
+                : 'Notification sent successfully!';
+            const emailMsg = formData.sendEmail
+                ? (emailSent ? ' Email also delivered.' : ' Email delivery may have failed — check server logs.')
+                : '';
+            setSuccess(baseMsg + emailMsg);
+            setFormData({ title: '', message: '', sendToAll: true, recipientId: '', sendEmail: false });
             fetchHistory();
-            setTimeout(() => setSuccess(''), 5000);
+            setTimeout(() => setSuccess(''), 6000);
         } catch (e) { setError(e.response?.data?.message || 'Failed to send'); }
         finally { setSending(false); }
     };
+
 
     const handleDeleteNotification = async (notif) => {
         if (!window.confirm('Are you sure you want to delete this notification from history?')) return;
@@ -314,6 +353,43 @@ const NotificationManagement = () => {
                                         <p className="text-xs text-stone-400 mt-1">{formData.message.length} characters</p>
                                     </div>
 
+                                    {/* Email Toggle */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, sendEmail: !formData.sendEmail })}
+                                        className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-[1.5px] transition-all cursor-pointer text-left ${
+                                            formData.sendEmail
+                                                ? 'bg-orange-50 border-orange-300 text-orange-900'
+                                                : 'bg-white border-[#EDE8E0] text-stone-600 hover:border-orange-200 hover:bg-[#FAF6F0]'
+                                        }`}
+                                    >
+                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                                            formData.sendEmail ? 'bg-orange-500 border-orange-500' : 'border-[#C8BFB5] bg-white'
+                                        }`}>
+                                            {formData.sendEmail && (
+                                                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            <IoMailOutline size={16} className={formData.sendEmail ? 'text-orange-600' : 'text-stone-400'} />
+                                            <div>
+                                                <p className="text-xs font-bold">Also send via Email</p>
+                                                <p className="text-[11px] text-stone-400 mt-0.5 leading-tight">
+                                                    {formData.sendToAll
+                                                        ? 'Deliver a structured HTML email to all active students who have an email address on file.'
+                                                        : (() => {
+                                                            const sel = students.find(s => s._id === formData.recipientId);
+                                                            return sel?.email
+                                                                ? `Send a branded HTML email to ${sel.email}`
+                                                                : 'Send a branded HTML email to this student\'s registered email address.';
+                                                          })()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </button>
+
                                     {/* Preview */}
                                     <AnimatePresence>
                                         {(formData.title || formData.message) && (
@@ -321,10 +397,25 @@ const NotificationManagement = () => {
                                                 className="bg-[#FAF6F0] border border-[#EDE8E0] rounded-2xl p-4 shadow-xs">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <IoMegaphoneOutline size={14} className="text-orange-600" />
-                                                    <p className="text-xs text-stone-500 uppercase tracking-wider font-bold">Preview</p>
+                                                    <p className="text-xs text-stone-500 uppercase tracking-wider font-bold">In-App Preview</p>
                                                 </div>
                                                 {formData.title && <h3 className="font-bold text-[#0F172A] mb-1">{formData.title}</h3>}
                                                 {formData.message && <p className="text-stone-700 text-xs whitespace-pre-wrap leading-relaxed">{formData.message}</p>}
+                                                {formData.sendEmail && (
+                                                    <div className="mt-3 flex items-center gap-1.5 text-[11px] text-orange-700 font-semibold">
+                                                        <IoMailUnreadOutline size={13} />
+                                                        <span>
+                                                            {formData.sendToAll
+                                                                ? 'A branded email will be sent to all students.'
+                                                                : (() => {
+                                                                    const sel = students.find(s => s._id === formData.recipientId);
+                                                                    return sel?.email
+                                                                        ? `A branded email will be sent to ${sel.email}`
+                                                                        : 'A branded email will be sent to this student.';
+                                                                  })()}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -332,10 +423,16 @@ const NotificationManagement = () => {
                                     {/* Submit */}
                                     <motion.button type="submit" disabled={sending} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
                                         className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl font-bold text-xs shadow-md shadow-orange-500/25 disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer">
-                                        <IoSend size={15} />
-                                        {sending ? 'Sending…' : formData.sendToAll ? 'Send to All Students' : 'Send Notification'}
+                                        {formData.sendEmail ? <IoMailOutline size={15} /> : <IoSend size={15} />}
+                                        {sending
+                                            ? 'Sending…'
+                                            : formData.sendToAll
+                                                ? `Send to All Students${formData.sendEmail ? ' + Email' : ''}`
+                                                : `Send Notification${formData.sendEmail ? ' + Email' : ''}`}
                                     </motion.button>
-                                    <p className="text-[11px] text-stone-400 text-center font-medium">Notifications appear in student dashboards in real time.</p>
+                                    <p className="text-[11px] text-stone-400 text-center font-medium">
+                                        Notifications appear in student dashboards in real time.{formData.sendEmail ? ' Emails are delivered within minutes.' : ''}
+                                    </p>
                                 </form>
                             </div>
 
@@ -753,6 +850,125 @@ const NotificationManagement = () => {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* ── Send Confirm Modal ─────────────────────────────────────── */}
+            <AnimatePresence>
+                {showConfirm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.18 }}
+                            className="bg-white rounded-2xl shadow-2xl border border-[#EDE8E0] w-full max-w-md overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="px-6 py-4 border-b border-[#EDE8E0] bg-[#FAF6F0]">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <img
+                                            src="/app-icon-192.png"
+                                            alt="Apna Lakshay"
+                                            className="w-9 h-9 rounded-xl object-cover shadow-sm"
+                                        />
+                                        <div>
+                                            <p className="font-black text-[#1A1A1A] text-sm leading-tight">Apna Lakshay Library</p>
+                                            <p className="text-[11px] text-stone-400 font-medium">Confirm Notification Send</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={cancelConfirm} className="text-stone-400 hover:text-stone-700 cursor-pointer transition-colors">
+                                        <IoClose size={18} />
+                                    </button>
+                                </div>
+                            </div>
+
+
+                            {/* Body */}
+                            <div className="px-6 py-5 space-y-4">
+                                <div>
+                                    <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Title</p>
+                                    <p className="text-sm font-semibold text-[#1A1A1A]">{formData.title}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1">Message</p>
+                                    <p className="text-xs text-stone-600 whitespace-pre-wrap leading-relaxed max-h-28 overflow-y-auto">{formData.message}</p>
+                                </div>
+
+                                {/* Recipients */}
+                                <div className="bg-[#F5F0EA] rounded-xl p-3">
+                                    <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Recipients</p>
+                                    {formData.sendToAll ? (
+                                        <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
+                                            {students.slice(0, 60).map(s => (
+                                                <div key={s._id} className="flex items-center justify-between gap-2 text-[11px]">
+                                                    <span className="text-stone-700 font-medium truncate">{s.name}</span>
+                                                    {formData.sendEmail && s.email && (
+                                                        <span className="text-stone-400 truncate shrink-0">{s.email}</span>
+                                                    )}
+                                                    {formData.sendEmail && !s.email && (
+                                                        <span className="text-stone-300 shrink-0 italic">no email</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {students.length > 60 && (
+                                                <p className="text-[11px] text-stone-400 pt-1">+{students.length - 60} more…</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        (() => {
+                                            const sel = students.find(s => s._id === formData.recipientId);
+                                            return sel ? (
+                                                <div className="flex items-center gap-2 text-[12px]">
+                                                    <span className="font-semibold text-stone-700">{sel.name}</span>
+                                                    {formData.sendEmail && (
+                                                        <span className="text-stone-400">{sel.email || <em className="text-stone-300">no email on file</em>}</span>
+                                                    )}
+                                                </div>
+                                            ) : null;
+                                        })()
+                                    )}
+                                </div>
+
+                                {formData.sendEmail && (
+                                    <div className="flex items-center gap-2 text-[11px] text-orange-700 font-semibold bg-orange-50 border border-orange-200 rounded-xl px-3 py-2">
+                                        <IoMailUnreadOutline size={13} />
+                                        <span>
+                                            {formData.sendToAll
+                                                ? `Email will be sent to ${students.filter(s => s.email).length} students with a registered email.`
+                                                : (() => { const sel = students.find(s => s._id === formData.recipientId); return sel?.email ? `Email will be sent to ${sel.email}` : 'Student has no email — only in-app notification will be sent.'; })()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer with countdown */}
+                            <div className="px-6 py-4 border-t border-[#EDE8E0] flex items-center justify-between gap-3">
+                                <button onClick={cancelConfirm}
+                                    className="px-4 py-2 bg-white border border-[#EDE8E0] text-stone-700 font-bold text-xs rounded-xl hover:bg-[#FAF6F0] transition-all cursor-pointer">
+                                    Cancel
+                                </button>
+                                <motion.button
+                                    onClick={handleConfirmedSend}
+                                    disabled={confirmCountdown > 0}
+                                    whileTap={confirmCountdown === 0 ? { scale: 0.97 } : {}}
+                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-xs text-white transition-all cursor-pointer ${
+                                        confirmCountdown > 0
+                                            ? 'bg-stone-300 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-md shadow-orange-500/20'
+                                    }`}
+                                >
+                                    {confirmCountdown > 0 ? (
+                                        <>
+                                            <span className="w-5 h-5 rounded-full border-2 border-white/60 flex items-center justify-center text-[10px] font-black">{confirmCountdown}</span>
+                                            Sending in {confirmCountdown}s…
+                                        </>
+                                    ) : (
+                                        <>{formData.sendEmail ? <IoMailOutline size={13} /> : <IoSend size={13} />} Confirm Send</>
+                                    )}
+                                </motion.button>
+                            </div>
                         </motion.div>
                     </div>
                 )}
