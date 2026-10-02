@@ -3702,7 +3702,7 @@ exports.cancelFee = async (req, res) => {
 // Send notification
 exports.sendNotification = async (req, res) => {
     try {
-        const { recipientId, title, message, sendToAll } = req.body;
+        const { recipientId, title, message, sendToAll, sendEmail = false } = req.body;
 
         if (sendToAll) {
             const students = await User.find({ role: 'student', isActive: true });
@@ -3722,17 +3722,16 @@ exports.sendNotification = async (req, res) => {
             // Log action
             await logAction(req, 'notification_sent', 'Notification', null, 'Bulk Announcement', `Sent to ${students.length} students: ${title}`);
 
-            // Send announcement email
-            try {
-                // Send in background to avoid blocking
+            // Send announcement emails (always for broadcast when sendEmail is true, or always fire the existing behaviour)
+            if (sendEmail) {
                 emailService.sendAnnouncementEmail(students, title, message).catch(err => console.error('Announcement email failed:', err));
-            } catch (err) {
-                console.error('Failed to trigger announcement emails', err);
             }
 
             res.status(200).json({
                 success: true,
-                message: `Announcement sent to ${students.length} students`
+                message: `Announcement sent to ${students.length} students`,
+                emailSent: sendEmail,
+                count: students.length
             });
         } else {
             const student = await User.findById(recipientId);
@@ -3752,9 +3751,19 @@ exports.sendNotification = async (req, res) => {
                 createdBy: req.user.id
             });
 
+            let emailSent = false;
+            if (sendEmail && student.email) {
+                try {
+                    emailSent = await emailService.sendDirectNotificationEmail(student, title, message);
+                } catch (err) {
+                    console.error('Direct notification email failed:', err);
+                }
+            }
+
             res.status(200).json({
                 success: true,
-                message: 'Notification sent successfully'
+                message: 'Notification sent successfully',
+                emailSent
             });
         }
     } catch (error) {
