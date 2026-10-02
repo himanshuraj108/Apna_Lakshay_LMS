@@ -69,12 +69,22 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
 
       <!-- Logo row -->
       <tr>
-        <td style="padding:32px 40px 24px;border-bottom:1px solid ${BORDER};">
+        <td style="padding:24px 40px 20px;border-bottom:1px solid ${BORDER};">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
-                <span style="font-size:20px;font-weight:800;color:${BRAND};letter-spacing:-0.5px;">Apna Lakshay</span>
-                <span style="font-size:12px;color:${MUTED};font-weight:400;margin-left:8px;text-transform:uppercase;letter-spacing:1px;">Library</span>
+                <table cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:12px;">
+                      <img src="${APP_URL}/app-icon-192.png" alt="Apna Lakshay" width="36" height="36"
+                        style="display:block;border-radius:8px;border:0;width:36px;height:36px;object-fit:cover;" />
+                    </td>
+                    <td style="vertical-align:middle;">
+                      <span style="font-size:18px;font-weight:800;color:${BRAND};letter-spacing:-0.5px;display:block;line-height:1.2;">Apna Lakshay</span>
+                      <span style="font-size:10px;color:${MUTED};font-weight:500;text-transform:uppercase;letter-spacing:1.5px;display:block;">Library</span>
+                    </td>
+                  </tr>
+                </table>
               </td>
               <td align="right">
                 <span style="font-size:11px;color:${MUTED};">No-reply · Automated</span>
@@ -441,6 +451,17 @@ exports.sendSeatUpgradeDueEmail = async (student, details) => {
       note: 'This balance due has been added to your fee record and is visible in your Fee Status page. Please contact the administration if you have any questions.',
     }
   );
+};
+
+// ─── 17. DIRECT NOTIFICATION (individual or selected students) ────────────────
+exports.sendDirectNotificationEmail = async (student, title, message) => {
+  return await sendEmail(student.email, title, {
+    badge: { text: 'Notice', bg: '#fff7ed', color: '#c2410c' },
+    headline: title,
+    body: `<p style="margin:0 0 16px;">Dear <strong>${student.name}</strong>,</p><div style="white-space:pre-wrap;line-height:1.75;">${message}</div>`,
+    cta: { label: 'View Dashboard', url: `${APP_URL}/student/dashboard` },
+    note: 'This notice was sent directly to you by the administration. Please contact the library staff if you have any questions.',
+  });
 };
 
 // Send manual due notice email
