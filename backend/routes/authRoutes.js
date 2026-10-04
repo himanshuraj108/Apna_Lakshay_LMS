@@ -12,13 +12,15 @@ const {
     sendOtpByPhone,
     verifyOtpAndAutoLogin,
     verifySeatLogin,
-    loginWithPin
+    loginWithPin,
+    selectStudent
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 // Public routes
 router.post('/login', login);
 router.post('/login-pin', loginWithPin);
+router.post('/select-student', selectStudent);
 
 // Protected routes
 router.post('/logout', protect, logout);
