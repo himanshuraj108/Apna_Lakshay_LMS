@@ -24,7 +24,6 @@ const userSchema = new mongoose.Schema({
     mobile: {
         type: String,
         required: [true, 'Mobile number is required'],
-        unique: true,
         trim: true,
         minlength: [10, 'Mobile number must be 10 digits'],
         maxlength: [10, 'Mobile number must be 10 digits']
@@ -272,7 +271,7 @@ const userSchema = new mongoose.Schema({
 // ==========================================
 // PERFORMANCE INDEXES
 // ==========================================
-// Note: email, studentId, and mobile already have indexes from 'unique: true'
+// Note: email and studentId have unique indexes. Mobile is intentionally non-unique (shared phones allowed).
 
 // Index on seat reference for reverse lookups (find user by seat)
 userSchema.index({ seat: 1 });

@@ -1044,6 +1044,22 @@ exports.createStudent = async (req, res) => {
             }
         });
     } catch (error) {
+        // Duplicate mobile or email — friendly 400 instead of raw 500
+        if (error.code === 11000) {
+            const field = error.keyPattern && Object.keys(error.keyPattern)[0];
+            const msg = field === 'mobile'
+                ? 'A student with this mobile number already exists'
+                : field === 'email'
+                ? 'A student with this email already exists'
+                : 'A student with these details already exists';
+            return res.status(400).json({ success: false, message: msg });
+        }
+        // Mongoose validation error (empty mobile, password etc.)
+        if (error.name === 'ValidationError') {
+            const msgs = Object.values(error.errors).map(e => e.message).join(', ');
+            return res.status(400).json({ success: false, message: msgs });
+        }
+        console.error('createStudent error:', error.message);
         res.status(500).json({
             success: false,
             message: 'Server error',
