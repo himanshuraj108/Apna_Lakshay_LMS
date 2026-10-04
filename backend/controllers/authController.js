@@ -57,7 +57,100 @@ exports.login = async (req, res) => {
 
         // Check if user exists by email OR mobile (handling both string and number for mobile)
         const mobileAsNumber = !isNaN(identifier) ? Number(identifier) : null;
-        
+        const isMobileLogin = /^\d{10}$/.test(identifier);
+
+        // ── DUPLICATE MOBILE DETECTION ───────────────────────────────────────
+        // Admin may register multiple students on the same shared phone number.
+        // If 10-digit mobile matches more than one active student, return a
+        // selection list instead of logging in immediately.
+        if (isMobileLogin) {
+            const allWithMobile = await User.find({ mobile: identifier, role: 'student', isActive: true }).select('+password');
+            if (allWithMobile.length > 1) {
+                const Seat = require('../models/Seat');
+                const Shift = require('../models/Shift');
+                const validStudents = [];
+                for (const instance of allWithMobile) {
+                    let match = false;
+                    try { match = await instance.comparePassword(password); } catch (_) {}
+                    if (!match && password === instance.password) match = true;
+                    if (!match) continue;
+                    let seatNo = null, shiftName = null, shiftTime = null;
+                    try {
+                        const seat = await Seat.findOne({ 'assignments.student': instance._id })
+                            .populate({ path: 'assignments.shift', model: Shift, select: 'name startTime endTime' });
+                        if (seat) {
+                            seatNo = seat.number;
+                            const asgn = seat.assignments.find(a =>
+                                String(a.student) === String(instance._id) && a.status === 'active'
+                            );
+                            if (asgn) {
+                                if (asgn.shift) {
+                                    shiftName = asgn.shift.name || null;
+                                    if (asgn.shift.startTime && asgn.shift.endTime) {
+                                        shiftTime = `${asgn.shift.startTime} - ${asgn.shift.endTime}`;
+                                    }
+                                } else if (asgn.legacyShift) {
+                                    // legacy full/day/night assignments
+                                    const legacyMap = { full: 'Full Day', day: 'Day Shift', night: 'Night Shift' };
+                                    shiftName = legacyMap[asgn.legacyShift] || asgn.legacyShift;
+                                } else if (asgn.type === 'full_day') {
+                                    shiftName = 'Full Day';
+                                }
+                            }
+                        }
+                    } catch (_) {}
+                    validStudents.push({
+                        id: instance._id,
+                        name: instance.name,
+                        profileImage: instance.profileImage || null,
+                        gender: instance.gender || 'male',
+                        address: instance.address || '',
+                        seatNo,
+                        shiftName,
+                        shiftTime,
+                        isLoggedIn: instance.isLoggedIn || false,
+                        lastLogin: instance.lastLogin || null,
+                        createdAt: instance.createdAt,
+                    });
+                }
+                if (validStudents.length > 1) {
+                    // Sort: newest admission first
+                    validStudents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    return res.status(200).json({
+                        success: true,
+                        multipleStudents: true,
+                        mobile: identifier,
+                        students: validStudents,
+                    });
+                }
+                if (validStudents.length === 1) {
+                    const instance = allWithMobile.find(u => String(u._id) === String(validStudents[0].id));
+                    if (!instance.profileImage) instance.profileImage = '/uploads/avatars/avatar1.svg';
+                    instance.isLoggedIn = true;
+                    instance.lastLogin = new Date();
+                    instance.save({ validateBeforeSave: false }).catch(() => {});
+                    const token = instance.generateToken();
+                    return res.status(200).json({
+                        success: true, token,
+                        user: {
+                            id: instance._id, name: instance.name, email: instance.email,
+                            role: instance.role, isActive: instance.isActive,
+                            registrationSource: instance.registrationSource,
+                            profileImage: instance.profileImage, createdAt: instance.createdAt,
+                            studentId: instance.studentId, examTarget: instance.examTarget,
+                            mockTestCredits: instance.mockTestCredits,
+                            bonusMockTestCredits: instance.bonusMockTestCredits || 0,
+                            doubtCredits: instance.doubtCredits || 0,
+                            maxDoubtCredits: instance.maxDoubtCredits || instance.doubtCredits || 10,
+                            gender: instance.gender,
+                        }
+                    });
+                }
+                return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         let user = await User.findOne({ 
             $or: [
                 { email: typeof identifier === 'string' ? identifier.toLowerCase() : identifier }, 
@@ -65,6 +158,7 @@ exports.login = async (req, res) => {
                 ...(mobileAsNumber !== null ? [{ mobile: mobileAsNumber }] : [])
             ] 
         }).select('+password');
+
 
         // ── SUB-ADMIN FALLBACK ─────────────────────────────────────────────────
         // If no regular user found, check if identifier matches a sub-admin username
@@ -935,3 +1029,45 @@ exports.loginWithPin = async (req, res) => {
     }
 };
 
+// @desc    Second step of duplicate-mobile login — student picks themselves
+// @route   POST /api/auth/select-student
+exports.selectStudent = async (req, res) => {
+    try {
+        const { studentId, mobile, password } = req.body;
+        if (!studentId || !mobile || !password) {
+            return res.status(400).json({ success: false, message: 'studentId, mobile and password are required' });
+        }
+        const user = await User.findOne({ _id: studentId, mobile, role: 'student', isActive: true }).select('+password');
+        if (!user) return res.status(401).json({ success: false, message: 'Student not found' });
+
+        let isMatch = false;
+        try { isMatch = await user.comparePassword(password); } catch (_) {}
+        if (!isMatch && password === user.password) isMatch = true;
+        if (!isMatch) return res.status(401).json({ success: false, message: 'Invalid credentials' });
+
+        if (!user.profileImage) user.profileImage = '/uploads/avatars/avatar1.svg';
+        user.isLoggedIn = true;
+        user.lastLogin = new Date();
+        user.save({ validateBeforeSave: false }).catch(() => {});
+
+        const token = user.generateToken();
+        res.status(200).json({
+            success: true,
+            token,
+            user: {
+                id: user._id, name: user.name, email: user.email,
+                role: user.role, isActive: user.isActive,
+                registrationSource: user.registrationSource,
+                profileImage: user.profileImage, createdAt: user.createdAt,
+                studentId: user.studentId, examTarget: user.examTarget,
+                mockTestCredits: user.mockTestCredits,
+                bonusMockTestCredits: user.bonusMockTestCredits || 0,
+                doubtCredits: user.doubtCredits || 0,
+                maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
+                gender: user.gender,
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
