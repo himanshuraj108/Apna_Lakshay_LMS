@@ -80,9 +80,12 @@ exports.login = async (req, res) => {
                             .populate({ path: 'assignments.shift', model: Shift, select: 'name startTime endTime' });
                         if (seat) {
                             seatNo = seat.number;
-                            const asgn = seat.assignments.find(a =>
-                                String(a.student) === String(instance._id) && a.status === 'active'
+                            // Prefer active, fall back to most recent of any status
+                            const myAssignments = seat.assignments.filter(a =>
+                                String(a.student) === String(instance._id)
                             );
+                            const asgn = myAssignments.find(a => a.status === 'active')
+                                || myAssignments.sort((a, b) => new Date(b.assignedAt) - new Date(a.assignedAt))[0];
                             if (asgn) {
                                 if (asgn.shift) {
                                     shiftName = asgn.shift.name || null;
