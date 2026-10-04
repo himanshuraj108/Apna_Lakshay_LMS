@@ -365,11 +365,8 @@ function StudentSelectionModal({ students, mobile, password, onSelect, onClose }
         return profileImage.startsWith('http') ? profileImage : `${BASE_URL}${profileImage}`;
     };
 
-    // "Logged in" = lastLogin within the last 60 minutes
-    const isRecentLogin = (lastLogin) => {
-        if (!lastLogin) return false;
-        return (Date.now() - new Date(lastLogin).getTime()) < 60 * 60 * 1000;
-    };
+    // Logged in = lastLogin is not null (backend sets it null on logout)
+    const isRecentLogin = (lastLogin) => !!lastLogin;
 
     const avatarGradient = (gender) => gender === 'female'
         ? 'linear-gradient(135deg,#F472B6,#EC4899)'
@@ -490,8 +487,8 @@ function StudentSelectionModal({ students, mobile, password, onSelect, onClose }
                                 onMouseOver={e => { if (selecting === null) { e.currentTarget.style.borderColor = '#FDDCAE'; e.currentTarget.style.boxShadow = '0 6px 22px rgba(249,115,22,0.12)'; } }}
                                 onMouseOut={e => { if (selecting !== s.id) { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(180,120,60,0.05)'; } }}
                             >
-                                {/* "Logged in" badge — top right corner */}
-                                {isRecentLogin(s.lastLogin) && (
+                                {/* Login status badge — always visible */}
+                                {isRecentLogin(s.lastLogin) ? (
                                     <span style={{
                                         position: 'absolute', top: 8, right: 52,
                                         background: '#DCFCE7', border: '1px solid #86EFAC',
@@ -501,6 +498,17 @@ function StudentSelectionModal({ students, mobile, password, onSelect, onClose }
                                     }}>
                                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
                                         Logged in
+                                    </span>
+                                ) : (
+                                    <span style={{
+                                        position: 'absolute', top: 8, right: 52,
+                                        background: '#FEF2F2', border: '1px solid #FECACA',
+                                        color: '#B91C1C', borderRadius: 20, fontSize: 10.5,
+                                        fontWeight: 700, padding: '2px 8px', fontFamily: FONT,
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                    }}>
+                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+                                        Logged out
                                     </span>
                                 )}
 
