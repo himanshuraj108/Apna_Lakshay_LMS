@@ -76,27 +76,34 @@ exports.login = async (req, res) => {
                     if (!match) continue;
                     let seatNo = null, shiftName = null, shiftTime = null;
                     try {
-                        const seat = await Seat.findOne({ 'assignments.student': instance._id })
+                        const allSeats = await Seat.find({ 'assignments.student': instance._id })
                             .populate({ path: 'assignments.shift', model: Shift, select: 'name startTime endTime' });
-                        if (seat) {
-                            seatNo = seat.number;
-                            // Prefer active, fall back to most recent of any status
-                            const myAssignments = seat.assignments.filter(a =>
-                                String(a.student) === String(instance._id)
-                            );
-                            const asgn = myAssignments.find(a => a.status === 'active')
-                                || myAssignments.sort((a, b) => new Date(b.assignedAt) - new Date(a.assignedAt))[0];
-                            if (asgn) {
-                                if (asgn.shift) {
-                                    shiftName = asgn.shift.name || null;
-                                    if (asgn.shift.startTime && asgn.shift.endTime) {
-                                        shiftTime = `${asgn.shift.startTime} - ${asgn.shift.endTime}`;
+
+                        // Find the seat+assignment that is active first, then fall back to most recent
+                        let bestSeat = null, bestAsgn = null;
+                        for (const s of allSeats) {
+                            const myAsgns = s.assignments.filter(a => String(a.student) === String(instance._id));
+                            const activeAsgn = myAsgns.find(a => a.status === 'active');
+                            if (activeAsgn) { bestSeat = s; bestAsgn = activeAsgn; break; }
+                            // keep as fallback if no active found yet
+                            if (!bestAsgn && myAsgns.length) {
+                                const latest = myAsgns.sort((a, b) => new Date(b.assignedAt) - new Date(a.assignedAt))[0];
+                                bestSeat = s; bestAsgn = latest;
+                            }
+                        }
+
+                        if (bestSeat) {
+                            seatNo = bestSeat.number;
+                            if (bestAsgn) {
+                                if (bestAsgn.shift) {
+                                    shiftName = bestAsgn.shift.name || null;
+                                    if (bestAsgn.shift.startTime && bestAsgn.shift.endTime) {
+                                        shiftTime = `${bestAsgn.shift.startTime} - ${bestAsgn.shift.endTime}`;
                                     }
-                                } else if (asgn.legacyShift) {
-                                    // legacy full/day/night assignments
+                                } else if (bestAsgn.legacyShift) {
                                     const legacyMap = { full: 'Full Day', day: 'Day Shift', night: 'Night Shift' };
-                                    shiftName = legacyMap[asgn.legacyShift] || asgn.legacyShift;
-                                } else if (asgn.type === 'full_day') {
+                                    shiftName = legacyMap[bestAsgn.legacyShift] || bestAsgn.legacyShift;
+                                } else if (bestAsgn.type === 'full_day') {
                                     shiftName = 'Full Day';
                                 }
                             }
@@ -471,7 +478,8 @@ exports.logout = async (req, res) => {
             const SessionUser = require('../models/User');
             await SessionUser.findByIdAndUpdate(req.user.id, {
                 isLoggedIn: false,
-                lastActive: new Date()
+                lastActive: new Date(),
+                lastLogin: null,   // clear so "Logged in" badge disappears immediately
             });
         }
     } catch (error) {
