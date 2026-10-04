@@ -7,11 +7,12 @@ import {
     IoEye, IoEyeOff, IoCheckmarkCircle,
     IoGridOutline, IoLocationOutline,
     IoInformationCircleOutline, IoClose,
-    IoSparkles,
+    IoSparkles, IoPerson, IoBusinessOutline,
+    IoTimeOutline, IoLocationSharp,
 } from 'react-icons/io5';
 import useMobileViewport from '../hooks/useMobileViewport';
 import AttendanceFloatingBtn from '../components/ui/AttendanceFloatingBtn';
-import api from '../utils/api';
+import api, { BASE_URL } from '../utils/api';
 import '@fontsource/dm-sans/400.css';
 import '@fontsource/dm-sans/500.css';
 import '@fontsource/dm-sans/700.css';
@@ -320,6 +321,391 @@ function InstructionModal({ onClose }) {
     );
 }
 
+/* ─── Student Selection Modal (shown when multiple students share a mobile) ─── */
+function StudentSelectionModal({ students, mobile, password, onSelect, onClose }) {
+    const [selecting, setSelecting] = useState(null);
+    const [error, setError] = useState('');
+    const [pendingStudent, setPendingStudent] = useState(null); // confirmation step
+
+    // Step 1: clicking arrow → show confirmation
+    const handleCardClick = (student) => {
+        setPendingStudent(student);
+        setError('');
+    };
+
+    // Step 2: confirmed → call API → onSelect (which sets user + navigates)
+    const handleConfirmLogin = async () => {
+        const student = pendingStudent;
+        setSelecting(student.id);
+        setError('');
+        try {
+            const res = await api.post('/auth/select-student', {
+                studentId: student.id,
+                mobile,
+                password,
+            });
+            if (res.data.success) {
+                onSelect(res.data);
+            } else {
+                setError(res.data.message || 'Login failed');
+                setSelecting(null);
+                setPendingStudent(null);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Something went wrong');
+            setSelecting(null);
+            setPendingStudent(null);
+        }
+    };
+
+    // Resolve profile image URL — same logic as Profile.jsx
+    const getImgSrc = (profileImage) => {
+        if (!profileImage) return null;
+        if (profileImage.startsWith('/uploads/avatars/') || profileImage.endsWith('.svg')) return null; // default avatar
+        return profileImage.startsWith('http') ? profileImage : `${BASE_URL}${profileImage}`;
+    };
+
+    // "Logged in" = lastLogin within the last 60 minutes
+    const isRecentLogin = (lastLogin) => {
+        if (!lastLogin) return false;
+        return (Date.now() - new Date(lastLogin).getTime()) < 60 * 60 * 1000;
+    };
+
+    const avatarGradient = (gender) => gender === 'female'
+        ? 'linear-gradient(135deg,#F472B6,#EC4899)'
+        : 'linear-gradient(135deg,#F97316,#EA580C)';
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+                style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 16,
+                }}
+            >
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.92, y: 28 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: 28 }}
+                    transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                        background: '#fff',
+                        borderRadius: 24,
+                        width: '100%',
+                        maxWidth: 480,
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 28px 70px rgba(249,115,22,0.22), 0 4px 20px rgba(0,0,0,0.10)',
+                        position: 'relative',
+                        fontFamily: FONT,
+                        border: '1.5px solid #FED7AA',
+                    }}
+                >
+                    {/* Top orange stripe */}
+                    <div style={{ height: 5, background: 'linear-gradient(90deg,#F97316,#FB923C,#FDBA74)', borderRadius: '24px 24px 0 0' }} />
+
+                    {/* Header */}
+                    <div style={{ padding: '20px 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{
+                                width: 44, height: 44, borderRadius: 14,
+                                background: 'linear-gradient(135deg,#FFF7ED,#FFEDD5)',
+                                border: '1.5px solid #FED7AA',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                boxShadow: '0 3px 10px rgba(249,115,22,0.18)',
+                            }}>
+                                <IoPerson size={22} style={{ color: '#F97316' }} />
+                            </div>
+                            <div>
+                                <h3 style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0, lineHeight: 1.2, fontFamily: FONT }}>
+                                    Select Your Account
+                                </h3>
+                                <p style={{ fontSize: 12.5, color: '#9B7B5A', margin: '3px 0 0', lineHeight: 1.4, fontFamily: FONT }}>
+                                    Multiple accounts are linked to this mobile number
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={onClose}
+                            style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 9, width: 33, height: 33, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EA580C', flexShrink: 0 }}
+                            onMouseOver={e => e.currentTarget.style.background = '#FFEDD5'}
+                            onMouseOut={e => e.currentTarget.style.background = '#FFF7ED'}
+                        >
+                            <IoClose size={17} />
+                        </button>
+                    </div>
+
+                    {/* Mobile badge */}
+                    <div style={{ padding: '14px 24px 0' }}>
+                        <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            background: '#F0FDF4', border: '1.5px solid #BBF7D0',
+                            borderRadius: 20, padding: '5px 13px',
+                            fontSize: 12, fontWeight: 700, color: '#15803D',
+                            fontFamily: FONT,
+                        }}>
+                            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+                            Mobile: {mobile}
+                        </span>
+                    </div>
+
+                    {/* Error */}
+                    {error && (
+                        <div style={{ margin: '12px 24px 0', padding: '10px 14px', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 10, fontSize: 12.5, color: '#B91C1C', fontFamily: FONT }}>
+                            {error}
+                        </div>
+                    )}
+
+                    {/* Student cards */}
+                    <div style={{ padding: '14px 24px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: '#9B7B5A', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px', fontFamily: FONT }}>
+                            Choose who you are
+                        </p>
+                        {students.map((s, i) => (
+                            <motion.button
+                                key={s.id}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.07 }}
+                                onClick={() => handleCardClick(s)}
+                                disabled={selecting !== null}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: 14,
+                                    background: selecting === s.id ? '#FFF7ED' : '#FFFBF7',
+                                    border: selecting === s.id ? '2px solid #F97316' : '1.5px solid #EDE8E0',
+                                    borderRadius: 16, padding: '14px 16px',
+                                    cursor: selecting !== null ? (selecting === s.id ? 'wait' : 'not-allowed') : 'pointer',
+                                    textAlign: 'left', width: '100%', position: 'relative',
+                                    boxShadow: selecting === s.id ? '0 0 0 4px rgba(249,115,22,0.12)' : '0 2px 8px rgba(180,120,60,0.05)',
+                                    transition: 'all 0.2s',
+                                    fontFamily: FONT,
+                                }}
+                                onMouseOver={e => { if (selecting === null) { e.currentTarget.style.borderColor = '#FDDCAE'; e.currentTarget.style.boxShadow = '0 6px 22px rgba(249,115,22,0.12)'; } }}
+                                onMouseOut={e => { if (selecting !== s.id) { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(180,120,60,0.05)'; } }}
+                            >
+                                {/* "Logged in" badge — top right corner */}
+                                {isRecentLogin(s.lastLogin) && (
+                                    <span style={{
+                                        position: 'absolute', top: 8, right: 52,
+                                        background: '#DCFCE7', border: '1px solid #86EFAC',
+                                        color: '#166534', borderRadius: 20, fontSize: 10.5,
+                                        fontWeight: 700, padding: '2px 8px', fontFamily: FONT,
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                    }}>
+                                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
+                                        Logged in
+                                    </span>
+                                )}
+
+                                {/* Avatar */}
+                                {(() => {
+                                    const imgSrc = getImgSrc(s.profileImage);
+                                    return (
+                                        <div style={{
+                                            width: 54, height: 54, borderRadius: 14, flexShrink: 0,
+                                            border: '2.5px solid #EDE8E0',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            boxShadow: '0 2px 8px rgba(180,120,60,0.15)',
+                                            background: '#F5F0EA',
+                                        }}>
+                                            {imgSrc ? (
+                                                <img
+                                                    src={imgSrc}
+                                                    alt={s.name}
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                                                />
+                                            ) : null}
+                                            <div style={{
+                                                width: '100%', height: '100%',
+                                                background: avatarGradient(s.gender),
+                                                display: imgSrc ? 'none' : 'flex',
+                                                alignItems: 'center', justifyContent: 'center',
+                                            }}>
+                                                <IoPerson size={24} style={{ color: '#fff' }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
+                                {/* Info */}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{ fontSize: 15, fontWeight: 800, color: '#111827', margin: 0, lineHeight: 1.2, fontFamily: FONT }}>
+                                        {s.name}
+                                    </p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px', marginTop: 6 }}>
+                                        {/* Seat */}
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontFamily: FONT,
+                                            ...(s.seatNo
+                                                ? { color: '#78350F', fontWeight: 600, background: '#FFF7ED', padding: '2px 7px', borderRadius: 6, border: '1px solid #FDDCAE' }
+                                                : { color: '#9B7B5A', fontWeight: 400 })
+                                        }}>
+                                            <IoBusinessOutline size={11} style={{ color: s.seatNo ? '#F97316' : '#C4B5A5' }} />
+                                            {s.seatNo ? `Seat ${s.seatNo}` : 'No seat'}
+                                        </span>
+                                        {/* Shift */}
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontFamily: FONT,
+                                            ...(s.shiftName || s.shiftTime
+                                                ? { color: '#78350F', fontWeight: 600, background: '#FFF7ED', padding: '2px 7px', borderRadius: 6, border: '1px solid #FDDCAE' }
+                                                : { color: '#9B7B5A', fontWeight: 400 })
+                                        }}>
+                                            <IoTimeOutline size={11} style={{ color: (s.shiftName || s.shiftTime) ? '#F97316' : '#C4B5A5' }} />
+                                            {s.shiftName || s.shiftTime || 'No shift'}
+                                            {s.shiftName && s.shiftTime && <span style={{ color: '#9B7B5A', fontWeight: 400 }}> &middot; {s.shiftTime}</span>}
+                                        </span>
+                                        {/* Address */}
+                                        {s.address && (
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#9B7B5A', fontFamily: FONT, maxWidth: '100%' }}>
+                                                <IoLocationSharp size={11} style={{ color: '#F97316' }} />
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{s.address}</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Right side — loading or arrow */}
+                                <div style={{ flexShrink: 0 }}>
+                                    {selecting === s.id ? (
+                                        <div style={{ width: 20, height: 20, border: '2.5px solid #FED7AA', borderTopColor: '#F97316', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                    ) : (
+                                        <div style={{
+                                            width: 34, height: 34, borderRadius: 10,
+                                            background: 'linear-gradient(135deg,#F97316,#EA580C)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            boxShadow: '0 3px 10px rgba(249,115,22,0.35)',
+                                        }}>
+                                            <IoArrowForward size={16} style={{ color: '#fff' }} />
+                                        </div>
+                                    )}
+                                </div>
+                            </motion.button>
+                        ))}
+                    </div>
+
+                    {/* Footer note */}
+                    <div style={{ margin: '0 24px 20px', padding: '10px 14px', background: '#FFFBF7', border: '1.5px solid #EDE8E0', borderRadius: 12, fontSize: 11.5, color: '#9B7B5A', fontFamily: FONT, lineHeight: 1.5 }}>
+                        Your choice will be saved for this session. You will need to select again after logging out.
+                    </div>
+
+                    {/* Confirmation overlay */}
+                    <AnimatePresence>
+                        {pendingStudent && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                style={{
+                                    position: 'absolute', inset: 0, zIndex: 10,
+                                    background: 'rgba(255,247,237,0.92)', backdropFilter: 'blur(6px)',
+                                    borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    padding: 28,
+                                }}
+                            >
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.88, y: 16 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.88, y: 16 }}
+                                    transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+                                    style={{
+                                        background: '#fff', borderRadius: 20,
+                                        border: '1.5px solid #FED7AA',
+                                        boxShadow: '0 12px 40px rgba(249,115,22,0.18)',
+                                        padding: '28px 24px 24px',
+                                        width: '100%', maxWidth: 360,
+                                        textAlign: 'center', fontFamily: FONT,
+                                    }}
+                                >
+                                    {/* Icon */}
+                                    <div style={{
+                                        width: 54, height: 54, borderRadius: 16, margin: '0 auto 16px',
+                                        background: 'linear-gradient(135deg,#FFF7ED,#FFEDD5)',
+                                        border: '1.5px solid #FED7AA',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        boxShadow: '0 4px 12px rgba(249,115,22,0.18)',
+                                    }}>
+                                        <IoPerson size={26} style={{ color: '#F97316' }} />
+                                    </div>
+
+                                    <p style={{ fontSize: 13, color: '#9B7B5A', margin: '0 0 6px', fontFamily: FONT }}>
+                                        Confirm your account
+                                    </p>
+                                    <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: '0 0 6px', lineHeight: 1.3, fontFamily: FONT }}>
+                                        {pendingStudent.name}
+                                    </h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+                                        {pendingStudent.seatNo && (
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#78350F', fontWeight: 600, background: '#FFF7ED', padding: '3px 10px', borderRadius: 8, border: '1px solid #FDDCAE', fontFamily: FONT }}>
+                                                <IoBusinessOutline size={12} style={{ color: '#F97316' }} />
+                                                Seat {pendingStudent.seatNo}
+                                            </span>
+                                        )}
+                                        {(pendingStudent.shiftName || pendingStudent.shiftTime) && (
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, color: '#78350F', fontWeight: 600, background: '#FFF7ED', padding: '3px 10px', borderRadius: 8, border: '1px solid #FDDCAE', fontFamily: FONT }}>
+                                                <IoTimeOutline size={12} style={{ color: '#F97316' }} />
+                                                {pendingStudent.shiftName || pendingStudent.shiftTime}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <p style={{ fontSize: 13.5, color: '#374151', margin: '0 0 22px', lineHeight: 1.5, fontFamily: FONT }}>
+                                        Are you logging in as this student?
+                                    </p>
+
+                                    <div style={{ display: 'flex', gap: 10 }}>
+                                        {/* No — go back */}
+                                        <button
+                                            onClick={() => setPendingStudent(null)}
+                                            disabled={selecting !== null}
+                                            style={{
+                                                flex: 1, padding: '11px 0', borderRadius: 12,
+                                                background: '#fff', border: '1.5px solid #EDE8E0',
+                                                color: '#6B7280', fontSize: 14, fontWeight: 600,
+                                                cursor: 'pointer', fontFamily: FONT,
+                                            }}
+                                            onMouseOver={e => e.currentTarget.style.borderColor = '#FDDCAE'}
+                                            onMouseOut={e => e.currentTarget.style.borderColor = '#EDE8E0'}
+                                        >
+                                            No, go back
+                                        </button>
+                                        {/* Yes — login */}
+                                        <button
+                                            onClick={handleConfirmLogin}
+                                            disabled={selecting !== null}
+                                            style={{
+                                                flex: 1.4, padding: '11px 0', borderRadius: 12,
+                                                background: selecting !== null ? '#FED7AA' : 'linear-gradient(135deg,#F97316,#EA580C)',
+                                                border: 'none', color: '#fff', fontSize: 14, fontWeight: 700,
+                                                cursor: selecting !== null ? 'wait' : 'pointer',
+                                                fontFamily: FONT,
+                                                boxShadow: '0 3px 12px rgba(249,115,22,0.35)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                            }}
+                                        >
+                                            {selecting !== null ? (
+                                                <div style={{ width: 16, height: 16, border: '2.5px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                                            ) : (
+                                                <>Yes, login <IoArrowForward size={15} /></>
+                                            )}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
 export default function Login() {
     useMobileViewport();
 
@@ -332,8 +718,10 @@ export default function Login() {
     const [focused, setFocused] = useState('');
     const [showInstructions, setShowInstructions] = useState(false);
     const [visitorCount, setVisitorCount] = useState(null);
+    // ── duplicate mobile selection panel ──
+    const [studentPanel, setStudentPanel] = useState(null); // { students, mobile, password }
 
-    const { login } = useAuth();
+    const { login, setUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -406,7 +794,10 @@ export default function Login() {
         setError('');
         setLoading(true);
         const result = await login(email, password);
-        if (result.success) {
+        if (result.success && result.multipleStudents) {
+            // Show the student selection panel
+            setStudentPanel({ students: result.students, mobile: result.mobile, password });
+        } else if (result.success) {
             const user = JSON.parse(localStorage.getItem('user'));
             navigate(user.role === 'admin' ? '/admin' : user.role === 'subadmin' ? '/sub-admin' : '/student');
         } else {
@@ -415,6 +806,17 @@ export default function Login() {
             setTimeout(() => setShake(false), 450);
         }
         setLoading(false);
+    };
+
+    // Called after student picks themselves from the panel
+    const handleStudentSelected = (loginData) => {
+        const { token, user: userData } = loginData;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('selected_student_id', userData.id);
+        setUser(userData);       // <-- update AuthContext immediately (fixes redirect bug)
+        setStudentPanel(null);
+        navigate('/student');
     };
 
     const inputStyle = (name) => ({
@@ -890,6 +1292,17 @@ export default function Login() {
 
             {/* Instruction Modal */}
             {showInstructions && <InstructionModal onClose={() => setShowInstructions(false)} />}
+
+            {/* Student Selection Panel — shown when multiple accounts share a mobile */}
+            {studentPanel && (
+                <StudentSelectionModal
+                    students={studentPanel.students}
+                    mobile={studentPanel.mobile}
+                    password={studentPanel.password}
+                    onSelect={handleStudentSelected}
+                    onClose={() => setStudentPanel(null)}
+                />
+            )}
 
             <AttendanceFloatingBtn />
         </div>
