@@ -52,6 +52,15 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const response = await api.post('/auth/login', { email, password });
+            // Duplicate mobile: backend returns selection list, not a token
+            if (response.data.multipleStudents) {
+                return {
+                    success: true,
+                    multipleStudents: true,
+                    mobile: response.data.mobile,
+                    students: response.data.students,
+                };
+            }
             const { token, user: userData } = response.data;
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(userData));
