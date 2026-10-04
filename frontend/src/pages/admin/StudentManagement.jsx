@@ -12,7 +12,8 @@ import {
     IoCheckmarkDoneOutline, IoEyeOutline, IoMailOutline, IoCallOutline,
     IoWarningOutline, IoTrashOutline, IoGridOutline, IoListOutline,
     IoLockClosedOutline, IoPersonOutline, IoCalendarOutline, IoShuffleOutline,
-    IoPhonePortraitOutline, IoReceiptOutline, IoCardOutline, IoCashOutline, IoArrowForwardOutline, IoCheckmarkCircleOutline
+    IoPhonePortraitOutline, IoReceiptOutline, IoCardOutline, IoCashOutline, IoArrowForwardOutline, IoCheckmarkCircleOutline,
+    IoInformationCircleOutline
 } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
@@ -1890,6 +1891,7 @@ const StudentManagement = () => {
 
     // Get all available seats from floors (including fully and partially booked)
     const getAvailableSeats = () => {
+        const toMin = t => { if (!t) return 0; const [h, m] = (t || '0:0').split(':').map(Number); return h * 60 + m; };
         const seats = [];
         floors.forEach(floor => {
             floor.rooms.forEach(room => {
@@ -1911,15 +1913,35 @@ const StudentManagement = () => {
                         return false;
                     });
 
-                    // Include ALL seats - shift dropdown will filter based on availability
+                    // Accurate: a seat is fully booked only when EVERY system shift
+                    // has a time conflict (or ID match) with an existing assignment
+                    const hasAvailableShift = !hasFullDay && shifts.some(candidateShift => {
+                        return !activeAssignments.some(a => {
+                            const as = a.shift;
+                            if (!as || typeof as !== 'object') return false;
+                            // Exact ID match = conflict
+                            const cId = candidateShift._id || candidateShift.id;
+                            const aId = as._id || as.id;
+                            if (cId && aId && cId === aId) return true;
+                            // Time-overlap check
+                            if (candidateShift.startTime && candidateShift.endTime && as.startTime && as.endTime) {
+                                return toMin(candidateShift.startTime) < toMin(as.endTime) &&
+                                       toMin(as.startTime) < toMin(candidateShift.endTime);
+                            }
+                            return false;
+                        });
+                    });
+
+                    const isFullyBooked = hasFullDay || !hasAvailableShift;
+
                     seats.push({
                         ...seat,
-                        displayName: `${floor.name} - ${room.name} - ${seat.number}`,
+                        displayName: `${floor.name} - ${room.name} - Seat ${seat.number}`,
                         floorName: floor.name,
                         roomName: room.name,
-                        takenShiftIds: takenShiftIds,
-                        isPartiallyBooked: activeAssignments.length > 0 && !hasFullDay,
-                        isFullyBooked: hasFullDay || takenShiftIds.length >= shifts.length
+                        takenShiftIds,
+                        isPartiallyBooked: activeAssignments.length > 0 && !isFullyBooked,
+                        isFullyBooked,
                     });
                 });
             });
@@ -4575,30 +4597,44 @@ const StudentManagement = () => {
                                 <label className={LABEL}>
                                     <span className="flex items-center gap-1.5"><IoBedOutline size={14} className="text-orange-500" /> Select Vacant Desk *</span>
                                 </label>
-                                <select
-                                    value={seatFormData.seatId}
-                                    onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value })}
-                                    className={INPUT}
-                                    required
-                                >
-                                    <option value="">Choose a vacant desk...</option>
-                                    {availableSeats.length === 0 ? (
-                                        <option disabled>No available desks</option>
-                                    ) : (
-                                        availableSeats.map(seat => (
-                                            <option key={seat._id} value={seat._id}>
-                                                {seat.displayName}
-                                                {seat.isFullyBooked ? ' (Fully Booked)' : seat.isPartiallyBooked ? ' (Partially Booked)' : ''}
-                                            </option>
-                                        ))
-                                    )}
-                                </select>
-                                {availableSeats.length === 0 && (
-                                    <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-medium">
-                                        <IoAlertCircleOutline size={15} className="shrink-0" />
-                                        <span>No vacant desks available across current floors.</span>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const openSeats = availableSeats.filter(s => !s.isFullyBooked);
+                                    const fullCount = availableSeats.length - openSeats.length;
+                                    return (
+                                        <>
+                                            <select
+                                                value={seatFormData.seatId}
+                                                onChange={(e) => setSeatFormData({ ...seatFormData, seatId: e.target.value, shifts: [] })}
+                                                className={INPUT}
+                                                required
+                                            >
+                                                <option value="">Choose a vacant desk...</option>
+                                                {openSeats.length === 0 ? (
+                                                    <option disabled>No vacant desks available</option>
+                                                ) : (
+                                                    openSeats.map(seat => (
+                                                        <option key={seat._id} value={seat._id}>
+                                                            {seat.displayName}
+                                                            {seat.isPartiallyBooked ? ' — some slots taken' : ''}
+                                                        </option>
+                                                    ))
+                                                )}
+                                            </select>
+                                            {openSeats.length === 0 && (
+                                                <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-medium">
+                                                    <IoAlertCircleOutline size={15} className="shrink-0" />
+                                                    <span>All {availableSeats.length} desk(s) are fully occupied across all shifts.</span>
+                                                </div>
+                                            )}
+                                            {fullCount > 0 && openSeats.length > 0 && (
+                                                <p className="mt-1.5 text-xs text-slate-400 flex items-center gap-1">
+                                                    <IoInformationCircleOutline size={13} />
+                                                    {fullCount} fully occupied desk{fullCount > 1 ? 's' : ''} hidden from list
+                                                </p>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
 
                             {/* Shift Selection — multi-select */}
