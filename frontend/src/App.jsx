@@ -211,6 +211,7 @@ const SubAdminDashboard = lazy(() => import('./pages/admin/SubAdminDashboard'));
 const StudentActivities = lazy(() => import('./pages/admin/StudentActivities'));
 const AIActivityLogs = lazy(() => import('./pages/admin/AIActivityLogs'));
 const AdminReferralWallet = lazy(() => import('./pages/admin/AdminReferralWallet'));
+const WalkinManagement = lazy(() => import('./pages/admin/WalkinManagement'));
 
 
 // Student Pages - Lazy Loaded
@@ -238,6 +239,7 @@ const AITaskSuggestions = lazy(() => import('./pages/student/AITaskSuggestions')
 const AIReadinessScore = lazy(() => import('./pages/student/AIReadinessScore'));
 const WalletPage = lazy(() => import('./pages/student/WalletPage'));
 const VideoLearning = lazy(() => import('./pages/student/VideoLearning'));
+const FindASeat = lazy(() => import('./pages/student/FindASeat'));
 
 function App() {
     const { user, loading, systemStatus, forceDoubtBoard } = useAuth();
@@ -346,6 +348,7 @@ function App() {
                     <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><NotificationManagement /></ProtectedRoute>} />
                     <Route path="/admin/requests" element={<ProtectedRoute adminOnly><RequestManagement /></ProtectedRoute>} />
                     <Route path="/admin/vacant-seats" element={<ProtectedRoute adminOnly><VacantSeats /></ProtectedRoute>} />
+                    <Route path="/admin/walkin" element={<ProtectedRoute adminOnly><WalkinManagement /></ProtectedRoute>} />
 
                     {/* Sub-Admin Dashboard */}
                     <Route path="/sub-admin" element={<ProtectedRoute><SubAdminDashboard /></ProtectedRoute>} />
@@ -365,7 +368,7 @@ function App() {
                     <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
                     <Route path="/student/mock-test" element={<ProtectedRoute><MockTestPage /></ProtectedRoute>} />
                     <Route path="/student/report" element={<ProtectedRoute><MonthlyReport /></ProtectedRoute>} />
-                    <Route path="/student/doubt" element={<ProtectedRoute requireSeat><DoubtBoard /></ProtectedRoute>} />
+                    <Route path="/student/doubt" element={<ProtectedRoute><DoubtBoard /></ProtectedRoute>} />
                     <Route path="/student/current-affairs" element={<ProtectedRoute><CurrentAffairs /></ProtectedRoute>} />
                     <Route path="/student/exam-alerts" element={<ProtectedRoute><ExamAlerts /></ProtectedRoute>} />
                     <Route path="/student/ai/study-planner" element={<ProtectedRoute><AIStudyPlanner /></ProtectedRoute>} />
@@ -376,6 +379,7 @@ function App() {
                     <Route path="/student/ai/readiness-score" element={<ProtectedRoute><AIReadinessScore /></ProtectedRoute>} />
                     <Route path="/student/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
                     <Route path="/student/videos" element={<ProtectedRoute><VideoLearning /></ProtectedRoute>} />
+                    <Route path="/student/find-seat" element={<ProtectedRoute><FindASeat /></ProtectedRoute>} />
 
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" />} />
@@ -383,8 +387,8 @@ function App() {
                 <PwaInstallBanner />
             </Suspense>
             </RouteErrorBoundary>
-            {/* Doubt Board launcher & tour: shown ONLY to active students with assigned seat */}
-            {user?.role === 'student' && user?.isActive && (user?.seat || user?.seatNumber) && !doubtDismissed && location.pathname !== '/student/doubt' && (
+            {/* Doubt Board launcher & tour: shown to active students */}
+            {user?.role === 'student' && user?.isActive && !doubtDismissed && location.pathname !== '/student/doubt' && (
                 <ForcedDoubtOverlay onClose={() => setDoubtDismissed(true)} />
             )}
         </PinLockScreen>

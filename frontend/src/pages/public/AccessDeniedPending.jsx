@@ -16,6 +16,9 @@ const AccessDeniedPending = ({ user: propUser }) => {
     const fullName = user?.name || 'Scholar';
     const studentId = user?.studentId || user?.enrollmentNumber || user?._id?.toString().slice(-6).toUpperCase() || 'N/A';
     const contact = user?.mobile || user?.phoneNumber || user?.email || 'N/A';
+    const isWaiting = user?.studentType === 'waitingList';
+    const flexShift = user?.flexShift;
+    const demandedShiftText = flexShift?.label || (flexShift?.startTime && flexShift?.endTime ? `${flexShift.startTime}–${flexShift.endTime}` : null);
 
     const handleRefresh = () => {
         window.location.reload();
@@ -45,25 +48,31 @@ const AccessDeniedPending = ({ user: propUser }) => {
             >
                 <div className="bg-white border border-[#EDE8E0] rounded-3xl shadow-xl overflow-hidden">
                     {/* Top Accent Bar */}
-                    <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 to-orange-500" />
+                    <div className={`h-1.5 w-full ${isWaiting ? 'bg-gradient-to-r from-violet-500 to-purple-600' : 'bg-gradient-to-r from-amber-500 to-orange-500'}`} />
 
                     <div className="p-6 sm:p-8">
                         {/* Header & Status Icon */}
                         <div className="flex flex-col items-center text-center mb-6">
-                            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-amber-500/10 text-amber-600 border border-amber-200">
-                                <IoHourglassOutline size={28} />
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
+                                isWaiting ? 'bg-violet-500/10 text-violet-600 border border-violet-200' : 'bg-amber-500/10 text-amber-600 border border-amber-200'
+                            }`}>
+                                {isWaiting ? <IoTimeOutline size={28} /> : <IoHourglassOutline size={28} />}
                             </div>
 
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2 bg-amber-50 border border-amber-200 text-amber-700">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                <span>Desk Allocation Pending</span>
+                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider mb-2 ${
+                                isWaiting ? 'bg-violet-50 border border-violet-200 text-violet-700' : 'bg-amber-50 border border-amber-200 text-amber-700'
+                            }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isWaiting ? 'bg-violet-500 animate-pulse' : 'bg-amber-500 animate-pulse'}`} />
+                                <span>{isWaiting ? 'Waiting List Queue' : 'Desk Allocation Pending'}</span>
                             </div>
 
                             <h1 className="text-2xl sm:text-3xl font-black text-[#0F172A] tracking-tight">
-                                Allocation In Progress
+                                {isWaiting ? 'Waiting for Vacancy' : 'Allocation In Progress'}
                             </h1>
                             <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-sm leading-relaxed">
-                                Your scholar account is active and registered. An administrator will assign your physical desk and shift shortly.
+                                {isWaiting
+                                    ? `You are on the library waiting list${demandedShiftText ? ` for ${demandedShiftText}` : ''}. As soon as a desk opens up, the management will allocate your seat.`
+                                    : 'Your scholar account is active and registered. An administrator will assign your physical desk and shift shortly.'}
                             </p>
                         </div>
 
@@ -87,7 +96,9 @@ const AccessDeniedPending = ({ user: propUser }) => {
                                 </div>
                                 <div>
                                     <span className="text-stone-500 block text-[11px]">Assigned Desk</span>
-                                    <span className="font-bold text-amber-600 block">Pending Assignment</span>
+                                    <span className={`font-bold block ${isWaiting ? 'text-violet-600' : 'text-amber-600'}`}>
+                                        {isWaiting ? `Waiting List${demandedShiftText ? ` (${demandedShiftText})` : ''}` : 'Pending Assignment'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
