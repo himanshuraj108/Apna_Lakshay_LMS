@@ -1092,16 +1092,24 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
     const studentName = user?.name ? user.name.trim().split(' ')[0] : 'Student';
 
     const [isDark, setIsDark] = useState(() => localStorage.getItem('doubt_dark') === '1');
-    // Start with null so language selection is shown firstly
-    const [selectedLang, setSelectedLang] = useState(null);
-    const [lang, setLang] = useState('en');
+    const [selectedLang, setSelectedLang] = useState(() => {
+        try { return localStorage.getItem('doubt_lang') || 'en'; } catch { return 'en'; }
+    });
+    const [lang, setLang] = useState(() => {
+        try { return localStorage.getItem('doubt_lang') || 'en'; } catch { return 'en'; }
+    });
     const [sessions, setSessions] = useState(() => loadSessions());
     const [activeId, setActiveId] = useState(null);
     const [question, setQuestion] = useState('');
     const [loading, setLoading] = useState(false);
     const [creditsLeft, setCredits] = useState(10);
     const [maxCredits, setMaxCredits] = useState(10);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768;
+        }
+        return true;
+    });
     const [copiedIdx, setCopiedIdx] = useState(null);
 
     // Attendance state on DoubtBoard (to mark directly and hide when marked)
@@ -1125,10 +1133,10 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
     const bottomRef = useRef(null);
     const textareaRef = useRef(null);
 
-    // Active status guard: only active students with an assigned seat can access DoubtBoard
+    // Active status guard: only active student accounts can access DoubtBoard
     useEffect(() => {
         if (user && user.role === 'student') {
-            if (!user.isActive || (!user.seat && !user.seatNumber)) {
+            if (user.isActive === false) {
                 handleClose();
             }
         }
@@ -1430,6 +1438,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
             {!selectedLang ? (
                 <LanguageSelectionScreen
                     onSelect={code => {
+                        try { localStorage.setItem('doubt_lang', code); } catch {}
                         setSelectedLang(code);
                         setLang(code);
                     }}
@@ -1453,7 +1462,7 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                 )}
             </AnimatePresence>
 
-            {/* Mobile Drawer Overlay */}
+            {/* Mobile Drawer Backdrop */}
             <AnimatePresence>
                 {sidebarOpen && (
                     <motion.div
@@ -1461,19 +1470,26 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setSidebarOpen(false)}
-                        style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}
+                        style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}
                         className="md:hidden"
                     />
                 )}
             </AnimatePresence>
 
-            {/* Side Drawer Navigation */}
-            <motion.div
-                style={{ position: 'fixed', zIndex: 50, height: '100%', width: 268, flexShrink: 0 }}
-                className="md:relative md:z-auto"
-                initial={false}
-                animate={{ x: sidebarOpen ? 0 : (typeof window !== 'undefined' && window.innerWidth >= 768) ? 0 : -268 }}
-                transition={{ type: 'tween', duration: 0.2 }}
+            {/* Mobile Off-canvas Drawer */}
+            <div
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    width: 275,
+                    zIndex: 70,
+                    transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: sidebarOpen ? '4px 0 24px rgba(0,0,0,0.18)' : 'none',
+                }}
+                className="md:hidden"
             >
                 <DrawerSidebar
                     sessions={sessions}
@@ -1486,15 +1502,62 @@ const DoubtBoard = ({ forceMode = false, onClose }) => {
                     onRename={(id, title) => updateSession(id, () => ({ title }))}
                     onPin={id => updateSession(id, s => ({ pinned: !s.pinned }))}
                 />
-            </motion.div>
+            </div>
+
+            {/* Desktop In-Flow Sidebar */}
+            <div
+                style={{
+                    width: sidebarOpen ? 268 : 0,
+                    minWidth: sidebarOpen ? 268 : 0,
+                    height: '100%',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    position: 'relative',
+                    zIndex: 20,
+                }}
+                className="hidden md:flex flex-col"
+            >
+                <div style={{ width: 268, height: '100%' }}>
+                    <DrawerSidebar
+                        sessions={sessions}
+                        activeId={activeId}
+                        isDark={isDark}
+                        t={t}
+                        onSelect={id => setActiveId(id)}
+                        onNew={createNewSession}
+                        onDelete={id => { setSessions(p => p.filter(s => s.id !== id)); if (activeId === id) setActiveId(null); }}
+                        onRename={(id, title) => updateSession(id, () => ({ title }))}
+                        onPin={id => updateSession(id, s => ({ pinned: !s.pinned }))}
+                    />
+                </div>
+            </div>
 
             {/* Main Interactive Canvas */}
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, background: pageBg, position: 'relative' }}>
                 {/* Top Header */}
                 <header style={{ height: 58, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${borderColor}`, background: pageBg, flexShrink: 0, zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <button onClick={() => setSidebarOpen(true)} className="md:hidden" style={{ padding: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: textPrimary }}>
-                            <IoMenu size={22} />
+                        <button
+                            onClick={() => setSidebarOpen(p => !p)}
+                            title={sidebarOpen ? "Collapse sidebar" : "Show chat history"}
+                            style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 10,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                                border: `1px solid ${borderColor}`,
+                                cursor: 'pointer',
+                                color: textPrimary,
+                                transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'; }}
+                        >
+                            <IoMenu size={20} />
                         </button>
                         <span style={{ fontSize: 13, fontWeight: 700, color: textPrimary, letterSpacing: '-0.01em' }}>Apna Lakshay</span>
                     </div>

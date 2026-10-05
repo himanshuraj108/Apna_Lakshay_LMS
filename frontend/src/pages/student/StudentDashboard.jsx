@@ -20,7 +20,7 @@ import {
     IoCameraOutline, IoCameraReverseOutline, IoAddOutline, IoCheckmarkCircleOutline,
     IoCheckmarkDoneOutline, IoCheckmarkOutline,
     IoLanguageOutline, IoWallet,
-    IoTrophyOutline, IoDesktopOutline, IoPlayCircleOutline,
+    IoTrophyOutline, IoDesktopOutline, IoPlayCircleOutline, IoSadOutline
 } from 'react-icons/io5';
 import AttendanceScanner from '../../components/student/AttendanceScanner';
 import HelpSupportModal from '../../components/student/HelpSupportModal';
@@ -65,6 +65,15 @@ const EXAM_TARGET_NAMES = {
     'class_11': 'Class 11',
     'class_12': 'Class 12',
     'generic': 'General Aptitude & Knowledge'
+};
+
+const fmt12h = (t) => {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    if (isNaN(h)) return t;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m || 0).padStart(2, '0')} ${ampm}`;
 };
 
 /* ─── Beep + Vibrate (same pattern as QR scanner) ───────────────── */
@@ -528,6 +537,30 @@ const StudentDashboard = () => {
     const { t, language, setLanguage } = useLanguage();
     const isActive = user?.isActive;
     const hasSeat = dashboardData?.seat || (dashboardData?.tempAssignments?.length > 0);
+    const isWaiting = user?.studentType === 'waitingList'
+        || dashboardData?.studentType === 'waitingList'
+        || dashboardData?.user?.studentType === 'waitingList';
+    const isWalkin = !isWaiting && (
+        user?.studentType === 'walkin'
+        || dashboardData?.studentType === 'walkin'
+        || dashboardData?.user?.studentType === 'walkin'
+        || Boolean(user?.flexShift?.startTime)
+        || Boolean(dashboardData?.flexShift?.startTime)
+        || Boolean(dashboardData?.user?.flexShift?.startTime)
+    );
+    const flexShift = user?.flexShift || dashboardData?.flexShift || dashboardData?.user?.flexShift;
+    const occupiedFlexSeat = dashboardData?.todayWalkin?.number
+        ? dashboardData.todayWalkin
+        : (dashboardData?.seat?.isWalkinClaim || dashboardData?.seat?.walkinRequestId ? dashboardData.seat : null);
+    const hasOccupiedFlexToday = Boolean(occupiedFlexSeat && (occupiedFlexSeat.number || occupiedFlexSeat.seatId || occupiedFlexSeat._id));
+
+    // Flexible student desk occupancy state
+    const [showOccupyModal, setShowOccupyModal]       = useState(false);
+    const [occupyLoading, setOccupyLoading]           = useState(false);
+    const [availFlexSeats, setAvailFlexSeats]         = useState([]);
+    const [occupyingDeskId, setOccupyingDeskId]       = useState(null);
+    const [occupyError, setOccupyError]               = useState('');
+    const [releasingFlexDesk, setReleasingFlexDesk]   = useState(false);
     const navigate = useNavigate();
 
     // Engagement & Gamification States
@@ -739,14 +772,15 @@ const StudentDashboard = () => {
         }
     };
 
-    const fetchDashboardData = async () => {
-        if (isFresh('dashboard')) {
+    const fetchDashboardData = async (force = false) => {
+        if (!force && isFresh('dashboard')) {
             const cached = _cache.dashboard.data;
             setDashboardData(cached);
             if (cached?.flexibleEntry !== undefined) setFlexibleEntry(!!cached.flexibleEntry);
             setLoading(false);
             return;
         }
+        if (force) bustCache('dashboard');
         try { 
             const res = await api.get('/student/dashboard'); 
             const data = res.data.data;
@@ -765,6 +799,62 @@ const StudentDashboard = () => {
             console.error(e); 
         } finally { 
             setLoading(false); 
+        }
+    };
+
+    const handleOpenOccupyModal = async () => {
+        setShowOccupyModal(true);
+        setOccupyLoading(true);
+        setOccupyError('');
+        try {
+            const targetDate = new Date().toISOString().slice(0, 10);
+            let queryStr = `date=${targetDate}`;
+            if (flexShift?.startTime && flexShift?.endTime) {
+                queryStr += `&startTime=${flexShift.startTime}&endTime=${flexShift.endTime}`;
+            }
+            const res = await api.get(`/walkin/available-seats?${queryStr}`);
+            setAvailFlexSeats(res.data.seats || []);
+        } catch (err) {
+            console.error('Error fetching available seats:', err);
+            setOccupyError('Failed to load available desks. Please try again.');
+            setAvailFlexSeats([]);
+        } finally {
+            setOccupyLoading(false);
+        }
+    };
+
+    const handleOccupyDesk = async (seatId) => {
+        setOccupyingDeskId(seatId);
+        setOccupyError('');
+        try {
+            const targetDate = new Date().toISOString().slice(0, 10);
+            await api.post('/walkin/occupy', {
+                seatId,
+                date: targetDate,
+                startTime: flexShift?.startTime,
+                endTime: flexShift?.endTime
+            });
+            playSuccessBeep();
+            setShowOccupyModal(false);
+            await fetchDashboardData(true);
+        } catch (err) {
+            setOccupyError(err?.response?.data?.message || 'Failed to occupy desk');
+        } finally {
+            setOccupyingDeskId(null);
+        }
+    };
+
+    const handleReleaseFlexDesk = async () => {
+        if (!window.confirm('Release your occupied desk for today? You can choose another free desk anytime.')) return;
+        setReleasingFlexDesk(true);
+        try {
+            await api.delete('/walkin/occupy');
+            playSuccessBeep();
+            await fetchDashboardData(true);
+        } catch (err) {
+            alert(err?.response?.data?.message || 'Failed to release desk');
+        } finally {
+            setReleasingFlexDesk(false);
         }
     };
 
@@ -947,8 +1037,8 @@ const StudentDashboard = () => {
         return <InactiveScreen user={user} onLogout={handleLogout} />;
     }
 
-    /* -- Pending Allocation guard -- */
-    if (!hasSeat) {
+    /* -- Pending Allocation guard -- only regular unassigned scholars without flex or waitlist -- */
+    if (!hasSeat && !isWalkin && !isWaiting) {
         return <AccessDeniedPending user={user} />;
     }
 
@@ -984,7 +1074,7 @@ const StudentDashboard = () => {
             { id: 'current-affairs',icon: IoGridOutline,        label: 'Current Affairs',accentColor: '#38bdf8', link: '/student/current-affairs', live: true },
             { id: 'exam-alerts',    icon: IoAlertCircleOutline, label: 'Exam Alerts',    accentColor: '#f97316', link: '/student/exam-alerts', live: true },
             { id: 'my-report',      icon: IoDocumentTextOutline,label: 'My Report',      accentColor: '#14b8a6', link: '/student/report' },
-            { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Ask AI',         accentColor: '#FACC15', link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits}/${dashboardData.maxDoubtCredits || dashboardData.doubtCredits} credits` : 'AI powered' },
+            { id: 'ask-ai',         icon: IoSparklesOutline,    label: 'Doubt Board',    accentColor: '#FACC15', link: '/student/doubt', desc: dashboardData?.doubtCredits != null ? `${dashboardData.doubtCredits}/${dashboardData.maxDoubtCredits || dashboardData.doubtCredits} credits` : 'AI powered' },
             { id: 'support',        icon: IoHelpCircleOutline,  label: 'Support',        accentColor: '#eab308', action: () => setShowSupportModal(true), badge: dashboardData?.requestsCount || 0 },
         ];
         const cfg = cardConfig?.quickActions;
@@ -1041,9 +1131,11 @@ const StudentDashboard = () => {
                     seatNumber: dashboardData?.seat?.number,
                     roomId: dashboardData?.seat?.roomId,
                     room: dashboardData?.seat?.room,
-                    shift: dashboardData?.seat?.shift,
+                    shift: dashboardData?.seat?.shift || ((isWalkin || isWaiting) ? (user?.flexShift?.label || `${user?.flexShift?.startTime}–${user?.flexShift?.endTime}`) : null),
                     shifts: dashboardData?.seat?.shifts,
-                    shiftDetails: dashboardData?.seat?.shiftDetails,
+                    shiftDetails: dashboardData?.seat?.shiftDetails || ((isWalkin || isWaiting) && user?.flexShift?.startTime ? { startTime: user.flexShift.startTime, endTime: user.flexShift.endTime } : null),
+                    studentType: isWaiting ? 'waitingList' : isWalkin ? 'walkin' : (user?.studentType || dashboardData?.studentType || 'regular'),
+                    flexShift: user?.flexShift || dashboardData?.flexShift,
                     isTemporary: Boolean(dashboardData?.seat?.isTemporary || dashboardData?.tempAssignments?.length > 0),
                     isTemporarySeat: Boolean(dashboardData?.seat?.isTemporary || dashboardData?.tempAssignments?.length > 0),
                     tempAssignments: dashboardData?.tempAssignments?.map(ta => ({
@@ -1219,6 +1311,126 @@ const StudentDashboard = () => {
                         onClose={handleDismissAttendanceResult}
                         forceDoubtBoard={forceDoubtBoard}
                     />
+                )}
+                {/* ── Instant Occupy Modal for Flexible Scholars ── */}
+                {showOccupyModal && (
+                    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+                            className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden border border-[#EDE8E0] max-h-[90vh] flex flex-col"
+                        >
+                            {/* Accent top gradient bar */}
+                            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600" />
+                            <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-orange-100/50 blur-2xl pointer-events-none" />
+
+                            {/* Header */}
+                            <div className="flex items-start justify-between gap-3 mb-4 relative z-10 shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/80 text-orange-600 shadow-sm">
+                                        <IoDesktopOutline size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-gray-900 font-black text-lg tracking-tight">Occupy a Desk Today</h3>
+                                        <p className="text-gray-500 text-xs font-semibold mt-0.5">
+                                            {flexShift?.startTime && flexShift?.endTime
+                                                ? `Shift: ${fmt12h(flexShift.startTime)} – ${fmt12h(flexShift.endTime)}`
+                                                : 'Select any free desk for your session'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowOccupyModal(false)}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                                    aria-label="Close"
+                                >
+                                    <IoCloseOutline size={20} />
+                                </button>
+                            </div>
+
+                            {/* Error banner if any */}
+                            {occupyError && (
+                                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold text-center mb-3 shrink-0">
+                                    {occupyError}
+                                </div>
+                            )}
+
+                            {/* Modal Body / Seats list */}
+                            <div className="overflow-y-auto flex-1 pr-1 space-y-2.5 my-2">
+                                {occupyLoading ? (
+                                    <div className="py-12 flex flex-col items-center justify-center gap-3">
+                                        <div className="w-8 h-8 border-3 border-orange-200 border-t-orange-600 rounded-full animate-spin" />
+                                        <p className="text-xs font-bold text-stone-500">Checking real-time desk availability...</p>
+                                    </div>
+                                ) : availFlexSeats.filter(s => s.isAvailable).length === 0 ? (
+                                    <div className="py-10 text-center rounded-2xl bg-orange-50/60 border border-orange-200/60 p-6">
+                                        <IoSadOutline size={36} className="mx-auto text-orange-400 mb-2" />
+                                        <h4 className="text-sm font-bold text-gray-900">No Free Desks in Current Slot</h4>
+                                        <p className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
+                                            All desks are occupied for this time window. You can check the complete floor plan or try another slot.
+                                        </p>
+                                        <Link to="/student/find-seat" onClick={() => setShowOccupyModal(false)} className="inline-block mt-4">
+                                            <span className="text-xs font-bold px-4 py-2 rounded-xl bg-orange-600 text-white shadow-sm hover:bg-orange-700 transition-all">
+                                                Open Seat Map
+                                            </span>
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        {availFlexSeats.filter(s => s.isAvailable).map((st) => (
+                                            <div
+                                                key={st.seatId || st.seat?._id}
+                                                className="p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 bg-[#FFFAF5] hover:bg-white hover:border-orange-300 hover:shadow-md"
+                                                style={{ borderColor: '#EDE8E0' }}
+                                            >
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-black text-gray-900">
+                                                            Seat {st.seatNumber || st.seat?.number}
+                                                        </span>
+                                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md ${
+                                                            st.status === 'absent_today'
+                                                                ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                        }`}>
+                                                            {st.status === 'absent_today' ? 'Absent Today' : 'Vacant'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-500 font-medium truncate mt-0.5">
+                                                        {st.room || st.seat?.room || 'General Room'} · {st.floor || st.seat?.floor || 'Floor'}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleOccupyDesk(st.seatId || st.seat?._id)}
+                                                    disabled={occupyingDeskId === (st.seatId || st.seat?._id)}
+                                                    className="px-3.5 py-2 rounded-xl text-xs font-extrabold text-white transition-all shrink-0 cursor-pointer shadow-xs disabled:opacity-50"
+                                                    style={{ background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' }}
+                                                >
+                                                    {occupyingDeskId === (st.seatId || st.seat?._id) ? 'Occupying...' : 'Occupy'}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer */}
+                            <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2 shrink-0">
+                                <Link to="/student/find-seat" onClick={() => setShowOccupyModal(false)} className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+                                    <span>Full Map & Booking</span>
+                                    <IoArrowForward size={13} />
+                                </Link>
+                                <button
+                                    onClick={() => setShowOccupyModal(false)}
+                                    className="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition-all cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
@@ -1770,6 +1982,155 @@ const StudentDashboard = () => {
                 )}
                 </AnimatePresence>
 
+                {/* ── WAITING LIST STATUS BANNER ── */}
+                {isWaiting && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 sm:p-5 rounded-2xl relative overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #7c3aed 100%)',
+                            boxShadow: '0 8px 30px rgba(109, 40, 217, 0.25)',
+                            border: '1.5px solid rgba(139, 92, 246, 0.4)'
+                        }}
+                    >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
+                                    style={{ background: 'rgba(255, 255, 255, 0.16)', border: '1px solid rgba(255, 255, 255, 0.25)' }}>
+                                    <IoTimeOutline size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                                            Waiting List Queue
+                                        </h3>
+                                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
+                                            In Queue · Awaiting Vacancy
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-purple-100 font-medium mt-0.5">
+                                        {user?.flexShift?.label || (user?.flexShift?.startTime ? `Demanded Shift: ${user.flexShift.startTime}–${user.flexShift.endTime}` : 'General Waiting List')}
+                                        {' · '}
+                                        Desk allocation is in progress. You have full access to study tools, notes, and library books.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+                                <Link to="/student/find-seat" className="flex-1 sm:flex-none">
+                                    <button className="w-full flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs bg-white text-purple-900 shadow-sm hover:bg-purple-50 transition-all cursor-pointer">
+                                        <IoDesktopOutline size={15} />
+                                        <span>Find a Seat</span>
+                                    </button>
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ── FLEXIBLE SEATING: OCCUPIED DESK BANNER ── */}
+                {isWalkin && !isWaiting && hasOccupiedFlexToday && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 sm:p-5 rounded-2xl relative overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)',
+                            boxShadow: '0 8px 30px rgba(4, 120, 87, 0.25)',
+                            border: '1.5px solid rgba(52, 211, 153, 0.4)'
+                        }}
+                    >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
+                                    style={{ background: 'rgba(255, 255, 255, 0.16)', border: '1px solid rgba(255, 255, 255, 0.25)' }}>
+                                    <IoDesktopOutline size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                                            Today's Desk: Seat {occupiedFlexSeat.number}
+                                        </h3>
+                                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-400/25 text-emerald-100 border border-emerald-300/40 flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
+                                            Occupied & Checked In
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-emerald-100 font-medium mt-0.5">
+                                        {occupiedFlexSeat.room ? `Room ${occupiedFlexSeat.room}` : 'General Room'}
+                                        {occupiedFlexSeat.floor ? ` · ${occupiedFlexSeat.floor}` : ''}
+                                        {' · '}
+                                        Shift: {fmt12h(occupiedFlexSeat.startTime || flexShift?.startTime)}–{fmt12h(occupiedFlexSeat.endTime || flexShift?.endTime)}
+                                        {occupiedFlexSeat.checkedInAt && ` · Logged at ${new Date(occupiedFlexSeat.checkedInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+                                <button
+                                    onClick={handleReleaseFlexDesk}
+                                    disabled={releasingFlexDesk}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100 transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    <IoLogOutOutline size={15} />
+                                    <span>{releasingFlexDesk ? 'Releasing...' : 'Release Desk'}</span>
+                                </button>
+                                <Link to="/student/find-seat" className="flex-1 sm:flex-none">
+                                    <button className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs bg-white text-emerald-900 shadow-sm hover:bg-emerald-50 transition-all cursor-pointer">
+                                        <IoDesktopOutline size={15} />
+                                        <span>Find a Seat</span>
+                                    </button>
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* ── FLEXIBLE SEATING: NO DESK OCCUPIED TODAY BANNER ── */}
+                {isWalkin && !isWaiting && !hasOccupiedFlexToday && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 sm:p-5 rounded-2xl relative overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f97316 100%)',
+                            boxShadow: '0 8px 30px rgba(234, 88, 12, 0.25)',
+                            border: '1.5px solid rgba(251, 146, 60, 0.4)'
+                        }}
+                    >
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
+                                    style={{ background: 'rgba(255, 255, 255, 0.16)', border: '1px solid rgba(255, 255, 255, 0.25)' }}>
+                                    <IoGridOutline size={24} className="text-white" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="text-base sm:text-lg font-black text-white tracking-tight">
+                                            Flexible Seating — Open Desk Available
+                                        </h3>
+                                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/30">
+                                            Flex Scholar
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-orange-100 font-medium mt-0.5">
+                                        {flexShift?.label || (flexShift?.startTime ? `Allowed Shift: ${fmt12h(flexShift.startTime)}–${fmt12h(flexShift.endTime)}` : 'Open Shift')}
+                                        {' · '}
+                                        No desk occupied yet for today. Pick any free desk or vacant student's desk with 1 click.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0">
+                                <Link to="/student/find-seat" className="flex-1 sm:flex-none">
+                                    <button className="w-full flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs bg-white text-orange-900 shadow-sm hover:bg-orange-50 transition-all cursor-pointer">
+                                        <IoDesktopOutline size={15} />
+                                        <span>Find a Seat</span>
+                                    </button>
+                                </Link>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* -- STATS ROW (Seat, Attendance, Fee, Alerts) ─────────────── */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -1781,15 +2142,19 @@ const StudentDashboard = () => {
                     <Link to="/student/seat">
                         <div className="group relative overflow-hidden rounded-2xl p-4 cursor-pointer h-full transition-all duration-300 hover:-translate-y-1"
                             style={{ background: '#FFFFFF', border: '1.5px solid #EDE8E0', boxShadow: '0 2px 12px rgba(180,120,60,0.06)' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#FDDCAE'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(249,115,22,0.11)'; }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = isWaiting ? '#DDD6FE' : '#FDDCAE'; e.currentTarget.style.boxShadow = isWaiting ? '0 8px 28px rgba(124,58,237,0.12)' : '0 8px 28px rgba(249,115,22,0.11)'; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = '#EDE8E0'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(180,120,60,0.06)'; }}>
-                            {/* Top orange accent bar */}
-                            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: 'linear-gradient(90deg,#F97316,#FB923C,transparent)' }} />
+                            {/* Top accent bar */}
+                            <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+                                style={{ background: isWaiting ? 'linear-gradient(90deg,#7C3AED,#A78BFA,transparent)' : (isWalkin && hasOccupiedFlexToday) ? 'linear-gradient(90deg,#10B981,#34D399,transparent)' : 'linear-gradient(90deg,#F97316,#FB923C,transparent)' }} />
                             <div className="flex items-center gap-2 mb-3 mt-1">
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
-                                    <IoDesktopOutline size={15} className="text-white" />
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
+                                    style={{ background: isWaiting ? 'linear-gradient(135deg,#7C3AED,#5B21B6)' : (isWalkin && hasOccupiedFlexToday) ? 'linear-gradient(135deg,#059669,#10b981)' : 'linear-gradient(135deg,#F97316,#EA580C)' }}>
+                                    {isWaiting ? <IoTimeOutline size={15} className="text-white" /> : <IoDesktopOutline size={15} className="text-white" />}
                                 </div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#92400E' }}>My Seat</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: isWaiting ? '#5B21B6' : (isWalkin && hasOccupiedFlexToday) ? '#047857' : '#92400E' }}>
+                                    {isWaiting ? 'Desk Status' : (isWalkin && hasOccupiedFlexToday) ? 'Occupied Desk' : isWalkin ? 'Flexible Seating' : 'My Seat'}
+                                </span>
                             </div>
                             <div>
                             {(() => {
@@ -1802,11 +2167,12 @@ const StudentDashboard = () => {
                                         seatNums.forEach((sn, i) => {
                                             const deskShifts = allShifts.filter(m => m.seatNumber === sn || (!m.seatNumber && i === 0));
                                             const label = dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${sn}` : sn;
-                                            displaySeats.push({ isTemp: false, number: label, shifts: deskShifts.length > 0 ? deskShifts : allShifts });
+                                            displaySeats.push({ isTemp: false, isWalkinClaim: Boolean(dashboardData.seat.isWalkinClaim || dashboardData?.todayWalkin), number: label, shifts: deskShifts.length > 0 ? deskShifts : allShifts });
                                         });
                                     } else {
                                         displaySeats.push({
                                             isTemp: Boolean(dashboardData.seat.isTemporary),
+                                            isWalkinClaim: Boolean(dashboardData.seat.isWalkinClaim || dashboardData?.todayWalkin),
                                             number: dashboardData.seat.roomId ? `${dashboardData.seat.roomId} - ${dashboardData.seat.number}` : dashboardData.seat.number,
                                             shifts: allShifts,
                                         });
@@ -1820,12 +2186,56 @@ const StudentDashboard = () => {
                                         }
                                     });
                                 }
-                                if (displaySeats.length === 0) return (
-                                    <div className="mt-1">
-                                        <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: '#C2410C' }}>--</p>
-                                        <p className="text-[11px] font-semibold" style={{ color: '#F97316' }}>Not Assigned</p>
-                                    </div>
-                                );
+                                if (displaySeats.length === 0) {
+                                    if (isWaiting) {
+                                        const flexShift = user?.flexShift || dashboardData?.flexShift || dashboardData?.user?.flexShift;
+                                        const shiftTimeStr = flexShift?.startTime && flexShift?.endTime
+                                            ? `${fmt12h(flexShift.startTime)} – ${fmt12h(flexShift.endTime)}`
+                                            : '';
+                                        return (
+                                            <div className="mt-1">
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <p className="text-xl sm:text-2xl font-black leading-none" style={{ color: '#6D28D9' }}>
+                                                        Waiting List
+                                                    </p>
+                                                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 border border-purple-300">
+                                                        In Queue
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] font-semibold" style={{ color: '#7C3AED' }}>
+                                                    {shiftTimeStr ? `${flexShift?.label ? `${flexShift.label} ` : ''}${shiftTimeStr} · Awaiting Vacancy` : 'Awaiting Desk Allotment'}
+                                                </p>
+                                            </div>
+                                        );
+                                    }
+                                    if (isWalkin) {
+                                        const flexShift = user?.flexShift || dashboardData?.flexShift || dashboardData?.user?.flexShift;
+                                        const shiftTimeStr = flexShift?.startTime && flexShift?.endTime
+                                            ? `${fmt12h(flexShift.startTime)} – ${fmt12h(flexShift.endTime)}`
+                                            : '';
+                                        return (
+                                            <div className="mt-1">
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <p className="text-xl sm:text-2xl font-black leading-none" style={{ color: '#EA580C' }}>
+                                                        Flexible Desk
+                                                    </p>
+                                                    <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 border border-orange-300">
+                                                        Occupy Desk
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] font-semibold" style={{ color: '#9B7B5A' }}>
+                                                    {shiftTimeStr ? `${shiftTimeStr} · Any Free Desk` : 'Open Seating · Any free desk'}
+                                                </p>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div className="mt-1">
+                                            <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: '#C2410C' }}>--</p>
+                                            <p className="text-[11px] font-semibold" style={{ color: '#F97316' }}>Not Assigned</p>
+                                        </div>
+                                    );
+                                }
                                 return (
                                     <div className="flex flex-col gap-2.5 mt-1">
                                         {[...displaySeats].sort((a, b) => {
@@ -1835,19 +2245,23 @@ const StudentDashboard = () => {
                                         }).map((s, r) => (
                                             <div key={r}>
                                                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <p className="text-2xl sm:text-3xl font-black truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : '#1A1A1A' }} title={s.number}>
+                                                    <p className="text-2xl sm:text-3xl font-black truncate leading-none" style={{ color: s.isTemp ? '#dc2626' : s.isWalkinClaim ? '#059669' : '#1A1A1A' }} title={s.number}>
                                                         {s.number}
                                                     </p>
-                                                    {s.isTemp && (
+                                                    {s.isTemp ? (
                                                         <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 border border-rose-300 shadow-2xs">
                                                             Temporary Desk
                                                         </span>
-                                                    )}
+                                                    ) : s.isWalkinClaim ? (
+                                                        <span className="inline-block text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 border border-emerald-300 shadow-2xs">
+                                                            Occupied Today
+                                                        </span>
+                                                    ) : null}
                                                 </div>
                                                 <div className="flex flex-wrap gap-1 mt-1">
                                                     {[...s.shifts].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')).map((m, g) => (
                                                         <span key={g} className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-full"
-                                                            style={{ background: s.isTemp ? 'rgba(239,68,68,0.08)' : 'rgba(249,115,22,0.08)', border: `1px solid ${s.isTemp ? 'rgba(239,68,68,0.2)' : 'rgba(249,115,22,0.2)'}`, color: s.isTemp ? '#dc2626' : '#EA580C' }}>
+                                                            style={{ background: s.isTemp ? 'rgba(239,68,68,0.08)' : s.isWalkinClaim ? 'rgba(16,185,129,0.08)' : 'rgba(249,115,22,0.08)', border: `1px solid ${s.isTemp ? 'rgba(239,68,68,0.2)' : s.isWalkinClaim ? 'rgba(16,185,129,0.25)' : 'rgba(249,115,22,0.2)'}`, color: s.isTemp ? '#dc2626' : s.isWalkinClaim ? '#059669' : '#EA580C' }}>
                                                             {m.name}{m.startTime ? ` ${m.startTime}-${m.endTime}` : ''}
                                                         </span>
                                                     ))}
@@ -1860,6 +2274,7 @@ const StudentDashboard = () => {
                             </div>
                         </div>
                     </Link>
+
 
                     {/* ATTENDANCE */}
                     <Link to="/student/attendance">
