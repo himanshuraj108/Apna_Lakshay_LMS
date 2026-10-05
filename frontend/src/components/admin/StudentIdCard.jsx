@@ -50,7 +50,7 @@ const SEAT_COLORS = [
 /* ─────────────────────────────────────────────────────────────────────────────
    STATUS THEME
 ─────────────────────────────────────────────────────────────────────────────── */
-const getTheme = (student, isTemporary, isPending) => {
+const getTheme = (student, isTemporary, isPending, isWalkin, isWaiting) => {
     if (!student.isActive) return {
         headerBg:    'linear-gradient(160deg, #b91c1c 0%, #dc2626 55%, #991b1b 100%)',
         accentColor: '#ef4444',
@@ -59,6 +59,14 @@ const getTheme = (student, isTemporary, isPending) => {
         statusLabel: 'INACTIVE',
         stripeBg:    'linear-gradient(90deg, #b91c1c 0%, #dc2626 50%, #b91c1c 100%)',
     };
+    if (isWaiting) return {
+        headerBg:    'linear-gradient(160deg, #5b21b6 0%, #7c3aed 55%, #4c1d95 100%)',
+        accentColor: '#8b5cf6',
+        accentLight: '#f5f3ff',
+        accentText:  '#6d28d9',
+        statusLabel: 'WAITING LIST',
+        stripeBg:    'linear-gradient(90deg, #5b21b6 0%, #7c3aed 50%, #5b21b6 100%)',
+    };
     if (isTemporary) return {
         headerBg:    'linear-gradient(160deg, #92400e 0%, #d97706 55%, #78350f 100%)',
         accentColor: '#f59e0b',
@@ -66,6 +74,14 @@ const getTheme = (student, isTemporary, isPending) => {
         accentText:  '#92400e',
         statusLabel: 'TEMPORARY',
         stripeBg:    'linear-gradient(90deg, #92400e 0%, #d97706 50%, #92400e 100%)',
+    };
+    if (isWalkin) return {
+        headerBg:    'linear-gradient(160deg, #c2410c 0%, #ea580c 55%, #9a3412 100%)',
+        accentColor: '#ea580c',
+        accentLight: '#fff7ed',
+        accentText:  '#c2410c',
+        statusLabel: 'WALKIN / FLEX',
+        stripeBg:    'linear-gradient(90deg, #c2410c 0%, #ea580c 50%, #c2410c 100%)',
     };
     if (isPending) return {
         headerBg:    'linear-gradient(160deg, #854d0e 0%, #ca8a04 55%, #713f12 100%)',
@@ -218,11 +234,13 @@ const StudentIdCard = ({ student }) => {
     const firstTemp          = tempAssignments[0];
     const resolvedSeatNumber = student.seat?.number || student.seatNumber || firstTemp?.seat?.number || firstTemp?.seatNumber || null;
     const resolvedRoomId     = student.roomId || student.seat?.room?.roomId || student.seat?.roomId || firstTemp?.seat?.room?.roomId || firstTemp?.room || null;
+    const isWaiting          = student.studentType === 'waitingList';
+    const isWalkin           = !isWaiting && (student.studentType === 'walkin' || Boolean(student.flexShift?.startTime));
     const hasSeatAssigned    = Boolean(resolvedSeatNumber);
-    const hasShiftAssigned   = Boolean(student.shift || student.shifts?.length > 0 || firstTemp?.shift?.name || firstTemp?.shiftName);
-    const isPending          = !isTemporary && (!hasSeatAssigned || !hasShiftAssigned);
+    const hasShiftAssigned   = Boolean(student.shift || student.shifts?.length > 0 || firstTemp?.shift?.name || firstTemp?.shiftName || (isWalkin && student.flexShift?.startTime) || (isWaiting && student.flexShift?.startTime));
+    const isPending          = !isTemporary && !isWalkin && !isWaiting && (!hasSeatAssigned || !hasShiftAssigned);
 
-    const theme = getTheme(student, isTemporary, isPending);
+    const theme = getTheme(student, isTemporary, isPending, isWalkin, isWaiting);
 
     const hasAc = student.seat?.roomHasAc || student.seat?.room?.hasAc || student.room?.hasAc || firstTemp?.seat?.room?.hasAc;
 
@@ -234,6 +252,10 @@ const StudentIdCard = ({ student }) => {
     })();
 
     const getFormattedShift = () => {
+        if ((isWalkin || isWaiting) && student.flexShift?.startTime && student.flexShift?.endTime) {
+            const lbl = student.flexShift.label || (isWaiting ? 'Demanded Shift' : 'Flex Shift');
+            return `${lbl}  ${student.flexShift.startTime}–${student.flexShift.endTime}`;
+        }
         let shiftName = 'Not Assigned';
         if (student.shift && typeof student.shift === 'string') shiftName = student.shift;
         else if (student.shift?.name) shiftName = student.shift.name;
@@ -245,7 +267,7 @@ const StudentIdCard = ({ student }) => {
         const s = student.shift?.startTime || student.shiftDetails?.startTime || firstTemp?.shift?.startTime || firstTemp?.startTime;
         const e = student.shift?.endTime   || student.shiftDetails?.endTime   || firstTemp?.shift?.endTime   || firstTemp?.endTime;
         if (s && e) return `${shiftName}  ${s}–${e}`;
-        return typeof shiftName === 'string' ? shiftName : 'Not Assigned';
+        return typeof shiftName === 'string' ? shiftName : (isWaiting ? 'Awaiting Allocation' : (isWalkin ? 'Open Timing' : 'Not Assigned'));
     };
 
     const joinedDate = (student.admissionDate || student.createdAt)
@@ -257,8 +279,20 @@ const StudentIdCard = ({ student }) => {
         if (!student.isActive) {
             return { validTillDate: 'Inactive', validTillLabel: 'MEMBERSHIP STATUS' };
         }
+        if (isWaiting) {
+            return {
+                validTillDate: student.flexShift?.label || (student.flexShift?.startTime ? `Queue (${student.flexShift.startTime}–${student.flexShift.endTime})` : 'Waiting Queue'),
+                validTillLabel: 'WAITLIST STATUS'
+            };
+        }
         if (isTemporary) {
             return { validTillDate: 'Temporary Access', validTillLabel: 'MEMBERSHIP STATUS' };
+        }
+        if (isWalkin) {
+            return {
+                validTillDate: student.flexShift?.monthlyFee ? `Flex Plan (₹${student.flexShift.monthlyFee}/mo)` : 'Walkin Scholar',
+                validTillLabel: 'MEMBERSHIP TYPE'
+            };
         }
         if (isPending) {
             return { validTillDate: 'Pending Approval', validTillLabel: 'MEMBERSHIP STATUS' };
@@ -478,8 +512,30 @@ const StudentIdCard = ({ student }) => {
                                 border: `1px solid ${theme.accentColor}`,
                                 borderRadius: '4px', padding: '1.5px 6px',
                                 letterSpacing: '0.12em', textTransform: 'uppercase',
-                            }}>STUDENT</span>
-                            {resolvedSeatNumber && (
+                            }}>{isWaiting ? 'WAITLIST APPLICANT' : isWalkin ? 'WALKIN SCHOLAR' : 'STUDENT'}</span>
+                            {isWaiting ? (
+                                <span style={{
+                                    fontSize: '8px', fontWeight: 700,
+                                    color: '#6d28d9',
+                                    background: '#f5f3ff',
+                                    border: '1px solid #ddd6fe',
+                                    borderRadius: '4px', padding: '1.5px 6px',
+                                    display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                }}>
+                                    In Queue
+                                </span>
+                            ) : isWalkin ? (
+                                <span style={{
+                                    fontSize: '8px', fontWeight: 700,
+                                    color: '#c2410c',
+                                    background: '#fff7ed',
+                                    border: '1px solid #fed7aa',
+                                    borderRadius: '4px', padding: '1.5px 6px',
+                                    display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                }}>
+                                    Flex Seating
+                                </span>
+                            ) : resolvedSeatNumber && (
                                 <span style={{
                                     fontSize: '8px', fontWeight: 700,
                                     color: hasAc ? '#1d4ed8' : '#6b7280',
@@ -506,8 +562,16 @@ const StudentIdCard = ({ student }) => {
                             </div>
                             {/* Seat */}
                             <div>
-                                <div style={LABEL_STYLE}>{isTemporary ? 'Temp Desk' : (student.seatNumbers?.length > 1 ? 'Desks' : 'Seat No.')}</div>
-                                {student.seatNumbers && student.seatNumbers.length > 1 ? (
+                                <div style={LABEL_STYLE}>{isWaiting ? 'Seat Status' : isWalkin ? 'Desk Access' : (isTemporary ? 'Temp Desk' : (student.seatNumbers?.length > 1 ? 'Desks' : 'Seat No.'))}</div>
+                                {isWaiting ? (
+                                    <div style={{ ...VAL_STYLE, color: '#6d28d9', fontWeight: 800, fontSize: '9.5px' }}>
+                                        Awaiting Vacancy
+                                    </div>
+                                ) : isWalkin ? (
+                                    <div style={{ ...VAL_STYLE, color: '#c2410c', fontWeight: 800, fontSize: '9.5px' }}>
+                                        Any Free Desk
+                                    </div>
+                                ) : student.seatNumbers && student.seatNumbers.length > 1 ? (
                                     <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
                                         {[...student.seatNumbers].sort((a, b) => Number(a) - Number(b)).map((sn, i) => {
                                             const c = SEAT_COLORS[i % SEAT_COLORS.length];
@@ -549,7 +613,7 @@ const StudentIdCard = ({ student }) => {
 
                             {/* Shift — full width */}
                             <div style={{ gridColumn: '1 / -1' }}>
-                                <div style={{ ...LABEL_STYLE, marginBottom: '3px' }}>Shift</div>
+                                <div style={{ ...LABEL_STYLE, marginBottom: '3px' }}>{isWaiting ? 'Demanded Shift' : 'Shift'}</div>
                                 {student.shifts && student.shifts.length > 0 ? (
                                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                         {[...student.shifts].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || '')).map((s, i) => {
@@ -569,9 +633,9 @@ const StudentIdCard = ({ student }) => {
                                 ) : (
                                     <div style={{
                                         fontSize: '9px', fontWeight: 700,
-                                        color: resolvedSeatNumber ? theme.accentText : '#9ca3af',
-                                        background: resolvedSeatNumber ? theme.accentLight : '#f9fafb',
-                                        border: `1px solid ${resolvedSeatNumber ? theme.accentColor : '#e5e7eb'}`,
+                                        color: isWaiting ? '#6d28d9' : (isWalkin ? '#c2410c' : (resolvedSeatNumber ? theme.accentText : '#9ca3af')),
+                                        background: isWaiting ? '#f5f3ff' : (isWalkin ? '#fff7ed' : (resolvedSeatNumber ? theme.accentLight : '#f9fafb')),
+                                        border: `1px solid ${isWaiting ? '#ddd6fe' : (isWalkin ? '#fed7aa' : (resolvedSeatNumber ? theme.accentColor : '#e5e7eb'))}`,
                                         borderRadius: '4px', padding: '2px 7px',
                                         display: 'inline-block',
                                         maxWidth: '100%', overflow: 'hidden',

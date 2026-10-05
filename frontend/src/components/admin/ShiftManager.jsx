@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import useShifts from '../../hooks/useShifts';
 import api from '../../utils/api';
 import Modal from '../ui/Modal';
-import { IoAdd, IoTrash, IoPencil, IoTimeOutline, IoAlertCircle, IoIdCard, IoPeople } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoPencil, IoTimeOutline, IoAlertCircle, IoIdCard, IoPeople, IoMailOutline } from 'react-icons/io5';
+import NotifyShiftVacancyModal from './NotifyShiftVacancyModal';
 
 const ShiftManager = ({ allowDelete = true }) => {
     const navigate = useNavigate();
@@ -16,6 +17,8 @@ const ShiftManager = ({ allowDelete = true }) => {
     const [error, setError] = useState('');
     const [dbShifts, setDbShifts] = useState([]);
     const [dbLoading, setDbLoading] = useState(true);
+    const [showNotifyModal, setShowNotifyModal] = useState(false);
+    const [notifyShift, setNotifyShift] = useState(null);
 
     const handleViewStudents = (shiftId) => {
         navigate(`/admin/students?tab=id-cards&shift=${shiftId}`);
@@ -165,6 +168,17 @@ const ShiftManager = ({ allowDelete = true }) => {
                                         >
                                             <IoPeople size={14} /> Students
                                         </motion.button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                                            onClick={() => {
+                                                setNotifyShift(shift);
+                                                setShowNotifyModal(true);
+                                            }}
+                                            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-all cursor-pointer"
+                                            title="Send vacancy notification email to waitlist scholars"
+                                        >
+                                            <IoMailOutline size={14} /> Notify Waitlist
+                                        </motion.button>
                                         {allowDelete && (
                                             <>
                                                 <motion.button
@@ -260,6 +274,13 @@ const ShiftManager = ({ allowDelete = true }) => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Notify Shift Vacancy Modal */}
+            <NotifyShiftVacancyModal
+                isOpen={showNotifyModal}
+                onClose={() => setShowNotifyModal(false)}
+                shift={notifyShift}
+            />
         </div>
     );
 };

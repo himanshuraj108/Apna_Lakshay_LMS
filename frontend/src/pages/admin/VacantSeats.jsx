@@ -6,10 +6,12 @@ import {
     IoArrowBack, IoBedOutline, IoSearchOutline,
     IoRefreshOutline, IoLayersOutline, IoTimeOutline,
     IoGridOutline, IoListOutline, IoCheckmarkCircle,
-    IoCloseCircle, IoChevronDown, IoOpenOutline, IoInformationCircleOutline
+    IoCloseCircle, IoChevronDown, IoOpenOutline, IoInformationCircleOutline,
+    IoMailOutline
 } from 'react-icons/io5';
 import useBackPath from '../../hooks/useBackPath';
 import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
+import NotifyShiftVacancyModal from '../../components/admin/NotifyShiftVacancyModal';
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const VacantSeats = () => {
@@ -22,6 +24,8 @@ const VacantSeats = () => {
     const [filterShift, setShift] = useState('all');
     const [acFilter, setAcFilter] = useState(null);
     const [viewMode, setView]     = useState('grid');
+    const [showNotifyModal, setShowNotifyModal] = useState(false);
+    const [notifyShift, setNotifyShift] = useState(null);
 
     useEffect(() => { fetchVacant(); }, []);
 
@@ -140,11 +144,33 @@ const VacantSeats = () => {
                                             {shift.shiftTime}
                                         </div>
                                         <div className="flex items-center justify-between mb-1.5">
-                                            <span className="text-xs text-stone-600 font-medium">{shift.vacant} empty out of {shift.total} seats</span>
+                                            <span className="text-xs text-stone-600 font-medium">
+                                                {shift.vacant} empty out of {shift.total} seats
+                                                {shift.partialCount > 0 && (
+                                                    <span className="text-amber-700 font-bold ml-1">
+                                                        ({shift.fullCount} full, {shift.partialCount} partial)
+                                                    </span>
+                                                )}
+                                            </span>
                                             <span className="text-xs font-black" style={{ color: barColor }}>{pct}% free</span>
                                         </div>
-                                        <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                                        <div className="h-2 bg-stone-100 rounded-full overflow-hidden mb-3">
                                             <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: barColor }} />
+                                        </div>
+                                        <div className="pt-2 border-t border-[#EDE8E0] flex items-center justify-between">
+                                            <span className="text-[11px] font-bold text-stone-500">Waitlist Alert</span>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setNotifyShift(shift);
+                                                    setShowNotifyModal(true);
+                                                }}
+                                                className="flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-lg text-[10px] font-bold shadow-2xs transition-all cursor-pointer"
+                                                title="Send vacancy notification email to waitlist scholars"
+                                            >
+                                                <IoMailOutline size={12} /> Send Mail
+                                            </button>
                                         </div>
                                     </div>
                                 );
@@ -174,10 +200,24 @@ const VacantSeats = () => {
                                         </div>
                                         <p className="text-xs text-stone-500 mt-1 font-bold ml-10">{acFilter === null ? shiftSlots.length : filtered.length} vacant seats found</p>
                                     </div>
-                                    <button onClick={() => { setShift('all'); setAcFilter(null); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 rounded-xl transition-all font-bold text-xs cursor-pointer">
-                                        <IoCloseCircle size={18} />
-                                        <span className="uppercase tracking-wide">Close</span>
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                const curShift = data?.shiftSummary?.find(s => s.shiftId === filterShift);
+                                                setNotifyShift(curShift || { shiftId: filterShift, shiftName: shifts.find(s => s.id === filterShift)?.name, vacant: shiftSlots.length });
+                                                setShowNotifyModal(true);
+                                            }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl transition-all font-bold text-xs shadow-2xs cursor-pointer"
+                                            title="Send vacancy notification email to waitlist scholars"
+                                        >
+                                            <IoMailOutline size={15} />
+                                            <span>Notify Waitlist</span>
+                                        </button>
+                                        <button onClick={() => { setShift('all'); setAcFilter(null); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 rounded-xl transition-all font-bold text-xs cursor-pointer">
+                                            <IoCloseCircle size={18} />
+                                            <span className="uppercase tracking-wide">Close</span>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Modal Body */}
@@ -251,10 +291,18 @@ const VacantSeats = () => {
                                                                     {slot.shiftName}
                                                                 </div>
 
-                                                                {/* Partial warning */}
+                                                                {/* Partial timing breakdown */}
                                                                 {slot.isPartial && (
-                                                                    <div className="mt-1.5 text-[9px] text-amber-700 font-semibold bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">
-                                                                        One shift already taken
+                                                                    <div className="mt-2 text-[10px] text-amber-900 bg-amber-50/80 border border-amber-200 rounded-lg p-2 space-y-1">
+                                                                        <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                                                                            <span>Free: {slot.partialTiming || 'Partial'}</span>
+                                                                        </div>
+                                                                        {slot.occupiedTiming && (
+                                                                            <p className="text-[9px] text-stone-500 font-medium leading-tight truncate" title={`Occupied: ${slot.occupiedTiming}`}>
+                                                                                Taken: {slot.occupiedTiming}
+                                                                            </p>
+                                                                        )}
                                                                     </div>
                                                                 )}
 
@@ -276,6 +324,14 @@ const VacantSeats = () => {
                         </div>
                     )}
                 </AnimatePresence>
+
+                {/* Notify Shift Vacancy Email Modal */}
+                <NotifyShiftVacancyModal
+                    isOpen={showNotifyModal}
+                    onClose={() => setShowNotifyModal(false)}
+                    shift={notifyShift}
+                    availableCount={notifyShift?.vacant}
+                />
             </div>
         </div>
     );

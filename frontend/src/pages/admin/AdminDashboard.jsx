@@ -13,7 +13,7 @@ import {
     IoSend, IoMic, IoMicOff, IoCopyOutline, IoCheckmark, IoMegaphoneOutline, IoWarningOutline,
     IoTrendingUp, IoTrendingDown, IoBusinessOutline, IoMenuOutline,
     IoTerminalOutline, IoStatsChartOutline, IoRibbonOutline, IoHardwareChipOutline, IoPulseOutline,
-    IoAnalyticsOutline, IoPersonAddOutline
+    IoAnalyticsOutline, IoPersonAddOutline, IoLayersOutline
 } from 'react-icons/io5';
 import ShiftManager from '../../components/admin/ShiftManager';
 import QRScannerModal from '../../components/admin/QRScannerModal';
@@ -100,6 +100,17 @@ export const ALL_ADMIN_MODULES = [
         color: '#0d9488',
         bg: '#f0fdfa',
         tag: 'Available'
+    },
+    {
+        id: 'walkin',
+        title: 'Walkin Management',
+        desc: 'Manage walkin slots, mark absences, and approve flexible seat requests',
+        path: '/admin/walkin',
+        category: 'Library Operations',
+        icon: IoLayersOutline,
+        color: '#f97316',
+        bg: '#fff7ed',
+        tag: 'Flexible'
     },
     {
         id: 'kiosk',

@@ -13,7 +13,7 @@ import {
     IoWarningOutline, IoTrashOutline, IoGridOutline, IoListOutline,
     IoLockClosedOutline, IoPersonOutline, IoCalendarOutline, IoShuffleOutline,
     IoPhonePortraitOutline, IoReceiptOutline, IoCardOutline, IoCashOutline, IoArrowForwardOutline, IoCheckmarkCircleOutline,
-    IoInformationCircleOutline
+    IoInformationCircleOutline, IoMoonOutline, IoDesktopOutline
 } from 'react-icons/io5';
 import StudentIdCard from '../../components/admin/StudentIdCard';
 import html2canvas from 'html2canvas';
@@ -23,6 +23,7 @@ import useShifts from '../../hooks/useShifts';
 import useBackPath from '../../hooks/useBackPath';
 import { useAuth } from '../../context/AuthContext';
 import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
+import NotifyShiftVacancyModal from '../../components/admin/NotifyShiftVacancyModal';
 
 const PAGE_BG = { background: '#FAF6F0' };
 const INPUT = 'w-full bg-slate-50/70 focus:bg-white border border-slate-200 focus:border-orange-500 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-orange-500/15 outline-none transition-all placeholder-slate-400 shadow-2xs';
@@ -47,8 +48,10 @@ const StudentManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [showSeatModal, setShowSeatModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showVacancyModal, setShowVacancyModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [absentStudentIds, setAbsentStudentIds] = useState(new Set()); // IDs absent today
     const [formData, setFormData] = useState({
         name: '',
         fatherName: '',
@@ -60,11 +63,23 @@ const StudentManagement = () => {
         registrationFee: 0,
         address: '',
         gender: 'male',
+        studentType: 'regular',
         password: '',
         confirmPassword: '',
         systemMode: mode,
-        joinedAt: new Date().toISOString().split('T')[0], // Default to today
-        sendMail: false
+        joinedAt: new Date().toISOString().split('T')[0],
+        sendMail: false,
+        shift: '',
+        negotiatedPrice: '',
+        seatId: '',
+        showInFeeManagement: true,
+        flexShift: {
+            slotId: '',
+            startTime: '',
+            endTime: '',
+            label: '',
+            monthlyFee: ''
+        }
     });
     const [seatFormData, setSeatFormData] = useState({
         seatId: '',
@@ -229,6 +244,13 @@ const StudentManagement = () => {
         try {
             const response = await api.get('/admin/students');
             setStudents(response.data.students);
+            // Build absent set from the isAbsentToday flag on each student
+            const absentIds = new Set(
+                (response.data.students || [])
+                    .filter(s => s.isAbsentToday)
+                    .map(s => String(s._id))
+            );
+            setAbsentStudentIds(absentIds);
 
 
         } catch (error) {
@@ -441,13 +463,31 @@ const StudentManagement = () => {
                     joinedAt: formData.joinedAt,
                     password: formData.password,
                     negotiatedPrice: formData.negotiatedPrice !== '' ? formData.negotiatedPrice : undefined,
-                    shift: formData.shift || undefined,
                     sendMail: formData.sendMail,
-                    showInFeeManagement: formData.showInFeeManagement === true
+                    showInFeeManagement: formData.showInFeeManagement === true,
+                    studentType: formData.studentType || 'regular',
+                    flexShift: (formData.studentType === 'walkin' || formData.studentType === 'waitingList') ? {
+                        slotId: formData.flexShift?.slotId || null,
+                        startTime: formData.flexShift?.startTime || '',
+                        endTime: formData.flexShift?.endTime || '',
+                        label: formData.flexShift?.label || '',
+                        monthlyFee: Number(formData.flexShift?.monthlyFee) || 0
+                    } : undefined
                 });
                 setSuccess('Student updated successfully');
             } else {
-                const response = await api.post('/admin/students', formData);
+                const payload = {
+                    ...formData,
+                    studentType: formData.studentType || 'regular',
+                    flexShift: (formData.studentType === 'walkin' || formData.studentType === 'waitingList') ? {
+                        slotId: formData.flexShift?.slotId || null,
+                        startTime: formData.flexShift?.startTime || '',
+                        endTime: formData.flexShift?.endTime || '',
+                        label: formData.flexShift?.label || '',
+                        monthlyFee: Number(formData.flexShift?.monthlyFee) || 0
+                    } : undefined
+                };
+                const response = await api.post('/admin/students', payload);
                 setSuccess(`Student created! Temporary password: ${response.data.student.tempPassword}`);
             }
 
@@ -466,7 +506,21 @@ const StudentManagement = () => {
                 address: '',
                 gender: 'male',
                 password: '',
-                joinedAt: new Date().toISOString().split('T')[0]
+                confirmPassword: '',
+                joinedAt: new Date().toISOString().split('T')[0],
+                sendMail: false,
+                shift: '',
+                negotiatedPrice: '',
+                seatId: '',
+                showInFeeManagement: true,
+                studentType: 'regular',
+                flexShift: {
+                    slotId: '',
+                    startTime: '',
+                    endTime: '',
+                    label: '',
+                    monthlyFee: ''
+                }
             });
             setTimeout(() => setSuccess(''), 5000);
         } catch (error) {
@@ -617,7 +671,15 @@ const StudentManagement = () => {
             address: '',
             gender: 'male',
             password: password,
-            joinedAt: new Date().toISOString().split('T')[0] // Default to today
+            joinedAt: new Date().toISOString().split('T')[0], // Default to today
+            studentType: 'regular',
+            flexShift: {
+                slotId: '',
+                startTime: '',
+                endTime: '',
+                label: '',
+                monthlyFee: ''
+            }
         });
         setShowModal(true);
     };
@@ -681,7 +743,15 @@ const StudentManagement = () => {
             negotiatedPrice: negotiatedPrice,
             seatId: getStudentSeat(student._id) ? student.seat._id : '', // Needed for assignSeat
             sendMail: false,
-            showInFeeManagement: student.showInFeeManagement !== false
+            showInFeeManagement: student.showInFeeManagement !== false,
+            studentType: student.studentType || 'regular',
+            flexShift: {
+                slotId: student.flexShift?.slotId || '',
+                startTime: student.flexShift?.startTime || '',
+                endTime: student.flexShift?.endTime || '',
+                label: student.flexShift?.label || '',
+                monthlyFee: student.flexShift?.monthlyFee ?? (student.currentFee || '')
+            }
         });
         setShowModal(true);
     };
@@ -729,6 +799,29 @@ const StudentManagement = () => {
             setTempSeatList(res.data.assignments || []);
         } catch { setTempSeatList([]); }
         finally { setTempSeatLoading(false); }
+    };
+
+    // --- Mark Absent / Remove Absent for today ---
+    const handleMarkAbsent = async (student) => {
+        try {
+            await api.post(`/walkin/absence/${student._id}`, {});
+            setAbsentStudentIds(prev => new Set([...prev, String(student._id)]));
+        } catch (err) {
+            alert(err?.response?.data?.message || 'Failed to mark absent');
+        }
+    };
+
+    const handleRemoveAbsent = async (student) => {
+        try {
+            await api.delete(`/walkin/absence/${student._id}`);
+            setAbsentStudentIds(prev => {
+                const next = new Set(prev);
+                next.delete(String(student._id));
+                return next;
+            });
+        } catch (err) {
+            alert(err?.response?.data?.message || 'Failed to remove absent mark');
+        }
     };
 
     const handleCreateTempSeat = async (e) => {
@@ -1041,16 +1134,24 @@ const StudentManagement = () => {
                 selectedStudent.seat?.isTemporary ||
                 tempAssignments.length > 0
             );
+            const isWalkin = selectedStudent.studentType === 'walkin';
+            const isWaiting = selectedStudent.studentType === 'waitingList';
             const firstTemp = tempAssignments[0];
             const resolvedSeatNo = (typeof getStudentSeat === 'function' ? getStudentSeat(selectedStudent._id) : null) ||
                 selectedStudent.seat?.number || selectedStudent.seatNumber || firstTemp?.seat?.number || firstTemp?.seatNumber || null;
             const seatDetails = typeof getStudentSeatDetails === 'function' ? getStudentSeatDetails(selectedStudent._id) : null;
             const resolvedRoomId = selectedStudent.roomId || seatDetails?.roomId || selectedStudent.seat?.room?.roomId || selectedStudent.seat?.roomId || firstTemp?.seat?.room?.roomId || null;
-            const seatText = resolvedSeatNo ? (resolvedRoomId ? `Room ${resolvedRoomId} - Seat ${resolvedSeatNo}` : `Seat ${resolvedSeatNo}`) : 'Pending Allocation';
+            const seatText = resolvedSeatNo
+                ? (resolvedRoomId ? `Room ${resolvedRoomId} - Seat ${resolvedSeatNo}` : `Seat ${resolvedSeatNo}`)
+                : (isWalkin ? 'Flex Desk / Open Seating' : isWaiting ? 'Waiting List / In Queue' : 'Pending Allocation');
 
             let shiftText = 'Not Assigned';
             if (selectedStudent.shifts && selectedStudent.shifts.length > 0) {
                 shiftText = selectedStudent.shifts.map(s => `${s.name}${s.startTime && s.endTime ? ` (${s.startTime}-${s.endTime})` : ''}`).join(', ');
+            } else if ((isWalkin || isWaiting) && selectedStudent.flexShift?.startTime && selectedStudent.flexShift?.endTime) {
+                shiftText = `${isWaiting ? 'Demanded: ' : ''}${selectedStudent.flexShift.label || 'Shift'} (${selectedStudent.flexShift.startTime}-${selectedStudent.flexShift.endTime})`;
+            } else if (isWaiting) {
+                shiftText = selectedStudent.flexShift?.label ? `Demanded: ${selectedStudent.flexShift.label}` : 'Awaiting Allotment';
             } else if (selectedStudent.shift) {
                 if (typeof selectedStudent.shift === 'string') shiftText = selectedStudent.shift;
                 else if (selectedStudent.shift.name) {
@@ -1066,7 +1167,13 @@ const StudentManagement = () => {
                 ? new Date(selectedStudent.admissionDate || selectedStudent.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
                 : 'N/A';
 
-            const membershipStatus = !selectedStudent.isActive ? 'INACTIVE' : isTemporary ? 'TEMPORARY ACCESS' : (!resolvedSeatNo ? 'PENDING ALLOCATION' : 'ACTIVE MEMBER');
+            const membershipStatus = !selectedStudent.isActive
+                ? 'INACTIVE'
+                : isTemporary
+                ? 'TEMPORARY ACCESS'
+                : isWalkin
+                ? 'WALKIN / FLEX SCHOLAR'
+                : (!resolvedSeatNo ? 'PENDING ALLOCATION' : 'ACTIVE MEMBER');
 
             // ════════════════════════════════════════════════════════════════
             // PAGE 1: OFFICIAL STUDENT ID CARD & CREDENTIALS
@@ -1517,6 +1624,13 @@ const StudentManagement = () => {
     };
 
     const getStudentFee = (student) => {
+        if (!student) return 'N/A';
+
+        // 0. Walkin student with recurring flexShift monthly fee
+        if ((student.studentType === 'walkin' || student.flexShift?.startTime) && student.flexShift && Number(student.flexShift.monthlyFee) > 0) {
+            return `Rs. ${student.flexShift.monthlyFee} (Flex)`;
+        }
+
         const studentId = student._id;
 
         // 1. First check student.seat.assignments (directly populated, always current)
@@ -1575,6 +1689,9 @@ const StudentManagement = () => {
 
     const getStudentNumericFee = (student) => {
         if (!student) return 0;
+        if (student.studentType === 'walkin' && student.flexShift && Number(student.flexShift.monthlyFee) > 0) {
+            return Number(student.flexShift.monthlyFee);
+        }
         const feeStr = getStudentFee(student);
         if (!feeStr || feeStr === 'N/A') return 0;
         const match = feeStr.match(/\d+/);
@@ -1710,10 +1827,13 @@ const StudentManagement = () => {
         }
 
         // ── Main Student Report ─────────────────────────────────────────
+        const isFlexStudent = (s) => s.studentType === 'walkin' || Boolean(s.flexShift?.startTime && s.flexShift?.endTime) || Boolean(s.walkinSlot);
+        const isWaitingStudent = (s) => s.studentType === 'waitingList';
         const totalCount = filteredStudents.length;
-        const activeCount = filteredStudents.filter(s => s.isActive && getStudentSeat(s._id) && getStudentShifts(s._id)).length;
+        const activeCount = filteredStudents.filter(s => s.isActive && (getStudentSeat(s._id) || isFlexStudent(s)) && getStudentShifts(s._id)).length;
         const assignedSeatsCount = filteredStudents.filter(s => getStudentSeat(s._id)).length;
-        const pendingCount = filteredStudents.filter(s => s.isActive && (!getStudentSeat(s._id) || !getStudentShifts(s._id))).length;
+        const pendingCount = filteredStudents.filter(s => s.isActive && !isFlexStudent(s) && !isWaitingStudent(s) && (!getStudentSeat(s._id) || !getStudentShifts(s._id))).length;
+        const waitingCount = filteredStudents.filter(s => s.isActive && isWaitingStudent(s)).length;
         const inactiveCount = filteredStudents.filter(s => !s.isActive).length;
 
         // Stat pills row
@@ -1723,6 +1843,7 @@ const StudentManagement = () => {
             { label: 'Active Assigned', value: String(activeCount),        bg: [22, 163, 74] },
             { label: 'Seats Assigned',  value: String(assignedSeatsCount), bg: [16, 185, 129] },
             { label: 'Pending Seat',    value: String(pendingCount),       bg: [245, 158, 11] },
+            { label: 'Waiting List',    value: String(waitingCount),       bg: [124, 58, 237] },
             { label: 'Inactive',        value: String(inactiveCount),      bg: [239, 68, 68] },
         ];
         let px = 14;
@@ -2221,7 +2342,18 @@ const StudentManagement = () => {
             }
         }
 
-        return assignedShifts.length > 0 ? assignedShifts.join(', ') : null;
+        if (assignedShifts.length > 0) return assignedShifts.join(', ');
+
+        const stu = students.find(s => String(s._id) === String(studentId));
+        if (stu?.flexShift?.startTime && stu?.flexShift?.endTime) {
+            const lbl = stu.flexShift.label || `${stu.flexShift.startTime} – ${stu.flexShift.endTime}`;
+            return stu.studentType === 'waitingList' ? `${lbl} (Waitlist)` : `${lbl} (Flex)`;
+        }
+        if (stu?.studentType === 'waitingList') {
+            return stu.flexShift?.label ? `${stu.flexShift.label} (Waitlist)` : 'Awaiting Vacancy';
+        }
+
+        return null;
     };
 
     const getShiftPriceForSeat = (seatId, shiftId) => {
@@ -2254,11 +2386,15 @@ const StudentManagement = () => {
 
     // Real-Time DB Operational Metrics (100% MongoDB)
     const metrics = useMemo(() => {
+        const isFlexStudent = (s) => s.studentType === 'walkin' || Boolean(s.flexShift?.startTime && s.flexShift?.endTime) || Boolean(s.walkinSlot);
+        const isWaitingStudent = (s) => s.studentType === 'waitingList';
         const total = students.length;
         const active = students.filter(s => s.isActive !== false).length;
         const inactive = students.filter(s => s.isActive === false).length;
         const seated = students.filter(s => s.isActive !== false && getStudentSeat(s._id)).length;
-        const pending = students.filter(s => s.isActive !== false && !getStudentSeat(s._id)).length;
+        const walkin = students.filter(s => s.isActive !== false && isFlexStudent(s)).length;
+        const waitingList = students.filter(s => s.isActive !== false && isWaitingStudent(s)).length;
+        const pending = students.filter(s => s.isActive !== false && !isFlexStudent(s) && !isWaitingStudent(s) && !getStudentSeat(s._id)).length;
         const acCount = students.filter(s => {
             if (s.isActive === false) return false;
             const details = getStudentSeatDetails(s._id);
@@ -2272,6 +2408,8 @@ const StudentManagement = () => {
             active,
             inactive,
             seated,
+            walkin,
+            waitingList,
             pending,
             acCount,
             adminReg,
@@ -2281,6 +2419,8 @@ const StudentManagement = () => {
 
     // Filter students based on active tab
     const getFilteredStudents = () => {
+        const isFlexStudent = (s) => s.studentType === 'walkin' || Boolean(s.flexShift?.startTime && s.flexShift?.endTime) || Boolean(s.walkinSlot);
+        const isWaitingStudent = (s) => s.studentType === 'waitingList';
         switch (activeTab) {
             case 'inactive':
                 return students.filter(student => student.isActive === false);
@@ -2291,7 +2431,11 @@ const StudentManagement = () => {
             case 'self':
                 return students.filter(student => student.isActive !== false && student.registrationSource === 'self');
             case 'pending':
-                return students.filter(student => student.isActive !== false && !getStudentSeat(student._id));
+                return students.filter(student => student.isActive !== false && !isFlexStudent(student) && !isWaitingStudent(student) && !getStudentSeat(student._id));
+            case 'walkin':
+                return students.filter(student => student.isActive !== false && isFlexStudent(student));
+            case 'waitingList':
+                return students.filter(student => student.isActive !== false && isWaitingStudent(student));
             case 'all':
             default:
                 return students.filter(student => student.isActive !== false);
@@ -2495,7 +2639,7 @@ const StudentManagement = () => {
                     {/* ══════════════════════════════════════════════════════
                         EXECUTIVE KPI METRIC CARDS (6 CARDS - 100% REAL DB DATA)
                     ══════════════════════════════════════════════════════ */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
                         {/* Total Enrolled */}
                         <div className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-orange-300 hover:shadow-[0_4px_16px_rgba(180,120,60,0.1)] transition-all overflow-hidden">
                             <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-orange-500 to-amber-500" />
@@ -2548,6 +2692,23 @@ const StudentManagement = () => {
                             </div>
                             <p className="text-2xl font-black text-rose-600 tabular-nums">{metrics.pending}</p>
                             <p className="text-[11px] font-medium text-stone-400 mt-0.5">Awaiting assignment</p>
+                        </div>
+
+                        {/* Waiting List Queue */}
+                        <div
+                            onClick={() => setActiveTab('waitingList')}
+                            className="relative bg-white border border-[#EDE8E0] rounded-2xl p-4 shadow-[0_2px_10px_rgba(180,120,60,0.05)] hover:border-violet-300 hover:shadow-[0_4px_16px_rgba(124,58,237,0.12)] transition-all overflow-hidden cursor-pointer"
+                            title="Click to filter Waiting List"
+                        >
+                            <div className="h-[3px] absolute top-0 left-0 right-0 bg-gradient-to-r from-violet-500 to-purple-600" />
+                            <div className="flex items-center justify-between mb-2 pt-0.5">
+                                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Waiting List</span>
+                                <div className="w-8 h-8 rounded-xl bg-violet-50 border border-violet-200/70 text-violet-600 flex items-center justify-center shadow-2xs">
+                                    <IoTimeOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-violet-600 tabular-nums">{metrics.waitingList}</p>
+                            <p className="text-[11px] font-medium text-stone-400 mt-0.5">Awaiting vacancy</p>
                         </div>
 
                         {/* AC Climate Study Halls */}
@@ -2653,6 +2814,8 @@ const StudentManagement = () => {
                                     { id: 'all', label: 'All Scholars', count: metrics.active },
                                     { id: 'active', label: 'Active', count: metrics.active },
                                     { id: 'pending', label: 'Pending Desk', count: metrics.pending },
+                                    { id: 'walkin', label: 'Walkin / Flex', icon: <IoDesktopOutline size={13} />, count: metrics.walkin },
+                                    { id: 'waitingList', label: 'Waiting List', icon: <IoTimeOutline size={13} />, count: metrics.waitingList },
                                     { id: 'admin', label: 'Admin Reg.', count: metrics.adminReg },
                                     { id: 'self', label: 'Self Reg.', count: metrics.selfReg },
                                     { id: 'inactive', label: 'Inactive', count: metrics.inactive },
@@ -2713,6 +2876,17 @@ const StudentManagement = () => {
                                             <span>Table</span>
                                         </button>
                                     </div>
+                                )}
+
+                                {activeTab === 'waitingList' && (
+                                    <button
+                                        onClick={() => setShowVacancyModal(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-all shrink-0 cursor-pointer"
+                                        title="Notify waitlist scholars about available shift seats"
+                                    >
+                                        <IoMailOutline size={14} />
+                                        <span>Notify Shift Vacancy</span>
+                                    </button>
                                 )}
 
                                 {activeTab === 'history' && (
@@ -2813,7 +2987,7 @@ const StudentManagement = () => {
                                             <IoSearchOutline className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
                                             <input
                                                 type="text"
-                                                placeholder="Search ID cards by seat number (e.g. A 22)..."
+                                                placeholder="Search ID cards by name, mobile, seat, or waiting list..."
                                                 value={idCardSearchSeat}
                                                 onChange={(e) => setIdCardSearchSeat(e.target.value)}
                                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 outline-none focus:border-orange-500 transition-all"
@@ -2852,9 +3026,15 @@ const StudentManagement = () => {
                                                 }
 
                                                 if (idCardSearchSeat) {
-                                                    const searchStr = idCardSearchSeat.toLowerCase();
+                                                    const searchStr = idCardSearchSeat.toLowerCase().trim();
+                                                    const nameMatch = (s.name || '').toLowerCase().includes(searchStr);
+                                                    const mobileMatch = (s.mobile || '').includes(searchStr);
                                                     const seatNum = getStudentSeat(s._id)?.toLowerCase() || '';
-                                                    let match = seatNum.includes(searchStr);
+                                                    let match = nameMatch || mobileMatch || seatNum.includes(searchStr);
+
+                                                    if (!match && s.studentType === 'waitingList' && ('waiting'.includes(searchStr) || 'waitlist'.includes(searchStr) || 'queue'.includes(searchStr))) {
+                                                        match = true;
+                                                    }
 
                                                     if (!match && s.tempAssignments && s.tempAssignments.length > 0) {
                                                         match = s.tempAssignments.some(ta => {
@@ -3152,6 +3332,25 @@ const StudentManagement = () => {
                                                                     <span className="text-[10px] text-stone-400 font-bold">
                                                                         #{idx + 1}
                                                                     </span>
+                                                                    {/* Student Type Badge */}
+                                                                    {(() => {
+                                                                        const st = student.studentType || 'regular';
+                                                                        if (st === 'walkin') return (
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-orange-50 border border-orange-200 text-orange-700">
+                                                                                Walkin
+                                                                            </span>
+                                                                        );
+                                                                        if (st === 'waitingList') return (
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-violet-50 border border-violet-200 text-violet-700">
+                                                                                Waiting List
+                                                                            </span>
+                                                                        );
+                                                                        return (
+                                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-sky-50 border border-sky-200 text-sky-700">
+                                                                                Regular
+                                                                            </span>
+                                                                        );
+                                                                    })()}
                                                                 </div>
                                                             </div>
 
@@ -3192,6 +3391,26 @@ const StudentManagement = () => {
                                                                                     {seatDetails.roomName} · {seatDetails.floorName}
                                                                                 </p>
                                                                             </>
+                                                                        ) : student.studentType === 'waitingList' ? (
+                                                                            <>
+                                                                                <p className="font-bold text-xs text-violet-700 flex items-center gap-1">
+                                                                                    <IoTimeOutline size={12} />
+                                                                                    <span>Waiting List</span>
+                                                                                </p>
+                                                                                <p className="text-[10px] text-violet-600/80 mt-0.5 truncate" title={student.flexShift?.label || (student.flexShift?.startTime ? `${student.flexShift.startTime}–${student.flexShift.endTime}` : 'Awaiting vacancy')}>
+                                                                                    {student.flexShift?.label || (student.flexShift?.startTime ? `Demanded: ${student.flexShift.startTime}–${student.flexShift.endTime}` : 'Awaiting vacancy')}
+                                                                                </p>
+                                                                            </>
+                                                                        ) : (student.studentType === 'walkin' || student.flexShift?.startTime) ? (
+                                                                            <>
+                                                                                <p className="font-bold text-xs text-orange-700 flex items-center gap-1">
+                                                                                    <IoDesktopOutline size={12} />
+                                                                                    <span>{student.flexShift?.label || (student.flexShift?.startTime ? `${student.flexShift.startTime}–${student.flexShift.endTime}` : 'Flex Desk')}</span>
+                                                                                </p>
+                                                                                <p className="text-[10px] text-orange-600/80 mt-0.5">
+                                                                                    {student.flexShift?.monthlyFee ? `₹${student.flexShift.monthlyFee}/mo · Any free seat` : 'Flexible desk'}
+                                                                                </p>
+                                                                            </>
                                                                         ) : (
                                                                             <>
                                                                                 <p className="font-bold text-xs text-amber-700 flex items-center gap-1">
@@ -3214,10 +3433,15 @@ const StudentManagement = () => {
                                                                     </div>
                                                                     <div className="mt-1.5">
                                                                         <p className="font-black text-xs text-[#0F172A] truncate" title={shiftsDisplay}>
-                                                                            {shiftsDisplay || (student.isActive ? 'Awaiting Shift' : 'None')}
+                                                                            {shiftsDisplay || (student.studentType === 'waitingList' ? (student.flexShift?.label || (student.flexShift?.startTime ? `${student.flexShift.startTime}–${student.flexShift.endTime}` : 'Demanded Shift')) : student.isActive ? 'Awaiting Shift' : 'None')}
                                                                         </p>
-                                                                        <p className="text-[10px] text-stone-500 mt-0.5">
-                                                                            {student.isActive ? 'Active schedule' : 'Inactive'}
+                                                                        <p className="text-[10px] text-stone-500 mt-0.5 flex items-center gap-1.5">
+                                                                            {student.studentType === 'waitingList' ? 'Demanded shift' : student.isActive ? 'Active schedule' : 'Inactive'}
+                                                                            {absentStudentIds.has(String(student._id)) && (
+                                                                                <span className="text-[9px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-1 py-0.5 rounded">
+                                                                                    Absent Today
+                                                                                </span>
+                                                                            )}
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -3312,11 +3536,15 @@ const StudentManagement = () => {
                                                                         <>
                                                                         <button
                                                                             onClick={() => openSeatAssignModal(student)}
-                                                                            className="shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
-                                                                            title="Assign or change desk"
+                                                                            className={`shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer ${
+                                                                                student.studentType === 'waitingList'
+                                                                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-violet-500/20'
+                                                                                    : 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700'
+                                                                            }`}
+                                                                            title={seatDetails ? 'Change Desk' : student.studentType === 'waitingList' ? 'Promote scholar and assign seat' : 'Assign desk'}
                                                                         >
                                                                             <IoBedOutline size={14} />
-                                                                            <span>{seatDetails ? 'Change Desk' : 'Assign Desk'}</span>
+                                                                            <span>{seatDetails ? 'Change Desk' : student.studentType === 'waitingList' ? 'Assign & Promote' : 'Assign Desk'}</span>
                                                                         </button>
 
                                                                         <button
@@ -3358,6 +3586,25 @@ const StudentManagement = () => {
                                                                         >
                                                                             <IoKey size={15} />
                                                                         </button>
+
+                                                                        {/* Mark Absent Today toggle */}
+                                                                        {absentStudentIds.has(String(student._id)) ? (
+                                                                            <button
+                                                                                onClick={() => handleRemoveAbsent(student)}
+                                                                                className="p-2 text-orange-600 bg-orange-50 border border-orange-300 rounded-xl transition-all cursor-pointer"
+                                                                                title="Absent today — click to mark present"
+                                                                            >
+                                                                                <IoMoonOutline size={15} />
+                                                                            </button>
+                                                                        ) : (
+                                                                            <button
+                                                                                onClick={() => handleMarkAbsent(student)}
+                                                                                className="p-2 text-stone-600 hover:text-orange-600 bg-[#FAF6F0] hover:bg-orange-50 border border-[#EDE8E0] hover:border-orange-200 rounded-xl transition-all cursor-pointer"
+                                                                                title="Mark Absent Today"
+                                                                            >
+                                                                                <IoMoonOutline size={15} />
+                                                                            </button>
+                                                                        )}
 
                                                                         <button
                                                                             onClick={() => openEditModal(student)}
@@ -3573,6 +3820,16 @@ const StudentManagement = () => {
                                                                             )}
                                                                         </div>
                                                                     </div>
+                                                                ) : student.studentType === 'waitingList' ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-bold text-[11px]">
+                                                                        <IoTimeOutline size={12} />
+                                                                        <span>Waiting List</span>
+                                                                    </span>
+                                                                ) : (student.studentType === 'walkin' || student.flexShift?.startTime) ? (
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 font-bold text-[11px]">
+                                                                        <IoDesktopOutline size={12} />
+                                                                        <span>Flex Desk</span>
+                                                                    </span>
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[11px]">
                                                                         <IoWarningOutline size={12} />
@@ -3586,6 +3843,14 @@ const StudentManagement = () => {
                                                                 {shiftsDisplay ? (
                                                                     <span className="font-semibold text-slate-800">
                                                                         {shiftsDisplay}
+                                                                    </span>
+                                                                ) : student.studentType === 'waitingList' ? (
+                                                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                                                                        {student.flexShift?.label || (student.flexShift?.startTime ? `${student.flexShift.startTime}–${student.flexShift.endTime} (Demanded)` : 'Awaiting Vacancy')}
+                                                                    </span>
+                                                                ) : student.flexShift?.startTime ? (
+                                                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">
+                                                                        {student.flexShift.label || `${student.flexShift.startTime}–${student.flexShift.endTime}`} (Flex)
                                                                     </span>
                                                                 ) : student.isActive ? (
                                                                     <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
@@ -3730,8 +3995,12 @@ const StudentManagement = () => {
                                                                             )}
                                                                             <button
                                                                                 onClick={() => openSeatAssignModal(student)}
-                                                                                className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                                                                                title="Assign Desk"
+                                                                                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                                                                    student.studentType === 'waitingList'
+                                                                                        ? 'text-violet-600 hover:text-violet-800 hover:bg-violet-50 font-bold'
+                                                                                        : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'
+                                                                                }`}
+                                                                                title={student.studentType === 'waitingList' ? 'Assign Desk & Promote to Regular' : 'Assign Desk'}
                                                                             >
                                                                                 <IoBedOutline size={16} />
                                                                             </button>
@@ -4250,7 +4519,171 @@ const StudentManagement = () => {
                                         <option value="other">Other</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <label className={LABEL}>Student Type</label>
+                                    <select
+                                        value={formData.studentType || 'regular'}
+                                        onChange={(e) => setFormData({ ...formData, studentType: e.target.value })}
+                                        className={INPUT + ' cursor-pointer'}
+                                    >
+                                        <option value="regular">Regular (Permanent Seat)</option>
+                                        <option value="walkin">Walkin (Flexible / No Fixed Seat)</option>
+                                        <option value="waitingList">Waiting List</option>
+                                    </select>
+                                </div>
                             </div>
+
+                            {/* Flex Shift / Waiting List Demanded Shift & Timing Selection */}
+                            {(formData.studentType === 'walkin' || formData.studentType === 'waitingList') && (
+                                <div className={`rounded-xl p-3.5 space-y-3 border transition-colors ${
+                                    formData.studentType === 'waitingList'
+                                        ? 'bg-violet-50/70 border-violet-200/90'
+                                        : 'bg-orange-50/60 border border-orange-200/90'
+                                }`}>
+                                    <div className="flex items-center justify-between">
+                                        <label className={`text-xs font-black flex items-center gap-1.5 ${
+                                            formData.studentType === 'waitingList' ? 'text-violet-950' : 'text-orange-950'
+                                        }`}>
+                                            <IoTimeOutline size={14} className={formData.studentType === 'waitingList' ? 'text-violet-600' : 'text-orange-500'} />
+                                            <span>
+                                                {formData.studentType === 'waitingList'
+                                                    ? 'Waiting List — Demanded Shift & Target Timing'
+                                                    : 'Flex Shift Allocation & Monthly Fee'}
+                                            </span>
+                                        </label>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                            formData.studentType === 'waitingList'
+                                                ? 'bg-violet-100 text-violet-700 border-violet-200'
+                                                : 'bg-orange-100 text-orange-700 border-orange-200'
+                                        }`}>
+                                            {formData.studentType === 'waitingList' ? 'Waiting Queue' : 'Flexible Scholar'}
+                                        </span>
+                                    </div>
+
+                                    <p className="text-[11px] text-stone-600 leading-relaxed">
+                                        {formData.studentType === 'waitingList'
+                                            ? 'Select the demanded shift or custom hours this student is waiting for. When a desk opens up, you can easily allocate and promote them to regular with 1 click.'
+                                            : 'Assign shift hours (e.g. 2:00 PM to 9:00 PM) or choose an admin shift. Put the monthly fee rate so regular monthly billing algorithms will work automatically, and the student can occupy any available seat during their allocated hours.'}
+                                    </p>
+
+                                    {/* Preset Shift Selection */}
+                                    <div>
+                                        <label className={LABEL}>Quick Shift Preset / Demanded Timing</label>
+                                        <select
+                                            className={INPUT + ' cursor-pointer text-xs'}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (val === 'custom') {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        flexShift: { ...prev.flexShift, slotId: '', label: prev.flexShift?.label || 'Custom Timing' }
+                                                    }));
+                                                } else if (val.startsWith('shift-')) {
+                                                    const shiftId = val.replace('shift-', '');
+                                                    const found = shifts && shifts.find(s => String(s._id || s.id) === shiftId);
+                                                    if (found) {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            flexShift: {
+                                                                ...prev.flexShift,
+                                                                slotId: '',
+                                                                startTime: found.startTime || '',
+                                                                endTime: found.endTime || '',
+                                                                label: found.name || ''
+                                                            }
+                                                        }));
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <option value="custom">Custom Hours (e.g. 2 PM to 9 PM, or student requested)</option>
+                                            {shifts && shifts.map(s => (
+                                                <option key={s._id || s.id} value={`shift-${s._id || s.id}`}>
+                                                    Preset: {s.name} ({s.startTime} – {s.endTime})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div>
+                                            <label className={LABEL}>Start Time (24h)</label>
+                                            <input
+                                                type="time"
+                                                value={formData.flexShift?.startTime || ''}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    flexShift: { ...prev.flexShift, startTime: e.target.value }
+                                                }))}
+                                                className={INPUT}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={LABEL}>End Time (24h)</label>
+                                            <input
+                                                type="time"
+                                                value={formData.flexShift?.endTime || ''}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    flexShift: { ...prev.flexShift, endTime: e.target.value }
+                                                }))}
+                                                className={INPUT}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className={LABEL}>Shift Name / Label</label>
+                                            <input
+                                                type="text"
+                                                placeholder={formData.studentType === 'waitingList' ? 'e.g. Evening Shift / 2 PM to 9 PM' : 'e.g. 2 PM to 9 PM'}
+                                                value={formData.flexShift?.label || ''}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    flexShift: { ...prev.flexShift, label: e.target.value }
+                                                }))}
+                                                className={INPUT}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Monthly Fee Input */}
+                                    <div className={`bg-white rounded-xl p-3 shadow-xs border ${
+                                        formData.studentType === 'waitingList' ? 'border-violet-200' : 'border-orange-200'
+                                    }`}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <label className="text-xs font-black text-stone-800 flex items-center gap-1">
+                                                    <IoCashOutline size={13} className={formData.studentType === 'waitingList' ? 'text-violet-600' : 'text-emerald-600'} />
+                                                    <span>
+                                                        {formData.studentType === 'waitingList'
+                                                            ? 'Expected Monthly Fee when Admitted (₹)'
+                                                            : 'Monthly Fee for this Flex Shift (₹)'}
+                                                    </span>
+                                                </label>
+                                                <p className="text-[10px] text-stone-500 mt-0.5">
+                                                    {formData.studentType === 'waitingList'
+                                                        ? 'Target fee agreed with student upon desk allotment'
+                                                        : 'Generates monthly fee record like regular students'}
+                                                </p>
+                                            </div>
+                                            <div className="w-36">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    placeholder="e.g. 800"
+                                                    value={formData.flexShift?.monthlyFee ?? ''}
+                                                    onChange={(e) => setFormData(prev => ({
+                                                        ...prev,
+                                                        flexShift: { ...prev.flexShift, monthlyFee: e.target.value }
+                                                    }))}
+                                                    className={`${INPUT} font-black text-right text-sm ${
+                                                        formData.studentType === 'waitingList' ? 'text-violet-700' : 'text-emerald-700'
+                                                    }`}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Full Address */}
                             <div>
@@ -6412,6 +6845,12 @@ const StudentManagement = () => {
                     </div>
                 )}
             </Modal>
+
+            {/* Shift Vacancy Notification Modal */}
+            <NotifyShiftVacancyModal
+                isOpen={showVacancyModal}
+                onClose={() => setShowVacancyModal(false)}
+            />
         </>
     );
 };
