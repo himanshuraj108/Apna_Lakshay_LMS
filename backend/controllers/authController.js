@@ -153,6 +153,8 @@ exports.login = async (req, res) => {
                             doubtCredits: instance.doubtCredits || 0,
                             maxDoubtCredits: instance.maxDoubtCredits || instance.doubtCredits || 10,
                             gender: instance.gender,
+                            studentType: instance.studentType || 'regular',
+                            flexShift: instance.flexShift || null,
                         }
                     });
                 }
@@ -289,7 +291,9 @@ exports.login = async (req, res) => {
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
                 doubtCredits: user.doubtCredits || 0,
                 maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
-                gender: user.gender
+                gender: user.gender,
+                studentType: user.studentType || 'regular',
+                flexShift: user.flexShift || null,
             }
         });
     } catch (error) {
@@ -365,7 +369,9 @@ exports.getMe = async (req, res) => {
             examTarget: user.examTarget,
             doubtCredits: user.doubtCredits || 0,
             maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
-            gender: user.gender
+            gender: user.gender,
+            studentType: user.studentType || 'regular',
+            flexShift: user.flexShift || null,
         };
 
         try {
@@ -706,7 +712,9 @@ exports.verifySeatLogin = async (req, res) => {
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
                 doubtCredits: user.doubtCredits || 0,
                 maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
-                gender: user.gender
+                gender: user.gender,
+                studentType: user.studentType || 'regular',
+                flexShift: user.flexShift || null,
             }
         });
     } catch (error) {
@@ -976,7 +984,9 @@ exports.verifyOtpAndAutoLogin = async (req, res) => {
                 bonusMockTestCredits: user.bonusMockTestCredits || 0,
                 doubtCredits: user.doubtCredits || 0,
                 maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
-                gender: user.gender
+                gender: user.gender,
+                studentType: user.studentType || 'regular',
+                flexShift: user.flexShift || null,
             }
         });
     } catch (error) {
@@ -1032,6 +1042,8 @@ exports.loginWithPin = async (req, res) => {
                 profileImage: user.profileImage,
                 isActive: user.isActive,
                 gender: user.gender,
+                studentType: user.studentType || 'regular',
+                flexShift: user.flexShift || null,
                 appPinEnabled: user.appPinEnabled
             }
         });
@@ -1076,6 +1088,8 @@ exports.selectStudent = async (req, res) => {
                 doubtCredits: user.doubtCredits || 0,
                 maxDoubtCredits: user.maxDoubtCredits || user.doubtCredits || 10,
                 gender: user.gender,
+                studentType: user.studentType || 'regular',
+                flexShift: user.flexShift || null,
             }
         });
     } catch (error) {

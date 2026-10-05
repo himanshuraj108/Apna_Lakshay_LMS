@@ -16,6 +16,7 @@ const Settings = require('../models/Settings');
 const SystemSetting = require('../models/SystemSetting');
 const MockTestAttempt = require('../models/MockTestAttempt');
 const TempSeatAssignment = require('../models/TempSeatAssignment');
+const DailyAbsence = require('../models/DailyAbsence');
 const { getClient } = require('../utils/redis');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -51,7 +52,8 @@ try {
         sendShiftChangeApprovedEmail: async () => console.log('Email service not available'),
         sendShiftChangeRejectedEmail: async () => console.log('Email service not available'),
         sendFeeUpdateEmail: async () => console.log('Email service not available'),
-        sendPartialFeeEmail: async () => console.log('Email service not available')
+        sendPartialFeeEmail: async () => console.log('Email service not available'),
+        sendShiftVacancyEmail: async () => console.log('Email service not available')
     };
 }
 
@@ -364,6 +366,210 @@ exports.deleteShift = async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };
+
+// @desc    Get eligible waitlist students for a shift
+// @route   GET /api/admin/shifts/waitlist-candidates
+exports.getWaitlistStudentsForShift = async (req, res) => {
+    try {
+        const { shiftId, shiftName, startTime, endTime } = req.query;
+
+        // Query active students who are on the waiting list, walkin, or have no seat assigned
+        const students = await User.find({
+            role: 'student',
+            isActive: true,
+            $or: [
+                { studentType: 'waitingList' },
+                { studentType: 'walkin' },
+                { seat: null, seatNumber: null }
+            ]
+        })
+        .select('name email mobile studentId studentType flexShift walkinSlot createdAt')
+        .sort({ createdAt: 1 })
+        .lean();
+
+        const toMinutes = (timeStr) => {
+            if (!timeStr) return 0;
+            const [h, m] = timeStr.split(':').map(Number);
+            return (h || 0) * 60 + (m || 0);
+        };
+        const toHHMM = (m) => {
+            const hr = Math.floor(m / 60) % 24;
+            const mn = m % 60;
+            return `${String(hr).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
+        };
+
+        const normalizedShiftName = (shiftName || '').toLowerCase().trim();
+        const sTargetStart = startTime ? toMinutes(startTime) : null;
+        const sTargetEnd = endTime ? toMinutes(endTime) : null;
+
+        const candidates = students.map(student => {
+            let isShiftMatch = false;
+            let isPartialMatch = false;
+            let matchType = 'none'; // 'exact' | 'partial' | 'none'
+            let matchLabel = null;
+            let requestedShift = 'General Waitlist';
+
+            if (student.flexShift) {
+                requestedShift = student.flexShift.label || `${student.flexShift.startTime || ''} - ${student.flexShift.endTime || ''}`.trim() || 'Flexible/Waitlist';
+                const stuStart = student.flexShift.startTime ? toMinutes(student.flexShift.startTime) : null;
+                const stuEnd = student.flexShift.endTime ? toMinutes(student.flexShift.endTime) : null;
+
+                if (shiftId && student.flexShift.slotId && String(student.flexShift.slotId) === String(shiftId)) {
+                    isShiftMatch = true;
+                    matchType = 'exact';
+                    matchLabel = 'Exact Shift';
+                } else if (normalizedShiftName && student.flexShift.label && student.flexShift.label.toLowerCase().includes(normalizedShiftName)) {
+                    isShiftMatch = true;
+                    matchType = 'exact';
+                    matchLabel = 'Named Shift';
+                } else if (sTargetStart !== null && sTargetEnd !== null && stuStart === sTargetStart && stuEnd === sTargetEnd) {
+                    isShiftMatch = true;
+                    matchType = 'exact';
+                    matchLabel = 'Exact Timing';
+                } else if (sTargetStart !== null && sTargetEnd !== null && stuStart !== null && stuEnd !== null) {
+                    const overlapStart = Math.max(sTargetStart, stuStart);
+                    const overlapEnd = Math.min(sTargetEnd, stuEnd);
+                    if (overlapStart < overlapEnd && (overlapEnd - overlapStart) >= 30) {
+                        isShiftMatch = true;
+                        isPartialMatch = true;
+                        matchType = 'partial';
+                        matchLabel = `Partial Vacancy Match (${toHHMM(overlapStart)} – ${toHHMM(overlapEnd)})`;
+                    }
+                }
+            } else if (student.walkinSlot) {
+                requestedShift = 'Flexible Walk-in';
+            }
+
+            return {
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                mobile: student.mobile,
+                studentId: student.studentId,
+                studentType: student.studentType || 'waitingList',
+                requestedShift,
+                isShiftMatch,
+                isPartialMatch,
+                matchType,
+                matchLabel,
+                joinedAt: student.createdAt
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            totalWaitlist: candidates.length,
+            matchingCount: candidates.filter(c => c.isShiftMatch).length,
+            partialCount: candidates.filter(c => c.isPartialMatch).length,
+            students: candidates
+        });
+    } catch (error) {
+        console.error('getWaitlistStudentsForShift error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Send shift vacancy email & notification to waiting list students
+// @route   POST /api/admin/shifts/notify-vacancy
+exports.sendShiftVacancyNotification = async (req, res) => {
+    try {
+        const {
+            shiftId,
+            shiftName,
+            startTime,
+            endTime,
+            shiftTime,
+            availableCount,
+            customMessage,
+            studentIds,
+            sendEmail = true,
+            sendInApp = true
+        } = req.body;
+
+        if (!shiftName && !shiftId) {
+            return res.status(400).json({ success: false, message: 'Shift information is required' });
+        }
+
+        const shiftDetails = {
+            shiftId,
+            shiftName: shiftName || 'Library Shift',
+            startTime: startTime || '',
+            endTime: endTime || '',
+            shiftTime: shiftTime || (startTime && endTime ? `${startTime} – ${endTime}` : ''),
+            availableCount: availableCount || null
+        };
+
+        let targetStudents = [];
+        if (Array.isArray(studentIds) && studentIds.length > 0) {
+            targetStudents = await User.find({ _id: { $in: studentIds }, isActive: true });
+        } else {
+            targetStudents = await User.find({
+                role: 'student',
+                isActive: true,
+                studentType: 'waitingList'
+            });
+        }
+
+        if (targetStudents.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No active waiting list students found to notify'
+            });
+        }
+
+        let emailsSent = 0;
+        let inAppCreated = 0;
+
+        const notifyTitle = `Shift Vacancy Alert: ${shiftDetails.shiftName}`;
+        const notifyMsg = `Seats are now available for ${shiftDetails.shiftName} (${shiftDetails.shiftTime || 'scheduled timings'}). Please contact library administration or check your dashboard to confirm your desk allocation.${customMessage ? ` Note: ${customMessage}` : ''}`;
+
+        for (const student of targetStudents) {
+            if (sendInApp) {
+                try {
+                    await Notification.create({
+                        recipient: student._id,
+                        title: notifyTitle,
+                        message: notifyMsg,
+                        type: 'seat',
+                        createdBy: req.user.id
+                    });
+                    inAppCreated++;
+                } catch (notifErr) {
+                    console.error('Failed to create in-app notification:', notifErr.message);
+                }
+            }
+
+            if (sendEmail && student.email) {
+                try {
+                    const ok = await emailService.sendShiftVacancyEmail(student, shiftDetails, customMessage);
+                    if (ok) emailsSent++;
+                } catch (mailErr) {
+                    console.error(`Failed to send vacancy email to ${student.email}:`, mailErr.message);
+                }
+            }
+        }
+
+        await logAction(
+            req,
+            'shift_vacancy_notified',
+            'Shift',
+            shiftId || null,
+            shiftDetails.shiftName,
+            `Sent vacancy notification to ${targetStudents.length} students (Delivered: ${emailsSent}, In-App: ${inAppCreated})`
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Notification sent to ${targetStudents.length} student(s) (${emailsSent} email(s) sent)`,
+            count: targetStudents.length,
+            emailsSent,
+            inAppCreated
+        });
+    } catch (error) {
+        console.error('sendShiftVacancyNotification error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
 // ==========================================
 
 // Email service import moved to top-level
@@ -620,6 +826,11 @@ exports.getStudents = async (req, res) => {
             feeMap[f._id.toString()] = f.amount;
         });
 
+        // Fetch today's absences once for isAbsentToday flag on each student
+        const todayDateStr = new Date().toISOString().slice(0, 10);
+        const todayAbsences = await DailyAbsence.find({ date: todayDateStr }).select('student').lean();
+        const absentSet = new Set(todayAbsences.map(a => String(a.student)));
+
         const io = req.app.get('io');
 
         // Fetch temp assignments BEFORE mapping students (needed inside map)
@@ -728,6 +939,13 @@ exports.getStudents = async (req, res) => {
                 isTemporarySeat = true;
             }
 
+            if (shiftsArr.length === 0 && student.flexShift?.startTime && student.flexShift?.endTime) {
+                const flexLbl = student.flexShift.label || `${student.flexShift.startTime}–${student.flexShift.endTime}`;
+                shiftInfo = `${flexLbl} (Flex)`;
+                shiftDetails = { startTime: student.flexShift.startTime, endTime: student.flexShift.endTime };
+                shiftsArr = [{ name: `${flexLbl} (Flex)`, startTime: student.flexShift.startTime, endTime: student.flexShift.endTime }];
+            }
+
             // Calculate online status
             const userRoom = io ? io.sockets.adapter.rooms.get(`user:${student._id}`) : null;
             const isOnline = userRoom ? userRoom.size > 0 : false;
@@ -748,7 +966,8 @@ exports.getStudents = async (req, res) => {
                 isOnline,
                 isLoggedIn: student.isLoggedIn || false,
                 lastLogin: student.lastLogin || null,
-                lastActive: student.lastActive || null
+                lastActive: student.lastActive || null,
+                isAbsentToday: absentSet.has(String(student._id))
             };
         });
 
@@ -952,7 +1171,8 @@ exports.createStudent = async (req, res) => {
     try {
         const {
             name, email, mobile, address, systemMode = 'custom', studentId, joinedAt, gender = 'male', referralCode,
-            fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee
+            fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee,
+            studentType = 'regular', flexShift
         } = req.body;
 
         // Default avatar is handled deterministically by User.js pre-save hook based on _id
@@ -966,7 +1186,7 @@ exports.createStudent = async (req, res) => {
 
         const studentData = {
             name,
-            email: email || undefined, // Use undefined for missing email to respect sparse unique index
+            email: email || undefined,
             mobile,
             address,
             fatherName: fatherName || '',
@@ -981,11 +1201,25 @@ exports.createStudent = async (req, res) => {
             password,
             systemMode,
             role: 'student',
-            isActive: true, // Admin created students are active by default
+            isActive: true,
             registrationSource: 'admin',
-            studentId: studentId || undefined, // Allow empty/null
-            createdBy: req.user.id
+            studentId: studentId || undefined,
+            createdBy: req.user.id,
+            studentType: studentType || 'regular'
         };
+
+        if (flexShift) {
+            studentData.flexShift = {
+                slotId: flexShift.slotId || null,
+                startTime: flexShift.startTime || '',
+                endTime: flexShift.endTime || '',
+                label: flexShift.label || '',
+                monthlyFee: Number(flexShift.monthlyFee) || 0
+            };
+            if (studentData.flexShift.monthlyFee > 0) {
+                studentData.currentFee = studentData.flexShift.monthlyFee;
+            }
+        }
 
         const initialAdmissionDate = joinedAt ? new Date(joinedAt) : new Date();
         studentData.admissionDate = initialAdmissionDate;
@@ -997,6 +1231,29 @@ exports.createStudent = async (req, res) => {
 
         const student = new User(studentData);
         await student.save();
+
+        // ── Auto-create monthly fee for flex-shift walkin students ─────────
+        if (studentData.studentType === 'walkin' && studentData.flexShift && Number(studentData.flexShift.monthlyFee) > 0) {
+            try {
+                const flexFee = Number(studentData.flexShift.monthlyFee);
+                const now = new Date();
+                const feeMonth = now.getMonth() + 1;
+                const feeYear = now.getFullYear();
+                const billingDay = initialAdmissionDate.getDate() || 10;
+                const dueDate = new Date(feeYear, feeMonth - 1, billingDay);
+                await Fee.create({
+                    student: student._id,
+                    month: feeMonth,
+                    year: feeYear,
+                    amount: flexFee,
+                    outstanding: flexFee,
+                    dueDate,
+                    status: 'pending'
+                });
+            } catch (feeErr) {
+                console.error('Failed to create initial flex fee on student creation:', feeErr);
+            }
+        }
 
         // ── Process referral if a code was provided ───────────────────────
         if (referralCode && referralCode.trim()) {
@@ -1293,7 +1550,7 @@ exports.updateStudent = async (req, res) => {
         const {
             name, email, mobile, address, isActive, studentId, joinedAt, password, gender,
             fatherName, guardianName, guardianPhone, dob, aadharNo, lockerNo, registrationFee,
-            showInFeeManagement
+            showInFeeManagement, studentType, flexShift
         } = req.body;
 
         const updateData = { 
@@ -1307,6 +1564,7 @@ exports.updateStudent = async (req, res) => {
         };
 
         if (showInFeeManagement !== undefined) updateData.showInFeeManagement = !!showInFeeManagement;
+        if (studentType !== undefined) updateData.studentType = studentType;
         if (fatherName !== undefined) updateData.fatherName = fatherName;
         if (guardianName !== undefined) updateData.guardianName = guardianName;
         if (guardianPhone !== undefined) updateData.guardianPhone = guardianPhone;
@@ -1314,6 +1572,17 @@ exports.updateStudent = async (req, res) => {
         if (aadharNo !== undefined) updateData.aadharNo = aadharNo;
         if (lockerNo !== undefined) updateData.lockerNo = lockerNo;
         if (registrationFee !== undefined) updateData.registrationFee = Number(registrationFee) || 0;
+
+        // Handle flexShift update (walkin/waiting students with recurring time allocation)
+        if (flexShift !== undefined) {
+            updateData.flexShift = {
+                slotId: flexShift.slotId || null,
+                startTime: flexShift.startTime || '',
+                endTime: flexShift.endTime || '',
+                label: flexShift.label || '',
+                monthlyFee: Number(flexShift.monthlyFee) || 0
+            };
+        }
 
         // Handle password update if provided
         if (password && password.trim() !== '') {
@@ -1487,6 +1756,40 @@ exports.updateStudent = async (req, res) => {
                 );
             }
             console.log(`Shift updated to '${newShift}' for student ${student.name}. Seat modified: ${shiftUpdateResult?.modifiedCount > 0}. SeatId: ${studentSeatId}`);
+        }
+
+        // ─── Auto-create/update monthly fee for flex-shift walkin students ─
+        if (flexShift !== undefined && Number(flexShift.monthlyFee) > 0) {
+            const flexFee = Number(flexShift.monthlyFee);
+            const now = new Date();
+            const feeMonth = now.getMonth() + 1;
+            const feeYear = now.getFullYear();
+
+            // Update student's currentFee so future fee cycles work correctly
+            await User.updateOne({ _id: student._id }, { $set: { currentFee: flexFee } });
+
+            // Upsert this month's fee record
+            const existingFee = await Fee.findOne({ student: student._id, month: feeMonth, year: feeYear });
+            if (!existingFee) {
+                const joinedDate = new Date(student.admissionDate || student.createdAt || now);
+                const billingDay = joinedDate.getDate() || 10;
+                const dueDate = new Date(feeYear, feeMonth - 1, billingDay);
+                await Fee.create({
+                    student: student._id,
+                    month: feeMonth,
+                    year: feeYear,
+                    amount: flexFee,
+                    outstanding: flexFee,
+                    dueDate,
+                    status: 'pending'
+                });
+                console.log(`Flex shift fee of ₹${flexFee} created for ${student.name} (${feeMonth}/${feeYear})`);
+            } else if (['pending', 'overdue'].includes(existingFee.status)) {
+                // Update amount if fee not yet paid
+                existingFee.amount = flexFee;
+                existingFee.outstanding = flexFee;
+                await existingFee.save();
+            }
         }
 
         // Log action
@@ -2339,6 +2642,9 @@ exports.assignSeat = async (req, res) => {
 
             // Update student reference (Only set seatAssignedAt if not already set)
             const userUpdateUpdates = { seat: seatId };
+            if (student.studentType === 'waitingList') {
+                userUpdateUpdates.studentType = 'regular';
+            }
             if (!student.seatAssignedAt) {
                 userUpdateUpdates.seatAssignedAt = new Date();
             }
@@ -2985,7 +3291,9 @@ exports.quickCheckIn = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Access Denied: Inactive Membership' });
         }
 
-        if (!student.seat) {
+        const isWalkin = student.studentType === 'walkin' || Boolean(student.flexShift?.startTime) || Boolean(student.walkinSlot);
+        const isWaiting = student.studentType === 'waitingList';
+        if (!student.seat && !isWalkin && !isWaiting) {
             return res.status(403).json({ success: false, message: 'Access Denied: Pending seat allocation' });
         }
 
@@ -3279,36 +3587,78 @@ exports.getVacantSeats = async (req, res) => {
 
             const hasPartialAssignment = occupiedWindows.length > 0;
 
-            // ── Check each shift: is its time window free on this seat?
+            // ── Check each shift: is its time window free (fully or partially) on this seat?
             for (const shift of shifts) {
                 const win = shiftWindowMap[shift._id.toString()];
                 if (!win) continue;
 
-                // Does this candidate shift overlap any occupied window?
-                const hasOverlap = occupiedWindows.some(ow =>
-                    overlaps(ow.start, ow.end, win.start, win.end)
-                );
-
-                if (!hasOverlap) {
-                    const price = (seat.shiftPrices instanceof Map
-                        ? seat.shiftPrices.get(shift._id.toString())
-                        : seat.shiftPrices?.[shift._id.toString()])
-                        || seat.basePrices?.day || 0;
-
-                    vacantSlots.push({
-                        seatId:     seat._id.toString(),
-                        seatNumber: seat.number,
-                        roomName:   seat.room?.name  || 'Unknown Room',
-                        hasAc:      seat.room?.hasAc || false,
-                        floorId:    seat.floor?._id?.toString() || '',
-                        floorName:  seat.floor?.name || 'Unknown Floor',
-                        shiftId:    shift._id.toString(),
-                        shiftName:  shift.name,
-                        shiftTime:  `${shift.startTime} – ${shift.endTime}`,
-                        price,
-                        isPartial:  hasPartialAssignment,
-                    });
+                // Calculate free sub-intervals within [win.start, win.end]
+                let freeIntervals = [[win.start, win.end]];
+                for (const ow of occupiedWindows) {
+                    const nextFree = [];
+                    for (const [fStart, fEnd] of freeIntervals) {
+                        const overlapStart = Math.max(fStart, ow.start);
+                        const overlapEnd = Math.min(fEnd, ow.end);
+                        if (overlapStart < overlapEnd) {
+                            if (fStart < overlapStart) nextFree.push([fStart, overlapStart]);
+                            if (overlapEnd < fEnd) nextFree.push([overlapEnd, fEnd]);
+                        } else {
+                            nextFree.push([fStart, fEnd]);
+                        }
+                    }
+                    freeIntervals = nextFree;
                 }
+
+                const totalFreeMins = freeIntervals.reduce((sum, [s, e]) => sum + (e - s), 0);
+                const shiftTotalMins = win.end - win.start;
+
+                if (totalFreeMins === 0) continue; // Completely occupied
+
+                const isFull = totalFreeMins >= shiftTotalMins;
+                const validIntervals = freeIntervals.filter(([s, e]) => (e - s) >= 30);
+                if (!isFull && validIntervals.length === 0) continue;
+
+                const longest = isFull ? null : validIntervals.reduce((max, cur) => (cur[1] - cur[0] > max[1] - max[0] ? cur : max), validIntervals[0]);
+
+                const toHHMM = (m) => {
+                    const hr = Math.floor(m / 60) % 24;
+                    const mn = m % 60;
+                    return `${String(hr).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
+                };
+
+                const partialTiming = longest ? `${toHHMM(longest[0])} – ${toHHMM(longest[1])}` : null;
+                const occupiedTiming = longest ? occupiedWindows
+                    .map(ow => {
+                        const os = Math.max(win.start, ow.start);
+                        const oe = Math.min(win.end, ow.end);
+                        return os < oe ? `${toHHMM(os)} – ${toHHMM(oe)}` : null;
+                    })
+                    .filter(Boolean)
+                    .join(', ') : null;
+
+                const price = (seat.shiftPrices instanceof Map
+                    ? seat.shiftPrices.get(shift._id.toString())
+                    : seat.shiftPrices?.[shift._id.toString()])
+                    || seat.basePrices?.day || 0;
+
+                vacantSlots.push({
+                    seatId:           seat._id.toString(),
+                    seatNumber:       seat.number,
+                    roomName:         seat.room?.name  || 'Unknown Room',
+                    hasAc:            seat.room?.hasAc || false,
+                    floorId:          seat.floor?._id?.toString() || '',
+                    floorName:        seat.floor?.name || 'Unknown Floor',
+                    shiftId:          shift._id.toString(),
+                    shiftName:        shift.name,
+                    shiftTime:        `${shift.startTime} – ${shift.endTime}`,
+                    price,
+                    isPartial:        !isFull,
+                    vacancyType:      isFull ? 'full' : 'partial',
+                    partialTiming,
+                    occupiedTiming,
+                    freeMinutes:      longest ? (longest[1] - longest[0]) : shiftTotalMins,
+                    hasPartialAssignment: occupiedWindows.length > 0,
+                });
             }
         }
 
@@ -3316,14 +3666,25 @@ exports.getVacantSeats = async (req, res) => {
         const shiftMap = {};
         for (const shift of shifts) {
             shiftMap[shift._id.toString()] = {
-                shiftId:   shift._id.toString(),
-                shiftName: shift.name,
-                shiftTime: `${shift.startTime} – ${shift.endTime}`,
-                total:     seats.length,
-                vacant:    0,
+                shiftId:      shift._id.toString(),
+                shiftName:    shift.name,
+                shiftTime:    `${shift.startTime} – ${shift.endTime}`,
+                total:        seats.length,
+                vacant:       0,
+                fullCount:    0,
+                partialCount: 0,
             };
         }
-        vacantSlots.forEach(s => { if (shiftMap[s.shiftId]) shiftMap[s.shiftId].vacant++; });
+        vacantSlots.forEach(s => {
+            if (shiftMap[s.shiftId]) {
+                shiftMap[s.shiftId].vacant++;
+                if (s.isPartial) {
+                    shiftMap[s.shiftId].partialCount++;
+                } else {
+                    shiftMap[s.shiftId].fullCount++;
+                }
+            }
+        });
 
         // ── 6. Overall stats
         const totalSeats   = seats.length;

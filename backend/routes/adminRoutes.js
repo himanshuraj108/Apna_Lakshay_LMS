@@ -55,6 +55,8 @@ const {
     createShift,
     updateShift,
     deleteShift,
+    getWaitlistStudentsForShift,
+    sendShiftVacancyNotification,
     fixSeatOccupancy,
     // QR Kiosk
     generateQrToken,
@@ -234,6 +236,8 @@ router.delete('/archives/:id', deleteArchivedStudent);
 router.route('/shifts')
     .get(getShifts)
     .post(createShift);
+router.get('/shifts/waitlist-candidates', getWaitlistStudentsForShift);
+router.post('/shifts/notify-vacancy', sendShiftVacancyNotification);
 router.put('/shifts/:id', updateShift);
 router.delete('/shifts/:id', deleteShift);
 

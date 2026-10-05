@@ -36,6 +36,7 @@ const publicRoutes       = require('./routes/publicRoutes');
 const settingsRoutes     = require('./routes/settingsRoutes');
 const chatRoutes         = require('./routes/chatRoutes');
 const studyPlannerRoutes = require('./routes/studyPlannerRoutes');
+const walkinRoutes       = require('./routes/walkinRoutes');
 const errorHandler       = require('./middleware/errorHandler');
 const socketHandler      = require('./sockets/socketHandler');
 const startCronJobs      = require('./utils/cronJobs');
@@ -117,6 +118,7 @@ app.use('/api/public',  publicRoutes);       status('Route Registered', '/api/pu
 app.use('/api/settings',settingsRoutes);     status('Route Registered', '/api/settings');
 app.use('/api/chat',    chatRoutes);         status('Route Registered', '/api/chat');
 app.use('/api/study',   studyPlannerRoutes); status('Route Registered', '/api/study');
+app.use('/api/walkin',  walkinRoutes);       status('Route Registered', '/api/walkin');
 
 app.get('/', (_req, res) => res.json({
     service : 'apna-lakshay-lms',

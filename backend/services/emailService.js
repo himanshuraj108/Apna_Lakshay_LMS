@@ -492,3 +492,43 @@ exports.sendManualDueEmail = async (student, details) => {
     }
   );
 };
+
+// ─── 18. SHIFT VACANCY ALERT (WAITING LIST NOTIFICATION) ──────────────────────
+exports.sendShiftVacancyEmail = async (student, shiftDetails, customMessage) => {
+  const timing = shiftDetails.startTime && shiftDetails.endTime 
+    ? `${shiftDetails.startTime} – ${shiftDetails.endTime}`
+    : (shiftDetails.shiftTime || 'Scheduled Timings');
+  const shiftTitle = shiftDetails.shiftName || shiftDetails.name || 'Shift Vacancy';
+
+  const tableRows = [
+    { label: 'Shift Name', value: shiftTitle, bold: true },
+    { label: 'Shift Timing', value: timing, bold: true },
+    { label: 'Seat Status', value: 'Seats Available Now', bold: true, highlight: true },
+  ];
+
+  if (shiftDetails.availableCount) {
+    tableRows.push({
+      label: 'Vacant Desks',
+      value: `${shiftDetails.availableCount} desk${Number(shiftDetails.availableCount) === 1 ? '' : 's'} free`,
+      bold: true
+    });
+  }
+
+  return await sendEmail(
+    student.email,
+    `Seat Available: ${shiftTitle} at Apna Lakshay Library`,
+    {
+      badge: { text: 'Shift Vacancy Alert', bg: '#ecfdf5', color: '#047857' },
+      headline: `Seat vacancy open in ${shiftTitle}`,
+      body: `
+        <p style="margin:0 0 16px;">Dear <strong>${student.name}</strong>,</p>
+        <p style="margin:0 0 14px;">Great news! Seats have opened up for <strong>${shiftTitle}</strong> (${timing}) at Apna Lakshay Library. Since you are currently registered on our waiting list or enrolled as a flexible scholar, you are receiving priority notification.</p>
+        ${customMessage ? `<div style="margin:16px 0;padding:14px 16px;background:#fff7ed;border-left:4px solid #ea580c;border-radius:4px;font-size:14px;color:#9a3412;line-height:1.6;"><strong>Administrator Note:</strong><br/>${customMessage.replace(/\n/g, '<br/>')}</div>` : ''}
+        <p style="margin:0 0 8px;">Desk allocations are processed on a first-come, first-served basis. If you would like to secure your desk for this shift, please contact the administration or visit the reception promptly.</p>
+      `,
+      table: { rows: tableRows },
+      cta: { label: 'Open Student Portal', url: `${APP_URL}/student/dashboard` },
+      note: 'Please visit library administration or contact the front desk promptly to finalize your desk allocation before slots fill up.'
+    }
+  );
+};

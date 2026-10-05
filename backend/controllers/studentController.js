@@ -13,6 +13,7 @@ const Settings = require('../models/Settings');
 const TempSeatAssignment = require('../models/TempSeatAssignment');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const WalkinRequest = require('../models/WalkinRequest');
 
 // ─── Geo-Fence Helpers ────────────────────────────────────────────────────
 // Haversine formula: returns distance in metres between two lat/lng points
@@ -133,9 +134,32 @@ const checkAttendanceTimeWindow = async (studentId, settings, now) => {
                 }
                 return { allowed: true, message: '' };
             }
+        } else {
+            const student = await User.findById(studentId).select('flexShift studentType');
+            if (student?.flexShift?.startTime && student?.flexShift?.endTime) {
+                const [sH, sM] = student.flexShift.startTime.split(':').map(Number);
+                const [eH, eM] = student.flexShift.endTime.split(':').map(Number);
+                const shiftStartMins = sH * 60 + sM;
+                const shiftEndMins   = eH * 60 + eM;
+
+                const allowedStartMins = shiftStartMins - 60;
+                const allowedEndMins   = shiftEndMins   + 60;
+
+                if (nowTotalMins < allowedStartMins || nowTotalMins >= allowedEndMins) {
+                    const fmt = (mins) => {
+                        const h = Math.floor(mins / 60), m = mins % 60;
+                        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    };
+                    return {
+                        allowed: false,
+                        message: `Attendance for shift ${student.flexShift.startTime}–${student.flexShift.endTime} is allowed between ${fmt(allowedStartMins)} and ${fmt(allowedEndMins)}.`
+                    };
+                }
+                return { allowed: true, message: '' };
+            }
         }
     } catch (err) {
-        console.error('[TIME-WINDOW] Error fetching seat for shift check:', err.message);
+        console.error('[TIME-WINDOW] Error fetching shift check:', err.message);
     }
 
     // Fallback (no shift assigned yet): fixed 05:00 – 22:00
@@ -159,7 +183,7 @@ exports.getDashboard = async (req, res) => {
         // ==========================================
         // PERFORMANCE OPTIMIZATION: Run independent queries in parallel
         // ==========================================
-        const [seat, student, unreadCount, activeRequestsCount, settings, rawTempAssignments] = await Promise.all([
+        const [seat, student, unreadCount, activeRequestsCount, settings, rawTempAssignments, todayWalkin] = await Promise.all([
             // Query 1: Get primary seat (first active seat for this student)
             Seat.findOne({ assignments: { $elemMatch: { student: studentId, status: 'active' } } })
                 .populate('floor room')
@@ -168,7 +192,7 @@ exports.getDashboard = async (req, res) => {
 
             // Query 2: Get student details
             User.findById(studentId)
-                .select('registrationSource createdAt name isActive doubtCredits maxDoubtCredits doubtCreditsResetDate')
+                .select('registrationSource createdAt name isActive doubtCredits maxDoubtCredits doubtCreditsResetDate studentType flexShift')
                 .lean(),
 
             // Query 3: Get unread notifications count
@@ -193,7 +217,24 @@ exports.getDashboard = async (req, res) => {
                     populate: { path: 'room floor' }
                 })
                 .populate('shift')
-                .lean()
+                .lean(),
+
+            // Query 7: Today's active walkin/flexible occupied seat
+            WalkinRequest.findOne({
+                student: studentId,
+                date: new Date().toISOString().slice(0, 10),
+                status: { $in: ['approved', 'pending'] }
+            })
+            .populate({
+                path: 'seat',
+                select: 'number room floor isAC',
+                populate: [
+                    { path: 'room', select: 'name roomId' },
+                    { path: 'floor', select: 'name' }
+                ]
+            })
+            .populate('walkinSlot', 'name startTime endTime')
+            .lean()
         ]);
 
         let assignedSeatData = null;
@@ -283,6 +324,41 @@ exports.getDashboard = async (req, res) => {
                 isTemporary: true,
                 isTemporarySeat: true,
                 tempNote: firstTemp.note
+            };
+        } else if (!assignedSeatData && todayWalkin && todayWalkin.seat) {
+            const seatRoomName = typeof todayWalkin.seat.room === 'object' ? todayWalkin.seat.room?.name : todayWalkin.seat.room;
+            const seatRoomId = typeof todayWalkin.seat.room === 'object' ? todayWalkin.seat.room?.roomId : null;
+            const seatFloorName = typeof todayWalkin.seat.floor === 'object' ? todayWalkin.seat.floor?.name : todayWalkin.seat.floor;
+            assignedSeatData = {
+                id: todayWalkin.seat._id,
+                _id: todayWalkin.seat._id,
+                number: todayWalkin.seat.number,
+                seatNumbers: [todayWalkin.seat.number],
+                room: seatRoomName || 'General',
+                roomId: seatRoomId,
+                floor: seatFloorName || 'Ground Floor',
+                roomHasAc: Boolean(todayWalkin.seat.isAC),
+                roomHasFan: true,
+                isWalkinClaim: true,
+                walkinRequestId: todayWalkin._id,
+                walkinStatus: todayWalkin.status,
+                checkedInAt: todayWalkin.checkedInAt,
+                checkedOutAt: todayWalkin.checkedOutAt,
+                shift: todayWalkin.walkinSlot?.name || student?.flexShift?.label || 'Flex Shift',
+                shifts: [{
+                    name: todayWalkin.walkinSlot?.name || student?.flexShift?.label || 'Flex Shift',
+                    startTime: todayWalkin.startTime,
+                    endTime: todayWalkin.endTime,
+                    seatNumber: todayWalkin.seat.number
+                }],
+                shiftDetails: {
+                    startTime: todayWalkin.startTime,
+                    endTime: todayWalkin.endTime
+                },
+                price: todayWalkin.feeCharged || 0,
+                assignedAt: todayWalkin.checkedInAt || todayWalkin.createdAt,
+                isTemporary: false,
+                isTemporarySeat: false
             };
         }
 
@@ -481,6 +557,21 @@ exports.getDashboard = async (req, res) => {
                 registrationSource: student?.registrationSource || 'admin',
                 studentName: student?.name,
                 isActive: student?.isActive, // Fresh status from DB
+                studentType: student?.studentType || 'regular',
+                flexShift: student?.flexShift || null,
+                todayWalkin: todayWalkin ? {
+                    _id: todayWalkin._id,
+                    seatId: todayWalkin.seat?._id,
+                    number: todayWalkin.seat?.number,
+                    room: typeof todayWalkin.seat?.room === 'object' ? todayWalkin.seat?.room?.name : todayWalkin.seat?.room,
+                    roomId: typeof todayWalkin.seat?.room === 'object' ? todayWalkin.seat?.room?.roomId : null,
+                    floor: typeof todayWalkin.seat?.floor === 'object' ? todayWalkin.seat?.floor?.name : todayWalkin.seat?.floor,
+                    status: todayWalkin.status,
+                    checkedInAt: todayWalkin.checkedInAt,
+                    checkedOutAt: todayWalkin.checkedOutAt,
+                    startTime: todayWalkin.startTime,
+                    endTime: todayWalkin.endTime,
+                } : null,
                 seat: assignedSeatData,
                 attendance: {
                     present: presentCount,
@@ -558,6 +649,95 @@ exports.getMySeat = async (req, res) => {
             .lean();
 
         if (allSeats.length === 0 && tempAssignments.length === 0) {
+            const student = await User.findById(studentId).select('studentType flexShift').lean();
+            if (student) {
+                if (student.studentType === 'waitingList') {
+                    return res.status(200).json({
+                        success: true,
+                        isWaiting: true,
+                        isWalkin: false,
+                        studentType: 'waitingList',
+                        flexShift: student.flexShift || null,
+                        seat: null,
+                        tempAssignments: []
+                    });
+                }
+                if (student.studentType === 'walkin' || student.flexShift?.startTime) {
+                    const todayDate = new Date().toISOString().slice(0, 10);
+                    const todayWalkin = await WalkinRequest.findOne({
+                        student: studentId,
+                        date: todayDate,
+                        status: { $in: ['approved', 'pending'] }
+                    })
+                    .populate({
+                        path: 'seat',
+                        populate: [
+                            { path: 'room', populate: { path: 'seats', model: 'Seat' } },
+                            { path: 'floor' }
+                        ]
+                    })
+                    .populate('walkinSlot', 'name startTime endTime')
+                    .lean();
+
+                    let flexSeatObj = null;
+                    if (todayWalkin && todayWalkin.seat) {
+                        const shiftLabel = todayWalkin.walkinSlot?.name || student.flexShift?.label || 'Flex Shift';
+                        flexSeatObj = {
+                            _id: todayWalkin.seat._id,
+                            id: todayWalkin.seat._id,
+                            number: todayWalkin.seat.number,
+                            seatNumbers: [todayWalkin.seat.number],
+                            floor: todayWalkin.seat.floor,
+                            room: todayWalkin.seat.room,
+                            isAC: Boolean(todayWalkin.seat.isAC || todayWalkin.seat.room?.hasAc),
+                            isWalkinClaim: true,
+                            walkinRequestId: todayWalkin._id,
+                            walkinStatus: todayWalkin.status,
+                            checkedInAt: todayWalkin.checkedInAt,
+                            checkedOutAt: todayWalkin.checkedOutAt,
+                            shift: shiftLabel,
+                            shifts: [{
+                                name: shiftLabel,
+                                startTime: todayWalkin.startTime,
+                                endTime: todayWalkin.endTime,
+                                seatNumber: todayWalkin.seat.number
+                            }],
+                            activeAssignment: {
+                                shift: {
+                                    name: shiftLabel,
+                                    startTime: todayWalkin.startTime,
+                                    endTime: todayWalkin.endTime
+                                },
+                                assignedAt: todayWalkin.checkedInAt || todayWalkin.createdAt,
+                                price: todayWalkin.feeCharged || student.flexShift?.monthlyFee || 0
+                            }
+                        };
+                    }
+
+                    return res.status(200).json({
+                        success: true,
+                        isWalkin: true,
+                        isWaiting: false,
+                        studentType: student.studentType || 'walkin',
+                        flexShift: student.flexShift || null,
+                        todayWalkin: todayWalkin ? {
+                            _id: todayWalkin._id,
+                            seatId: todayWalkin.seat?._id,
+                            number: todayWalkin.seat?.number,
+                            room: typeof todayWalkin.seat?.room === 'object' ? todayWalkin.seat?.room?.name : todayWalkin.seat?.room,
+                            roomId: typeof todayWalkin.seat?.room === 'object' ? todayWalkin.seat?.room?.roomId : null,
+                            floor: typeof todayWalkin.seat?.floor === 'object' ? todayWalkin.seat?.floor?.name : todayWalkin.seat?.floor,
+                            status: todayWalkin.status,
+                            checkedInAt: todayWalkin.checkedInAt,
+                            checkedOutAt: todayWalkin.checkedOutAt,
+                            startTime: todayWalkin.startTime,
+                            endTime: todayWalkin.endTime
+                        } : null,
+                        seat: flexSeatObj,
+                        tempAssignments: []
+                    });
+                }
+            }
             return res.status(404).json({
                 success: false,
                 message: 'No seat assigned'

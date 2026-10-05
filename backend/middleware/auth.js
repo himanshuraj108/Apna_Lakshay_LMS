@@ -89,8 +89,12 @@ exports.authorizeActive = (req, res, next) => {
     }
 
     // Check for Pending Allocation (Active but No Seat)
-    // We strictly enforce seat assignment for these routes, EXCEPT for support requests
-    if (req.user && req.user.isActive && !req.user.seat) {
+    // Walkin/flexible seating scholars and waiting list scholars are treated as allocated members
+    const isWalkin = req.user?.studentType === 'walkin' || Boolean(req.user?.flexShift?.startTime) || Boolean(req.user?.walkinSlot);
+    const isWaiting = req.user?.studentType === 'waitingList';
+    const isAllocated = Boolean(req.user?.seat || isWalkin || isWaiting);
+
+    if (req.user && req.user.isActive && !isAllocated) {
         // Allow access to specific endpoints (like Help & Support)
         const allowedPaths = ['/request', '/profile'];
         const isAllowed = allowedPaths.some(path => req.originalUrl.includes(path));
