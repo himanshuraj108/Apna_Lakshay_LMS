@@ -11,13 +11,32 @@ const archivedStudentSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        required: true
+        default: ''
     },
-    phoneNumber: String,
-    guardianName: String,
-    guardianPhone: String,
-    address: String,
-    profileImage: String, // Path to image (might be deleted from fs, so maybe just keep path or placeholder)
+    mobile: {
+        type: String,
+        default: ''
+    },
+    phoneNumber: {
+        type: String,
+        default: ''
+    },
+    guardianName: {
+        type: String,
+        default: ''
+    },
+    guardianPhone: {
+        type: String,
+        default: ''
+    },
+    address: {
+        type: String,
+        default: ''
+    },
+    profileImage: {
+        type: String,
+        default: ''
+    },
 
     // Snapshots of data
     fees: [{

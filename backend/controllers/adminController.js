@@ -1939,14 +1939,15 @@ exports.deleteStudent = async (req, res) => {
             // 2. Create Archive Record
             await ArchivedStudent.create({
                 originalId: student._id,
-                name: student.name,
-                email: student.email,
-                phoneNumber: student.phoneNumber,
-                guardianName: student.guardianName,
-                guardianPhone: student.guardianPhone,
-                address: student.address,
-                profileImage: student.profileImage,
-                joinedAt: student.createdAt,
+                name: student.name || 'Unnamed Student',
+                email: student.email || '',
+                mobile: student.mobile || '',
+                phoneNumber: student.mobile || student.phoneNumber || '',
+                guardianName: student.guardianName || '',
+                guardianPhone: student.guardianPhone || '',
+                address: student.address || '',
+                profileImage: student.profileImage || '',
+                joinedAt: student.createdAt || student.joinedAt || new Date(),
                 deletedBy: req.user.id,
 
                 // Snapshots
@@ -1981,6 +1982,11 @@ exports.deleteStudent = async (req, res) => {
             await Notification.deleteMany({ recipient: req.params.id });
             await Request.deleteMany({ student: req.params.id });
             await PasswordLog.deleteMany({ user: req.params.id });
+            try {
+                const WalkinRequest = require('../models/WalkinRequest');
+                await WalkinRequest.deleteMany({ student: req.params.id });
+                await DailyAbsence.deleteMany({ student: req.params.id });
+            } catch { /* ignore */ }
 
             // Log action
             await logAction(req, 'student_deleted_hard', 'User', req.params.id, student.name, 'Permanently deleted and archived student data');
