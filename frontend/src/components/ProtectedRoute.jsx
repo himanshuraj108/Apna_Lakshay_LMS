@@ -31,11 +31,12 @@ const ProtectedRoute = ({ children, adminOnly = false, superAdminOnly = false, r
         return <Navigate to="/" replace />;
     }
 
-    // requireSeat check — skip for admin, sub-admin, walkin/flex and waitingList scholars
+    // requireSeat check — active scholars, flex scholars, waitlist scholars, and assigned scholars always allowed
     if (requireSeat && user.role !== 'admin' && !isSubAdmin) {
+        const isActive = user?.isActive !== false;
         const isWalkin = user?.studentType === 'walkin' || Boolean(user?.flexShift?.startTime) || Boolean(user?.walkinSlot);
         const isWaiting = user?.studentType === 'waitingList';
-        const hasSeat = user.seat || user.seatNumber || isWalkin || isWaiting;
+        const hasSeat = Boolean(user?.seat || user?.seatNumber || isWalkin || isWaiting || isActive);
         if (!hasSeat) {
             return <Navigate to="/pending-allocation" replace />;
         }

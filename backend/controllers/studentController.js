@@ -738,8 +738,13 @@ exports.getMySeat = async (req, res) => {
                     });
                 }
             }
-            return res.status(404).json({
-                success: false,
+            return res.status(200).json({
+                success: true,
+                seat: null,
+                isWaiting: false,
+                isWalkin: false,
+                studentType: 'regular',
+                tempAssignments: [],
                 message: 'No seat assigned'
             });
         }

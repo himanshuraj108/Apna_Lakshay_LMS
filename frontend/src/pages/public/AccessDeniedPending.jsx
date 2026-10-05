@@ -132,12 +132,23 @@ const AccessDeniedPending = ({ user: propUser }) => {
 
                         {/* Actions */}
                         <div className="space-y-2.5">
+                            <Link to="/student" className="block">
+                                <motion.button
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className="w-full flex items-center justify-center gap-1.5 py-3 px-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer"
+                                >
+                                    <IoLibraryOutline size={15} />
+                                    <span>Continue to Dashboard</span>
+                                </motion.button>
+                            </Link>
+
                             <div className="grid grid-cols-2 gap-2.5">
                                 <motion.button
                                     onClick={handleRefresh}
                                     whileHover={{ scale: 1.01 }}
                                     whileTap={{ scale: 0.98 }}
-                                    className="flex items-center justify-center gap-1.5 py-3 px-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition-all cursor-pointer"
+                                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-stone-50 border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
                                 >
                                     <IoRefreshOutline size={15} />
                                     <span>Refresh Status</span>
@@ -147,7 +158,7 @@ const AccessDeniedPending = ({ user: propUser }) => {
                                     <motion.button
                                         whileHover={{ scale: 1.01 }}
                                         whileTap={{ scale: 0.98 }}
-                                        className="w-full flex items-center justify-center gap-1.5 py-3 px-3 bg-white hover:bg-stone-50 border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                        className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-stone-50 border border-[#EDE8E0] text-stone-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
                                     >
                                         <IoPersonOutline size={15} />
                                         <span>View Profile</span>

@@ -270,6 +270,37 @@ exports.login = async (req, res) => {
         user.lastLogin = new Date();
         user.save({ validateBeforeSave: false }).catch(err => console.error('Login tracking update failed:', err.message));
 
+        // Look up active seat assignment to include in login response
+        let activeSeatId = user.seat || null;
+        let activeSeatNumber = null;
+        let activeShiftName = null;
+        let activeShiftDetails = null;
+
+        if (user.role === 'student') {
+            try {
+                const Seat = require('../models/Seat');
+                const seatDoc = await Seat.findOne({
+                    assignments: { $elemMatch: { student: user._id, status: 'active' } }
+                }).populate('assignments.shift').populate('room');
+
+                if (seatDoc) {
+                    activeSeatId = seatDoc._id;
+                    activeSeatNumber = seatDoc.number;
+                    const asgn = seatDoc.assignments.find(a => a.student.toString() === user._id.toString() && a.status === 'active');
+                    if (asgn) {
+                        activeShiftName = asgn.shift ? asgn.shift.name : (asgn.legacyShift || 'full');
+                        activeShiftDetails = asgn.shift ? { startTime: asgn.shift.startTime, endTime: asgn.shift.endTime } : null;
+                    }
+                    if (!user.seat) {
+                        user.seat = seatDoc._id;
+                        user.save({ validateBeforeSave: false }).catch(() => {});
+                    }
+                }
+            } catch (seatErr) {
+                console.error('Error fetching seat on login:', seatErr.message);
+            }
+        }
+
         // Generate token
         const token = user.generateToken();
 
@@ -294,10 +325,14 @@ exports.login = async (req, res) => {
                 gender: user.gender,
                 studentType: user.studentType || 'regular',
                 flexShift: user.flexShift || null,
+                seat: activeSeatId,
+                seatNumber: activeSeatNumber,
+                shift: activeShiftName,
+                shiftDetails: activeShiftDetails,
             }
         });
     } catch (error) {
-        console.error('❌ Login error:', error);
+        console.error('Login error:', error);
 
         res.status(500).json({
             success: false,

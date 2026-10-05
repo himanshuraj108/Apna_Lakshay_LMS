@@ -308,13 +308,28 @@ const Profile = () => {
 
     // ─── derived ──────────────────────────────────────────────────────
     const isTemporary = Boolean(profile?.isTemporary || profile?.isTemporarySeat || (profile?.tempAssignments && profile.tempAssignments.length > 0));
-    const memberStatus = !profile?.isActive ? 'inactive' : isTemporary ? 'temporary' : !profile?.seat ? 'pending' : 'active';
+    const isWaiting = profile?.studentType === 'waitingList';
+    const isWalkin = profile?.studentType === 'walkin' || Boolean(profile?.flexShift?.startTime);
+    const hasSeat = Boolean(profile?.seat || profile?.seatNumber);
+    const memberStatus = !profile?.isActive
+        ? 'inactive'
+        : isTemporary
+        ? 'temporary'
+        : isWaiting
+        ? 'waiting'
+        : isWalkin
+        ? 'walkin'
+        : hasSeat
+        ? 'active'
+        : 'active';
+
     const statusConfig = {
         active:    { label: 'Active Member',      color: 'from-green-400 to-emerald-500', border: 'border-green-200',  bg: 'bg-green-50',  text: 'text-green-600', dot: 'bg-green-400' },
         temporary: { label: 'Active (Temporary)', color: 'from-amber-400 to-orange-500',  border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-700', dot: 'bg-amber-500' },
-        pending:   { label: 'Pending Allocation', color: 'from-yellow-400 to-amber-500',  border: 'border-amber-200',  bg: 'bg-amber-50',  text: 'text-amber-600', dot: 'bg-amber-400' },
-        inactive:  { label: 'Inactive',           color: 'from-red-400 to-rose-500',      border: 'border-red-200',    bg: 'bg-red-50',    text: 'text-red-500',  dot: 'bg-red-400' },
-    }[memberStatus];
+        walkin:    { label: 'Flex Scholar',       color: 'from-orange-400 to-amber-500',  border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-600', dot: 'bg-orange-400' },
+        waiting:   { label: 'Waiting List',       color: 'from-violet-400 to-purple-500', border: 'border-purple-200', bg: 'bg-purple-50', text: 'text-purple-600', dot: 'bg-purple-400' },
+        inactive:  { label: 'Inactive',           color: 'from-red-400 to-rose-500',      border: 'border-red-200',    bg: 'bg-red-50',    text: 'text-red-500',   dot: 'bg-red-400' },
+    }[memberStatus] || { label: 'Active Member', color: 'from-green-400 to-emerald-500', border: 'border-green-200', bg: 'bg-green-50', text: 'text-green-600', dot: 'bg-green-400' };
 
     const initials = (profile?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     const imgSrc = (() => {
@@ -911,7 +926,7 @@ const Profile = () => {
                     </div>
 
                     <div className="p-4">
-                    {profile?.isActive && (profile?.seat || isTemporary) ? (
+                    {profile?.isActive ? (
                         <>
                             <div className="flex flex-col gap-2.5">
                                 {/* Shift Change */}
@@ -960,9 +975,7 @@ const Profile = () => {
                             </div>
                             <p className="text-gray-700 font-semibold text-sm">Requests Unavailable</p>
                             <p className="text-gray-500 text-xs mt-1.5 max-w-xs leading-relaxed">
-                                {memberStatus === 'inactive'
-                                    ? 'Your account is currently inactive. Please reactivate your membership.'
-                                    : 'You are pending seat allocation. Requests will be available once a seat is assigned.'}
+                                Your account is currently inactive. Please contact administration to reactivate your membership.
                             </p>
                         </div>
                     )}

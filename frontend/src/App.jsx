@@ -358,12 +358,12 @@ function App() {
                     <Route path="/student" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
                     <Route path="/student/view-seats" element={<ProtectedRoute><ViewSeats /></ProtectedRoute>} />
                     <Route path="/student/seat" element={<ProtectedRoute><MySeat /></ProtectedRoute>} />
-                    <Route path="/student/attendance" element={<ProtectedRoute requireSeat><Attendance /></ProtectedRoute>} />
-                    <Route path="/student/planner" element={<ProtectedRoute requireSeat><StudyPlanner /></ProtectedRoute>} />
+                    <Route path="/student/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
+                    <Route path="/student/planner" element={<ProtectedRoute><StudyPlanner /></ProtectedRoute>} />
                     <Route path="/student/fees" element={<ProtectedRoute><FeeStatus /></ProtectedRoute>} />
                     <Route path="/student/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                     <Route path="/student/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                    <Route path="/student/chat" element={<ProtectedRoute requireSeat><DiscussionRoom /></ProtectedRoute>} />
+                    <Route path="/student/chat" element={<ProtectedRoute><DiscussionRoom /></ProtectedRoute>} />
                     <Route path="/student/books" element={<ProtectedRoute><BooksPage /></ProtectedRoute>} />
                     <Route path="/student/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
                     <Route path="/student/mock-test" element={<ProtectedRoute><MockTestPage /></ProtectedRoute>} />

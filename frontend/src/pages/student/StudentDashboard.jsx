@@ -1037,11 +1037,6 @@ const StudentDashboard = () => {
         return <InactiveScreen user={user} onLogout={handleLogout} />;
     }
 
-    /* -- Pending Allocation guard -- only regular unassigned scholars without flex or waitlist -- */
-    if (!hasSeat && !isWalkin && !isWaiting) {
-        return <AccessDeniedPending user={user} />;
-    }
-
     /* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     // ── Dynamic section visibility ──────────────────────────────────────────────
     const visibleAiCards = (() => {
@@ -2671,7 +2666,7 @@ const StudentDashboard = () => {
                                 {/* Learning cards */}
                                 <div className="p-3 flex flex-col gap-2.5" style={{ background: '#FFFAF5' }}>
                                     {visibleLearningCards.map((item, i) => {
-                                        const targetRoute = item.locked ? '/pending-allocation' : item.to;
+                                        const targetRoute = item.to;
                                         const Card = (
                                             <motion.div
                                                 key={i}
