@@ -262,6 +262,24 @@ const userSchema = new mongoose.Schema({
             }
         ],
         default: []
+    },
+    studentType: {
+        type: String,
+        enum: ['regular', 'walkin', 'waitingList'],
+        default: 'regular'
+    },
+    // ── Flex Shift (for walkin students with recurring time allocation) ─────────
+    flexShift: {
+        slotId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'WalkinSlot',
+            default: null
+        },
+        // Custom time if admin doesn't use a predefined slot
+        startTime: { type: String, default: '' }, // 'HH:MM'
+        endTime:   { type: String, default: '' }, // 'HH:MM'
+        label:     { type: String, default: '' }, // e.g. "Evening (2 PM – 9 PM)"
+        monthlyFee: { type: Number, default: 0 }
     }
 
 }, {
