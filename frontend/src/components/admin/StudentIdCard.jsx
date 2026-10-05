@@ -4,6 +4,7 @@ import { IoPersonCircleOutline, IoWarning } from 'react-icons/io5';
 import { QRCodeCanvas } from 'qrcode.react';
 import { FaWind, FaBan } from 'react-icons/fa';
 import useShifts from '../../hooks/useShifts';
+import { useAuth } from '../../context/AuthContext';
 import { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -216,12 +217,28 @@ const CardBack = ({ theme, studentId, validTillDate, validTillLabel }) => (
    MAIN  COMPONENT
 ─────────────────────────────────────────────────────────────────────────────── */
 const StudentIdCard = ({ student }) => {
+    let authUser = null;
+    try {
+        const auth = useAuth();
+        authUser = auth?.user;
+    } catch (_) {}
+
     const { getShiftName } = useShifts();
     const [flipped, setFlipped] = useState(false);
 
     const id              = student._id || student.id || '';
     const studentId       = id ? id.slice(-8).toUpperCase() : '--------';
     const verificationUrl = `${window.location.origin}/admin/verify/${id}`;
+
+    const resolvedMobile  = student.mobile
+        || student.phoneNumber
+        || student.phone
+        || student.contact
+        || student.mobileNumber
+        || student.user?.mobile
+        || (authUser && (String(authUser._id || authUser.id) === String(id) || String(authUser.studentId) === String(student.studentId || studentId)) ? authUser.mobile : null)
+        || (authUser?.role === 'student' ? authUser.mobile : null)
+        || '';
 
     const tempAssignments = student.tempAssignments || [];
     const isTemporary     = Boolean(
@@ -593,7 +610,7 @@ const StudentIdCard = ({ student }) => {
                             {/* Mobile */}
                             <div>
                                 <div style={LABEL_STYLE}>Mobile</div>
-                                <div style={{ ...VAL_STYLE, fontFamily: 'monospace', fontSize: '9.5px' }}>{student.mobile || '----------'}</div>
+                                <div style={{ ...VAL_STYLE, fontFamily: 'monospace', fontSize: '9.5px' }}>{resolvedMobile || '----------'}</div>
                             </div>
                             {/* Gender */}
                             <div>

@@ -533,7 +533,7 @@ const StudentDashboard = () => {
     const [pinLoading, setPinLoading]                 = useState(false);
     const [pinError, setPinError]                     = useState('');
     const [directMarkLoading, setDirectMarkLoading]   = useState(false);
-    const { logout, user, forceDoubtBoard }           = useAuth();
+    const { logout, user, forceDoubtBoard, updateUser } = useAuth();
     const { t, language, setLanguage } = useLanguage();
     const isActive = user?.isActive;
     const hasSeat = dashboardData?.seat || (dashboardData?.tempAssignments?.length > 0);
@@ -785,6 +785,9 @@ const StudentDashboard = () => {
             const res = await api.get('/student/dashboard'); 
             const data = res.data.data;
             setDashboardData(data);
+            if (data?.mobile && (!user?.mobile || user.mobile !== data.mobile) && updateUser) {
+                updateUser({ mobile: data.mobile });
+            }
             if (data?.flexibleEntry !== undefined) setFlexibleEntry(!!data.flexibleEntry);
             const isMarked = !!data?.attendance?.markedToday;
             setAttendanceMarkedToday(isMarked);
@@ -1121,6 +1124,7 @@ const StudentDashboard = () => {
                 {showIDCard && <IDCard student={{
                     ...user,
                     isActive,
+                    mobile: user?.mobile || dashboardData?.mobile || dashboardData?.studentMobile || '',
                     registrationSource: dashboardData?.registrationSource,
                     seat: dashboardData?.seat,
                     seatNumber: dashboardData?.seat?.number,

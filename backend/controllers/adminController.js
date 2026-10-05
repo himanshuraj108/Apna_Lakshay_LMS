@@ -2257,7 +2257,7 @@ exports.getFloors = async (req, res) => {
                     populate: [
                         {
                             path: 'assignments.student',
-                            select: 'name email profileImage isActive' // Reduced fields for performance
+                            select: 'name email mobile studentId gender profileImage isActive'
                         },
                         {
                             path: 'assignments.shift',

@@ -192,7 +192,7 @@ exports.getDashboard = async (req, res) => {
 
             // Query 2: Get student details
             User.findById(studentId)
-                .select('registrationSource createdAt name isActive doubtCredits maxDoubtCredits doubtCreditsResetDate studentType flexShift')
+                .select('registrationSource createdAt name mobile isActive doubtCredits maxDoubtCredits doubtCreditsResetDate studentType flexShift')
                 .lean(),
 
             // Query 3: Get unread notifications count
@@ -556,6 +556,8 @@ exports.getDashboard = async (req, res) => {
             data: {
                 registrationSource: student?.registrationSource || 'admin',
                 studentName: student?.name,
+                mobile: student?.mobile || '',
+                studentMobile: student?.mobile || '',
                 isActive: student?.isActive, // Fresh status from DB
                 studentType: student?.studentType || 'regular',
                 flexShift: student?.flexShift || null,

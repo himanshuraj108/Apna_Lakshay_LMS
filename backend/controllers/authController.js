@@ -144,6 +144,7 @@ exports.login = async (req, res) => {
                         success: true, token,
                         user: {
                             id: instance._id, name: instance.name, email: instance.email,
+                            mobile: instance.mobile,
                             role: instance.role, isActive: instance.isActive,
                             registrationSource: instance.registrationSource,
                             profileImage: instance.profileImage, createdAt: instance.createdAt,
@@ -311,6 +312,7 @@ exports.login = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                mobile: user.mobile,
                 role: user.role,
                 isActive: user.isActive,
                 registrationSource: user.registrationSource,
