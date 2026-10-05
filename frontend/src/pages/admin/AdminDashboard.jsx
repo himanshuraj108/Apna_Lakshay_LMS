@@ -258,17 +258,6 @@ export const ALL_ADMIN_MODULES = [
         color: '#7c3aed',
         bg: '#f5f3ff',
         tag: 'Student App'
-    },
-    {
-        id: 'settings',
-        title: 'System Settings',
-        desc: 'Campus maintenance mode, geofence & attendance rules',
-        path: '/admin/settings',
-        category: 'Administration',
-        icon: IoSettingsOutline,
-        color: '#334155',
-        bg: '#f1f5f9',
-        tag: 'System'
     }
 ];
 
