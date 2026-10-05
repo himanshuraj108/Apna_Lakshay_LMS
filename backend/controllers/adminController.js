@@ -3793,7 +3793,7 @@ exports.getFees = async (req, res) => {
 
         const STUDENT_POPULATE = {
             path: 'student',
-            select: 'name email mobile address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate isActive showInFeeManagement',
+            select: 'name email mobile profileImage gender address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate isActive showInFeeManagement',
             populate: {
                 path: 'seat',
                 select: 'number'

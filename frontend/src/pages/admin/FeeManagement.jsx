@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
-import api from '../../utils/api';
+import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
 import {
     IoArrowBack,
     IoCashOutline,
@@ -38,6 +38,15 @@ import { useAuth } from '../../context/AuthContext';
 import { PrimaryLogoLoader } from '../../components/ui/SkeletonLoader';
 import PaymentReceipt from '../../components/admin/PaymentReceipt';
 import Modal from '../../components/ui/Modal';
+
+const getStudentAvatarSrc = (student) => {
+    if (!student) return null;
+    const img = (!student.profileImage || student.profileImage === '/uploads/avatars/avatar1.svg')
+        ? getDeterministicAvatar(student._id, student.gender)
+        : student.profileImage;
+    if (!img) return null;
+    return img.startsWith('http') ? img : `${BASE_URL}${img}`;
+};
 
 const FeeManagement = () => {
     const backPath = useBackPath();
@@ -1179,8 +1188,26 @@ const FeeManagement = () => {
                                         {/* Card Top: Student Avatar + Info + Status */}
                                         <div className="flex items-start justify-between gap-3 mb-4 mt-1">
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center font-black text-sm uppercase shrink-0">
-                                                    {(student?.name || 'U').slice(0, 2)}
+                                                <div className="relative w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
+                                                    {getStudentAvatarSrc(student) ? (
+                                                        <img
+                                                            src={getStudentAvatarSrc(student)}
+                                                            alt={student?.name || 'Student'}
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                                if (e.currentTarget.nextElementSibling) {
+                                                                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                                }
+                                                            }}
+                                                        />
+                                                    ) : null}
+                                                    <div
+                                                        className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-100 text-orange-700 items-center justify-center font-black text-sm uppercase"
+                                                        style={{ display: getStudentAvatarSrc(student) ? 'none' : 'flex' }}
+                                                    >
+                                                        {(student?.name || 'U').slice(0, 2)}
+                                                    </div>
                                                 </div>
                                                 <div className="min-w-0">
                                                     <h3 className="font-bold text-slate-900 text-sm truncate" title={student?.name}>
@@ -1411,8 +1438,26 @@ const FeeManagement = () => {
                                                 {/* Student & Desk */}
                                                 <td className="px-5 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-xs shrink-0">
-                                                            {(student?.name || 'U').slice(0, 2)}
+                                                        <div className="relative w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                                                            {getStudentAvatarSrc(student) ? (
+                                                                <img
+                                                                    src={getStudentAvatarSrc(student)}
+                                                                    alt={student?.name || 'Student'}
+                                                                    className="w-full h-full object-cover"
+                                                                    onError={(e) => {
+                                                                        e.currentTarget.style.display = 'none';
+                                                                        if (e.currentTarget.nextElementSibling) {
+                                                                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            ) : null}
+                                                            <div
+                                                                className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-100 text-orange-700 items-center justify-center font-bold text-xs uppercase"
+                                                                style={{ display: getStudentAvatarSrc(student) ? 'none' : 'flex' }}
+                                                            >
+                                                                {(student?.name || 'U').slice(0, 2)}
+                                                            </div>
                                                         </div>
                                                         <div>
                                                             <div className="font-bold text-slate-900 text-xs">{student?.name || 'Unknown'}</div>
@@ -1526,10 +1571,33 @@ const FeeManagement = () => {
                     <div className="space-y-4">
                         {/* Student Bill Overview Card */}
                         <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 space-y-2">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-900">{payModal.student?.name}</h4>
-                                    <p className="text-[11px] text-slate-500">{payModal.student?.email || payModal.student?.mobile}</p>
+                            <div className="flex justify-between items-start gap-3">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="relative w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                                        {getStudentAvatarSrc(payModal.student) ? (
+                                            <img
+                                                src={getStudentAvatarSrc(payModal.student)}
+                                                alt={payModal.student?.name || 'Student'}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    if (e.currentTarget.nextElementSibling) {
+                                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                                    }
+                                                }}
+                                            />
+                                        ) : null}
+                                        <div
+                                            className="w-full h-full bg-gradient-to-br from-orange-100 to-amber-100 text-orange-700 items-center justify-center font-bold text-xs uppercase"
+                                            style={{ display: getStudentAvatarSrc(payModal.student) ? 'none' : 'flex' }}
+                                        >
+                                            {(payModal.student?.name || 'U').slice(0, 2)}
+                                        </div>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h4 className="text-sm font-bold text-slate-900 truncate">{payModal.student?.name}</h4>
+                                        <p className="text-[11px] text-slate-500 truncate">{payModal.student?.email || payModal.student?.mobile}</p>
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700 block">
