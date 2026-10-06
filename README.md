@@ -48,9 +48,9 @@ API Server (Node.js + Express)
 
 | Role | Scope |
 |------|-------|
-| Super Admin | Full system access — student management, seats, fees, shifts, settings, analytics, sub-admin management, QR kiosk refresh |
-| Sub Admin | Floor operations — attendance, seat check, student ID card printing, kiosk access, all 16 module cards, inactivation requests routed to super admin |
-| Student | Self-service portal — dashboard, seat view, fees, AI tools, mock tests, discussion, doubt board, wallet, video learning |
+| Super Admin | Full system access — student management, seats, walk-in slots, fees, shifts, settings, analytics, sub-admin management, QR kiosk refresh |
+| Sub Admin | Floor operations — attendance, seat check, student ID card printing, kiosk access, walk-in management, all 16 module cards, inactivation requests routed to super admin |
+| Student | Self-service portal — dashboard, seat view, flexible seating & walk-in booking, fees, AI tools, mock tests, discussion, doubt board, wallet, video learning |
 
 ---
 
@@ -60,7 +60,9 @@ API Server (Node.js + Express)
 
 - Multi-floor, multi-room seat matrix
 - Shift-based assignment (morning, afternoon, evening, full-day, custom)
-- Shift overlap detection for all seat operations
+- Dynamic time-overlap conflict guard preventing double bookings across all shift configurations
+- Fully booked seats automatically hidden from allocation dropdowns
+- Shift reset on seat change ensuring clean shift assignment transfers
 - Temporary seat allocation when original seat is occupied
 - Inactivation and reinstatement workflow with seat restoration and conflict resolution
 - Vacant seat real-time matrix view
@@ -68,13 +70,30 @@ API Server (Node.js + Express)
 - Seats and shifts sorted ascending by start time across all views (dashboard, ID card, My Seat page)
 - Split-seat multi-desk display with correct per-seat numbers
 
+### Walkin and Flexible Seating (Partial Vacancy Tracking)
+
+- **Walkin Slots Management:** Super admins and sub-admins can configure custom walk-in slots (name, start time, end time, session fee, and designated eligible seats).
+- **Daily Absence Tracking:** Admin can mark or remove student absences for any date; absent students automatically free up their seats for temporary walk-in allocation without unassigning their permanent seat.
+- **Dynamic Partial Vacancy Intervals:**
+  - Automatically computes available sub-intervals inside requested time windows (e.g. if a student's assigned shift is 06:00–16:00 and another student requests 14:00–20:00, the system automatically detects and displays the 16:00–20:00 sub-interval as partially vacant).
+  - Visual "Partial Vacancy" badges with exact free hours in the student Find A Seat portal (`/student/find-seat`) and Admin Walkin Management (`/admin/walkin`).
+- **Flexible Instant Occupy & Release:** Active flexible-seating students can instantly claim vacant seats for today's session and release them upon departure.
+- **Walk-in Request Lifecycle:** Students submit requests with preferred seat, slot, and date; admins review, approve, or reject with custom feedback and fee assessment.
+- **Check-In & Check-Out Tracking:** Records exact physical check-in and check-out timestamps with session duration metrics.
+- **Waitlist and Shift Availability Alerts:** Automated notifications alerting waitlisted students when seats or shifts open up.
+
 ### Student Lifecycle
 
 - Admin-registered and self-registered student flows
 - Aadhar number, date of birth, gender, address, locker number fields
-- Student ID card generation with QR code (PDF export via jsPDF)
-- Profile photo upload (Cloudinary)
-- Archive and soft-delete with restoration support
+- **Duplicate Mobile / Multi-Student Login:** Support for multiple students sharing the same phone number (e.g. siblings, family); interactive profile selection modal displaying student photo/avatar, assigned seat number, shift time, and logged-in badge for direct dashboard access
+- **Student ID Card Preview & Dual-Face Export:**
+  - Dual-face PNG export capturing front and back cards separately in high resolution
+  - 2-page physical Library Guidelines & Student Identity PDF export via jsPDF
+  - Student mobile number resolution across Student Dashboard, Admin Student Management, Admin Floor Management, and Entrance Kiosk
+  - Profile photo upload (Cloudinary) and avatar fallback with initials across all views
+- **Soft-Delete & Archive Safety:** Robust student deletion and archiving without requiring email fields, preventing validation failures
+- **Student Roster PDF:** Branded student directory export with watermark and telephone dialer links
 - Status history log per student
 - Sub-admin inactivation request routed to super admin with approval or disapproval
 - Seat restoration on disapproval with conflict-aware relocation
@@ -90,6 +109,7 @@ API Server (Node.js + Express)
 - Location-bound attendance (geofence)
 - Login-triggered attendance
 - Attendance trend graphs and monthly/yearly report with seat and shift columns
+- **Monthly Attendance PDF Report:** Export formatted monthly reports featuring library logo watermark, lifetime overall attendance percentage calculation, top 75% attendance highlight badge, and direct phone dialer links
 - Top-5 student highlight toggle in attendance report
 - Absent tracking and daily log
 - Shift Time Lock — configurable per-library:
@@ -103,6 +123,10 @@ API Server (Node.js + Express)
 - Physical receipt generation (jsPDF + autotable)
 - Pending dues dashboard for admin
 - Per-student fee history and session ledger
+- **Student Profile Avatars:** Profile photo or avatar displayed on admin fee cards and transaction tables
+- **Seat Upgrade Balance Due Tracking:** Dedicated note and balance due tracking (`note` and `seatChangeDetails` schema fields) with upgrade balance banner in admin fee cards and student fee status
+- **Make Due Feature:** Dedicated route and action to mark upcoming fees as due with automated email notifications
+- **Post-Reactivation Fee Healing:** Automatically heals and resets overdue fees to pending if due date is today or in the future
 - Admin referral wallet
 - Sub-admin fee view shows Unpaid Dues tab (pending + partial combined)
 - Reactivation: inactive-period cancelled fees do not regenerate as new pending dues
@@ -150,7 +174,10 @@ API Server (Node.js + Express)
 ### Notifications
 
 - In-app notification centre per role
-- Email notifications via Nodemailer (seat assignment, fee due, inactivation, approval)
+- Email notifications via Nodemailer (seat assignment, fee due, inactivation, approval, waitlist alerts)
+- Master email template branding with library logo embedded across all system-generated email communications
+- Admin notification broadcast with optional `sendEmail` delivery toggle
+- 3-second safety confirmation modal displaying recipient breakdown, message preview, and logo before dispatching bulk notifications or emails
 - Push-style real-time alerts via Socket.io
 
 ### Admin Analytics
@@ -256,6 +283,9 @@ lms/
 | SubAdmin | Sub-admin extended profile |
 | ArchivedStudent | Soft-deleted student records |
 | Holiday | Library holiday calendar |
+| DailyAbsence | Student daily absence records for temporary seat freeing |
+| WalkinSlot | Configurable walk-in session definitions, hours, fees, and eligible seats |
+| WalkinRequest | Walk-in seating requests, approvals, check-ins, check-outs, and fee charges |
 
 ---
 
@@ -427,9 +457,10 @@ All API routes are prefixed with `/api`.
 
 | Prefix | Module |
 |--------|--------|
-| /api/auth | Login, register, forgot password, token refresh |
+| /api/auth | Login, register, forgot password, token refresh, duplicate mobile profile selection |
 | /api/admin | All super admin and sub-admin operations |
 | /api/student | All student self-service operations |
+| /api/walkin | Walk-in slots, daily absences, partial vacancy calculations, instant occupancy, requests, check-in/out |
 | /api/public | Public endpoints (settings, landing page data) |
 | /api/settings | System settings read and update |
 | /api/chat | Discussion room messages |
