@@ -13,9 +13,19 @@ module.exports = (io) => {
             }
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            if (decoded.role === 'subadmin') {
+                const SubAdmin = require('../models/SubAdmin');
+                const sub = await SubAdmin.findById(decoded.id);
+                if (sub && sub.isActive) {
+                    socket.user = { _id: sub._id, name: sub.name, role: 'subadmin', isActive: true, isChatBlocked: false };
+                    return next();
+                }
+            }
+
             const user = await User.findById(decoded.id).select('name profileImage role isChatBlocked isActive');
 
-            if (!user || !user.isActive || user.isChatBlocked) {
+            if (!user || !user.isActive) {
                 return next(new Error('User not authorized'));
             }
 
@@ -85,6 +95,10 @@ module.exports = (io) => {
 
                 if (!isChatEnabled && socket.user.role !== 'admin') {
                     return socket.emit('error', { message: 'Chat is currently disabled by admin.' });
+                }
+
+                if (socket.user.isChatBlocked) {
+                    return socket.emit('error', { message: 'You are blocked from sending messages.' });
                 }
 
                 // Check room access

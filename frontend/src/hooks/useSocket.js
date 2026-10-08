@@ -1,16 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 
 let socket = null;
 
-export const useSocket = (authDependency = false) => {
+export const useSocket = (authDependency = true) => {
     const [isConnected, setIsConnected] = useState(socket ? socket.connected : false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
 
-        // Disconnect existing if token is removed (logout)
-        if (!token || !authDependency) {
+        // Disconnect existing if token is removed or auth is explicitly disabled (logout)
+        if (!token || authDependency === false) {
             if (socket) {
                 socket.disconnect();
                 socket = null;
@@ -27,8 +27,11 @@ export const useSocket = (authDependency = false) => {
 
             socket = io(baseUrl, {
                 auth: { token },
-                autoConnect: true
+                autoConnect: true,
+                transports: ['websocket', 'polling']
             });
+        } else if (!socket.connected) {
+            socket.connect();
         }
 
         // Setup event listeners for this component instance

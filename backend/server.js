@@ -143,9 +143,14 @@ const socketOrigins = [
     /\.vercel\.app$/
 ];
 
+if (process.env.CLIENT_URL) socketOrigins.unshift(process.env.CLIENT_URL);
+if (process.env.FRONTEND_URL && !socketOrigins.includes(process.env.FRONTEND_URL)) {
+    socketOrigins.unshift(process.env.FRONTEND_URL);
+}
+
 const io = new Server(server, {
     cors: {
-        origin  : process.env.CLIENT_URL ? [process.env.CLIENT_URL, ...socketOrigins] : socketOrigins,
+        origin      : socketOrigins,
         credentials : true,
         methods     : ['GET', 'POST']
     }

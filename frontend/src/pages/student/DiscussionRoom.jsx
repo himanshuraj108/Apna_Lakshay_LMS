@@ -17,8 +17,8 @@ import { BASE_URL } from '../../utils/api';
 const DiscussionRoom = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { socket, isConnected } = useSocket();
-    const [showGuidelines, setShowGuidelines] = useState(true);
+    const { socket, isConnected } = useSocket(!!user);
+    const [showGuidelines, setShowGuidelines] = useState(() => !localStorage.getItem('discussion_guidelines_accepted'));
     const [activeTab, setActiveTab] = useState('public'); // 'public', 'private', 'groups'
     const [rooms, setRooms] = useState([]);
     const [currentRoom, setCurrentRoom] = useState(null);
@@ -132,20 +132,28 @@ const DiscussionRoom = () => {
     useEffect(() => {
         if (!socket) return;
 
-        socket.on('new-message', (message) => {
-            setMessages(prev => [...prev, message]);
+        const handleNewMessage = (message) => {
+            setMessages(prev => {
+                if (prev.some(m => m._id === message._id)) return prev;
+                return [...prev, message];
+            });
             if (message.sender?.role === 'admin') {
                 setIsShaking(true);
                 setTimeout(() => setIsShaking(false), 500);
             }
-        });
+        };
 
-        socket.on('user-joined', (data) => {
+        const handleSocketError = (err) => {
+            const errorMsg = typeof err === 'string' ? err : err?.message || 'Chat error';
+            showToast(errorMsg, 'error');
+        };
 
-        });
+        socket.on('new-message', handleNewMessage);
+        socket.on('error', handleSocketError);
 
         return () => {
-            socket.off('new-message');
+            socket.off('new-message', handleNewMessage);
+            socket.off('error', handleSocketError);
             socket.off('user-joined');
             socket.off('user-left');
         };
@@ -188,16 +196,25 @@ const DiscussionRoom = () => {
         };
     }, [socket]);
 
-    // Join public room on load
+    // Automatically join room whenever currentRoom changes or socket connects
     useEffect(() => {
-        if (!socket || !isConnected) return;
+        if (!socket || !isConnected || !currentRoom?._id) return;
+        joinRoom(currentRoom._id);
+    }, [socket, isConnected, currentRoom?._id]);
 
-        // Find or create public room
-        const publicRoom = rooms.find(r => r.type === 'public');
-        if (publicRoom) {
-            joinRoom(publicRoom._id);
-        }
-    }, [socket, isConnected, rooms]);
+    // Handle socket reconnect
+    useEffect(() => {
+        if (!socket) return;
+        const handleConnect = () => {
+            if (currentRoom?._id) {
+                joinRoom(currentRoom._id);
+            }
+        };
+        socket.on('connect', handleConnect);
+        return () => {
+            socket.off('connect', handleConnect);
+        };
+    }, [socket, currentRoom?._id]);
 
     const fetchRooms = async () => {
         try {
@@ -390,7 +407,7 @@ const DiscussionRoom = () => {
     };
 
     const sendMessage = async () => {
-        if (!socket || (!messageInput.trim() && !selectedFile) || !currentRoom) return;
+        if ((!messageInput.trim() && !selectedFile) || !currentRoom) return;
 
         let fileData = null;
         if (selectedFile) {
@@ -414,14 +431,31 @@ const DiscussionRoom = () => {
             messageData.fileName = fileData.fileName;
         }
 
-        socket.emit('send-message', messageData);
+        try {
+            if (socket && isConnected) {
+                socket.emit('send-message', messageData);
+            } else {
+                // Fallback to HTTP API if socket is disconnected
+                const response = await api.post(`/chat/rooms/${currentRoom._id}/messages`, messageData);
+                if (response.data?.success && response.data?.message) {
+                    setMessages(prev => {
+                        if (prev.some(m => m._id === response.data.message._id)) return prev;
+                        return [...prev, response.data.message];
+                    });
+                }
+            }
 
-        setMessageInput('');
-        setSelectedFile(null);
-        setShowMentionDropdown(false);
-        setReplyToMessage(null); // Clear reply
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            setMessageInput('');
+            setSelectedFile(null);
+            setShowMentionDropdown(false);
+            setReplyToMessage(null); // Clear reply
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        } catch (error) {
+            console.error('Send message error:', error);
+            const errMsg = error.response?.data?.message || 'Failed to send message';
+            showToast(errMsg, 'error');
         }
     };
 
@@ -727,7 +761,10 @@ const DiscussionRoom = () => {
             {/* Guidelines Modal */}
             <DiscussionGuidelinesModal
                 isOpen={showGuidelines}
-                onClose={() => setShowGuidelines(false)}
+                onClose={() => {
+                    localStorage.setItem('discussion_guidelines_accepted', 'true');
+                    setShowGuidelines(false);
+                }}
             />
 
             {/* Tab Navigation */}

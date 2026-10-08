@@ -13,6 +13,7 @@ const {
     createPrivateRoom,
     createGroupRoom,
     getMessages,
+    sendMessage,
     getActiveStudents,
     uploadFile,
     hideRoom,
@@ -69,8 +70,8 @@ router.get('/settings/:key', async (req, res) => {
 router.get('/rooms', getRooms);
 router.post('/rooms/private', createPrivateRoom);
 router.post('/rooms/group', createGroupRoom);
-router.post('/rooms/group', createGroupRoom);
 router.get('/rooms/:id/messages', getMessages);
+router.post('/rooms/:id/messages', sendMessage);
 router.post('/upload', upload.single('file'), uploadFile);
 // Deletion routes
 router.post('/rooms/:roomId/hide', hideRoom);

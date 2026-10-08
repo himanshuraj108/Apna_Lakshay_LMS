@@ -8,6 +8,21 @@ exports.getRooms = async (req, res) => {
     try {
         const userId = req.user.id;
 
+        // Ensure at least one public room exists
+        let publicRoom = await ChatRoom.findOne({ type: 'public', isActive: true });
+        if (!publicRoom) {
+            const admin = await User.findOne({ role: 'admin' });
+            if (admin) {
+                publicRoom = await ChatRoom.create({
+                    type        : 'public',
+                    name        : 'Public Study Chat',
+                    participants: [],
+                    createdBy   : admin._id,
+                    isActive    : true
+                });
+            }
+        }
+
         // Find all rooms where user is participant or it's public
         const rooms = await ChatRoom.find({
             $or: [
@@ -162,6 +177,92 @@ exports.getMessages = async (req, res) => {
         });
     } catch (error) {
         console.error('Get Messages Error:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Send a message (HTTP fallback and reliable delivery)
+// @route   POST /api/chat/rooms/:id/messages
+exports.sendMessage = async (req, res) => {
+    try {
+        const { id: roomId } = req.params;
+        const { content, type = 'text', fileUrl, fileName, mentions = [], replyTo } = req.body;
+        const userId = req.user.id;
+
+        if (!content && !fileUrl) {
+            return res.status(400).json({ success: false, message: 'Message content or file required' });
+        }
+
+        // Check Global Chat Setting
+        const SystemSetting = require('../models/SystemSetting');
+        const chatSetting = await SystemSetting.findOne({ key: 'chat_enabled' });
+        const isChatEnabled = chatSetting ? chatSetting.value : true;
+
+        if (!isChatEnabled && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Chat is currently disabled by administrator' });
+        }
+
+        // Check if student is chat blocked
+        if (req.user.isChatBlocked) {
+            return res.status(403).json({ success: false, message: 'You are blocked from chat' });
+        }
+
+        const room = await ChatRoom.findById(roomId);
+        if (!room) {
+            return res.status(404).json({ success: false, message: 'Room not found' });
+        }
+
+        if (room.type !== 'public' && !room.participants.includes(userId)) {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
+        if (room.isDisabled && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'This room has been disabled by administrator' });
+        }
+
+        const message = await Message.create({
+            room: roomId,
+            sender: userId,
+            content: (content || (fileUrl ? `Shared a ${type}` : '')).trim(),
+            type,
+            fileUrl,
+            fileName,
+            mentions: Array.isArray(mentions) ? mentions : [],
+            replyTo: replyTo || null
+        });
+
+        await message.populate('sender', 'name studentId profileImage role');
+        if (message.mentions && message.mentions.length > 0) {
+            await message.populate('mentions', 'name');
+        }
+        if (message.replyTo) {
+            await message.populate({
+                path: 'replyTo',
+                populate: { path: 'sender', select: 'name profileImage' }
+            });
+        }
+
+        room.lastMessage = message._id;
+        room.lastMessageAt = new Date();
+        await room.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`room:${roomId}`).emit('new-message', message);
+            if (mentions && mentions.length > 0) {
+                mentions.forEach(uid => {
+                    io.to(`user:${uid}`).emit('mention-notification', {
+                        messageId: message._id,
+                        roomId,
+                        sender: req.user.name
+                    });
+                });
+            }
+        }
+
+        res.status(201).json({ success: true, message });
+    } catch (error) {
+        console.error('Send Message HTTP Error:', error);
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

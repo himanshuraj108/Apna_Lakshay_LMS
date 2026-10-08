@@ -95,8 +95,8 @@ exports.authorizeActive = (req, res, next) => {
     const isAllocated = Boolean(req.user?.seat || isWalkin || isWaiting);
 
     if (req.user && req.user.isActive && !isAllocated) {
-        // Allow access to specific endpoints (like Help & Support)
-        const allowedPaths = ['/request', '/profile'];
+        // Allow access to specific endpoints (like Help & Support, Discussion Chat, AI Doubt, Study Planner)
+        const allowedPaths = ['/request', '/profile', '/chat', '/study', '/doubt'];
         const isAllowed = allowedPaths.some(path => req.originalUrl.includes(path));
 
         if (!isAllowed) {
