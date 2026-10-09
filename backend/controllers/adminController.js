@@ -4080,6 +4080,401 @@ exports.cancelFee = async (req, res) => {
     }
 };
 
+// @desc    Get student roster for Advance Payment tab
+// @route   GET /api/admin/fees/advance-roster
+exports.getAdvancePaymentRoster = async (req, res) => {
+    try {
+        const MONTH_NAMES = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // 1. Fetch active students
+        const students = await User.find({ role: 'student', isActive: { $ne: false } })
+            .select('name email mobile profileImage gender address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate currentFee showInFeeManagement')
+            .populate({ path: 'seat', select: 'number room', populate: { path: 'room', select: 'name' } })
+            .lean();
+
+        // 2. Fetch active seat map
+        const seatMap = {};
+        try {
+            const activeSeats = await Seat.find({
+                $or: [
+                    { 'assignments.status': 'active' },
+                    { 'assignments.student': { $exists: true, $ne: null } },
+                    { isOccupied: true },
+                    { assignedTo: { $exists: true, $ne: null } }
+                ]
+            })
+                .populate('room floor assignments.shift')
+                .lean();
+
+            activeSeats.forEach(st => {
+                (st.assignments || []).forEach(a => {
+                    if ((a.status === 'active' || !a.status) && a.student) {
+                        const sid = (typeof a.student === 'object' && a.student._id) ? a.student._id.toString() : a.student.toString();
+                        if (!seatMap[sid]) {
+                            seatMap[sid] = {
+                                seatNumber: st.number,
+                                seatId: st._id,
+                                roomName: st.room?.name || '',
+                                shiftName: a.shift?.name || a.legacyShift || (a.type === 'full_day' ? 'Full Day' : 'Full Shift'),
+                                price: a.price || 0
+                            };
+                        }
+                    }
+                });
+                if (st.assignedTo) {
+                    const sid = (typeof st.assignedTo === 'object' && st.assignedTo._id) ? st.assignedTo._id.toString() : st.assignedTo.toString();
+                    if (!seatMap[sid]) {
+                        seatMap[sid] = {
+                            seatNumber: st.number,
+                            seatId: st._id,
+                            roomName: st.room?.name || '',
+                            shiftName: st.shift?.name || 'Standard Shift',
+                            price: st.currentPrice || 0
+                        };
+                    }
+                }
+            });
+        } catch (seatErr) {
+            console.warn('Advance roster seatMap warning:', seatErr.message);
+        }
+
+        // 3. Fetch all fees for active students
+        const studentIds = students.map(s => s._id);
+        const fees = await Fee.find({ student: { $in: studentIds } })
+            .sort({ year: 1, month: 1 })
+            .lean();
+
+        const feesByStudent = {};
+        fees.forEach(f => {
+            const sid = f.student.toString();
+            if (!feesByStudent[sid]) feesByStudent[sid] = [];
+            feesByStudent[sid].push(f);
+        });
+
+        const now = new Date();
+        const currentCalendarMonth = now.getMonth() + 1;
+        const currentCalendarYear = now.getFullYear();
+
+        const roster = students.map(student => {
+            const sid = student._id.toString();
+            const seatInfo = seatMap[sid] || {};
+            const seatNumber = seatInfo.seatNumber || (student.seat?.number) || '';
+            const roomName = seatInfo.roomName || (student.seat?.room?.name) || '';
+            const shiftName = seatInfo.shiftName || 'Standard Shift';
+
+            const studentFees = feesByStudent[sid] || [];
+            const nonCancelledFees = studentFees.filter(f => f.status !== 'cancelled');
+
+            // Find latest fee by chronological month/year
+            let latestFee = null;
+            if (nonCancelledFees.length > 0) {
+                latestFee = nonCancelledFees[nonCancelledFees.length - 1];
+            }
+
+            // Find last settled/paid fee
+            const paidFees = nonCancelledFees.filter(f => f.status === 'paid');
+            const lastPaidFee = paidFees.length > 0 ? paidFees[paidFees.length - 1] : null;
+
+            // Billing Day
+            const joinedDate = new Date(student.admissionDate || student.createdAt || now);
+            const billingDay = joinedDate.getDate();
+
+            // Next candidate month/year for upcoming/advance billing
+            let nextMonth, nextYear;
+            if (latestFee) {
+                nextMonth = latestFee.month + 1;
+                nextYear = latestFee.year;
+                if (nextMonth > 12) {
+                    nextMonth = 1;
+                    nextYear++;
+                }
+            } else {
+                nextMonth = currentCalendarMonth;
+                nextYear = currentCalendarYear;
+            }
+
+            // Calculate cycle for next candidate
+            const nextCycleStart = new Date(nextYear, nextMonth - 1, billingDay);
+            const nextCycleEnd = new Date(nextYear, nextMonth, billingDay - 1);
+            const nextDueDate = new Date(nextCycleEnd);
+
+            // Fee amount
+            const suggestedAmount = seatInfo.price || student.currentFee || (latestFee ? latestFee.amount : 0) || 0;
+
+            // Check if any advance payment is recorded
+            const advanceFees = nonCancelledFees.filter(f => f.isAdvancePayment || (f.status === 'paid' && (f.year > currentCalendarYear || (f.year === currentCalendarYear && f.month > currentCalendarMonth))));
+            const hasAdvancePaid = advanceFees.length > 0;
+
+            // Summary of existing fee periods (month, year, status, amount)
+            const feeHistorySummary = studentFees.map(f => ({
+                _id: f._id,
+                month: f.month,
+                year: f.year,
+                monthName: MONTH_NAMES[f.month - 1],
+                amount: f.amount,
+                status: f.status,
+                isAdvancePayment: !!f.isAdvancePayment,
+                paidDate: f.paidDate,
+                dueDate: f.dueDate
+            }));
+
+            return {
+                studentId: student.studentId || '',
+                _id: student._id,
+                name: student.name,
+                email: student.email,
+                mobile: student.mobile || '',
+                profileImage: student.profileImage,
+                gender: student.gender,
+                fatherName: student.fatherName || student.guardianName || '',
+                address: student.address || '',
+                aadharNo: student.aadharNo || '',
+                lockerNo: student.lockerNo || '',
+                registrationFee: student.registrationFee || 0,
+                admissionDate: student.admissionDate || student.createdAt,
+                billingDay,
+                seatNumber,
+                roomName,
+                shiftName,
+                suggestedAmount,
+                lastPaidFee: lastPaidFee ? {
+                    month: lastPaidFee.month,
+                    year: lastPaidFee.year,
+                    monthName: MONTH_NAMES[lastPaidFee.month - 1],
+                    amount: lastPaidFee.amount,
+                    paidDate: lastPaidFee.paidDate
+                } : null,
+                latestFee: latestFee ? {
+                    month: latestFee.month,
+                    year: latestFee.year,
+                    monthName: MONTH_NAMES[latestFee.month - 1],
+                    status: latestFee.status,
+                    amount: latestFee.amount,
+                    isAdvancePayment: !!latestFee.isAdvancePayment
+                } : null,
+                nextUpcoming: {
+                    month: nextMonth,
+                    year: nextYear,
+                    monthName: MONTH_NAMES[nextMonth - 1],
+                    cycleStart: nextCycleStart,
+                    cycleEnd: nextCycleEnd,
+                    dueDate: nextDueDate,
+                    suggestedAmount
+                },
+                hasAdvancePaid,
+                advanceFeesCount: advanceFees.length,
+                feeHistorySummary
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            roster
+        });
+    } catch (error) {
+        console.error('getAdvancePaymentRoster error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error loading advance payment roster',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Record advance payment or upcoming due for student
+// @route   POST /api/admin/fees/advance-due
+exports.recordAdvanceDue = async (req, res) => {
+    try {
+        if (req.user && req.user.role === 'subadmin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: Advance payment recording is restricted to main administrator.'
+            });
+        }
+
+        const MONTH_NAMES = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const {
+            studentId,
+            month,
+            year,
+            amount,
+            dueDate,
+            action = 'advance_paid', // 'advance_paid' | 'pending'
+            note = '',
+            sendEmail = true
+        } = req.body;
+
+        if (!studentId) {
+            return res.status(400).json({ success: false, message: 'Student ID is required.' });
+        }
+        if (!month || month < 1 || month > 12) {
+            return res.status(400).json({ success: false, message: 'Valid billing month (1-12) is required.' });
+        }
+        if (!year || year < 2020) {
+            return res.status(400).json({ success: false, message: 'Valid billing year is required.' });
+        }
+        if (!amount || isNaN(amount) || Number(amount) <= 0) {
+            return res.status(400).json({ success: false, message: 'Valid fee amount is required.' });
+        }
+
+        const student = await User.findById(studentId);
+        if (!student || student.role !== 'student') {
+            return res.status(404).json({ success: false, message: 'Student not found.' });
+        }
+
+        const joinedDate = new Date(student.admissionDate || student.createdAt || new Date());
+        const billingDay = joinedDate.getDate();
+        const cycleStart = new Date(year, month - 1, billingDay);
+        const cycleEnd = new Date(year, month, billingDay - 1);
+        const resolvedDueDate = dueDate ? new Date(dueDate) : new Date(cycleEnd);
+        const numericAmount = Number(amount);
+        const monthName = MONTH_NAMES[month - 1];
+
+        let existingFee = await Fee.findOne({ student: studentId, month, year });
+
+        if (action === 'advance_paid') {
+            let fee;
+            if (existingFee) {
+                if (existingFee.status === 'paid') {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Fee for ${monthName} ${year} is already recorded as fully paid.`
+                    });
+                }
+                existingFee.status = 'paid';
+                existingFee.amount = numericAmount;
+                existingFee.partialPaid = numericAmount;
+                existingFee.outstanding = 0;
+                existingFee.isAdvancePayment = true;
+                existingFee.paidDate = new Date();
+                existingFee.markedBy = req.user.id;
+                existingFee.dueDate = resolvedDueDate;
+                if (note) existingFee.note = note;
+                await existingFee.save();
+                fee = existingFee;
+            } else {
+                fee = await Fee.create({
+                    student: studentId,
+                    month,
+                    year,
+                    amount: numericAmount,
+                    status: 'paid',
+                    isAdvancePayment: true,
+                    partialPaid: numericAmount,
+                    outstanding: 0,
+                    paidDate: new Date(),
+                    dueDate: resolvedDueDate,
+                    markedBy: req.user.id,
+                    note: note || 'Advance payment recorded'
+                });
+            }
+
+            // In-app Notification
+            await Notification.create({
+                recipient: student._id,
+                title: 'Advance Fee Payment Confirmed',
+                message: `Your advance fee payment of ₹${numericAmount} for ${monthName} ${year} has been confirmed.`,
+                type: 'fee',
+                createdBy: req.user.id
+            });
+
+            // Send fee confirmation email (exact same mail that is used for normal paid)
+            let emailSent = false;
+            if (sendEmail !== false && student.email) {
+                try {
+                    await emailService.sendFeeConfirmationEmail(
+                        student,
+                        numericAmount,
+                        month,
+                        year,
+                        fee._id,
+                        fee.paidDate
+                    );
+                    emailSent = true;
+                } catch (emailError) {
+                    console.error('Advance fee confirmation email error:', emailError.message);
+                }
+            }
+
+            // Log action
+            await logAction(
+                req,
+                'fee_advance_paid',
+                'Fee',
+                fee._id,
+                `Advance Fee: ₹${numericAmount}`,
+                `Advance payment of ₹${numericAmount} marked as paid for student ${student.name} (${monthName} ${year})`
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: `Advance payment of ₹${numericAmount} for ${monthName} ${year} recorded and confirmed.`,
+                fee,
+                emailSent
+            });
+        } else if (action === 'pending') {
+            let fee;
+            if (existingFee) {
+                if (existingFee.status === 'paid') {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Fee for ${monthName} ${year} is already paid.`
+                    });
+                }
+                existingFee.amount = numericAmount;
+                existingFee.status = 'pending';
+                existingFee.dueDate = resolvedDueDate;
+                if (note) existingFee.note = note;
+                await existingFee.save();
+                fee = existingFee;
+            } else {
+                fee = await Fee.create({
+                    student: studentId,
+                    month,
+                    year,
+                    amount: numericAmount,
+                    status: 'pending',
+                    isAdvancePayment: false,
+                    dueDate: resolvedDueDate,
+                    markedBy: req.user.id,
+                    note: note || 'Upcoming due scheduled'
+                });
+            }
+
+            await logAction(
+                req,
+                'fee_upcoming_due_created',
+                'Fee',
+                fee._id,
+                `Upcoming Due: ₹${numericAmount}`,
+                `Upcoming due of ₹${numericAmount} scheduled for student ${student.name} (${monthName} ${year})`
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: `Upcoming due of ₹${numericAmount} for ${monthName} ${year} marked as pending.`,
+                fee
+            });
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid action specified.' });
+        }
+    } catch (error) {
+        console.error('recordAdvanceDue error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error processing advance due',
+            error: error.message
+        });
+    }
+};
+
 
 
 // Send notification

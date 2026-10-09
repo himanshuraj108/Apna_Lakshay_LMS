@@ -54,6 +54,10 @@ const feeSchema = new mongoose.Schema({
         ref: 'User',
         default: null
     },
+    isAdvancePayment: {
+        type: Boolean,
+        default: false
+    },
     // ── Coin Discount ──────────────────────────────────────────────────
     coinDiscount: {
         type: Number,

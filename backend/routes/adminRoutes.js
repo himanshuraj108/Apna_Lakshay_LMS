@@ -29,6 +29,8 @@ const {
     bulkCheckIn,
     bulkCheckOut,
     getFees,
+    getAdvancePaymentRoster,
+    recordAdvanceDue,
     markFeePaid,
     markFeePartialPaid,
     cancelFee,
@@ -206,6 +208,8 @@ router.post('/reset-student-qrs', resetAllQrTokens);
 
 // Fees
 router.get('/fees', getFees);
+router.get('/fees/advance-roster', getAdvancePaymentRoster);
+router.post('/fees/advance-due', recordAdvanceDue);
 router.put('/fees/:id/paid', markFeePaid);
 router.put('/fees/:id/partial', markFeePartialPaid);
 router.put('/fees/:id/cancelled', cancelFee);
