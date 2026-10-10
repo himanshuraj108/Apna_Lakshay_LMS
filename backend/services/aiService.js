@@ -52,9 +52,12 @@ const callGroq = async (messages, { temperature = 0.5, max_tokens = 1500 } = {})
                         },
                         timeout: 25000,
                     }, (res) => {
-                        let data = '';
-                        res.on('data', chunk => { data += chunk; });
+                        const chunks = [];
+                        res.on('data', chunk => {
+                            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                        });
                         res.on('end', () => {
+                            const data = Buffer.concat(chunks).toString('utf8');
                             if (res.statusCode === 429) {
                                 return reject(new Error('rate_limit'));
                             }
