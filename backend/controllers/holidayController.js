@@ -23,6 +23,7 @@ const formatTime12h = (time24) => {
 const formatDatePretty = (d) => {
     try {
         return new Date(d).toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
             weekday: 'short',
             day: '2-digit',
             month: 'short',
