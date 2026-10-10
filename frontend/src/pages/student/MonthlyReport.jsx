@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -67,9 +67,20 @@ const generatePDF = async (r) => {
         const dateStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
         const hrs = Math.floor((day.durationMins || 0) / 60);
         const mins = (day.durationMins || 0) % 60;
-        const statusColor = day.status === 'present' ? [22, 163, 74] : [239, 68, 68];
+        const isAttendedHoliday = day.status === 'holiday' && !!day.entryTime;
+        const isNeutralHoliday = day.status === 'holiday' && !day.entryTime;
+        const statusColor = (day.status === 'present' || isAttendedHoliday)
+            ? [22, 163, 74]
+            : isNeutralHoliday
+                ? [217, 119, 6]
+                : [239, 68, 68];
+        const statusLabel = isAttendedHoliday
+            ? 'PRESENT'
+            : isNeutralHoliday
+                ? 'HOLIDAY'
+                : day.status.toUpperCase();
         doc.setTextColor(40, 40, 40); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.text(dateStr, cols[0].x, y);
-        doc.setTextColor(...statusColor); doc.setFont('helvetica', 'bold'); doc.text(day.status.toUpperCase(), cols[1].x, y);
+        doc.setTextColor(...statusColor); doc.setFont('helvetica', 'bold'); doc.text(statusLabel, cols[1].x, y);
         doc.setTextColor(40, 40, 40); doc.setFont('helvetica', 'normal');
         doc.text(day.entryTime || '\u2014', cols[2].x, y);
         doc.text(day.exitTime  || '\u2014', cols[3].x, y);
@@ -234,24 +245,32 @@ const MonthlyReport = () => {
                                         const d = new Date(day.date);
                                         const hrs = Math.floor((day.durationMins || 0) / 60);
                                         const mins = (day.durationMins || 0) % 60;
-                                        const isPresent = day.status === 'present' || day.status === 'holiday';
+                                        const isNeutralHoliday = day.status === 'holiday' && !day.entryTime;
+                                        const isPresent = day.status === 'present' || (day.status === 'holiday' && !!day.entryTime);
                                         return (
                                             <div key={i} className="flex items-center gap-3 px-5 py-3"
                                                 style={{ borderBottom: i < report.dailyBreakdown.length - 1 ? '1px solid #F0EDE8' : 'none' }}>
                                                 <div className="w-1 h-8 rounded-full flex-shrink-0"
-                                                    style={{ background: '#F97316', opacity: isPresent ? 0.9 : 0.2 }} />
+                                                    style={{ background: isNeutralHoliday ? '#f59e0b' : '#F97316', opacity: (isPresent || isNeutralHoliday) ? 0.9 : 0.2 }} />
                                                 <div className="min-w-[56px]">
                                                     <p className="text-sm font-bold" style={{ color: '#1A1A1A' }}>{d.getDate()} {MONTHS[d.getMonth()].slice(0,3)}</p>
                                                     <p className="text-[10px]" style={{ color: '#9B7B5A' }}>{d.toLocaleDateString('en-IN', { weekday: 'short' })}</p>
                                                 </div>
                                                 <div className="flex-1 flex items-center gap-2 flex-wrap">
+                                                    {isNeutralHoliday && (
+                                                        <span className="text-[11px] font-bold px-2 py-0.5 rounded" style={{ color: '#b45309', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.28)' }}>
+                                                            Holiday (Neutral)
+                                                        </span>
+                                                    )}
                                                     {day.entryTime && <span className="text-[11px] px-2 py-0.5 rounded" style={{ color: '#16a34a', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.2)' }}>In {day.entryTime}</span>}
                                                     {day.exitTime  && <span className="text-[11px] px-2 py-0.5 rounded" style={{ color: '#dc2626', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>Out {day.exitTime}</span>}
                                                 </div>
                                                 <div className="text-right flex-shrink-0">
-                                                    {isPresent
-                                                        ? <IoCheckmarkCircle size={16} style={{ color: '#10b981', display: 'inline' }} />
-                                                        : <IoCloseCircle size={16} style={{ color: '#ef4444', display: 'inline' }} />}
+                                                    {isNeutralHoliday
+                                                        ? <IoCalendarOutline size={16} style={{ color: '#d97706', display: 'inline' }} />
+                                                        : isPresent
+                                                            ? <IoCheckmarkCircle size={16} style={{ color: '#10b981', display: 'inline' }} />
+                                                            : <IoCloseCircle size={16} style={{ color: '#ef4444', display: 'inline' }} />}
                                                     {day.durationMins > 0 && <p className="text-[10px] mt-0.5" style={{ color: '#9B7B5A' }}>{hrs}h {mins}m</p>}
                                                 </div>
                                             </div>
