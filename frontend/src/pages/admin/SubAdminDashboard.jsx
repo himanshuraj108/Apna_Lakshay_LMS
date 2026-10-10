@@ -12,8 +12,19 @@ import {
     IoGridOutline, IoTimeOutline, IoCheckmarkCircle,
     IoScanOutline, IoChatbubblesOutline, IoBarChartOutline,
     IoRibbonOutline, IoTrophy, IoWalletOutline, IoMegaphoneOutline, IoSparklesOutline, IoPulseOutline,
-    IoSettingsOutline, IoKey,
+    IoSettingsOutline, IoKey, IoCheckmarkCircleOutline, IoCheckmarkDoneOutline, IoInformationCircleOutline,
 } from 'react-icons/io5';
+
+const fmt12h = (t) => {
+    if (!t || !t.includes(':')) return t || '';
+    const [hStr, mStr] = t.split(':');
+    const h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10) || 0;
+    if (isNaN(h)) return t;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return m === 0 ? `${h12}:00 ${period}` : `${h12}:${String(m).padStart(2, '0')} ${period}`;
+};
 
 /* ─── All modules — mirrors AdminDashboard exactly ─────────────────────────── */
 const PERM_CARDS = {
@@ -275,6 +286,128 @@ const SubAdminDashboard = () => {
 
     useEffect(() => { fetchStats(); }, []);
 
+    // ── Institutional Holiday Gate ("Got It" / "Remind Later" Modal & Banner in IST Asia/Kolkata) ──
+    const HOLIDAY_ACK_KEY = 'lms_subadmin_ack_holidays_v1';
+    const [acknowledgedHolidays, setAcknowledgedHolidays] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('lms_subadmin_ack_holidays_v1') || '{}');
+        } catch (_) {
+            return {};
+        }
+    });
+    const [forceShowHolidayModal, setForceShowHolidayModal] = useState(false);
+    const [snoozedHolidayModal, setSnoozedHolidayModal] = useState(false);
+    const [holidayClockTick, setHolidayClockTick] = useState(() => Date.now());
+
+    // Live 30-second tick so expired holidays (by IST date or partial endTime) auto-remove while dashboard is open
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setHolidayClockTick(Date.now());
+        }, 30000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const toISTDateStr = (d) => {
+        try {
+            return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        } catch (_) {
+            const istShifted = new Date(new Date(d).getTime() + 330 * 60 * 1000);
+            return istShifted.toISOString().slice(0, 10);
+        }
+    };
+
+    const getISTMinutesNow = (ts = Date.now()) => {
+        try {
+            const parts = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Kolkata',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).formatToParts(new Date(ts));
+            const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10) % 24;
+            const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+            return h * 60 + m;
+        } catch (_) {
+            const istShifted = new Date(ts + 330 * 60 * 1000);
+            return istShifted.getUTCHours() * 60 + istShifted.getUTCMinutes();
+        }
+    };
+
+    const todayISTStr = toISTDateStr(holidayClockTick);
+    const nowISTMins = getISTMinutesNow(holidayClockTick);
+
+    const getHolidayAckId = (h) => `${h._id}_${h.updatedAt || h.date || ''}`;
+
+    // Filter activeHolidays strictly in IST (Asia/Kolkata):
+    // 1. Remove any holiday whose IST date is in the past (< todayISTStr) — e.g. on 18th IST, 17th is removed and 19th is kept.
+    // 2. Remove today's partial holiday once current IST time reaches/passes endTime (nowISTMins >= endTotalMins).
+    const activeHolidaysList = (stats?.activeHolidays || []).filter((h) => {
+        const hDateIST = h.dateIST || toISTDateStr(h.date);
+        if (hDateIST < todayISTStr) return false;
+        if (hDateIST === todayISTStr && h.isPartial && h.endTime && h.endTime.includes(':')) {
+            const [endH, endM] = h.endTime.split(':').map(Number);
+            if (!isNaN(endH)) {
+                const endTotalMins = endH * 60 + (endM || 0);
+                if (nowISTMins >= endTotalMins) return false;
+            }
+        }
+        return true;
+    });
+
+    const activeTodayHoliday = activeHolidaysList.find(
+        (h) => (h.dateIST || toISTDateStr(h.date)) === todayISTStr
+    ) || null;
+
+    const unacknowledgedHolidays = activeHolidaysList.filter(h => !acknowledgedHolidays[getHolidayAckId(h)]);
+    const showHolidayGateModal = (!snoozedHolidayModal && unacknowledgedHolidays.length > 0) || (forceShowHolidayModal && activeHolidaysList.length > 0);
+    const holidaysToDisplay = unacknowledgedHolidays.length > 0 ? unacknowledgedHolidays : activeHolidaysList;
+
+    // Group multi-day holidays (by batchId or same name + timing) for clean presentation
+    const groupedHolidaysToDisplay = (() => {
+        const groups = [];
+        const map = new Map();
+        holidaysToDisplay.forEach((h) => {
+            const key = h.batchId || `${h.name}__${h.isPartial ? `${h.startTime}-${h.endTime}` : 'full'}__${h.description || ''}`;
+            if (!map.has(key)) {
+                const group = {
+                    key,
+                    name: h.name,
+                    description: h.description || '',
+                    isPartial: !!h.isPartial,
+                    startTime: h.startTime || null,
+                    endTime: h.endTime || null,
+                    dates: [h.date],
+                    items: [h]
+                };
+                map.set(key, group);
+                groups.push(group);
+            } else {
+                const g = map.get(key);
+                g.dates.push(h.date);
+                g.items.push(h);
+            }
+        });
+        return groups;
+    })();
+
+    const handleRemindLaterHolidays = () => {
+        setSnoozedHolidayModal(true);
+        setForceShowHolidayModal(false);
+    };
+
+    const handleAcknowledgeHolidays = () => {
+        const nextAck = { ...acknowledgedHolidays };
+        activeHolidaysList.forEach((h) => {
+            nextAck[getHolidayAckId(h)] = true;
+        });
+        setAcknowledgedHolidays(nextAck);
+        setSnoozedHolidayModal(false);
+        setForceShowHolidayModal(false);
+        try {
+            localStorage.setItem(HOLIDAY_ACK_KEY, JSON.stringify(nextAck));
+        } catch (_) {}
+    };
+
     const allowedCards = permissions.map(p => PERM_CARDS[p]).filter(Boolean);
     const lockedCards  = ALL_PERMS.filter(p => !permissions.includes(p)).map(p => PERM_CARDS[p]).filter(Boolean);
     const initials = (user?.name || 'S A').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -345,6 +478,326 @@ const SubAdminDashboard = () => {
                     backgroundSize: '28px 28px'
                 }}
             />
+
+            {/* ── Blocking Institutional Holiday Notice Gate Modal ("Got It" / "Remind Later") ── */}
+            <AnimatePresence>
+                {showHolidayGateModal && (
+                    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+                            className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden border border-[#EDE8E0] max-h-[90vh] flex flex-col"
+                        >
+                            {/* Top Institutional Accent Bar */}
+                            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
+                            <div className="absolute -top-14 -right-14 w-36 h-36 rounded-full bg-amber-100/60 blur-2xl pointer-events-none" />
+
+                            {/* Modal Header */}
+                            <div className="flex items-start gap-3.5 mb-5 relative z-10 shrink-0">
+                                <div className="w-13 h-13 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200 text-orange-600 shadow-sm">
+                                    <IoCalendarOutline size={26} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                            Official Library Notice
+                                        </span>
+                                        {activeTodayHoliday && (
+                                            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+                                                Active Today
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="text-gray-900 font-black text-xl tracking-tight leading-snug">
+                                        {groupedHolidaysToDisplay.length === 1
+                                            ? groupedHolidaysToDisplay[0].name
+                                            : 'Declared Library Holiday Schedule'}
+                                    </h3>
+                                    <p className="text-xs font-semibold text-[#9B7B5A] mt-0.5">
+                                        Please review the holiday operational details below to access the Sub-Admin Console
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Holiday Cards Body */}
+                            <div className="overflow-y-auto flex-1 pr-1 space-y-3.5 my-1">
+                                {groupedHolidaysToDisplay.map((grp) => {
+                                    const todayIso = todayISTStr;
+                                    const dateSummaryStr = grp.dates
+                                        .map((dt) =>
+                                            new Date(dt).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
+                                                weekday: 'short',
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })
+                                        )
+                                        .join(' | ');
+                                    return (
+                                        <div
+                                            key={grp.key}
+                                            className="rounded-2xl p-4 border space-y-3.5"
+                                            style={{ background: '#FFFAF5', borderColor: '#FDDCAE' }}
+                                        >
+                                            {/* Always visible Occasion / Festival Header */}
+                                            <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-orange-200/70">
+                                                <div>
+                                                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#9B7B5A] block mb-1">
+                                                        Occasion / Festival · अवसर / पर्व
+                                                    </span>
+                                                    <h4 className="font-black text-sm sm:text-base text-gray-900 flex items-center gap-1.5 flex-wrap">
+                                                        <span className="px-2.5 py-0.5 rounded-lg bg-orange-100 text-orange-800 border border-orange-300 shadow-2xs">
+                                                            {grp.name}
+                                                        </span>
+                                                    </h4>
+                                                </div>
+                                                <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border shrink-0 ${
+                                                    grp.isPartial
+                                                        ? 'bg-amber-100 text-amber-800 border-amber-200'
+                                                        : 'bg-rose-100 text-rose-700 border-rose-200'
+                                                }`}>
+                                                    {grp.isPartial ? 'Partial Timing' : 'Full Day Closure'}
+                                                </span>
+                                            </div>
+
+                                            {/* Operational Status Box with Festival Name & Timing Highlighted */}
+                                            <div className={`p-3.5 rounded-xl border ${
+                                                grp.isPartial
+                                                    ? 'bg-amber-50/90 border-amber-200'
+                                                    : 'bg-rose-50/80 border-rose-200'
+                                            }`}>
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <IoTimeOutline size={16} className={grp.isPartial ? 'text-amber-700 shrink-0' : 'text-rose-600 shrink-0'} />
+                                                    <span className={`text-xs font-black uppercase tracking-wider ${
+                                                        grp.isPartial ? 'text-amber-900' : 'text-rose-800'
+                                                    }`}>
+                                                        {grp.isPartial
+                                                            ? `Partial Timing Closure: ${fmt12h(grp.startTime)} to ${fmt12h(grp.endTime)}`
+                                                            : `Full Day Library Closure — ${grp.name}`}
+                                                    </span>
+                                                </div>
+                                                <p className={`text-xs font-semibold leading-relaxed ${
+                                                    grp.isPartial ? 'text-amber-900' : 'text-rose-800'
+                                                }`}>
+                                                    {grp.isPartial ? (
+                                                        <>
+                                                            Due to <span className="px-1.5 py-0.5 rounded bg-white text-orange-800 border border-amber-300 font-extrabold">{grp.name}</span>, the library will remain non-functional from <span className="px-1.5 py-0.5 rounded bg-white text-amber-900 border border-amber-300 font-extrabold">{fmt12h(grp.startTime)} to {fmt12h(grp.endTime)}</span>. Regular library study sessions remain operational outside this window.
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            On account of <span className="px-1.5 py-0.5 rounded bg-white text-rose-800 border border-rose-300 font-extrabold">{grp.name}</span>, the library will observe a <span className="px-1.5 py-0.5 rounded bg-white text-rose-800 border border-rose-300 font-extrabold">Full Day Closure</span> on the scheduled holiday date(s).
+                                                        </>
+                                                    )}
+                                                </p>
+                                            </div>
+
+                                            {/* Scheduled Dates & Days */}
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9B7B5A] mb-1.5">
+                                                    Scheduled Date{grp.dates.length > 1 ? `s (${grp.dates.length} Days)` : ''} (IST)
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {grp.dates.map((dt, idx) => {
+                                                        const dObj = new Date(dt);
+                                                        const dIso = toISTDateStr(dObj);
+                                                        const isTodayDate = dIso === todayIso;
+                                                        return (
+                                                            <span
+                                                                key={idx}
+                                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                                                                    isTodayDate
+                                                                        ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                                                                        : 'bg-white text-gray-800 border-[#EDE8E0]'
+                                                                }`}
+                                                            >
+                                                                <IoCalendarOutline size={12} />
+                                                                {dObj.toLocaleDateString('en-IN', {
+                                                                    timeZone: 'Asia/Kolkata',
+                                                                    weekday: 'short',
+                                                                    day: '2-digit',
+                                                                    month: 'short',
+                                                                    year: 'numeric'
+                                                                })}
+                                                                {isTodayDate && (
+                                                                    <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-white/20 text-white">
+                                                                        Today
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* AI-Structured Institutional Notice / Description (Bilingual + Highlighted Festival Name, Date & Time) */}
+                                            {grp.description && (() => {
+                                                const escapedName = String(grp.name || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                                const namePart = escapedName ? `|${escapedName}` : '';
+                                                const highlightRegex = new RegExp(
+                                                    `(\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+\\d{1,2}\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\\s+\\d{4}\\b|\\b\\d{1,2}\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\\s+\\d{4}\\b|\\b\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)(?:\\s*(?:to|–|-|से)\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm))?\\b|\\bFull Day(?: Library)? Closure\\b|पूर्ण दिवस अवकाश${namePart})`,
+                                                    'gi'
+                                                );
+                                                const renderWithHighlights = (text) => {
+                                                    const parts = String(text || '').split(highlightRegex);
+                                                    return parts.map((part, pIdx) =>
+                                                        pIdx % 2 === 1 && part ? (
+                                                            <span
+                                                                key={pIdx}
+                                                                className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]"
+                                                            >
+                                                                {part}
+                                                            </span>
+                                                        ) : (
+                                                            <span key={pIdx}>{part}</span>
+                                                        )
+                                                    );
+                                                };
+
+                                                // Strip any past/expired dates from multi-day batch descriptions (e.g. on 18th IST, remove 17th and keep 19th)
+                                                const dateTokenRegex = /\b(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\s+\d{4}\b/gi;
+                                                const safeDesc = String(grp.description || '')
+                                                    .replace(/व्य\uFFFD+स्थित/g, 'व्यवस्थित')
+                                                    .replace(/सामग्र\uFFFD+/g, 'सामग्री')
+                                                    .replace(/\uFFFD+/g, '')
+                                                    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, '-')
+                                                    .replace(dateTokenRegex, (matchedDateStr) => {
+                                                        const parsed = new Date(matchedDateStr);
+                                                        if (!isNaN(parsed.getTime()) && toISTDateStr(parsed) < todayIso) {
+                                                            return '__EXPIRED_DATE__';
+                                                        }
+                                                        return matchedDateStr;
+                                                    })
+                                                    .replace(/__EXPIRED_DATE__\s*(?:,\s*|\s+and\s+|\s+एवं\s+|\s+तथा\s+|\s*\|\s*)/gi, '')
+                                                    .replace(/(?:,\s*|\s+and\s+|\s+एवं\s+|\s+तथा\s+|\s*\|\s*)__EXPIRED_DATE__/gi, '')
+                                                    .replace(/__EXPIRED_DATE__/g, dateSummaryStr);
+                                                const blocks = safeDesc.split('---').map(b => b.trim()).filter(Boolean);
+                                                return (
+                                                    <div className="space-y-2.5">
+                                                        {blocks.map((blockText, bIdx) => (
+                                                            <div
+                                                                key={bIdx}
+                                                                className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2"
+                                                            >
+                                                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <IoDocumentTextOutline size={13} className="text-orange-600" />
+                                                                        <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
+                                                                            {bIdx === 0
+                                                                                ? 'Official Notice Summary (English)'
+                                                                                : 'हिंदी आधिकारिक सूचना (Hindi Version)'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
+                                                                        {grp.name}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Intro sentence with Festival Name, Date & Timing highlighted */}
+                                                                <p className="text-xs font-medium text-gray-700 leading-relaxed pb-1.5 border-b border-dashed border-orange-200/70">
+                                                                    {bIdx === 0 ? (
+                                                                        grp.isPartial ? (
+                                                                            <>
+                                                                                Please be informed that <strong>Apna Lakshay Library</strong> will remain non-functional from <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{fmt12h(grp.startTime)} to {fmt12h(grp.endTime)}</span> on <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{dateSummaryStr}</span> due to <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{grp.name}</span>.
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                Please be informed that <strong>Apna Lakshay Library</strong> will observe a <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">Full Day Closure</span> on <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{dateSummaryStr}</span> on the occasion of <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{grp.name}</span>.
+                                                                            </>
+                                                                        )
+                                                                    ) : (
+                                                                        grp.isPartial ? (
+                                                                            <>
+                                                                                आपको सूचित किया जाता है कि <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{grp.name}</span> के अवसर पर दिनांक <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{dateSummaryStr}</span> को पुस्तकालय में सेवाएं <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{fmt12h(grp.startTime)} से {fmt12h(grp.endTime)}</span> तक आंशिक रूप से बंद रहेंगी।
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                आपको सूचित किया जाता है कि <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{grp.name}</span> के अवसर पर दिनांक <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">{dateSummaryStr}</span> को पुस्तकालय में <span className="px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">पूर्ण दिवस अवकाश (Full Day Closure)</span> रहेगा।
+                                                                            </>
+                                                                        )
+                                                                    )}
+                                                                </p>
+
+                                                                <div className="space-y-1.5 pt-0.5">
+                                                                    {blockText
+                                                                        .split('\n')
+                                                                        .map(line => line.trim())
+                                                                        .filter(Boolean)
+                                                                        .map((line, lIdx) => {
+                                                                            const cleaned = line.replace(/^[•\-*]\s*/, '');
+                                                                            const colonIdx = cleaned.indexOf(':');
+                                                                            if (colonIdx > 0 && colonIdx < 36) {
+                                                                                const label = cleaned.slice(0, colonIdx);
+                                                                                const rest = cleaned.slice(colonIdx + 1).trim();
+                                                                                return (
+                                                                                    <div key={lIdx} className="flex items-start gap-2 text-xs leading-relaxed">
+                                                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                                                        <p className="text-gray-700 font-medium">
+                                                                                            <span className="font-extrabold text-gray-900">{label}: </span>
+                                                                                            {renderWithHighlights(rest)}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            return (
+                                                                                <p key={lIdx} className="text-xs font-medium text-gray-700 leading-relaxed">
+                                                                                    {renderWithHighlights(cleaned)}
+                                                                                </p>
+                                                                            );
+                                                                        })}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Neutral Attendance Assurance Policy Card */}
+                                <div className="rounded-2xl p-4 bg-emerald-50/80 border border-emerald-200 flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0 text-emerald-700 mt-0.5">
+                                        <IoCheckmarkCircleOutline size={18} />
+                                    </div>
+                                    <div>
+                                        <h5 className="text-xs font-black uppercase tracking-wider text-emerald-900">
+                                            Attendance Percentage Protected (Neutral Policy)
+                                        </h5>
+                                        <p className="text-xs text-emerald-800 font-medium leading-relaxed mt-0.5">
+                                            Student attendance percentages remain completely unchanged — neither reduced nor increased — if a student is absent on a declared holiday. Any student who attends and marks attendance (via self or staff) is counted as Present normally.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Remind Later & Got It CTA Buttons */}
+                            <div className="pt-4 mt-3 border-t border-[#EDE8E0] shrink-0 grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={handleRemindLaterHolidays}
+                                    className="w-full py-3.5 px-4 rounded-2xl font-extrabold text-sm text-[#78350F] bg-[#FFF5EE] hover:bg-[#FEEBD8] border border-[#FDDCAE] flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+                                >
+                                    <IoTimeOutline size={18} className="text-orange-600 shrink-0" />
+                                    <span>Remind Later</span>
+                                </button>
+                                <button
+                                    onClick={handleAcknowledgeHolidays}
+                                    className="w-full py-3.5 px-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] hover:opacity-95 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                                        boxShadow: '0 8px 24px rgba(234,88,12,0.32)'
+                                    }}
+                                >
+                                    <IoCheckmarkDoneOutline size={18} className="shrink-0" />
+                                    <span>Got It</span>
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* ══════════════════════════════════════════════════════════
                 PRIMARY TOP NAVIGATION BAR (Matching Primary Design)
@@ -432,6 +885,62 @@ const SubAdminDashboard = () => {
                 MAIN DASHBOARD CONTENT (max-w-6xl primary grid)
             ══════════════════════════════════════════════════════════ */}
             <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-6 pb-28 space-y-6">
+
+                {/* -- ACTIVE / UPCOMING HOLIDAY SCHEDULE BANNER -- */}
+                {activeHolidaysList.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden"
+                        style={{
+                            background: 'linear-gradient(135deg, #FFFBEB 0%, #FFF7ED 100%)',
+                            border: '1.5px solid #FDE68A',
+                            boxShadow: '0 4px 18px rgba(245,158,11,0.10)',
+                        }}
+                    >
+                        <div className="flex items-start sm:items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500 text-white shadow-xs">
+                                <IoCalendarOutline size={20} />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-900">
+                                        {activeTodayHoliday ? "Today's Holiday Notice" : 'Upcoming Holiday Notice'}
+                                    </span>
+                                    <span className="text-sm font-black text-gray-900 truncate">
+                                        {(activeTodayHoliday || activeHolidaysList[0]).name}
+                                    </span>
+                                </div>
+                                <p className="text-xs font-semibold text-amber-900/90 mt-0.5">
+                                    {(() => {
+                                        const primary = activeTodayHoliday || activeHolidaysList[0];
+                                        const formattedActiveDates = activeHolidaysList
+                                            .slice(0, 3)
+                                            .map(h => new Date(h.date).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                                month: 'short'
+                                            }))
+                                            .join(' & ');
+                                        const moreSuffix = activeHolidaysList.length > 3 ? ` (+${activeHolidaysList.length - 3} more)` : '';
+                                        const timingLabel = primary.isPartial
+                                            ? `Library non-functional from ${fmt12h(primary.startTime)} to ${fmt12h(primary.endTime)}`
+                                            : 'Full Day Library Closure';
+                                        return `${formattedActiveDates}${moreSuffix} · ${timingLabel} · Attendance % Protected`;
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setForceShowHolidayModal(true)}
+                            className="shrink-0 self-start sm:self-center px-3.5 py-2 rounded-xl text-xs font-black text-amber-900 bg-white hover:bg-amber-50 border border-amber-300 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                        >
+                            <IoInformationCircleOutline size={15} />
+                            <span>Holiday Details</span>
+                        </button>
+                    </motion.div>
+                )}
 
                 {/* ─── Hero Welcome Card (Primary Warm Architecture) ─── */}
                 <motion.div
