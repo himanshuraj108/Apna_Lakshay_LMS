@@ -17,6 +17,7 @@ const SystemSetting = require('../models/SystemSetting');
 const MockTestAttempt = require('../models/MockTestAttempt');
 const TempSeatAssignment = require('../models/TempSeatAssignment');
 const DailyAbsence = require('../models/DailyAbsence');
+const Holiday = require('../models/Holiday');
 const { getClient } = require('../utils/redis');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -764,6 +765,72 @@ exports.getDashboard = async (req, res) => {
         ]);
         const pendingRequests = pendingRequestsAgg[0]?.count || 0;
 
+        // 6. Active & Upcoming Holidays in Indian Standard Time (Asia/Kolkata, UTC+5:30)
+        // Automatically excludes past IST dates and today's partial holidays whose endTime has passed in IST
+        const now = new Date();
+        const toISTDateStr = (d) => {
+            try {
+                return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+            } catch (_) {
+                const istShifted = new Date(new Date(d).getTime() + 330 * 60 * 1000);
+                return istShifted.toISOString().slice(0, 10);
+            }
+        };
+        const getISTMinutesNow = (d) => {
+            try {
+                const parts = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: 'Asia/Kolkata',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).formatToParts(d);
+                const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10) % 24;
+                const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+                return h * 60 + m;
+            } catch (_) {
+                const istShifted = new Date(d.getTime() + 330 * 60 * 1000);
+                return istShifted.getUTCHours() * 60 + istShifted.getUTCMinutes();
+            }
+        };
+
+        const todayISTStr = toISTDateStr(now);
+        const nowISTMins = getISTMinutesNow(now);
+        const holidayQueryFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const holidayQueryTo = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+        const rawUpcomingHolidays = await Holiday.find({
+            date: { $gte: holidayQueryFrom, $lte: holidayQueryTo }
+        }).sort({ date: 1 }).lean();
+
+        const activeHolidays = rawUpcomingHolidays
+            .filter(h => {
+                const hDateIST = toISTDateStr(h.date);
+                if (hDateIST < todayISTStr) return false;
+                if (hDateIST === todayISTStr && h.isPartial && h.endTime && h.endTime.includes(':')) {
+                    const [endH, endM] = h.endTime.split(':').map(Number);
+                    if (!isNaN(endH)) {
+                        const endTotalMins = endH * 60 + (endM || 0);
+                        if (nowISTMins >= endTotalMins) return false;
+                    }
+                }
+                return true;
+            })
+            .map(h => ({
+                _id: h._id,
+                name: h.name,
+                date: h.date,
+                dateIST: toISTDateStr(h.date),
+                isToday: toISTDateStr(h.date) === todayISTStr,
+                description: h.description || '',
+                isPartial: !!h.isPartial,
+                startTime: h.startTime || null,
+                endTime: h.endTime || null,
+                batchId: h.batchId || null,
+                updatedAt: h.updatedAt || h.createdAt
+            }));
+
+        const todayHoliday = activeHolidays.find(h => h.isToday) || null;
+
         res.status(200).json({
             success: true,
             data: {
@@ -779,7 +846,9 @@ exports.getDashboard = async (req, res) => {
                 expectedMonthlyFee,
                 feesCollected,
                 todayFeesCollected,
-                pendingRequests
+                pendingRequests,
+                activeHolidays,
+                todayHoliday
             }
         });
     } catch (error) {
