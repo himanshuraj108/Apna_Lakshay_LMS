@@ -11,6 +11,31 @@ const holidaySchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    description: {
+        type: String,
+        default: '',
+        trim: true
+    },
+    isPartial: {
+        type: Boolean,
+        default: false
+    },
+    startTime: {
+        type: String,
+        default: null
+    },
+    endTime: {
+        type: String,
+        default: null
+    },
+    batchId: {
+        type: String,
+        default: null
+    },
+    emailSent: {
+        type: Boolean,
+        default: false
+    },
     declaredBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -18,6 +43,7 @@ const holidaySchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-holidaySchema.index({ date: 1 });
+holidaySchema.index({ batchId: 1 });
 
 module.exports = mongoose.model('Holiday', holidaySchema);
+
