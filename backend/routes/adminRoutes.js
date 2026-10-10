@@ -88,7 +88,7 @@ const {
 } = require('../controllers/systemUpdateController');
 
 // Holiday controller
-const { declareHoliday, getHolidays, deleteHoliday } = require('../controllers/holidayController');
+const { declareHoliday, getHolidays, deleteHoliday, generateHolidayNotice } = require('../controllers/holidayController');
 
 const {
     addSeat,
@@ -273,6 +273,7 @@ router.patch('/mock-test-credits/students/:id', updateStudentMockTestCredits);
 router.post('/mock-test-credits/reset-all', resetAllMockTestCredits);
 
 // Holiday Management
+router.post('/holidays/generate-notice', generateHolidayNotice);
 router.route('/holidays')
     .get(getHolidays)
     .post(declareHoliday);
