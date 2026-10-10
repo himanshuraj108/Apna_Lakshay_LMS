@@ -17,7 +17,7 @@ if (process.env.BREVO_USER && process.env.BREVO_PASS) {
   } catch (e) { console.error('Failed to configure Brevo transporter:', e.message); }
 }
 
-// ─── MASTER TEMPLATE ───────────────────────────────────────────────────────────
+// ─── MASTER TEMPLATE (MOBILE-FIRST RESPONSIVE) ────────────────────────────────
 const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, cta = null, note = '' }) => {
   const BRAND = '#1a1a2e';
   const ACCENT = '#e85d26';
@@ -29,24 +29,24 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
   const APP_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
   const tableHtml = table ? `
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:24px 0;border-radius:8px;overflow:hidden;border:1px solid ${BORDER};">
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:20px 0;border-radius:8px;overflow:hidden;border:1px solid ${BORDER};table-layout:fixed;">
       ${table.rows.map((row, i) => `
         <tr style="background:${i % 2 === 0 ? '#ffffff' : LIGHT};">
-          <td style="padding:13px 18px;font-size:13px;color:${MUTED};font-weight:500;text-transform:uppercase;letter-spacing:0.5px;width:45%;border-bottom:1px solid ${BORDER};">${row.label}</td>
-          <td style="padding:13px 18px;font-size:14px;color:${row.highlight ? ACCENT : BRAND};font-weight:${row.bold ? '700' : '500'};border-bottom:1px solid ${BORDER};text-align:right;">${row.value}</td>
+          <td class="email-table-cell-label" style="padding:12px 16px;font-size:12px;color:${MUTED};font-weight:600;text-transform:uppercase;letter-spacing:0.4px;width:38%;border-bottom:1px solid ${BORDER};vertical-align:top;word-break:break-word;line-height:1.5;">${row.label}</td>
+          <td class="email-table-cell-val" style="padding:12px 16px;font-size:13px;color:${row.highlight ? ACCENT : BRAND};font-weight:${row.bold ? '700' : '500'};border-bottom:1px solid ${BORDER};text-align:right;vertical-align:top;word-break:break-word;line-height:1.6;">${row.value}</td>
         </tr>`).join('')}
     </table>` : '';
 
   const ctaHtml = cta ? `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:26px 0;">
       <tr><td align="center">
-        <a href="${cta.url}" style="display:inline-block;background:${ACCENT};color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;letter-spacing:0.3px;padding:14px 36px;border-radius:6px;">${cta.label}</a>
+        <a class="email-cta" href="${cta.url}" style="display:inline-block;background:${ACCENT};color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;letter-spacing:0.3px;padding:13px 28px;border-radius:8px;line-height:1.4;">${cta.label}</a>
       </td></tr>
     </table>` : '';
 
-  const noteHtml = note ? `<p style="font-size:12px;color:${MUTED};margin:24px 0 0;padding:16px;background:${LIGHT};border-radius:6px;border:1px solid ${BORDER};line-height:1.6;">${note}</p>` : '';
+  const noteHtml = note ? `<div style="font-size:12px;color:${MUTED};margin:20px 0 0;padding:14px 16px;background:${LIGHT};border-radius:8px;border:1px solid ${BORDER};line-height:1.75;word-break:break-word;">${note}</div>` : '';
 
-  const badgeHtml = badge ? `<span style="display:inline-block;background:${badge.bg};color:${badge.color};font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:16px;">${badge.text}</span>` : '';
+  const badgeHtml = badge ? `<div style="margin-bottom:14px;"><span style="display:inline-block;background:${badge.bg};color:${badge.color};font-size:11px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;padding:5px 12px;border-radius:100px;line-height:1.4;word-break:break-word;">${badge.text}</span></div>` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -55,39 +55,77 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="x-apple-disable-message-reformatting">
 <title>${headline}</title>
+<style>
+  @media only screen and (max-width: 600px) {
+    .email-outer { padding: 12px 8px !important; }
+    .email-card { border-radius: 10px !important; }
+    .email-header { padding: 16px 16px 14px !important; }
+    .email-body { padding: 20px 16px 20px !important; }
+    .email-footer { padding: 16px 16px !important; }
+    .email-h1 { font-size: 18px !important; line-height: 1.35 !important; }
+    .email-content { font-size: 14px !important; line-height: 1.75 !important; }
+    .email-table-cell-label,
+    .email-table-cell-val {
+      display: block !important;
+      width: 100% !important;
+      text-align: left !important;
+      box-sizing: border-box !important;
+    }
+    .email-table-cell-label {
+      padding: 10px 14px 2px !important;
+      border-bottom: none !important;
+      font-size: 11px !important;
+    }
+    .email-table-cell-val {
+      padding: 2px 14px 10px !important;
+      font-size: 13px !important;
+    }
+    .email-cta {
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      text-align: center !important;
+      padding: 13px 16px !important;
+    }
+    .email-notice-box {
+      padding: 14px 14px !important;
+      margin: 14px 0 !important;
+    }
+  }
+</style>
 </head>
-<body style="margin:0;padding:0;background:#f0ede8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#f0ede8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
 <!--[if mso]><table width="100%" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
-<table width="100%" cellpadding="0" cellspacing="0" style="min-height:100vh;background:#f0ede8;padding:48px 24px;">
+<table width="100%" cellpadding="0" cellspacing="0" class="email-outer" style="min-height:100vh;background:#f0ede8;padding:32px 12px;">
   <tr><td align="center">
 
     <!-- Card -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid ${BORDER};">
+    <table width="100%" cellpadding="0" cellspacing="0" class="email-card" style="max-width:580px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);border:1px solid ${BORDER};">
 
       <!-- Header bar -->
       <tr><td style="background:${BRAND};padding:0;height:4px;"></td></tr>
 
       <!-- Logo row -->
       <tr>
-        <td style="padding:24px 40px 20px;border-bottom:1px solid ${BORDER};">
+        <td class="email-header" style="padding:20px 28px 18px;border-bottom:1px solid ${BORDER};">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
                 <table cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="vertical-align:middle;padding-right:12px;">
-                      <img src="${APP_URL}/app-icon-192.png" alt="Apna Lakshay" width="36" height="36"
-                        style="display:block;border-radius:8px;border:0;width:36px;height:36px;object-fit:cover;" />
+                    <td style="vertical-align:middle;padding-right:10px;">
+                      <img src="${APP_URL}/app-icon-192.png" alt="Apna Lakshay" width="34" height="34"
+                        style="display:block;border-radius:8px;border:0;width:34px;height:34px;object-fit:cover;" />
                     </td>
                     <td style="vertical-align:middle;">
-                      <span style="font-size:18px;font-weight:800;color:${BRAND};letter-spacing:-0.5px;display:block;line-height:1.2;">Apna Lakshay</span>
-                      <span style="font-size:10px;color:${MUTED};font-weight:500;text-transform:uppercase;letter-spacing:1.5px;display:block;">Library</span>
+                      <span style="font-size:17px;font-weight:800;color:${BRAND};letter-spacing:-0.4px;display:block;line-height:1.2;">Apna Lakshay</span>
+                      <span style="font-size:10px;color:${MUTED};font-weight:600;text-transform:uppercase;letter-spacing:1.2px;display:block;">Library</span>
                     </td>
                   </tr>
                 </table>
               </td>
-              <td align="right">
-                <span style="font-size:11px;color:${MUTED};">No-reply · Automated</span>
+              <td align="right" style="vertical-align:middle;">
+                <span style="font-size:11px;color:${MUTED};">Official Notice</span>
               </td>
             </tr>
           </table>
@@ -96,10 +134,10 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
 
       <!-- Body -->
       <tr>
-        <td style="padding:36px 40px 32px;">
+        <td class="email-body" style="padding:28px 28px 26px;">
           ${badgeHtml}
-          <h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:${BRAND};line-height:1.3;letter-spacing:-0.3px;">${headline}</h1>
-          <div style="font-size:15px;color:${TEXT};line-height:1.7;">${body}</div>
+          <h1 class="email-h1" style="margin:0 0 14px;font-size:20px;font-weight:800;color:${BRAND};line-height:1.35;letter-spacing:-0.3px;word-break:break-word;">${headline}</h1>
+          <div class="email-content" style="font-size:14px;color:${TEXT};line-height:1.75;word-break:break-word;">${body}</div>
           ${tableHtml}
           ${ctaHtml}
           ${noteHtml}
@@ -111,16 +149,16 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
 
       <!-- Footer -->
       <tr>
-        <td style="padding:24px 40px;background:${LIGHT};">
+        <td class="email-footer" style="padding:20px 28px;background:${LIGHT};">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td style="font-size:12px;color:${MUTED};line-height:1.6;">
+              <td style="font-size:12px;color:${MUTED};line-height:1.65;word-break:break-word;">
                 You received this because you are a registered student at Apna Lakshay Library.<br>
-                <a href="${APP_URL}" style="color:${ACCENT};text-decoration:none;font-weight:500;">Visit Dashboard</a>
+                <a href="${APP_URL}" style="color:${ACCENT};text-decoration:none;font-weight:600;">Visit Dashboard</a>
                 &nbsp;&middot;&nbsp;
                 <a href="${APP_URL}/student/fees" style="color:${MUTED};text-decoration:none;">Fee Portal</a>
               </td>
-              <td align="right" style="font-size:11px;color:#9ca3af;white-space:nowrap;vertical-align:top;">
+              <td align="right" style="font-size:11px;color:#9ca3af;white-space:nowrap;vertical-align:top;padding-left:8px;">
                 &copy; ${year} Apna Lakshay
               </td>
             </tr>
@@ -131,7 +169,7 @@ const buildEmail = ({ preheader = '', badge = '', headline, body, table = null, 
     </table>
     <!-- /Card -->
 
-    <p style="margin:20px 0 0;font-size:11px;color:#9ca3af;text-align:center;">This is an automated message. Please do not reply to this email.</p>
+    <p style="margin:16px 0 0;font-size:11px;color:#9ca3af;text-align:center;line-height:1.5;">This is an automated message. Please do not reply to this email.</p>
   </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -532,3 +570,137 @@ exports.sendShiftVacancyEmail = async (student, shiftDetails, customMessage) => 
     }
   );
 };
+
+// Helper to highlight festival/occasion name, dates, weekdays, and times inside notice text for HTML emails (mobile-safe inline span without display:inline-block or vertical padding collision)
+const highlightDateTimeHtml = (rawText, occasionName = '') => {
+  if (!rawText) return '';
+  const inlineHighlightStyle = 'color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;';
+  const escapedName = String(occasionName || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const nameAlt = escapedName ? `|${escapedName}` : '';
+  // Match dates like "Sun, 08 Nov, 2026" or "12 Oct 2026", times like "04:00 PM to 09:00 PM" or "04:00 PM", Full Day Closure / पूर्ण दिवस अवकाश, and the festival/occasion name
+  const pattern = new RegExp(
+    `(\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\\s+\\d{1,2}\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\\s+\\d{4}\\b|\\b\\d{1,2}\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\\s+\\d{4}\\b|\\b\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm)(?:\\s*(?:to|–|-|से)\\s*\\d{1,2}:\\d{2}\\s*(?:AM|PM|am|pm))?\\b|\\bFull Day(?: Library)? Closure\\b|पूर्ण दिवस अवकाश${nameAlt})`,
+    'gi'
+  );
+  return rawText.replace(pattern, (match) => `<span style="${inlineHighlightStyle}">&nbsp;${match}&nbsp;</span>`);
+};
+
+// ─── 19. OFFICIAL HOLIDAY / PARTIAL CLOSURE NOTICE (BILINGUAL EN + HI) ───────
+exports.sendHolidayNoticeEmail = async (recipients, details) => {
+  // details: { name, dateSummary, daysCount, isPartial, startTime12h, endTime12h, structuredNotice }
+  const {
+    name = 'Library Holiday',
+    dateSummary = '',
+    daysCount = 1,
+    isPartial = false,
+    startTime12h = '',
+    endTime12h = '',
+    structuredNotice = ''
+  } = details || {};
+
+  const subject = isPartial
+    ? `Notice / सूचना: Partial Library Closure (${startTime12h} – ${endTime12h}) — ${name}`
+    : `Official Holiday Notice / अवकाश सूचना: ${name}`;
+
+  const badge = isPartial
+    ? { text: 'Partial Timing Closure · आंशिक समय बंदी', bg: '#fffbeb', color: '#b45309' }
+    : { text: 'Official Holiday Notice · आधिकारिक अवकाश सूचना', bg: '#fef2f2', color: '#991b1b' };
+
+  const headline = isPartial
+    ? `Partial Library Closure: ${name}`
+    : `Holiday Declared: ${name}`;
+
+  const operationalValue = isPartial
+    ? `Non-Functional: ${startTime12h} – ${endTime12h} (${startTime12h} से ${endTime12h} तक बंद)`
+    : 'Full Day Library Closure (पूर्ण दिवस अवकाश)';
+
+  const tableRows = [
+    { label: 'Occasion / अवसर', value: `<span style="color:#c2410c;font-weight:700;">${name}</span>`, bold: true },
+    { label: `Scheduled Date${daysCount > 1 ? `s (${daysCount} Days)` : ''} / तिथि`, value: `<span style="color:#c2410c;font-weight:700;">${dateSummary}</span>`, bold: true },
+    { label: 'Operational Timing / समय', value: `<span style="color:#c2410c;font-weight:700;">${operationalValue}</span>`, bold: true, highlight: true },
+    { label: 'Attendance Policy / उपस्थिति नियम', value: '100% Protected / अपरिवर्तित (Neutral)', bold: true }
+  ];
+
+  // Split structuredNotice into English and Hindi blocks (separated by ---), stripping any broken UTF-8 replacement chars
+  const safeNotice = (structuredNotice || '')
+    .replace(/व्य\uFFFD+स्थित/g, 'व्यवस्थित')
+    .replace(/सामग्र\uFFFD+/g, 'सामग्री')
+    .replace(/\uFFFD+/g, '')
+    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, '-');
+  const parts = safeNotice.split('---');
+  const enRaw = (parts[0] || '').trim();
+  const hiRaw = (parts[1] || '').trim();
+
+  const renderBulletBlock = (rawBlock, borderColor = '#fed7aa') => {
+    const lines = rawBlock
+      .split('\n')
+      .map(l => l.trim())
+      .filter(Boolean);
+    return lines
+      .map((line, idx) => {
+        const isLast = idx === lines.length - 1;
+        const bottomStyle = isLast ? 'margin-bottom:0;padding-bottom:0;' : `margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed ${borderColor};`;
+        const cleaned = line.replace(/^[•\-*]\s*/, '');
+        const colonIdx = cleaned.indexOf(':');
+        if (colonIdx > 0 && colonIdx < 38) {
+          const label = cleaned.slice(0, colonIdx);
+          const rest = highlightDateTimeHtml(cleaned.slice(colonIdx + 1).trim(), name);
+          return `<div style="${bottomStyle}">
+            <div style="font-size:12.5px;font-weight:800;color:#9a3412;margin-bottom:3px;line-height:1.4;">&bull; ${label}</div>
+            <div style="font-size:13.5px;color:#374151;line-height:1.85;word-break:break-word;">${rest}</div>
+          </div>`;
+        }
+        return `<div style="${bottomStyle}font-size:13.5px;color:#374151;line-height:1.85;word-break:break-word;">&bull; ${highlightDateTimeHtml(cleaned, name)}</div>`;
+      })
+      .join('');
+  };
+
+  const enHtml = renderBulletBlock(enRaw, '#fed7aa');
+  const hiHtml = renderBulletBlock(hiRaw, '#fde68a');
+
+  const nameBadgeInline = `<span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${name}&nbsp;</span>`;
+  const dateBadgeInline = `<span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${dateSummary}&nbsp;</span>`;
+  const timeBadgeInline = isPartial
+    ? `<span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${startTime12h} to ${endTime12h}&nbsp;</span>`
+    : `<span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;Full Day Closure&nbsp;</span>`;
+
+  let successCount = 0;
+  for (const recipient of recipients) {
+    if (!recipient?.email) continue;
+    const ok = await sendEmail(recipient.email, subject, {
+      badge,
+      headline,
+      body: `
+        <p style="margin:0 0 10px;font-size:14.5px;line-height:1.7;">Dear <strong>${recipient.name || 'Scholar'}</strong>,</p>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.85;word-break:break-word;">${
+          isPartial
+            ? `Please be informed that <strong>Apna Lakshay Library</strong> will remain non-functional from ${timeBadgeInline} on ${dateBadgeInline} due to ${nameBadgeInline}. Regular study sessions will operate normally outside this window.`
+            : `Please be informed that <strong>Apna Lakshay Library</strong> will observe a ${timeBadgeInline} on ${dateBadgeInline} on account of ${nameBadgeInline}.`
+        }</p>
+        ${enHtml ? `
+          <div style="margin:16px 0;padding:14px 15px;background:#fffaf5;border-left:4px solid #e85d26;border-radius:6px;border-top:1px solid #fed7aa;border-right:1px solid #fed7aa;border-bottom:1px solid #fed7aa;">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#9a3412;margin-bottom:12px;line-height:1.4;">Official Notice Summary (English) — ${name}</div>
+            ${enHtml}
+          </div>
+        ` : ''}
+        <div style="margin:16px 0;padding:14px 15px;background:#fffbeb;border-left:4px solid #d97706;border-radius:6px;border-top:1px solid #fde68a;border-right:1px solid #fde68a;border-bottom:1px solid #fde68a;">
+          <div style="font-size:12px;font-weight:800;color:#92400e;margin-bottom:10px;line-height:1.4;">हिंदी आधिकारिक सूचना (Hindi Version) — ${name}</div>
+          <p style="margin:0 0 14px;font-size:13.5px;color:#374151;line-height:1.9;word-break:break-word;">
+            प्रिय <strong>${recipient.name || 'विद्यार्थी'}</strong>, आपको सूचित किया जाता है कि ${nameBadgeInline} के अवसर पर दिनांक ${dateBadgeInline} को <strong>अपना लक्ष्य लाइब्रेरी</strong> ${
+              isPartial
+                ? `में सेवाएं <span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${startTime12h} से ${endTime12h}&nbsp;</span> तक आंशिक रूप से बंद रहेंगी (शेष समय में पुस्तकालय सामान्य रूप से खुला रहेगा)।`
+                : `में <span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;पूर्ण दिवस अवकाश (Full Day Closure)&nbsp;</span> रहेगा।`
+            }
+          </p>
+          ${hiHtml || ''}
+        </div>
+      `,
+      table: { rows: tableRows },
+      cta: { label: 'Open Student Dashboard / डैशबोर्ड खोलें', url: `${APP_URL}/student/dashboard` },
+      note: 'Attendance Protection Policy / उपस्थिति नियम: Your current attendance percentage will remain completely unchanged (neither reduced nor increased) if you are absent on a declared holiday. / घोषित अवकाश के दिन अनुपस्थित रहने पर आपकी वर्तमान उपस्थिति प्रतिशत (Attendance %) बिल्कुल अपरिवर्तित रहेगी (न घटेगी, न बढ़ेगी)।'
+    });
+    if (ok) successCount++;
+  }
+  return successCount > 0;
+};
+
