@@ -68,6 +68,23 @@ const AttendanceManagement = () => {
     const [holidays, setHolidays] = useState([]);
     const [showHolidayModal, setShowHolidayModal] = useState(false);
     const [holidayName, setHolidayName] = useState('');
+    const [holidayDescription, setHolidayDescription] = useState('');
+    const [holidaySelectionMode, setHolidaySelectionMode] = useState('single'); // 'single' | 'weekdays' | 'range' | 'custom'
+    const [holidaySingleDate, setHolidaySingleDate] = useState(getLocalDate());
+    const [holidayStartDate, setHolidayStartDate] = useState(getLocalDate());
+    const [holidayEndDate, setHolidayEndDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 6);
+        const offset = d.getTimezoneOffset() * 60000;
+        return new Date(d.getTime() - offset).toISOString().split('T')[0];
+    });
+    const [holidayWeekdays, setHolidayWeekdays] = useState([]); // e.g. [2, 4, 5] for Tue, Thu, Fri
+    const [holidayCustomDates, setHolidayCustomDates] = useState([getLocalDate()]);
+    const [holidayDatePickerInput, setHolidayDatePickerInput] = useState(getLocalDate());
+    const [holidayIsPartial, setHolidayIsPartial] = useState(false);
+    const [holidayStartTime, setHolidayStartTime] = useState('16:00');
+    const [holidayEndTime, setHolidayEndTime] = useState('21:00');
+    const [holidaySendEmail, setHolidaySendEmail] = useState(false);
     const [viewTab, setViewTab] = useState('mark'); // 'mark' | 'reports'
     const [seatStudents, setSeatStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -287,20 +304,148 @@ const AttendanceManagement = () => {
         }
     };
 
+    const formatTime12h = (t) => {
+        if (!t || !t.includes(':')) return t || '';
+        const [hS, mS] = t.split(':');
+        let h = parseInt(hS, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `${String(h).padStart(2, '0')}:${mS} ${ampm}`;
+    };
+
+    const resolvedHolidayDates = useMemo(() => {
+        const toIso = (d) => {
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        };
+
+        if (holidaySelectionMode === 'single') {
+            return holidaySingleDate ? [holidaySingleDate] : [];
+        }
+        if (holidaySelectionMode === 'custom') {
+            return [...new Set(holidayCustomDates.filter(Boolean))].sort();
+        }
+        if (holidaySelectionMode === 'weekdays') {
+            if (!holidayWeekdays.length) return [];
+            const base = new Date(holidayStartDate || getLocalDate());
+            base.setHours(0, 0, 0, 0);
+            const end = new Date(holidayEndDate || base);
+            end.setHours(0, 0, 0, 0);
+            if (end < base) return [];
+            const setW = new Set(holidayWeekdays);
+            const out = [];
+            const cur = new Date(base);
+            let safety = 0;
+            while (cur <= end && safety < 90) {
+                if (setW.has(cur.getDay())) {
+                    out.push(toIso(cur));
+                }
+                cur.setDate(cur.getDate() + 1);
+                safety++;
+            }
+            return out;
+        }
+        if (holidaySelectionMode === 'range') {
+            if (!holidayStartDate || !holidayEndDate) return [];
+            const s = new Date(holidayStartDate);
+            const e = new Date(holidayEndDate);
+            s.setHours(0, 0, 0, 0);
+            e.setHours(0, 0, 0, 0);
+            if (e < s) return [];
+            const setW = holidayWeekdays.length > 0 ? new Set(holidayWeekdays) : null;
+            const out = [];
+            const cur = new Date(s);
+            let safety = 0;
+            while (cur <= e && safety < 90) {
+                if (!setW || setW.has(cur.getDay())) {
+                    out.push(toIso(cur));
+                }
+                cur.setDate(cur.getDate() + 1);
+                safety++;
+            }
+            return out;
+        }
+        return [];
+    }, [holidaySelectionMode, holidaySingleDate, holidayCustomDates, holidayWeekdays, holidayStartDate, holidayEndDate]);
+
+    const [generatingHolidayAi, setGeneratingHolidayAi] = useState(false);
+
+    const openHolidayModal = () => {
+        setHolidaySingleDate(selectedDate || getLocalDate());
+        setHolidayStartDate(selectedDate || getLocalDate());
+        const d = new Date(selectedDate || getLocalDate());
+        d.setDate(d.getDate() + 6);
+        const offset = d.getTimezoneOffset() * 60000;
+        setHolidayEndDate(new Date(d.getTime() - offset).toISOString().split('T')[0]);
+        setHolidayCustomDates([selectedDate || getLocalDate()]);
+        setHolidayDatePickerInput(selectedDate || getLocalDate());
+        setHolidaySendEmail(false); // Always default to NOT sent
+        setShowHolidayModal(true);
+    };
+
+    const generateAiHolidayNotice = async () => {
+        if (!holidayName.trim()) {
+            setError('Please enter a Holiday / Occasion Title first so AI can structure the notice');
+            setTimeout(() => setError(''), 3500);
+            return;
+        }
+        setGeneratingHolidayAi(true);
+        setError('');
+        try {
+            const res = await api.post('/admin/holidays/generate-notice', {
+                name: holidayName.trim(),
+                dates: resolvedHolidayDates,
+                isPartial: holidayIsPartial,
+                startTime: holidayIsPartial ? holidayStartTime : null,
+                endTime: holidayIsPartial ? holidayEndTime : null,
+                rawNotes: holidayDescription.trim()
+            });
+            if (res.data?.success && res.data?.notice) {
+                setHolidayDescription(res.data.notice);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to generate AI notice');
+            setTimeout(() => setError(''), 3500);
+        } finally {
+            setGeneratingHolidayAi(false);
+        }
+    };
+
     const declareHoliday = async () => {
         if (!holidayName.trim()) {
-            setError('Please enter a festival or holiday name');
+            setError('Please enter a festival or holiday title');
+            return;
+        }
+        if (resolvedHolidayDates.length === 0) {
+            setError('Please select at least one date or matching weekday for the holiday');
+            return;
+        }
+        if (holidayIsPartial && (!holidayStartTime || !holidayEndTime)) {
+            setError('Please specify both start time and end time for partial closure');
             return;
         }
         setSaving(true);
         setError('');
         setSuccess('');
         try {
-            await api.post('/admin/holidays', { date: selectedDate, name: holidayName.trim() });
-            setSuccess('Holiday declared for ' + selectedDate + '!');
+            const payload = {
+                dates: resolvedHolidayDates,
+                date: resolvedHolidayDates[0],
+                name: holidayName.trim(),
+                description: holidayDescription.trim(),
+                isPartial: holidayIsPartial,
+                startTime: holidayIsPartial ? holidayStartTime : null,
+                endTime: holidayIsPartial ? holidayEndTime : null,
+                sendEmail: holidaySendEmail
+            };
+            const res = await api.post('/admin/holidays', payload);
+            setSuccess(res.data?.message || `Holiday declared for ${resolvedHolidayDates.length} day(s)!`);
             setHolidayName('');
+            setHolidayDescription('');
+            setHolidayIsPartial(false);
+            setHolidaySendEmail(false);
             setShowHolidayModal(false);
-            setTimeout(() => setSuccess(''), 4000);
+            setTimeout(() => setSuccess(''), 5000);
             fetchHolidays();
             loadAttendance();
             fetchSeatView();
@@ -312,11 +457,14 @@ const AttendanceManagement = () => {
         }
     };
 
-    const removeHoliday = async (id, name) => {
-        if (!window.confirm('Remove holiday "' + name + '"? This will revert attendance for that date.')) return;
+    const removeHoliday = async (id, name, deleteBatch = false) => {
+        const msg = deleteBatch
+            ? `Remove entire multi-day holiday batch for "${name}"? Unattended holiday records will be cleared.`
+            : `Remove holiday "${name}"? Unattended holiday records for that date will be cleared.`;
+        if (!window.confirm(msg)) return;
         setSaving(true);
         try {
-            await api.delete('/admin/holidays/' + id);
+            await api.delete(`/admin/holidays/${id}${deleteBatch ? '?deleteBatch=true' : ''}`);
             setSuccess('Holiday removed');
             setTimeout(() => setSuccess(''), 3000);
             fetchHolidays();
@@ -450,23 +598,28 @@ const AttendanceManagement = () => {
             const seatMap    = res.data.seatMap    || {};
             const overallMap = res.data.overallMap || {};
 
-            // Build per-student summary
+            // Build per-student summary (Neutral Holiday Rule: unattended holiday = 'H', excluded from denominator)
             const summaryMap = {};
             records.forEach(r => {
                 if (!r.student || !r.student.isActive) return;
                 const sid = r.student._id.toString();
-                if (!summaryMap[sid]) summaryMap[sid] = { student: r.student, days: {}, presents: 0 };
+                if (!summaryMap[sid]) summaryMap[sid] = { student: r.student, days: {}, presents: 0, holidays: 0 };
                 const day = new Date(r.date).getDate();
-                const isPresent = r.status === 'present' || r.status === 'holiday';
-                summaryMap[sid].days[day] = isPresent ? 'P' : 'A';
+                const isPresent = r.status === 'present' || (r.status === 'holiday' && !!r.entryTime);
+                const isNeutralHoliday = r.status === 'holiday' && !r.entryTime;
+                summaryMap[sid].days[day] = isPresent ? 'P' : isNeutralHoliday ? 'H' : 'A';
                 if (isPresent) summaryMap[sid].presents++;
+                if (isNeutralHoliday) summaryMap[sid].holidays++;
             });
 
             // Compute attendance % and sort descending
-            const rows = Object.values(summaryMap).map(s => ({
-                ...s,
-                pct: Math.round((s.presents / daysInMonth) * 100)
-            })).sort((a, b) => b.pct - a.pct);
+            const rows = Object.values(summaryMap).map(s => {
+                const effectiveDays = Math.max(1, daysInMonth - (s.holidays || 0));
+                return {
+                    ...s,
+                    pct: Math.min(100, Math.round((s.presents / effectiveDays) * 100))
+                };
+            }).sort((a, b) => b.pct - a.pct);
 
             const totalStudents = rows.length;
             const avgPct        = totalStudents > 0 ? Math.round(rows.reduce((sum, r) => sum + r.pct, 0) / totalStudents) : 0;
@@ -787,7 +940,7 @@ const AttendanceManagement = () => {
 
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-            // Build per-student monthly summary
+            // Build per-student monthly summary (Neutral Holiday Rule)
             const summaryMap = {};
             records.forEach(r => {
                 if (!r.student || !r.student.isActive) return;
@@ -795,8 +948,12 @@ const AttendanceManagement = () => {
                 const mIdx = new Date(r.date).getMonth();
                 if (!summaryMap[sid]) summaryMap[sid] = { student: r.student, months: {} };
                 if (!summaryMap[sid].months[mIdx]) summaryMap[sid].months[mIdx] = { P: 0, total: 0 };
-                summaryMap[sid].months[mIdx].total++;
-                if (r.status === 'present' || r.status === 'holiday') summaryMap[sid].months[mIdx].P++;
+                const isPresent = r.status === 'present' || (r.status === 'holiday' && !!r.entryTime);
+                const isNeutralHoliday = r.status === 'holiday' && !r.entryTime;
+                if (!isNeutralHoliday) {
+                    summaryMap[sid].months[mIdx].total++;
+                    if (isPresent) summaryMap[sid].months[mIdx].P++;
+                }
             });
 
             const rows = Object.values(summaryMap).map(s => {
@@ -1016,7 +1173,7 @@ const AttendanceManagement = () => {
                     <div className="flex items-center gap-2.5 flex-wrap">
                         {!isSubAdmin && (
                             <button
-                                onClick={() => setShowHolidayModal(true)}
+                                onClick={openHolidayModal}
                                 className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-700 hover:text-amber-700 rounded-xl text-xs font-bold transition-all shadow-2xs"
                             >
                                 <IoSparkles size={14} className="text-amber-500" />
@@ -1291,6 +1448,52 @@ const AttendanceManagement = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            {selectedHoliday && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex flex-wrap items-center justify-between gap-3 bg-amber-50/90 border border-amber-200 text-amber-900 px-4 py-3 rounded-xl text-xs"
+                                >
+                                    <div className="flex items-center gap-2.5 flex-wrap">
+                                        <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
+                                            <IoSparkles size={14} />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-black text-amber-900">Declared Holiday: {selectedHoliday.name}</span>
+                                                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-white border border-amber-300 text-amber-800">
+                                                    {selectedHoliday.isPartial
+                                                        ? `Partial Closure: ${formatTime12h(selectedHoliday.startTime)} – ${formatTime12h(selectedHoliday.endTime)}`
+                                                        : 'Full Day Closure'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-amber-700 mt-0.5 font-medium">
+                                                {selectedHoliday.description ? `${selectedHoliday.description} · ` : ''}
+                                                Unattended students remain at their current attendance % (neutral). Students who attend are marked Present normally.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {!isSubAdmin && (
+                                        <div className="flex items-center gap-2">
+                                            {selectedHoliday.batchId && (
+                                                <button
+                                                    onClick={() => removeHoliday(selectedHoliday._id, selectedHoliday.name, true)}
+                                                    className="px-2.5 py-1 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 font-bold text-[11px] transition-colors"
+                                                >
+                                                    Remove Batch
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => removeHoliday(selectedHoliday._id, selectedHoliday.name, false)}
+                                                className="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 font-bold text-[11px] transition-colors"
+                                            >
+                                                Remove Day
+                                            </button>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
                         </div>
 
                         {/* Student Cards List */}
@@ -1307,6 +1510,7 @@ const AttendanceManagement = () => {
                                 {searchedSeatStudents.map((student, i) => {
                                     const palette = seatColorMap[student.seatNumber] || { badge: 'bg-slate-100 text-slate-700 border border-slate-200' };
                                     const isPresent = student.status === 'present';
+                                    const isHolidayStatus = student.status === 'holiday';
                                     const isLocked = student.selfMarked || (student.markedBy && student.markedBy.toString() === student._id.toString());
 
                                     const initials = student.name
@@ -1335,7 +1539,9 @@ const AttendanceManagement = () => {
                                                     ? 'bg-slate-400'
                                                     : isPresent
                                                         ? 'bg-emerald-500'
-                                                        : 'bg-rose-400'
+                                                        : isHolidayStatus
+                                                            ? 'bg-amber-400'
+                                                            : 'bg-rose-400'
                                             }`} />
 
                                             {/* Row Content */}
@@ -1386,12 +1592,14 @@ const AttendanceManagement = () => {
                                                             ? 'bg-slate-100 text-slate-600 border-slate-200'
                                                             : isPresent
                                                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                                : isHolidayStatus
+                                                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                    : 'bg-rose-50 text-rose-700 border-rose-200'
                                                     }`}>
                                                         <span className={`w-2 h-2 rounded-full shrink-0 ${
-                                                            isLocked ? 'bg-slate-400' : isPresent ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                                                            isLocked ? 'bg-slate-400' : isPresent ? 'bg-emerald-500 animate-pulse' : isHolidayStatus ? 'bg-amber-500' : 'bg-rose-500'
                                                         }`} />
-                                                        <span>{isLocked ? 'Locked' : isPresent ? 'Present' : 'Absent'}</span>
+                                                        <span>{isLocked ? 'Locked' : isPresent ? 'Present' : isHolidayStatus ? 'Holiday (Neutral)' : 'Absent'}</span>
                                                     </span>
 
                                                     {/* Smooth 1-Click Toggle Switch */}
@@ -1404,7 +1612,9 @@ const AttendanceManagement = () => {
                                                                 ? 'bg-slate-300 cursor-not-allowed'
                                                                 : isPresent
                                                                     ? 'bg-emerald-500 hover:bg-emerald-600'
-                                                                    : 'bg-rose-500 hover:bg-rose-600'
+                                                                    : isHolidayStatus
+                                                                        ? 'bg-amber-400 hover:bg-amber-500'
+                                                                        : 'bg-rose-500 hover:bg-rose-600'
                                                         }`}
                                                     >
                                                         {isSubAdmin && isLocked ? (
@@ -1478,16 +1688,34 @@ const AttendanceManagement = () => {
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-xs font-bold"
+                                    className="flex flex-wrap items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-xs font-bold"
                                 >
-                                    <IoSparkles size={16} className="text-amber-500" />
+                                    <IoSparkles size={16} className="text-amber-500 shrink-0" />
                                     <span>Declared Holiday: {selectedHoliday.name}</span>
-                                    <button
-                                        onClick={() => removeHoliday(selectedHoliday._id, selectedHoliday.name)}
-                                        className="ml-auto text-xs text-rose-600 hover:text-rose-800 underline font-bold"
-                                    >
-                                        Remove
-                                    </button>
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-white border border-amber-300 text-amber-800">
+                                        {selectedHoliday.isPartial
+                                            ? `Partial: ${formatTime12h(selectedHoliday.startTime)} – ${formatTime12h(selectedHoliday.endTime)}`
+                                            : 'Full Day'}
+                                    </span>
+                                    {selectedHoliday.description && (
+                                        <span className="text-amber-700 font-medium">({selectedHoliday.description})</span>
+                                    )}
+                                    <div className="ml-auto flex items-center gap-3">
+                                        {selectedHoliday.batchId && (
+                                            <button
+                                                onClick={() => removeHoliday(selectedHoliday._id, selectedHoliday.name, true)}
+                                                className="text-xs text-rose-700 hover:text-rose-900 underline font-bold"
+                                            >
+                                                Remove Batch
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => removeHoliday(selectedHoliday._id, selectedHoliday.name, false)}
+                                            className="text-xs text-rose-600 hover:text-rose-800 underline font-bold"
+                                        >
+                                            Remove Day
+                                        </button>
+                                    </div>
                                 </motion.div>
                             )}
 
@@ -1527,7 +1755,7 @@ const AttendanceManagement = () => {
                                     Top 75% Highlight {highlight75 ? 'ON' : 'OFF'}
                                 </button>
                                 <button
-                                    onClick={() => setShowHolidayModal(true)}
+                                    onClick={openHolidayModal}
                                     className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 rounded-xl text-xs font-bold transition-all"
                                 >
                                     <IoSparkles size={15} /> Declare Holiday
@@ -1700,37 +1928,431 @@ const AttendanceManagement = () => {
                 isOpen={showHolidayModal}
                 onClose={() => {
                     setShowHolidayModal(false);
-                    setHolidayName('');
                 }}
                 title="Declare Institutional Holiday"
             >
-                <div className="space-y-4 pt-1">
-                    <p className="text-xs text-slate-500">
-                        All active students will automatically be credited with attendance on this date ({selectedDate}).
-                    </p>
+                <div className="space-y-4 pt-1 max-h-[78vh] overflow-y-auto pr-1">
+                    {/* Neutral Attendance Policy Banner */}
+                    <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
+                        <IoSparkles size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div className="text-[11px] text-amber-900 leading-relaxed">
+                            <span className="font-bold">Neutral Attendance Policy:</span> Students absent due to a declared holiday keep their <span className="font-bold">exact current attendance percentage</span> (neither reduced nor increased). Students who attend and mark attendance (by self or admin) are counted as <span className="font-bold text-emerald-700">Present</span> normally.
+                        </div>
+                    </div>
 
+                    {/* 1. Holiday / Festival Title */}
                     <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
-                            Holiday / Festival Title
+                            Holiday / Occasion Title <span className="text-rose-500">*</span>
                         </label>
                         <input
                             type="text"
                             value={holidayName}
                             onChange={e => setHolidayName(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && declareHoliday()}
-                            placeholder="e.g. Holi, Diwali, Independence Day"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-all"
+                            placeholder="e.g. Diwali Break, Electrical Maintenance, Weekly Off"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-all"
                             autoFocus
                         />
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
+                    {/* 2. Date Selection Mode Tabs */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Select Holiday Days / Schedule Mode
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-slate-100 p-1 rounded-xl">
+                            {[
+                                { id: 'single', label: 'Single Day' },
+                                { id: 'weekdays', label: 'Weekdays (Tue/Thu/Fri)' },
+                                { id: 'range', label: 'Date Range' },
+                                { id: 'custom', label: 'Pick Multiple' }
+                            ].map(mode => (
+                                <button
+                                    key={mode.id}
+                                    type="button"
+                                    onClick={() => setHolidaySelectionMode(mode.id)}
+                                    className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all ${
+                                        holidaySelectionMode === mode.id
+                                            ? 'bg-white text-orange-700 shadow-2xs border border-orange-200'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    {mode.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Mode A: Single Date */}
+                        {holidaySelectionMode === 'single' && (
+                            <div className="mt-3">
+                                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Holiday Date
+                                </label>
+                                <input
+                                    type="date"
+                                    value={holidaySingleDate}
+                                    onChange={e => setHolidaySingleDate(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-orange-500"
+                                />
+                            </div>
+                        )}
+
+                        {/* Mode B: Specific Weekdays (e.g. Tue, Thu, Fri) */}
+                        {holidaySelectionMode === 'weekdays' && (
+                            <div className="mt-3 space-y-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[11px] font-bold text-slate-700">
+                                            Tap Days of the Week (e.g. Tue, Thu, Fri)
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHolidayWeekdays([2, 4, 5])}
+                                            className="text-[10px] font-bold text-orange-600 hover:text-orange-700 underline"
+                                        >
+                                            Preset: Tue + Thu + Fri
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1.5">
+                                        {[
+                                            { d: 1, label: 'Mon' },
+                                            { d: 2, label: 'Tue' },
+                                            { d: 3, label: 'Wed' },
+                                            { d: 4, label: 'Thu' },
+                                            { d: 5, label: 'Fri' },
+                                            { d: 6, label: 'Sat' },
+                                            { d: 0, label: 'Sun' }
+                                        ].map(w => {
+                                            const active = holidayWeekdays.includes(w.d);
+                                            return (
+                                                <button
+                                                    key={w.d}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setHolidayWeekdays(prev =>
+                                                            prev.includes(w.d) ? prev.filter(x => x !== w.d) : [...prev, w.d]
+                                                        );
+                                                    }}
+                                                    className={`py-2 rounded-lg text-xs font-bold border transition-all ${
+                                                        active
+                                                            ? 'bg-orange-500 text-white border-orange-600 shadow-2xs'
+                                                            : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'
+                                                    }`}
+                                                >
+                                                    {w.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">From Date</label>
+                                        <input
+                                            type="date"
+                                            value={holidayStartDate}
+                                            onChange={e => setHolidayStartDate(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">To Date</label>
+                                        <input
+                                            type="date"
+                                            value={holidayEndDate}
+                                            min={holidayStartDate}
+                                            onChange={e => setHolidayEndDate(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mode C: Date Range (with optional weekday filter) */}
+                        {holidaySelectionMode === 'range' && (
+                            <div className="mt-3 space-y-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Start Date</label>
+                                        <input
+                                            type="date"
+                                            value={holidayStartDate}
+                                            onChange={e => setHolidayStartDate(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">End Date</label>
+                                        <input
+                                            type="date"
+                                            value={holidayEndDate}
+                                            min={holidayStartDate}
+                                            onChange={e => setHolidayEndDate(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                                            Optional Weekday Filter ({holidayWeekdays.length === 0 ? 'All Days Included' : `${holidayWeekdays.length} selected`})
+                                        </span>
+                                        {holidayWeekdays.length > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setHolidayWeekdays([])}
+                                                className="text-[10px] font-bold text-rose-600 hover:underline"
+                                            >
+                                                Include All Days
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-7 gap-1">
+                                        {[
+                                            { d: 1, label: 'Mon' },
+                                            { d: 2, label: 'Tue' },
+                                            { d: 3, label: 'Wed' },
+                                            { d: 4, label: 'Thu' },
+                                            { d: 5, label: 'Fri' },
+                                            { d: 6, label: 'Sat' },
+                                            { d: 0, label: 'Sun' }
+                                        ].map(w => {
+                                            const active = holidayWeekdays.includes(w.d);
+                                            return (
+                                                <button
+                                                    key={w.d}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setHolidayWeekdays(prev =>
+                                                            prev.includes(w.d) ? prev.filter(x => x !== w.d) : [...prev, w.d]
+                                                        );
+                                                    }}
+                                                    className={`py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                                                        active
+                                                            ? 'bg-orange-500 text-white border-orange-600'
+                                                            : 'bg-white text-slate-600 border-slate-200'
+                                                    }`}
+                                                >
+                                                    {w.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Mode D: Pick Multiple Custom Dates */}
+                        {holidaySelectionMode === 'custom' && (
+                            <div className="mt-3 space-y-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={holidayDatePickerInput}
+                                        onChange={e => setHolidayDatePickerInput(e.target.value)}
+                                        className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-orange-500"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (holidayDatePickerInput && !holidayCustomDates.includes(holidayDatePickerInput)) {
+                                                setHolidayCustomDates(prev => [...prev, holidayDatePickerInput].sort());
+                                            }
+                                        }}
+                                        className="px-3.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-colors"
+                                    >
+                                        + Add Date
+                                    </button>
+                                </div>
+                                {holidayCustomDates.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {holidayCustomDates.map(dStr => (
+                                            <span
+                                                key={dStr}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-orange-200 text-orange-800 text-[11px] font-bold"
+                                            >
+                                                <span>{new Date(dStr + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' })}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHolidayCustomDates(prev => prev.filter(x => x !== dStr))}
+                                                    className="text-rose-500 hover:text-rose-700"
+                                                >
+                                                    <IoClose size={13} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Resolved Dates Preview Chip Bar */}
+                        <div className="mt-2.5 flex items-center justify-between bg-orange-50/70 border border-orange-200/80 rounded-xl px-3 py-2 text-[11px]">
+                            <span className="font-bold text-orange-900">
+                                Selected Schedule ({resolvedHolidayDates.length} {resolvedHolidayDates.length === 1 ? 'Day' : 'Days'}):
+                            </span>
+                            <span className="font-semibold text-orange-700 truncate max-w-[62%] text-right">
+                                {resolvedHolidayDates.length === 0
+                                    ? 'None selected'
+                                    : resolvedHolidayDates
+                                        .slice(0, 4)
+                                        .map(d => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }))
+                                        .join(' · ') + (resolvedHolidayDates.length > 4 ? ` +${resolvedHolidayDates.length - 4} more` : '')}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 3. Operational Timing System: Full Day vs Partial Timing (e.g. 4:00 PM to 9:00 PM) */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Operational Closure Timing
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setHolidayIsPartial(false)}
+                                className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                                    !holidayIsPartial
+                                        ? 'bg-orange-50 border-orange-400 text-orange-800 shadow-2xs'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                            >
+                                <IoCalendarOutline size={15} />
+                                <span>Full Day Closure</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setHolidayIsPartial(true)}
+                                className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                                    holidayIsPartial
+                                        ? 'bg-orange-50 border-orange-400 text-orange-800 shadow-2xs'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                            >
+                                <IoTimeOutline size={15} />
+                                <span>Partial Timing (e.g. 4–9 PM)</span>
+                            </button>
+                        </div>
+
+                        {holidayIsPartial && (
+                            <div className="mt-2.5 bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2.5">
+                                <div className="flex items-center justify-between flex-wrap gap-1">
+                                    <span className="text-[11px] font-bold text-slate-700">Non-Functional Hours</span>
+                                    <div className="flex items-center gap-1.5">
+                                        {[
+                                            { label: '4 PM – 9 PM', s: '16:00', e: '21:00' },
+                                            { label: '6 AM – 2 PM', s: '06:00', e: '14:00' },
+                                            { label: '2 PM – 10 PM', s: '14:00', e: '22:00' }
+                                        ].map(p => (
+                                            <button
+                                                key={p.label}
+                                                type="button"
+                                                onClick={() => { setHolidayStartTime(p.s); setHolidayEndTime(p.e); }}
+                                                className="px-2 py-0.5 rounded-md bg-white border border-slate-200 hover:border-orange-300 text-[10px] font-bold text-slate-700"
+                                            >
+                                                {p.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Closed From</label>
+                                        <input
+                                            type="time"
+                                            value={holidayStartTime}
+                                            onChange={e => setHolidayStartTime(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Closed Until</label>
+                                        <input
+                                            type="time"
+                                            value={holidayEndTime}
+                                            onChange={e => setHolidayEndTime(e.target.value)}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-[11px] font-semibold text-orange-800 bg-orange-50 border border-orange-200/70 rounded-lg px-2.5 py-1.5">
+                                    Student Notice Preview: &ldquo;Library will remain non-functional from {formatTime12h(holidayStartTime)} to {formatTime12h(holidayEndTime)}.&rdquo;
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 4. Additional Notice / Instructions for Students (AI Structured Generator) */}
+                    <div>
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700">
+                                    Student Notice Details / Reason (Optional)
+                                </label>
+                                <p className="text-[10px] text-slate-500">
+                                    Click AI Generate (or leave blank) to auto-create a professional structured notice
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={generateAiHolidayNotice}
+                                disabled={generatingHolidayAi || !holidayName.trim()}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-extrabold text-white shadow-xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                                style={{
+                                    background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
+                                }}
+                                title="Generate a professional structured student notice using AI"
+                            >
+                                <IoSparkles size={13} className={generatingHolidayAi ? 'animate-spin' : ''} />
+                                <span>
+                                    {generatingHolidayAi
+                                        ? 'Generating...'
+                                        : holidayDescription.trim() && !holidayDescription.includes('•')
+                                            ? 'Structure with AI'
+                                            : 'AI Generate Notice'}
+                                </span>
+                            </button>
+                        </div>
+                        <textarea
+                            rows={4}
+                            value={holidayDescription}
+                            onChange={e => setHolidayDescription(e.target.value)}
+                            placeholder="Type a short reason (e.g. 'AC maintenance in Hall 1' or 'Festival closure') and click 'AI Generate Notice', or leave blank for AI to auto-generate on submit..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-all leading-relaxed"
+                        />
+                    </div>
+
+                    {/* 5. Optional Email Notification Toggle (Default OFF) */}
+                    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5">
+                        <div>
+                            <p className="text-xs font-bold text-slate-800">Send Email Notification to Students</p>
+                            <p className="text-[11px] text-slate-500">
+                                {holidaySendEmail
+                                    ? 'Enabled — Active students will receive an email alert'
+                                    : 'Default: Not Sent — Only in-app dashboard notice will be shown'}
+                            </p>
+                        </div>
                         <button
                             type="button"
-                            onClick={() => {
-                                setShowHolidayModal(false);
-                                setHolidayName('');
-                            }}
+                            onClick={() => setHolidaySendEmail(prev => !prev)}
+                            className={`relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
+                                holidaySendEmail ? 'bg-orange-500' : 'bg-slate-300'
+                            }`}
+                        >
+                            <span
+                                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-transform duration-200 ${
+                                    holidaySendEmail ? 'translate-x-6' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2 pt-1">
+                        <button
+                            type="button"
+                            onClick={() => setShowHolidayModal(false)}
                             className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
                         >
                             Cancel
@@ -1738,13 +2360,54 @@ const AttendanceManagement = () => {
                         <button
                             type="button"
                             onClick={declareHoliday}
-                            disabled={saving || !holidayName.trim()}
+                            disabled={saving || !holidayName.trim() || resolvedHolidayDates.length === 0}
                             className="flex-1 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-xs shadow-orange-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
                         >
                             <IoSparkles size={14} />
-                            <span>{saving ? 'Declaring...' : 'Declare Holiday'}</span>
+                            <span>
+                                {saving
+                                    ? 'Declaring...'
+                                    : `Declare Holiday (${resolvedHolidayDates.length} ${resolvedHolidayDates.length === 1 ? 'Day' : 'Days'})`}
+                            </span>
                         </button>
                     </div>
+
+                    {/* Recent / Upcoming Declared Holidays List */}
+                    {holidays.length > 0 && (
+                        <div className="pt-3 border-t border-slate-200">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                Declared Holidays ({holidays.length})
+                            </p>
+                            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                                {holidays.slice(0, 12).map(h => (
+                                    <div
+                                        key={h._id}
+                                        className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs"
+                                    >
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="font-bold text-slate-800 truncate">{h.name}</span>
+                                                <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold">
+                                                    {h.isPartial ? `${formatTime12h(h.startTime)}–${formatTime12h(h.endTime)}` : 'Full Day'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-500">
+                                                {new Date(h.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeHoliday(h._id, h.name, false)}
+                                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+                                            title="Remove Holiday"
+                                        >
+                                            <IoTrashOutline size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </Modal>
         </div>
