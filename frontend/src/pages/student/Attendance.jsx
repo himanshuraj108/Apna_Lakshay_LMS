@@ -124,10 +124,9 @@ const Attendance = () => {
 
     const { myAttendance = [], summary = {}, rankings = [], holidays = [] } = attendanceData || {};
 
-    const getHolidayForDate = (dateStr) => {
+    const getHolidayObjForDate = (dateStr) => {
         const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
-        const h = holidays.find(h => { const hd = new Date(h.date); hd.setHours(0, 0, 0, 0); return hd.getTime() === d.getTime(); });
-        return h ? h.name : null;
+        return holidays.find(h => { const hd = new Date(h.date); hd.setHours(0, 0, 0, 0); return hd.getTime() === d.getTime(); }) || null;
     };
 
     const totalMinutes = myAttendance.reduce((acc, curr) => acc + (curr.duration || 0), 0);
@@ -325,16 +324,17 @@ const Attendance = () => {
                                         <div className="text-center py-12 text-gray-600 text-sm">No attendance records yet</div>
                                     )}
                                     {myAttendance.slice().reverse().map((record, idx) => {
-                                        const holidayName = getHolidayForDate(record.date);
+                                        const holidayObj = getHolidayObjForDate(record.date);
+                                        const holidayName = holidayObj?.name || null;
                                         const isHoliday = record.status === 'holiday' || !!holidayName;
                                         const holidayFestivalName = holidayName || (record.notes?.startsWith('Holiday - ') ? record.notes.replace('Holiday - ', '') : 'Holiday');
                                         const attendedOnHoliday = isHoliday && !!record.entryTime;
 
                                         let cardBg, borderColor, iconColor, badgeStyle, badgeText;
                                         if (isHoliday && !attendedOnHoliday) {
-                                            cardBg = 'rgba(245,158,11,0.04)'; borderColor = 'rgba(245,158,11,0.15)';
-                                            iconColor = '#f59e0b'; badgeStyle = { background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' };
-                                            badgeText = holidayFestivalName.toUpperCase();
+                                            cardBg = 'rgba(245,158,11,0.06)'; borderColor = 'rgba(245,158,11,0.25)';
+                                            iconColor = '#d97706'; badgeStyle = { background: 'rgba(245,158,11,0.14)', color: '#b45309', border: '1px solid rgba(245,158,11,0.3)' };
+                                            badgeText = 'HOLIDAY (NEUTRAL)';
                                         } else if (record.status === 'present' || attendedOnHoliday) {
                                             cardBg = '#FFFFFF'; borderColor = '#EDE8E0';
                                             iconColor = '#22c55e'; badgeStyle = { background: 'rgba(34,197,94,0.1)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)' };
@@ -390,10 +390,15 @@ const Attendance = () => {
                                                         </>
                                                     )}
                                                     {isHoliday && (
-                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
-                                                            style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)' }}>
-                                                            <IoCalendar size={13} className="text-amber-400" />
-                                                            <span className="text-amber-300 font-semibold">{holidayFestivalName}</span>
+                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs shrink-0"
+                                                            style={{ background: 'rgba(245,158,11,0.10)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                                                            <IoCalendar size={13} className="text-amber-600" />
+                                                            <span className="text-amber-900 font-bold">{holidayFestivalName}</span>
+                                                            {holidayObj?.isPartial && holidayObj?.startTime && holidayObj?.endTime && (
+                                                                <span className="text-[10px] font-semibold text-amber-700 ml-1">
+                                                                    ({holidayObj.startTime} - {holidayObj.endTime})
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     )}
                                                     {!isHoliday && record.notes && (
