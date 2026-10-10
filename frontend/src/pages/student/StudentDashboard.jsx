@@ -602,7 +602,7 @@ const StudentDashboard = () => {
     const [leaderboardLoading, setLeaderboardLoading] = useState(false);
     const [aiInsight, setAiInsight]                   = useState(null); // { score, level, insight }
 
-    // ── Institutional Holiday Gate ("Got It" Blocking Modal) ──
+    // ── Institutional Holiday Gate ("Got It" / "Remind Later" Modal & Banner in IST Asia/Kolkata) ──
     const HOLIDAY_ACK_KEY = 'lms_ack_holidays_v1';
     const [acknowledgedHolidays, setAcknowledgedHolidays] = useState(() => {
         try {
@@ -613,9 +613,67 @@ const StudentDashboard = () => {
     });
     const [forceShowHolidayModal, setForceShowHolidayModal] = useState(false);
     const [snoozedHolidayModal, setSnoozedHolidayModal] = useState(false);
+    const [holidayClockTick, setHolidayClockTick] = useState(() => Date.now());
+
+    // Live 30-second tick so expired holidays (by IST date or partial endTime) auto-remove while dashboard is open
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setHolidayClockTick(Date.now());
+        }, 30000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const toISTDateStr = (d) => {
+        try {
+            return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        } catch (_) {
+            const istShifted = new Date(new Date(d).getTime() + 330 * 60 * 1000);
+            return istShifted.toISOString().slice(0, 10);
+        }
+    };
+
+    const getISTMinutesNow = (ts = Date.now()) => {
+        try {
+            const parts = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Kolkata',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).formatToParts(new Date(ts));
+            const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10) % 24;
+            const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+            return h * 60 + m;
+        } catch (_) {
+            const istShifted = new Date(ts + 330 * 60 * 1000);
+            return istShifted.getUTCHours() * 60 + istShifted.getUTCMinutes();
+        }
+    };
+
+    const todayISTStr = toISTDateStr(holidayClockTick);
+    const nowISTMins = getISTMinutesNow(holidayClockTick);
 
     const getHolidayAckId = (h) => `${h._id}_${h.updatedAt || h.date || ''}`;
-    const activeHolidaysList = dashboardData?.activeHolidays || [];
+
+    // Filter activeHolidays strictly in IST (Asia/Kolkata):
+    // 1. Remove any holiday whose IST date is in the past (< todayISTStr) — e.g. on 18th IST, 17th is removed and 19th is kept.
+    // 2. Remove today's partial holiday once current IST time reaches/passes endTime (nowISTMins >= endTotalMins).
+    const activeHolidaysList = (dashboardData?.activeHolidays || []).filter((h) => {
+        const hDateIST = h.dateIST || toISTDateStr(h.date);
+        if (hDateIST < todayISTStr) return false;
+        if (hDateIST === todayISTStr && h.isPartial && h.endTime && h.endTime.includes(':')) {
+            const [endH, endM] = h.endTime.split(':').map(Number);
+            if (!isNaN(endH)) {
+                const endTotalMins = endH * 60 + (endM || 0);
+                if (nowISTMins >= endTotalMins) return false;
+            }
+        }
+        return true;
+    });
+
+    const activeTodayHoliday = activeHolidaysList.find(
+        (h) => (h.dateIST || toISTDateStr(h.date)) === todayISTStr
+    ) || null;
+
     const unacknowledgedHolidays = activeHolidaysList.filter(h => !acknowledgedHolidays[getHolidayAckId(h)]);
     const showHolidayGateModal = (!snoozedHolidayModal && unacknowledgedHolidays.length > 0) || (forceShowHolidayModal && activeHolidaysList.length > 0);
     const holidaysToDisplay = unacknowledgedHolidays.length > 0 ? unacknowledgedHolidays : activeHolidaysList;
@@ -1521,7 +1579,7 @@ const StudentDashboard = () => {
                                         <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                                             Official Library Notice
                                         </span>
-                                        {dashboardData?.todayHoliday && (
+                                        {activeTodayHoliday && (
                                             <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
                                                 Active Today
                                             </span>
@@ -1541,10 +1599,11 @@ const StudentDashboard = () => {
                             {/* Holiday Cards Body */}
                             <div className="overflow-y-auto flex-1 pr-1 space-y-3.5 my-1">
                                 {groupedHolidaysToDisplay.map((grp) => {
-                                    const todayIso = new Date().toLocaleDateString('en-CA');
+                                    const todayIso = todayISTStr;
                                     const dateSummaryStr = grp.dates
                                         .map((dt) =>
                                             new Date(dt).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
                                                 weekday: 'short',
                                                 day: '2-digit',
                                                 month: 'short',
@@ -1613,12 +1672,12 @@ const StudentDashboard = () => {
                                             {/* Scheduled Dates & Days */}
                                             <div>
                                                 <p className="text-[10px] font-bold uppercase tracking-wider text-[#9B7B5A] mb-1.5">
-                                                    Scheduled Date{grp.dates.length > 1 ? `s (${grp.dates.length} Days)` : ''}
+                                                    Scheduled Date{grp.dates.length > 1 ? `s (${grp.dates.length} Days)` : ''} (IST)
                                                 </p>
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {grp.dates.map((dt, idx) => {
                                                         const dObj = new Date(dt);
-                                                        const dIso = dObj.toLocaleDateString('en-CA');
+                                                        const dIso = toISTDateStr(dObj);
                                                         const isTodayDate = dIso === todayIso;
                                                         return (
                                                             <span
@@ -1631,6 +1690,7 @@ const StudentDashboard = () => {
                                                             >
                                                                 <IoCalendarOutline size={12} />
                                                                 {dObj.toLocaleDateString('en-IN', {
+                                                                    timeZone: 'Asia/Kolkata',
                                                                     weekday: 'short',
                                                                     day: '2-digit',
                                                                     month: 'short',
@@ -1671,11 +1731,23 @@ const StudentDashboard = () => {
                                                     );
                                                 };
 
+                                                // Strip any past/expired dates from multi-day batch descriptions (e.g. on 18th IST, remove 17th and keep 19th)
+                                                const dateTokenRegex = /\b(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+)?\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*,?\s+\d{4}\b/gi;
                                                 const safeDesc = String(grp.description || '')
                                                     .replace(/व्य\uFFFD+स्थित/g, 'व्यवस्थित')
                                                     .replace(/सामग्र\uFFFD+/g, 'सामग्री')
                                                     .replace(/\uFFFD+/g, '')
-                                                    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, '-');
+                                                    .replace(/[\u2010\u2011\u2012\u2013\u2014]/g, '-')
+                                                    .replace(dateTokenRegex, (matchedDateStr) => {
+                                                        const parsed = new Date(matchedDateStr);
+                                                        if (!isNaN(parsed.getTime()) && toISTDateStr(parsed) < todayIso) {
+                                                            return '__EXPIRED_DATE__';
+                                                        }
+                                                        return matchedDateStr;
+                                                    })
+                                                    .replace(/__EXPIRED_DATE__\s*(?:,\s*|\s+and\s+|\s+एवं\s+|\s+तथा\s+|\s*\|\s*)/gi, '')
+                                                    .replace(/(?:,\s*|\s+and\s+|\s+एवं\s+|\s+तथा\s+|\s*\|\s*)__EXPIRED_DATE__/gi, '')
+                                                    .replace(/__EXPIRED_DATE__/g, dateSummaryStr);
                                                 const blocks = safeDesc.split('---').map(b => b.trim()).filter(Boolean);
                                                 return (
                                                     <div className="space-y-2.5">
@@ -1911,21 +1983,29 @@ const StudentDashboard = () => {
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-900">
-                                        {dashboardData?.todayHoliday ? "Today's Holiday Notice" : 'Upcoming Holiday Notice'}
+                                        {activeTodayHoliday ? "Today's Holiday Notice" : 'Upcoming Holiday Notice'}
                                     </span>
                                     <span className="text-sm font-black text-gray-900 truncate">
-                                        {(dashboardData?.todayHoliday || activeHolidaysList[0]).name}
+                                        {(activeTodayHoliday || activeHolidaysList[0]).name}
                                     </span>
                                 </div>
                                 <p className="text-xs font-semibold text-amber-900/90 mt-0.5">
                                     {(() => {
-                                        const primary = dashboardData?.todayHoliday || activeHolidaysList[0];
-                                        const dateLabel = new Date(primary.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+                                        const primary = activeTodayHoliday || activeHolidaysList[0];
+                                        const formattedActiveDates = activeHolidaysList
+                                            .slice(0, 3)
+                                            .map(h => new Date(h.date).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
+                                                weekday: 'short',
+                                                day: 'numeric',
+                                                month: 'short'
+                                            }))
+                                            .join(' & ');
+                                        const moreSuffix = activeHolidaysList.length > 3 ? ` (+${activeHolidaysList.length - 3} more)` : '';
                                         const timingLabel = primary.isPartial
                                             ? `Library non-functional from ${fmt12h(primary.startTime)} to ${fmt12h(primary.endTime)}`
                                             : 'Full Day Library Closure';
-                                        const extraCount = activeHolidaysList.length > 1 ? ` (+${activeHolidaysList.length - 1} more day${activeHolidaysList.length - 1 > 1 ? 's' : ''})` : '';
-                                        return `${dateLabel}${extraCount} · ${timingLabel} · Attendance % Protected`;
+                                        return `${formattedActiveDates}${moreSuffix} · ${timingLabel} · Attendance % Protected`;
                                     })()}
                                 </p>
                             </div>
