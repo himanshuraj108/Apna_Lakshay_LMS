@@ -3146,33 +3146,67 @@ exports.getAttendance = async (req, res) => {
             todayStart.setHours(0, 0, 0, 0);
 
             const studentObjIds = studentIds.map(id => new mongoose.Types.ObjectId(id));
-            const lifetimeAttendance = await Attendance.aggregate([
-                {
-                    $match: {
-                        student: { $in: studentObjIds },
-                        status: { $in: ['present', 'holiday'] },
-                        date: { $lte: now }
-                    }
-                },
-                {
-                    $group: {
-                        _id: {
-                            student: '$student',
-                            dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
+            const [lifetimeAttendance, lifetimeHolidays] = await Promise.all([
+                Attendance.aggregate([
+                    {
+                        $match: {
+                            student: { $in: studentObjIds },
+                            $or: [
+                                { status: 'present' },
+                                { status: 'holiday', entryTime: { $nin: [null, ''] } }
+                            ],
+                            date: { $lte: now }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                student: '$student',
+                                dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: '$_id.student',
+                            uniqueDays: { $sum: 1 }
                         }
                     }
-                },
-                {
-                    $group: {
-                        _id: '$_id.student',
-                        uniqueDays: { $sum: 1 }
+                ]),
+                Attendance.aggregate([
+                    {
+                        $match: {
+                            student: { $in: studentObjIds },
+                            status: 'holiday',
+                            $or: [{ entryTime: null }, { entryTime: '' }, { entryTime: { $exists: false } }],
+                            date: { $lte: now }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                student: '$student',
+                                dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } }
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: '$_id.student',
+                            uniqueHolidays: { $sum: 1 }
+                        }
                     }
-                }
+                ])
             ]);
 
             const lifetimePresentsMap = {};
             lifetimeAttendance.forEach(item => {
                 lifetimePresentsMap[item._id.toString()] = item.uniqueDays;
+            });
+
+            const lifetimeHolidaysMap = {};
+            lifetimeHolidays.forEach(item => {
+                lifetimeHolidaysMap[item._id.toString()] = item.uniqueHolidays;
             });
 
             const studentDocMap = {};
@@ -3188,9 +3222,11 @@ exports.getAttendance = async (req, res) => {
                 const admDate = new Date(stu.admissionDate || stu.createdAt || todayStart);
                 admDate.setHours(0, 0, 0, 0);
                 const diffMs = todayStart.getTime() - admDate.getTime();
-                const totalDays = diffMs >= 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1 : 1;
+                const calendarDays = diffMs >= 0 ? Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1 : 1;
+                const neutralHolidays = lifetimeHolidaysMap[sid] || 0;
+                const totalDays = Math.max(0, calendarDays - neutralHolidays);
                 const presents = lifetimePresentsMap[sid] || 0;
-                overallMap[sid] = Math.min(100, Math.round((presents / totalDays) * 100));
+                overallMap[sid] = totalDays > 0 ? Math.min(100, Math.round((presents / totalDays) * 100)) : 0;
             });
         }
 
