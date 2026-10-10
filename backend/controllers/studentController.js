@@ -417,7 +417,8 @@ exports.getDashboard = async (req, res) => {
 
         const cleanAttendance = Array.from(uniqueAttendanceMap.values());
 
-        const presentCount = cleanAttendance.filter(a => a.status === 'present' || a.status === 'holiday').length;
+        const presentCount = cleanAttendance.filter(a => a.status === 'present' || (a.status === 'holiday' && !!a.entryTime)).length;
+        const unattendedHolidayCount = cleanAttendance.filter(a => a.status === 'holiday' && !a.entryTime).length;
 
         // Calculate true total working days possible for this student (Lifetime)
         const calcStartDate = new Date(studentJoinedDate);
@@ -427,43 +428,73 @@ exports.getDashboard = async (req, res) => {
         const calcEndDate = new Date(now.getTime());
         calcEndDate.setHours(23, 59, 59, 999);
 
-        let totalDays = 0;
+        let calendarDays = 0;
         if (calcEndDate >= calcStartDate) {
             // Difference in days (inclusive)
             const diffTime = calcEndDate.getTime() - calcStartDate.getTime();
-            totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            calendarDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
         }
 
-        const attendancePercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
+        // Neutral Holiday Rule: exclude unattended holidays from both numerator and denominator
+        const totalDays = Math.max(0, calendarDays - unattendedHolidayCount);
+        const attendancePercentage = totalDays > 0 ? Math.min(100, Math.round((presentCount / totalDays) * 100)) : 0;
 
         // ── Compute attendance rank across all active students ──
         let attendanceRank = null;
         try {
             const allActiveStudents = await User.find({ role: 'student', isActive: true }).select('_id createdAt').lean();
-            const allAttendance = await Attendance.aggregate([
-                { $match: { student: { $in: allActiveStudents.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
-                { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
-                { $group: { _id: '$_id.student', uniqueDays: { $sum: 1 } } }
+            const activeIds = allActiveStudents.map(s => s._id);
+
+            const [allPresentAgg, allNeutralHolidayAgg] = await Promise.all([
+                Attendance.aggregate([
+                    {
+                        $match: {
+                            student: { $in: activeIds },
+                            $or: [
+                                { status: 'present' },
+                                { status: 'holiday', entryTime: { $nin: [null, ''] } }
+                            ]
+                        }
+                    },
+                    { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
+                    { $group: { _id: '$_id.student', uniqueDays: { $sum: 1 } } }
+                ]),
+                Attendance.aggregate([
+                    {
+                        $match: {
+                            student: { $in: activeIds },
+                            status: 'holiday',
+                            $or: [{ entryTime: null }, { entryTime: '' }, { entryTime: { $exists: false } }]
+                        }
+                    },
+                    { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
+                    { $group: { _id: '$_id.student', uniqueHolidays: { $sum: 1 } } }
+                ])
             ]);
-            
+
             const uniqueMap = {};
-            allAttendance.forEach(a => { uniqueMap[a._id.toString()] = a.uniqueDays; });
-            
+            allPresentAgg.forEach(a => { uniqueMap[a._id.toString()] = a.uniqueDays; });
+            const holidayMap = {};
+            allNeutralHolidayAgg.forEach(a => { holidayMap[a._id.toString()] = a.uniqueHolidays; });
+
             const nowTime = now.getTime();
             const rankings = allActiveStudents.map(s => {
                 const admDate = new Date(s.createdAt || now);
                 admDate.setHours(0, 0, 0, 0);
-                let stuTotal = 0;
+                let stuCalDays = 0;
                 if (nowTime >= admDate.getTime()) {
-                    stuTotal = Math.floor((nowTime - admDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                    stuCalDays = Math.floor((nowTime - admDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                 }
-                const present = uniqueMap[s._id.toString()] || 0;
-                const percentage = stuTotal > 0 ? Math.round((present / stuTotal) * 100) : 0;
-                return { id: s._id.toString(), percentage };
+                const sidStr = s._id.toString();
+                const present = uniqueMap[sidStr] || 0;
+                const neutralHols = holidayMap[sidStr] || 0;
+                const stuTotal = Math.max(0, stuCalDays - neutralHols);
+                const percentage = stuTotal > 0 ? Math.min(100, Math.round((present / stuTotal) * 100)) : 0;
+                return { id: sidStr, percentage };
             });
-            
+
             rankings.sort((a, b) => b.percentage - a.percentage);
-            
+
             let currentRank = 1;
             let previousPercentage = null;
             for (let i = 0; i < rankings.length; i++) {
@@ -551,6 +582,37 @@ exports.getDashboard = async (req, res) => {
             }
         }
 
+        // Fetch active/upcoming holidays (today + next 14 days) for Student Dashboard Holiday Notice Gate
+        const toISTDateStr = (d) => {
+            try { return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); }
+            catch (_) { return new Date(d).toISOString().slice(0, 10); }
+        };
+        const todayISTStr = toISTDateStr(now);
+        const holidayQueryFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const holidayQueryTo = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+        const rawUpcomingHolidays = await Holiday.find({
+            date: { $gte: holidayQueryFrom, $lte: holidayQueryTo }
+        }).sort({ date: 1 }).lean();
+
+        const activeHolidays = rawUpcomingHolidays
+            .filter(h => toISTDateStr(h.date) >= todayISTStr)
+            .map(h => ({
+                _id: h._id,
+                name: h.name,
+                date: h.date,
+                dateIST: toISTDateStr(h.date),
+                isToday: toISTDateStr(h.date) === todayISTStr,
+                description: h.description || '',
+                isPartial: !!h.isPartial,
+                startTime: h.startTime || null,
+                endTime: h.endTime || null,
+                batchId: h.batchId || null,
+                updatedAt: h.updatedAt || h.createdAt
+            }));
+
+        const todayHoliday = activeHolidays.find(h => h.isToday) || null;
+
         res.status(200).json({
             success: true,
             data: {
@@ -581,12 +643,7 @@ exports.getDashboard = async (req, res) => {
                     percentage: attendancePercentage,
                     rank: attendanceRank,
                     markedToday: (() => {
-                        const toIST = (d) => {
-                            try { return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); }
-                            catch (_) { return new Date(d).toISOString().slice(0, 10); }
-                        };
-                        const todayIST = toIST(now);
-                        return cleanAttendance.some(a => toIST(a.date) === todayIST && (a.status === 'present' || (a.status === 'holiday' && a.entryTime)));
+                        return cleanAttendance.some(a => toISTDateStr(a.date) === todayISTStr && (a.status === 'present' || (a.status === 'holiday' && a.entryTime)));
                     })()
                 },
                 fee: currentFee ? {
@@ -601,6 +658,8 @@ exports.getDashboard = async (req, res) => {
                 } : null,
 
                 feeReminder, // Add reminder data
+                activeHolidays,
+                todayHoliday,
                 unreadNotifications: unreadCount,
                 requestsCount: activeRequestsCount,
                 tempAssignments: formattedTempAssignments, // Temp Seats
@@ -905,7 +964,8 @@ exports.getAttendance = async (req, res) => {
         // Use deduplicated list for response and stats
         const cleanAttendance = Array.from(uniqueAttendanceMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        const presentCount = cleanAttendance.filter(a => a.status === 'present' || a.status === 'holiday').length;
+        const presentCount = cleanAttendance.filter(a => a.status === 'present' || (a.status === 'holiday' && !!a.entryTime)).length;
+        const unattendedHolidayCount = cleanAttendance.filter(a => a.status === 'holiday' && !a.entryTime).length;
 
         // Calculate true total working days possible for this student (Lifetime)
         const calcStartDate = new Date(admissionDate);
@@ -915,14 +975,15 @@ exports.getAttendance = async (req, res) => {
         const calcEndDate = new Date(now.getTime());
         calcEndDate.setHours(23, 59, 59, 999);
 
-        let totalDays = 0;
+        let calendarDays = 0;
         if (calcEndDate >= calcStartDate) {
             // Difference in days (inclusive)
             const diffTime = calcEndDate.getTime() - calcStartDate.getTime();
-            totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            calendarDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
         }
 
-        const myPercentage = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 0;
+        const totalDays = Math.max(0, calendarDays - unattendedHolidayCount);
+        const myPercentage = totalDays > 0 ? Math.min(100, Math.round((presentCount / totalDays) * 100)) : 0;
 
         // Get all students' attendance for ranking
         const allStudents = await User.find({ role: 'student', isActive: true });
@@ -937,15 +998,21 @@ exports.getAttendance = async (req, res) => {
             });
 
             // Deduplicate for ranking to prevent > 100% bug
-            const distinctDates = new Set();
+            const distinctPresentDates = new Set();
+            const distinctHolidayDates = new Set();
             studentAttendance.forEach(a => {
-                if (a.status === 'present' || a.status === 'holiday') {
-                    distinctDates.add(new Date(a.date).toDateString());
+                const dKey = new Date(a.date).toDateString();
+                if (a.status === 'present' || (a.status === 'holiday' && !!a.entryTime)) {
+                    distinctPresentDates.add(dKey);
+                    distinctHolidayDates.delete(dKey);
+                } else if (a.status === 'holiday' && !a.entryTime && !distinctPresentDates.has(dKey)) {
+                    distinctHolidayDates.add(dKey);
                 }
             });
-            const studentPresent = distinctDates.size;
+            const studentPresent = distinctPresentDates.size;
+            const studentNeutralHolidays = distinctHolidayDates.size;
 
-            // Calculate true total working days possible for this student this month
+            // Calculate true total working days possible for this student
             const calcStart = new Date(admDate);
             calcStart.setHours(0, 0, 0, 0);
 
@@ -953,13 +1020,14 @@ exports.getAttendance = async (req, res) => {
             const calcEnd = new Date(now.getTime());
             calcEnd.setHours(23, 59, 59, 999);
 
-            let studentTotal = 0;
+            let studentCalDays = 0;
             if (calcEnd >= calcStart) {
                 const diffTime = calcEnd.getTime() - calcStart.getTime();
-                studentTotal = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                studentCalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
             }
 
-            const percentage = studentTotal > 0 ? Math.round((studentPresent / studentTotal) * 100) : 0;
+            const studentTotal = Math.max(0, studentCalDays - studentNeutralHolidays);
+            const percentage = studentTotal > 0 ? Math.min(100, Math.round((studentPresent / studentTotal) * 100)) : 0;
 
             return {
                 studentId: student._id,
@@ -989,7 +1057,7 @@ exports.getAttendance = async (req, res) => {
         });
 
         // Fetch all holidays to include in response (so frontend can cross-reference)
-        const holidays = await Holiday.find().select('name date').lean();
+        const holidays = await Holiday.find().select('name date description isPartial startTime endTime batchId').lean();
 
         res.status(200).json({
             success: true,
@@ -1051,21 +1119,23 @@ exports.getMonthlyReport = async (req, res) => {
 
         const clean = Array.from(dedupMap.values());
 
-        const presentDays = clean.filter(r => r.status === 'present' || r.status === 'holiday').length;
-        const totalMinutes = clean.filter(r => r.status === 'present').reduce((sum, r) => sum + (r.duration || 0), 0);
+        const presentDays = clean.filter(r => r.status === 'present' || (r.status === 'holiday' && !!r.entryTime)).length;
+        const unattendedHolidayDays = clean.filter(r => r.status === 'holiday' && !r.entryTime).length;
+        const totalMinutes = clean.filter(r => r.status === 'present' || (r.status === 'holiday' && !!r.entryTime)).reduce((sum, r) => sum + (r.duration || 0), 0);
 
         // Total calendar days from month start (or student join date if later) up to effectiveEnd
         const admissionDate = student.createdAt ? new Date(student.createdAt) : startDate;
         const calcStart = admissionDate > startDate ? admissionDate : startDate;
         calcStart.setHours(0, 0, 0, 0);
-        const totalDays = Math.max(1, Math.floor((effectiveEnd - calcStart) / (1000 * 60 * 60 * 24)) + 1);
+        const calendarDays = Math.max(1, Math.floor((effectiveEnd - calcStart) / (1000 * 60 * 60 * 24)) + 1);
+        const totalDays = Math.max(0, calendarDays - unattendedHolidayDays);
 
-        const percentage = Math.round((presentDays / totalDays) * 100);
+        const percentage = totalDays > 0 ? Math.min(100, Math.round((presentDays / totalDays) * 100)) : 0;
 
         // Build daily breakdown for the month (for display)
         const dailyBreakdown = clean.map(r => ({
             date: r.date,
-            status: r.status,
+            status: (r.status === 'holiday' && r.entryTime) ? 'present' : r.status,
             durationMins: r.duration || 0,
             entryTime: r.entryTime,
             exitTime: r.exitTime,
@@ -1078,30 +1148,58 @@ exports.getMonthlyReport = async (req, res) => {
         let rank = null;
         try {
             const allActiveStudents = await User.find({ role: 'student', isActive: true }).select('_id createdAt').lean();
-            const allAttendance = await Attendance.aggregate([
-                { $match: { student: { $in: allActiveStudents.map(s => s._id) }, status: { $in: ['present', 'holiday'] } } },
-                { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
-                { $group: { _id: '$_id.student', uniqueDays: { $sum: 1 } } }
+            const activeIds = allActiveStudents.map(s => s._id);
+
+            const [allPresentAgg, allNeutralHolidayAgg] = await Promise.all([
+                Attendance.aggregate([
+                    {
+                        $match: {
+                            student: { $in: activeIds },
+                            $or: [
+                                { status: 'present' },
+                                { status: 'holiday', entryTime: { $nin: [null, ''] } }
+                            ]
+                        }
+                    },
+                    { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
+                    { $group: { _id: '$_id.student', uniqueDays: { $sum: 1 } } }
+                ]),
+                Attendance.aggregate([
+                    {
+                        $match: {
+                            student: { $in: activeIds },
+                            status: 'holiday',
+                            $or: [{ entryTime: null }, { entryTime: '' }, { entryTime: { $exists: false } }]
+                        }
+                    },
+                    { $group: { _id: { student: '$student', dateString: { $dateToString: { format: "%Y-%m-%d", date: "$date" } } } } },
+                    { $group: { _id: '$_id.student', uniqueHolidays: { $sum: 1 } } }
+                ])
             ]);
-            
+
             const uniqueMap = {};
-            allAttendance.forEach(a => { uniqueMap[a._id.toString()] = a.uniqueDays; });
-            
+            allPresentAgg.forEach(a => { uniqueMap[a._id.toString()] = a.uniqueDays; });
+            const holidayMap = {};
+            allNeutralHolidayAgg.forEach(a => { holidayMap[a._id.toString()] = a.uniqueHolidays; });
+
             const nowTime = now.getTime();
             const rankings = allActiveStudents.map(s => {
                 const admDate = new Date(s.createdAt || now);
                 admDate.setHours(0, 0, 0, 0);
-                let stuTotal = 0;
+                let stuCalDays = 0;
                 if (nowTime >= admDate.getTime()) {
-                    stuTotal = Math.floor((nowTime - admDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+                    stuCalDays = Math.floor((nowTime - admDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                 }
-                const present = uniqueMap[s._id.toString()] || 0;
-                const percentage = stuTotal > 0 ? Math.round((present / stuTotal) * 100) : 0;
-                return { id: s._id.toString(), percentage };
+                const sidStr = s._id.toString();
+                const present = uniqueMap[sidStr] || 0;
+                const neutralHols = holidayMap[sidStr] || 0;
+                const stuTotal = Math.max(0, stuCalDays - neutralHols);
+                const percentage = stuTotal > 0 ? Math.min(100, Math.round((present / stuTotal) * 100)) : 0;
+                return { id: sidStr, percentage };
             });
-            
+
             rankings.sort((a, b) => b.percentage - a.percentage);
-            
+
             let currentRank = 1;
             let previousPercentage = null;
             for (let i = 0; i < rankings.length; i++) {
