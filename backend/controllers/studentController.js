@@ -582,21 +582,58 @@ exports.getDashboard = async (req, res) => {
             }
         }
 
-        // Fetch active/upcoming holidays (today + next 14 days) for Student Dashboard Holiday Notice Gate
+        // Fetch active/upcoming holidays in Indian Standard Time (Asia/Kolkata, UTC+5:30)
+        // Rule 1: If a holiday's IST date has passed (< todayISTStr), or if it is today's partial holiday and current IST time >= endTime, exclude it.
+        // Rule 2: If multiple holidays exist (e.g. 17th and 19th), on 17th both are returned; on 18th (IST) 17th is removed and 19th is kept.
         const toISTDateStr = (d) => {
-            try { return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); }
-            catch (_) { return new Date(d).toISOString().slice(0, 10); }
+            try {
+                return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+            } catch (_) {
+                const istShifted = new Date(new Date(d).getTime() + 330 * 60 * 1000);
+                return istShifted.toISOString().slice(0, 10);
+            }
         };
+        const getISTMinutesNow = (d) => {
+            try {
+                const parts = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: 'Asia/Kolkata',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).formatToParts(d);
+                const h = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10) % 24;
+                const m = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+                return h * 60 + m;
+            } catch (_) {
+                const istShifted = new Date(d.getTime() + 330 * 60 * 1000);
+                return istShifted.getUTCHours() * 60 + istShifted.getUTCMinutes();
+            }
+        };
+
         const todayISTStr = toISTDateStr(now);
+        const nowISTMins = getISTMinutesNow(now);
         const holidayQueryFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const holidayQueryTo = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        const holidayQueryTo = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
 
         const rawUpcomingHolidays = await Holiday.find({
             date: { $gte: holidayQueryFrom, $lte: holidayQueryTo }
         }).sort({ date: 1 }).lean();
 
         const activeHolidays = rawUpcomingHolidays
-            .filter(h => toISTDateStr(h.date) >= todayISTStr)
+            .filter(h => {
+                const hDateIST = toISTDateStr(h.date);
+                // Expired past date in IST (e.g. on 18th IST, remove 17th)
+                if (hDateIST < todayISTStr) return false;
+                // Today's holiday in IST: if partial timing has ended (nowISTMins >= endTime), remove it
+                if (hDateIST === todayISTStr && h.isPartial && h.endTime && h.endTime.includes(':')) {
+                    const [endH, endM] = h.endTime.split(':').map(Number);
+                    if (!isNaN(endH)) {
+                        const endTotalMins = endH * 60 + (endM || 0);
+                        if (nowISTMins >= endTotalMins) return false;
+                    }
+                }
+                return true;
+            })
             .map(h => ({
                 _id: h._id,
                 name: h.name,
