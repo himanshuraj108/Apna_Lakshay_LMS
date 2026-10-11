@@ -670,6 +670,72 @@ const StudentDashboard = () => {
         return true;
     });
 
+    const [showUpcomingHolidayListModal, setShowUpcomingHolidayListModal] = useState(false);
+    const currentISTYearNum = parseInt(todayISTStr.slice(0, 4), 10) || new Date().getFullYear();
+    const [selectedStudentHolidayYear, setSelectedStudentHolidayYear] = useState(currentISTYearNum);
+    const [studentHolidayFilter, setStudentHolidayFilter] = useState('all'); // 'all' | 'upcoming' | 'past'
+
+    // All Admin-stored holidays across years (1 Jan – 31 Dec), enriched in IST (Asia/Kolkata):
+    // Includes:
+    //  - Previous Declared Holidays (hDateIST < todayISTStr)
+    //  - Today's Holiday(s) (hDateIST === todayISTStr)
+    //  - Upcoming Officially Declared Holidays (hDateIST >= todayISTStr && !isTentative)
+    //  - Upcoming Listed Tentative Holidays (isTentative: true)
+    const allStoredHolidays = (dashboardData?.upcomingHolidayList || [])
+        .map((h) => {
+            const hDateIST = h.dateIST || toISTDateStr(h.date);
+            const hYear = Number(h.year || parseInt(hDateIST.slice(0, 4), 10) || currentISTYearNum);
+            const isPast = hDateIST < todayISTStr;
+            const isToday = hDateIST === todayISTStr;
+            const isUpcoming = hDateIST >= todayISTStr;
+            return {
+                ...h,
+                dateIST: hDateIST,
+                year: hYear,
+                isPast,
+                isToday,
+                isUpcoming
+            };
+        })
+        .sort((a, b) => {
+            const cmp = (b.dateIST || '').localeCompare(a.dateIST || '');
+            if (cmp !== 0) return cmp;
+            return new Date(b.updatedAt || b.createdAt || b.date || 0) - new Date(a.updatedAt || a.createdAt || a.date || 0);
+        });
+
+    const availableStudentHolidayYears = (() => {
+        const yearSet = new Set(allStoredHolidays.map(h => h.year));
+        if (Array.isArray(dashboardData?.holidayListYears)) {
+            dashboardData.holidayListYears.forEach(y => {
+                if (y) yearSet.add(Number(y));
+            });
+        }
+        if (yearSet.size === 0) yearSet.add(currentISTYearNum);
+        return Array.from(yearSet).sort((a, b) => b - a);
+    })();
+
+    const activeSelectedHolidayYear = availableStudentHolidayYears.includes(Number(selectedStudentHolidayYear))
+        ? Number(selectedStudentHolidayYear)
+        : (availableStudentHolidayYears.includes(currentISTYearNum)
+            ? currentISTYearNum
+            : availableStudentHolidayYears[0]);
+
+    const selectedYearAllHolidays = allStoredHolidays.filter(
+        (h) => Number(h.year) === Number(activeSelectedHolidayYear)
+    );
+    const selectedYearUpcomingHolidays = selectedYearAllHolidays.filter((h) => !h.isPast);
+    const selectedYearPastHolidays = selectedYearAllHolidays.filter((h) => h.isPast);
+
+    const displayedYearHolidays =
+        studentHolidayFilter === 'upcoming'
+            ? selectedYearUpcomingHolidays
+            : studentHolidayFilter === 'past'
+                ? selectedYearPastHolidays
+                : selectedYearAllHolidays;
+
+    const isHolidayListVisibleOnDashboard =
+        dashboardData?.showHolidayListOnDashboard === true && allStoredHolidays.length > 0;
+
     const activeTodayHoliday = activeHolidaysList.find(
         (h) => (h.dateIST || toISTDateStr(h.date)) === todayISTStr
     ) || null;
@@ -999,6 +1065,11 @@ const StudentDashboard = () => {
     });
 
     const handleOpenScanner = async () => {
+        if (attendanceTimeCheck.locked) {
+            setScanMessage({ type: 'error', text: attendanceTimeCheck.windowText });
+            setTimeout(() => setScanMessage(null), 6000);
+            return;
+        }
         const isLocationRequired = getLocationRequired();
         if (isLocationRequired) {
             setLoadingScanner(true);
@@ -1046,6 +1117,11 @@ const StudentDashboard = () => {
         } catch (e) { setScanMessage({ type: 'error', text: e.response?.data?.message || 'Scan failed' }); setTimeout(() => setScanMessage(null), 6000); }
     };
     const handleQuickAttendance = async () => {
+        if (attendanceTimeCheck.locked) {
+            setScanMessage({ type: 'error', text: attendanceTimeCheck.windowText });
+            setTimeout(() => setScanMessage(null), 6000);
+            return;
+        }
         try {
             const isLocationRequired = getLocationRequired();
             let coords = {};
@@ -1058,6 +1134,10 @@ const StudentDashboard = () => {
     };
 
     const handlePinAttendance = async () => {
+        if (attendanceTimeCheck.locked) {
+            setPinError(attendanceTimeCheck.windowText);
+            return;
+        }
         const trimmed = pinValue.trim();
         if (!trimmed) { setPinError('Please enter your PIN.'); return; }
         setPinLoading(true); setPinError('');
@@ -1074,6 +1154,10 @@ const StudentDashboard = () => {
     };
 
     const handleDirectMark = async () => {
+        if (attendanceTimeCheck.locked) {
+            setPinError(attendanceTimeCheck.windowText);
+            return;
+        }
         setDirectMarkLoading(true);
         try {
             const res = await api.post('/student/attendance/mark-direct');
@@ -1098,14 +1182,22 @@ const StudentDashboard = () => {
     const initials  = (user?.name || 'S').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     const today     = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
-    // ── Attendance time-window check (IST) ──────────────────────────────────
+    // ── Attendance time-window check (IST: Asia/Kolkata) ────────────────────
+    // Hard Rule: 9:00 PM (21:00) to 6:00 AM (06:00) IST is ALWAYS locked.
     const attendanceTimeCheck = (() => {
+        const LIB_OPEN  = 6 * 60;  // 06:00 AM IST
+        const LIB_CLOSE = 21 * 60; // 09:00 PM IST
+
+        if (nowISTMins < LIB_OPEN || nowISTMins >= LIB_CLOSE) {
+            return {
+                locked: true,
+                windowText: 'Attendance cannot be marked between 9:00 PM and 6:00 AM. Allowed hours: 6:00 AM – 9:00 PM.'
+            };
+        }
+
         // Read flexibleEntry directly from dashboardData (most reliable source)
         const isFlexible = !!(dashboardData?.flexibleEntry ?? flexibleEntry);
         if (!isFlexible) return { locked: false, windowText: '' };
-
-        const nowIST  = new Date(Date.now() + (5 * 60 + 30) * 60000);
-        const nowMins = nowIST.getHours() * 60 + nowIST.getMinutes();
 
         const rawShifts = Array.isArray(dashboardData?.seat?.shifts)
             ? dashboardData.seat.shifts.filter(s => s?.startTime && s?.endTime)
@@ -1118,6 +1210,9 @@ const StudentDashboard = () => {
             .map(ta => ({ startTime: ta.startTime, endTime: ta.endTime }));
 
         const allShifts = [...rawShifts, ...tempShifts];
+        if (!allShifts.length && flexShift?.startTime && flexShift?.endTime) {
+            allShifts.push({ startTime: flexShift.startTime, endTime: flexShift.endTime });
+        }
         if (!allShifts.length) return { locked: false, windowText: '' };
 
         const fmt = (m) => {
@@ -1130,8 +1225,9 @@ const StudentDashboard = () => {
         allShifts.forEach(sh => {
             const [sH, sM] = sh.startTime.split(':').map(Number);
             const [eH, eM] = sh.endTime.split(':').map(Number);
-            const open = sH * 60 + sM - 60, close = eH * 60 + eM + 60;
-            if (nowMins >= open && nowMins < close) inWindow = true;
+            const open  = Math.max(LIB_OPEN, sH * 60 + sM - 60);
+            const close = Math.min(LIB_CLOSE, eH * 60 + eM + 60);
+            if (nowISTMins >= open && nowISTMins < close) inWindow = true;
             if (open < minOpen) minOpen = open;
             if (close > maxClose) maxClose = close;
         });
@@ -1306,8 +1402,23 @@ const StudentDashboard = () => {
                                 </button>
                             </div>
 
-                            {/* PIN input — only shown when PIN mode is ON */}
-                            {pinEnabled && (
+                            {attendanceTimeCheck.locked ? (
+                                /* ── LOCKED: outside shift window or 10 PM – 5 AM IST ── */
+                                <div className="rounded-2xl p-4 mb-5 border relative z-10 overflow-hidden"
+                                    style={{ background: '#FFF7ED', borderColor: '#FDDCAE' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                            style={{ background: 'rgba(249,115,22,0.12)' }}>
+                                            <IoLockClosedOutline size={15} className="text-orange-600" />
+                                        </div>
+                                        <span className="text-xs font-black uppercase tracking-wider text-orange-800">Attendance Locked</span>
+                                    </div>
+                                    <p className="text-[12px] font-semibold text-orange-900 leading-snug">
+                                        {attendanceTimeCheck.windowText}
+                                    </p>
+                                </div>
+                            ) : pinEnabled ? (
+                                /* PIN input — only shown when PIN mode is ON and unlocked */
                                 <div className="space-y-2 mb-4 relative z-10">
                                     <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 block">
                                         Security PIN
@@ -1327,37 +1438,17 @@ const StudentDashboard = () => {
                                         Ask your library admin for today's PIN
                                     </p>
                                 </div>
-                            )}
-
-                            {/* Direct mode info — shown when PIN is OFF */}
-                            {!pinEnabled && (
-                                attendanceTimeCheck.locked ? (
-                                    /* ── LOCKED: outside shift window ── */
-                                    <div className="rounded-2xl p-4 mb-5 border relative z-10 overflow-hidden"
-                                        style={{ background: '#FFF7ED', borderColor: '#FDDCAE' }}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                                                style={{ background: 'rgba(249,115,22,0.12)' }}>
-                                                <IoLockClosedOutline size={15} className="text-orange-600" />
-                                            </div>
-                                            <span className="text-xs font-black uppercase tracking-wider text-orange-800">Attendance Locked</span>
-                                        </div>
-                                        <p className="text-[12px] font-semibold text-orange-900 leading-snug">
-                                            {attendanceTimeCheck.windowText}
-                                        </p>
+                            ) : (
+                                /* ── UNLOCKED: inside shift window (Direct mode) ── */
+                                <div className="rounded-2xl p-4 mb-5 border border-orange-200/70 bg-gradient-to-br from-orange-50/70 via-amber-50/30 to-white relative z-10">
+                                    <div className="flex items-center gap-1.5 mb-1 text-orange-800">
+                                        <IoCheckmarkCircleOutline size={16} className="text-orange-600" />
+                                        <span className="text-xs font-black uppercase tracking-wider">Ready to Check In</span>
                                     </div>
-                                ) : (
-                                    /* ── UNLOCKED: inside shift window ── */
-                                    <div className="rounded-2xl p-4 mb-5 border border-orange-200/70 bg-gradient-to-br from-orange-50/70 via-amber-50/30 to-white relative z-10">
-                                        <div className="flex items-center gap-1.5 mb-1 text-orange-800">
-                                            <IoCheckmarkCircleOutline size={16} className="text-orange-600" />
-                                            <span className="text-xs font-black uppercase tracking-wider">Ready to Check In</span>
-                                        </div>
-                                        <p className="text-xs text-orange-950 font-medium leading-relaxed">
-                                            Your attendance will be logged instantly for your current shift without requiring a PIN or camera scan.
-                                        </p>
-                                    </div>
-                                )
+                                    <p className="text-xs text-orange-950 font-medium leading-relaxed">
+                                        Your attendance will be logged instantly for your current shift without requiring a PIN or camera scan.
+                                    </p>
+                                </div>
                             )}
 
                             {/* Error notification */}
@@ -1371,13 +1462,13 @@ const StudentDashboard = () => {
                             <div className="relative z-10">
                                 <button
                                     onClick={pinEnabled ? handlePinAttendance : handleDirectMark}
-                                    disabled={pinEnabled ? (pinLoading || !pinValue) : (directMarkLoading || attendanceTimeCheck.locked)}
+                                    disabled={attendanceTimeCheck.locked || (pinEnabled ? (pinLoading || !pinValue) : directMarkLoading)}
                                     className="w-full py-3.5 px-5 rounded-2xl font-extrabold text-sm text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     style={{
-                                        background: attendanceTimeCheck.locked && !pinEnabled
+                                        background: attendanceTimeCheck.locked
                                             ? 'linear-gradient(135deg,#9ca3af,#6b7280)'
                                             : 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-                                        boxShadow: attendanceTimeCheck.locked && !pinEnabled
+                                        boxShadow: attendanceTimeCheck.locked
                                             ? 'none'
                                             : '0 8px 20px -4px rgba(249,115,22,0.45)'
                                     }}
@@ -1387,7 +1478,7 @@ const StudentDashboard = () => {
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             <span>Marking Attendance...</span>
                                         </>
-                                    ) : (attendanceTimeCheck.locked && !pinEnabled) ? (
+                                    ) : attendanceTimeCheck.locked ? (
                                         <>
                                             <IoLockClosedOutline size={18} />
                                             <span>Attendance Locked</span>
@@ -1874,6 +1965,382 @@ const StudentDashboard = () => {
                 )}
             </AnimatePresence>
 
+            {/* ── YEAR-WISE HOLIDAY LIST MODAL (Shown from inside the Attendance Card — 1 Jan to 31 Dec per year) ── */}
+            <AnimatePresence>
+                {showUpcomingHolidayListModal && isHolidayListVisibleOnDashboard && (
+                    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.92, y: 24 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.92, y: 24 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                            className="w-full max-w-lg bg-white border border-[#EDE8E0] rounded-3xl shadow-2xl relative overflow-hidden p-5 sm:p-6 max-h-[90vh] flex flex-col"
+                            style={{ boxShadow: '0 24px 64px rgba(180,120,60,0.28)' }}
+                        >
+                            {/* Top warm accent bar */}
+                            <div
+                                className="absolute top-0 left-0 right-0 h-2"
+                                style={{ background: 'linear-gradient(90deg, #F97316, #F59E0B, #EA580C)' }}
+                            />
+
+                            {/* Modal Header */}
+                            <div className="flex items-start justify-between gap-3 pb-3.5 border-b border-[#EDE8E0] shrink-0">
+                                <div className="flex items-start gap-3.5 min-w-0">
+                                    <div
+                                        className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-white shadow-md"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                                            boxShadow: '0 6px 18px rgba(249,115,22,0.30)'
+                                        }}
+                                    >
+                                        <IoCalendarOutline size={22} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-800 border border-orange-200">
+                                                {activeSelectedHolidayYear} Holiday List
+                                            </span>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                                                1 Jan {activeSelectedHolidayYear} – 31 Dec {activeSelectedHolidayYear}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-base sm:text-lg font-black text-gray-900 mt-1 leading-snug">
+                                            Library Holiday List ({activeSelectedHolidayYear})
+                                        </h3>
+                                        <p className="text-[11px] font-semibold text-[#9B7B5A]">
+                                            वार्षिक अवकाश सूची · Previous Declared, Upcoming &amp; Listed (IST)
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowUpcomingHolidayListModal(false)}
+                                    className="w-8 h-8 rounded-xl bg-[#FFF5EE] hover:bg-[#FEEBD8] border border-[#FDDCAE] text-[#78350F] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                                    title="Close"
+                                >
+                                    <IoCloseOutline size={18} />
+                                </button>
+                            </div>
+
+                            {/* Year Selector Bar (1 Jan YYYY – 31 Dec YYYY) + Category Filter Pills */}
+                            <div className="pt-3 pb-2.5 border-b border-[#EDE8E0] space-y-2.5 shrink-0">
+                                {/* Select Year Row */}
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#78350F]">
+                                        Select Year (1 Jan – 31 Dec):
+                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        {availableStudentHolidayYears.map((yr) => {
+                                            const yrCount = allStoredHolidays.filter(h => Number(h.year) === Number(yr)).length;
+                                            const isSelected = Number(activeSelectedHolidayYear) === Number(yr);
+                                            return (
+                                                <button
+                                                    key={yr}
+                                                    type="button"
+                                                    onClick={() => setSelectedStudentHolidayYear(yr)}
+                                                    className={`px-3 py-1 rounded-xl text-xs font-black border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                        isSelected
+                                                            ? 'text-white border-orange-600 shadow-2xs'
+                                                            : 'bg-[#FFFAF5] hover:bg-[#FFF0E0] text-[#78350F] border-[#FDDCAE]'
+                                                    }`}
+                                                    style={isSelected ? { background: 'linear-gradient(135deg, #F97316, #EA580C)' } : {}}
+                                                >
+                                                    <span>{yr} List</span>
+                                                    <span
+                                                        className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                                                            isSelected
+                                                                ? 'bg-white/25 text-white'
+                                                                : 'bg-white text-orange-800 border border-orange-200'
+                                                        }`}
+                                                    >
+                                                        {yrCount}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Category Filter Tabs: All / Upcoming & Listed / Previous Declared */}
+                                <div className="grid grid-cols-3 gap-1.5 bg-[#F5F0EA] p-1 rounded-xl">
+                                    {[
+                                        { id: 'all', label: `All (${selectedYearAllHolidays.length})` },
+                                        { id: 'upcoming', label: `Upcoming (${selectedYearUpcomingHolidays.length})` },
+                                        { id: 'past', label: `Previous (${selectedYearPastHolidays.length})` }
+                                    ].map((tab) => {
+                                        const active = studentHolidayFilter === tab.id;
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                type="button"
+                                                onClick={() => setStudentHolidayFilter(tab.id)}
+                                                className={`py-1.5 px-2 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer ${
+                                                    active
+                                                        ? 'bg-white text-[#EA580C] border border-[#FDDCAE] shadow-2xs'
+                                                        : 'text-[#78350F]/80 hover:text-[#78350F]'
+                                                }`}
+                                            >
+                                                {tab.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Scrollable Body */}
+                            <div className="mt-3 space-y-3.5 overflow-y-auto pr-1 flex-1">
+                                {/* Prominent Subject-to-Change & Separate Announcement Disclaimer (Structured English + Hindi) */}
+                                <div className="rounded-2xl p-3.5 bg-[#FFFAF5] border border-[#FDDCAE] space-y-2.5">
+                                    {/* English Structured Block */}
+                                    <div className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-dashed border-orange-200/70">
+                                            <div className="flex items-center gap-1.5">
+                                                <IoInformationCircleOutline size={15} className="text-orange-600 shrink-0" />
+                                                <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
+                                                    Important Notice · English Summary
+                                                </p>
+                                            </div>
+                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                                Subject to Change
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-2 pt-0.5">
+                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                <p className="text-gray-700 font-medium">
+                                                    <span className="font-extrabold text-gray-900">Schedule Status: </span>
+                                                    This {activeSelectedHolidayYear} holiday list (1 Jan – 31 Dec) is{' '}
+                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                        Subject to Change
+                                                    </span>{' '}
+                                                    and includes previous declared, upcoming &amp; listed holidays.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                <p className="text-gray-700 font-medium">
+                                                    <span className="font-extrabold text-gray-900">Closure Confirmation: </span>
+                                                    For listed upcoming dates, it is{' '}
+                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                        Not Confirmed
+                                                    </span>{' '}
+                                                    that the library will remain closed on that day.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                <p className="text-gray-700 font-medium">
+                                                    <span className="font-extrabold text-gray-900">Official Declaration: </span>
+                                                    Final holiday confirmation and closure timings will be{' '}
+                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                        Announced Separately
+                                                    </span>{' '}
+                                                    by the administration.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Hindi Structured Block */}
+                                    <div className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-dashed border-orange-200/70">
+                                            <div className="flex items-center gap-1.5">
+                                                <IoDocumentTextOutline size={14} className="text-orange-600 shrink-0" />
+                                                <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
+                                                    महत्वपूर्ण सूचना · हिंदी सारांश (Hindi Version)
+                                                </p>
+                                            </div>
+                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                                परिवर्तन के अधीन
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-2 pt-0.5">
+                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                <p className="text-gray-700 font-medium">
+                                                    <span className="font-extrabold text-gray-900">सूची की स्थिति: </span>
+                                                    यह {activeSelectedHolidayYear} अवकाश सूची (1 जनवरी – 31 दिसंबर) पूर्व घोषित एवं आगामी अवकाशों के लिए है तथा{' '}
+                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                        परिवर्तन के अधीन (Subject to Change)
+                                                    </span>{' '}
+                                                    है।
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                <p className="text-gray-700 font-medium">
+                                                    <span className="font-extrabold text-gray-900">बंद रहने की पुष्टि: </span>
+                                                    सूचीबद्ध आगामी तिथियों पर पुस्तकालय बंद रहने की{' '}
+                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                        पुष्टि नहीं है (Not Confirmed)
+                                                    </span>
+                                                    ।
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                <p className="text-gray-700 font-medium">
+                                                    <span className="font-extrabold text-gray-900">आधिकारिक घोषणा: </span>
+                                                    अवकाश की अंतिम घोषणा एवं समय प्रशासन द्वारा{' '}
+                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                        अलग से सूचित (Announced Separately)
+                                                    </span>{' '}
+                                                    किया जाएगा।
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Chronological List of Holidays for Selected Year (1 Jan – 31 Dec) */}
+                                {displayedYearHolidays.length === 0 ? (
+                                    <div className="rounded-2xl p-6 bg-[#FFFAF5] border border-dashed border-[#FDDCAE] text-center">
+                                        <IoCalendarOutline size={26} className="mx-auto text-orange-300 mb-1.5" />
+                                        <p className="text-xs font-extrabold text-gray-800">
+                                            No holidays found in this filter for {activeSelectedHolidayYear}
+                                        </p>
+                                        <p className="text-[11px] font-medium text-[#9B7B5A] mt-0.5">
+                                            Switch filter tabs above or select another year (`1 Jan` – `31 Dec`).
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {displayedYearHolidays.map((h, idx) => {
+                                            const hDateIST = h.dateIST || toISTDateStr(h.date);
+                                            const isToday = hDateIST === todayISTStr;
+                                            const isPast = hDateIST < todayISTStr;
+                                            const dayNum = new Date(h.date).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
+                                                day: '2-digit'
+                                            });
+                                            const monthShort = new Date(h.date).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
+                                                month: 'short'
+                                            });
+                                            const fullDateFormatted = new Date(h.date).toLocaleDateString('en-IN', {
+                                                timeZone: 'Asia/Kolkata',
+                                                weekday: 'long',
+                                                day: 'numeric',
+                                                month: 'long',
+                                                year: 'numeric'
+                                            });
+
+                                            return (
+                                                <div
+                                                    key={h._id || idx}
+                                                    className={`rounded-2xl p-3.5 border flex items-start justify-between gap-3 transition-all ${
+                                                        isPast
+                                                            ? 'bg-stone-50/90 border-stone-200/90'
+                                                            : 'bg-[#FFFAF5] border-[#FDDCAE] hover:border-orange-300'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3 min-w-0">
+                                                        {/* Date Calendar Pill */}
+                                                        <div
+                                                            className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 border text-center shadow-2xs"
+                                                            style={{
+                                                                background: isToday
+                                                                    ? 'linear-gradient(135deg, #F97316, #EA580C)'
+                                                                    : isPast
+                                                                        ? '#F5F5F4'
+                                                                        : '#FFFFFF',
+                                                                borderColor: isToday ? '#EA580C' : isPast ? '#E7E5E4' : '#FDDCAE',
+                                                                color: isToday ? '#FFFFFF' : isPast ? '#57534E' : '#78350F'
+                                                            }}
+                                                        >
+                                                            <span className="text-[10px] font-black uppercase leading-none opacity-85">
+                                                                {monthShort}
+                                                            </span>
+                                                            <span className="text-base font-black leading-tight mt-0.5">
+                                                                {dayNum}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Festival Name, Date & Note */}
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <h4 className={`text-sm font-black leading-snug ${isPast ? 'text-stone-700' : 'text-gray-900'}`}>
+                                                                    {h.name}
+                                                                </h4>
+                                                                {isToday && (
+                                                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-orange-600 text-white">
+                                                                        Today
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className={`text-xs font-bold mt-0.5 ${isPast ? 'text-stone-500' : 'text-[#78350F]'}`}>
+                                                                {fullDateFormatted}
+                                                            </p>
+                                                            {h.isTentative && h.description && (
+                                                                <p className="text-[11px] font-medium text-[#9B7B5A] mt-1">
+                                                                    Note: {h.description}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Status Badge */}
+                                                    <div className="shrink-0 flex flex-col items-end gap-1">
+                                                        {isPast ? (
+                                                            <span className="px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-stone-200/80 text-stone-700 border border-stone-300 whitespace-nowrap">
+                                                                Previous Declared
+                                                            </span>
+                                                        ) : h.isTentative ? (
+                                                            <span className="px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">
+                                                                Listed · Subject to Change
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 rounded-xl text-[10px] font-extrabold bg-emerald-100 text-emerald-900 border border-emerald-300 whitespace-nowrap">
+                                                                Officially Declared
+                                                            </span>
+                                                        )}
+                                                        <span className="text-[10px] font-semibold text-[#9B7B5A] text-right">
+                                                            {isPast
+                                                                ? (h.isPartial
+                                                                    ? `Observed (${fmt12h(h.startTime)}–${fmt12h(h.endTime)})`
+                                                                    : 'Completed · Full Day')
+                                                                : h.isTentative
+                                                                    ? 'Closure Not Confirmed'
+                                                                    : (h.isPartial
+                                                                        ? `${fmt12h(h.startTime)} – ${fmt12h(h.endTime)}`
+                                                                        : 'Full Day Closure')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="pt-3.5 mt-3 border-t border-[#EDE8E0] shrink-0 flex items-center justify-between gap-3">
+                                <span className="text-[10px] font-bold text-[#9B7B5A]">
+                                    1 Jan {activeSelectedHolidayYear} – 31 Dec {activeSelectedHolidayYear} · Official closures announced separately
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowUpcomingHolidayListModal(false)}
+                                    className="px-5 py-2.5 rounded-xl font-black text-xs text-white transition-all active:scale-95 hover:opacity-95 cursor-pointer shrink-0"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                                        boxShadow: '0 4px 14px rgba(234,88,12,0.28)'
+                                    }}
+                                >
+                                    Got It
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <HelpSupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
             <RequestHistoryModal isOpen={showHistoryModal} onClose={() => setShowHistoryModal(false)} />
             {showScanner && <AttendanceScanner onScanSuccess={handleQrScan} onClose={() => setShowScanner(false)} />}
@@ -1964,12 +2431,12 @@ const StudentDashboard = () => {
                ───────────────────────────────────────────────────────────── */}
             <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32">
 
-                {/* -- ACTIVE / UPCOMING HOLIDAY SCHEDULE BANNER -- */}
+                {/* -- ACTIVE / UPCOMING OFFICIAL HOLIDAY CLOSURE BANNER -- */}
                 {activeHolidaysList.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden"
+                        className="mb-4 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative overflow-hidden"
                         style={{
                             background: 'linear-gradient(135deg, #FFFBEB 0%, #FFF7ED 100%)',
                             border: '1.5px solid #FDE68A',
@@ -2779,12 +3246,35 @@ const StudentDashboard = () => {
                             onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 8px 28px ${attPct >= 75 ? 'rgba(34,197,94,0.1)' : attPct >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)'}`; }}
                             onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(180,120,60,0.06)'; }}>
                             <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl" style={{ background: attPct >= 75 ? 'linear-gradient(90deg,#10B981,#34D399,transparent)' : attPct >= 50 ? 'linear-gradient(90deg,#F59E0B,#FBB024,transparent)' : 'linear-gradient(90deg,#EF4444,#F87171,transparent)' }} />
-                            <div className="flex items-center gap-2 mb-3 mt-1">
-                                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
-                                    style={{ background: attPct >= 75 ? 'linear-gradient(135deg,#10b981,#34d399)' : attPct >= 50 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : 'linear-gradient(135deg,#ef4444,#f87171)' }}>
-                                    <IoCalendarOutline size={15} className="text-white" />
+                            <div className="flex items-center justify-between gap-1.5 mb-3 mt-1">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm"
+                                        style={{ background: attPct >= 75 ? 'linear-gradient(135deg,#10b981,#34d399)' : attPct >= 50 ? 'linear-gradient(135deg,#f59e0b,#fbbf24)' : 'linear-gradient(135deg,#ef4444,#f87171)' }}>
+                                        <IoCalendarOutline size={15} className="text-white" />
+                                    </div>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: attPct >= 75 ? '#065F46' : attPct >= 50 ? '#92400E' : '#7F1D1D' }}>Attendance</span>
                                 </div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: attPct >= 75 ? '#065F46' : attPct >= 50 ? '#92400E' : '#7F1D1D' }}>Attendance</span>
+                                {isHolidayListVisibleOnDashboard && (
+                                    <button
+                                        type="button"
+                                        title="View Library Holiday List"
+                                        aria-label="View Library Holiday List"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setShowUpcomingHolidayListModal(true);
+                                        }}
+                                        className="w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shrink-0"
+                                        style={{
+                                            background: '#FFFBEB',
+                                            border: '1.5px solid #F59E0B',
+                                            color: '#D97706',
+                                            boxShadow: '0 2px 6px rgba(245, 158, 11, 0.2)'
+                                        }}
+                                    >
+                                        <span className="text-[12px] font-black leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
+                                    </button>
+                                )}
                             </div>
                             <p className="text-2xl sm:text-3xl font-black mb-0.5 leading-none" style={{ color: '#1A1A1A' }}>{attPct}%</p>
                             <p className="text-[11px] font-semibold mb-2" style={{ color: attPct >= 75 ? '#059669' : attPct >= 50 ? '#D97706' : '#DC2626' }}>
