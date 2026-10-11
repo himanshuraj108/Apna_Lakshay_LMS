@@ -2,6 +2,7 @@ const Holiday = require('../models/Holiday');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Notification = require('../models/Notification');
+const Settings = require('../models/Settings');
 const { callGroq } = require('../services/aiService');
 
 let emailService = null;
@@ -191,14 +192,15 @@ exports.declareHoliday = async (req, res) => {
             isPartial = false,
             startTime = null,
             endTime = null,
-            sendEmail = false
+            sendEmail = false,
+            isTentative = false
         } = req.body;
 
         if (!name?.trim()) {
             return res.status(400).json({ success: false, message: 'Holiday or occasion title is required' });
         }
 
-        if (isPartial && (!startTime || !endTime)) {
+        if (!isTentative && isPartial && (!startTime || !endTime)) {
             return res.status(400).json({
                 success: false,
                 message: 'Start time and end time are required for a partial timing holiday'
@@ -254,6 +256,57 @@ exports.declareHoliday = async (req, res) => {
         const batchId = targetDates.length > 1 ? `HB-${Date.now()}` : null;
         const cleanName = name.trim();
         const rawDesc = (description || '').trim();
+        const daysLabel = targetDates.length === 1 ? '1 day' : `${targetDates.length} days`;
+
+        const getISTDateStr = (d) => {
+            try {
+                return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+            } catch (_) {
+                const istShifted = new Date(new Date(d).getTime() + 330 * 60 * 1000);
+                return istShifted.toISOString().slice(0, 10);
+            }
+        };
+        const getISTYear = (d) => {
+            const iso = getISTDateStr(d);
+            const y = parseInt(iso.slice(0, 4), 10);
+            return !isNaN(y) ? y : new Date(d).getFullYear();
+        };
+
+        // If Admin is storing a Tentative Upcoming Holiday List entry (subject to change, official closure announced separately)
+        if (isTentative) {
+            const savedTentative = [];
+            for (const hDate of targetDates) {
+                const hYear = getISTYear(hDate);
+                const holidayDoc = await Holiday.findOneAndUpdate(
+                    { date: hDate },
+                    {
+                        $set: {
+                            date: hDate,
+                            year: hYear,
+                            name: cleanName,
+                            description: rawDesc,
+                            isPartial: false,
+                            startTime: null,
+                            endTime: null,
+                            batchId,
+                            emailSent: false,
+                            isTentative: true,
+                            declaredBy: req.user?.id || null
+                        }
+                    },
+                    { upsert: true, new: true }
+                );
+                savedTentative.push(holidayDoc);
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: `"${cleanName}" (${daysLabel}) stored in ${getISTYear(targetDates[0])} Holiday List (Subject to change — official declaration will be announced separately).`,
+                holiday: savedTentative[0],
+                holidays: savedTentative
+            });
+        }
+
         const cleanDesc = rawDesc.includes('•')
             ? rawDesc
             : await buildStructuredHolidayNotice({
@@ -279,11 +332,13 @@ exports.declareHoliday = async (req, res) => {
         let totalPreservedPresent = 0;
 
         for (const hDate of targetDates) {
+            const hYear = getISTYear(hDate);
             const holidayDoc = await Holiday.findOneAndUpdate(
                 { date: hDate },
                 {
                     $set: {
                         date: hDate,
+                        year: hYear,
                         name: cleanName,
                         description: cleanDesc,
                         isPartial: !!isPartial,
@@ -291,6 +346,7 @@ exports.declareHoliday = async (req, res) => {
                         endTime: isPartial ? endTime : null,
                         batchId,
                         emailSent: !!sendEmail,
+                        isTentative: false,
                         declaredBy: req.user?.id || null
                     }
                 },
@@ -398,7 +454,6 @@ exports.declareHoliday = async (req, res) => {
             }
         }
 
-        const daysLabel = targetDates.length === 1 ? '1 day' : `${targetDates.length} days`;
         res.status(201).json({
             success: true,
             message: `Holiday "${cleanName}" declared for ${daysLabel} (${timingLabel}). Attendance percentage remains neutral for absent students${totalPreservedPresent > 0 ? ` (${totalPreservedPresent} present record(s) preserved)` : ''}.`,
@@ -411,12 +466,46 @@ exports.declareHoliday = async (req, res) => {
     }
 };
 
-// @desc    Get all holidays
+// @desc    Get all holidays (enriched with IST year for 1 Jan - 31 Dec year-wise lists)
 // @route   GET /api/admin/holidays
 exports.getHolidays = async (req, res) => {
     try {
-        const holidays = await Holiday.find().sort({ date: -1 }).populate('declaredBy', 'name');
-        res.status(200).json({ success: true, holidays });
+        const [rawHolidays, settings] = await Promise.all([
+            Holiday.find().sort({ date: -1, createdAt: -1 }).populate('declaredBy', 'name').lean(),
+            Settings.findOne().select('showHolidayListOnDashboard').lean()
+        ]);
+
+        const toISTStr = (d) => {
+            try {
+                return new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+            } catch (_) {
+                const istShifted = new Date(new Date(d).getTime() + 330 * 60 * 1000);
+                return istShifted.toISOString().slice(0, 10);
+            }
+        };
+
+        const currentISTYear = parseInt(toISTStr(new Date()).slice(0, 4), 10) || new Date().getFullYear();
+        const yearSet = new Set([currentISTYear - 1, currentISTYear, currentISTYear + 1, currentISTYear + 2]);
+
+        const holidays = rawHolidays.map(h => {
+            const dateIST = toISTStr(h.date);
+            const computedYear = parseInt(dateIST.slice(0, 4), 10) || h.year || currentISTYear;
+            yearSet.add(computedYear);
+            return {
+                ...h,
+                dateIST,
+                year: computedYear
+            };
+        });
+
+        const availableYears = Array.from(yearSet).sort((a, b) => a - b);
+
+        res.status(200).json({
+            success: true,
+            holidays,
+            availableYears,
+            showHolidayListOnDashboard: settings ? settings.showHolidayListOnDashboard === true : false
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }

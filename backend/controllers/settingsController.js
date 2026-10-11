@@ -41,7 +41,7 @@ exports.updateSettings = async (req, res) => {
             onlinePaymentEnabled, pinAttendanceEnabled, attendancePin,
             timeRestrictionEnabled, loginAttendanceEnabled,
             showWhatsAppGroup, showAITools, forceDoubtBoard, referral,
-            flexibleEntry
+            flexibleEntry, showHolidayListOnDashboard
         } = req.body;
 
         let settings = await Settings.findOne();
@@ -60,6 +60,7 @@ exports.updateSettings = async (req, res) => {
         if (showWhatsAppGroup !== undefined) updateFields.showWhatsAppGroup = !!showWhatsAppGroup;
         if (showAITools !== undefined) updateFields.showAITools = !!showAITools;
         if (forceDoubtBoard !== undefined) updateFields.forceDoubtBoard = !!forceDoubtBoard;
+        if (showHolidayListOnDashboard !== undefined) updateFields.showHolidayListOnDashboard = !!showHolidayListOnDashboard;
 
         // Referral sub-document — use dot notation to avoid overwriting other sub-fields
         if (referral !== undefined && typeof referral === 'object') {
@@ -86,6 +87,7 @@ exports.updateSettings = async (req, res) => {
                 onlinePaymentEnabled: onlinePaymentEnabled !== undefined ? !!onlinePaymentEnabled : true,
                 showWhatsAppGroup: showWhatsAppGroup !== undefined ? !!showWhatsAppGroup : true,
                 showAITools: showAITools !== undefined ? !!showAITools : true,
+                showHolidayListOnDashboard: showHolidayListOnDashboard !== undefined ? !!showHolidayListOnDashboard : false,
                 updatedBy: req.user._id
             });
         } else {

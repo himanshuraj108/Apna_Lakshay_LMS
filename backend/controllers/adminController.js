@@ -796,17 +796,17 @@ exports.getDashboard = async (req, res) => {
         const todayISTStr = toISTDateStr(now);
         const nowISTMins = getISTMinutesNow(now);
         const holidayQueryFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const holidayQueryTo = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+        const holidayQueryTo = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
 
         const rawUpcomingHolidays = await Holiday.find({
             date: { $gte: holidayQueryFrom, $lte: holidayQueryTo }
         }).sort({ date: 1 }).lean();
 
-        const activeHolidays = rawUpcomingHolidays
+        const upcomingHolidayList = rawUpcomingHolidays
             .filter(h => {
                 const hDateIST = toISTDateStr(h.date);
                 if (hDateIST < todayISTStr) return false;
-                if (hDateIST === todayISTStr && h.isPartial && h.endTime && h.endTime.includes(':')) {
+                if (!h.isTentative && hDateIST === todayISTStr && h.isPartial && h.endTime && h.endTime.includes(':')) {
                     const [endH, endM] = h.endTime.split(':').map(Number);
                     if (!isNaN(endH)) {
                         const endTotalMins = endH * 60 + (endM || 0);
@@ -826,9 +826,11 @@ exports.getDashboard = async (req, res) => {
                 startTime: h.startTime || null,
                 endTime: h.endTime || null,
                 batchId: h.batchId || null,
+                isTentative: !!h.isTentative,
                 updatedAt: h.updatedAt || h.createdAt
             }));
 
+        const activeHolidays = upcomingHolidayList.filter(h => !h.isTentative);
         const todayHoliday = activeHolidays.find(h => h.isToday) || null;
 
         res.status(200).json({
@@ -848,6 +850,7 @@ exports.getDashboard = async (req, res) => {
                 todayFeesCollected,
                 pendingRequests,
                 activeHolidays,
+                upcomingHolidayList,
                 todayHoliday
             }
         });
