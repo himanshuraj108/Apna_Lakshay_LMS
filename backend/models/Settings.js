@@ -55,6 +55,10 @@ const settingsSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    showHolidayListOnDashboard: {
+        type: Boolean,
+        default: false // Default: hidden on student dashboard until Admin toggles it ON
+    },
     libraryName: { type: String, default: 'Library Management System' },
     address: { type: String, default: '' },
     contactNumber: { type: String, default: '' },

@@ -36,6 +36,14 @@ const holidaySchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isTentative: {
+        type: Boolean,
+        default: false
+    },
+    year: {
+        type: Number,
+        default: null
+    },
     declaredBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -44,6 +52,7 @@ const holidaySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 holidaySchema.index({ batchId: 1 });
+holidaySchema.index({ year: 1, date: 1 });
 
 module.exports = mongoose.model('Holiday', holidaySchema);
 
