@@ -175,8 +175,8 @@ const Settings = () => {
                                 <h2 className="font-bold text-[#0F172A] text-xs">Flexible Entry</h2>
                                 <p className="text-[11px] text-stone-500 leading-snug mt-0.5">
                                     {settings.flexibleEntry
-                                        ? 'Students mark within 1 hr of their shift window.'
-                                        : 'Students mark only between 5 AM and 10 PM.'}
+                                        ? 'Students mark within 1 hr of their shift window (6 AM – 9 PM).'
+                                        : 'Students mark only between 6 AM and 9 PM.'}
                                 </p>
                             </div>
                         </div>

@@ -67,6 +67,12 @@ const AttendanceManagement = () => {
     const [error, setError] = useState('');
     const [holidays, setHolidays] = useState([]);
     const [showHolidayModal, setShowHolidayModal] = useState(false);
+    const [holidayModalTab, setHolidayModalTab] = useState('declare'); // 'declare' | 'tentative_list'
+    const [selectedHolidayYear, setSelectedHolidayYear] = useState(() => new Date().getFullYear());
+    const [tentativeName, setTentativeName] = useState('');
+    const [tentativeDate, setTentativeDate] = useState(getLocalDate());
+    const [tentativeNote, setTentativeNote] = useState('');
+    const [savingTentative, setSavingTentative] = useState(false);
     const [holidayName, setHolidayName] = useState('');
     const [holidayDescription, setHolidayDescription] = useState('');
     const [holidaySelectionMode, setHolidaySelectionMode] = useState('single'); // 'single' | 'weekdays' | 'range' | 'custom'
@@ -295,12 +301,39 @@ const AttendanceManagement = () => {
         }
     };
 
+    const [showHolidayListOnDashboard, setShowHolidayListOnDashboard] = useState(false); // Default: hidden on Student Dashboard
+    const [togglingHolidayListVisibility, setTogglingHolidayListVisibility] = useState(false);
+
     const fetchHolidays = async () => {
         try {
             const res = await api.get('/admin/holidays');
             setHolidays(res.data.holidays || []);
+            if (res.data.showHolidayListOnDashboard !== undefined) {
+                setShowHolidayListOnDashboard(!!res.data.showHolidayListOnDashboard);
+            }
         } catch (e) {
             console.error('Failed to load holidays');
+        }
+    };
+
+    const toggleHolidayListVisibility = async () => {
+        const nextVal = !showHolidayListOnDashboard;
+        setTogglingHolidayListVisibility(true);
+        setShowHolidayListOnDashboard(nextVal);
+        try {
+            await api.put('/admin/settings', { showHolidayListOnDashboard: nextVal });
+            setSuccess(
+                nextVal
+                    ? 'Upcoming Holiday List is now VISIBLE on Student Dashboard (when count > 0).'
+                    : 'Upcoming Holiday List is now HIDDEN on Student Dashboard.'
+            );
+            setTimeout(() => setSuccess(''), 4000);
+        } catch (e) {
+            setShowHolidayListOnDashboard(!nextVal);
+            setError(e.response?.data?.message || 'Failed to update holiday list visibility');
+            setTimeout(() => setError(''), 4000);
+        } finally {
+            setTogglingHolidayListVisibility(false);
         }
     };
 
@@ -370,9 +403,11 @@ const AttendanceManagement = () => {
 
     const [generatingHolidayAi, setGeneratingHolidayAi] = useState(false);
 
-    const openHolidayModal = () => {
+    const openHolidayModal = (defaultTab = 'declare') => {
+        setHolidayModalTab(defaultTab);
         setHolidaySingleDate(selectedDate || getLocalDate());
         setHolidayStartDate(selectedDate || getLocalDate());
+        setTentativeDate(selectedDate || getLocalDate());
         const d = new Date(selectedDate || getLocalDate());
         d.setDate(d.getDate() + 6);
         const offset = d.getTimezoneOffset() * 60000;
@@ -381,6 +416,43 @@ const AttendanceManagement = () => {
         setHolidayDatePickerInput(selectedDate || getLocalDate());
         setHolidaySendEmail(false); // Always default to NOT sent
         setShowHolidayModal(true);
+    };
+
+    const addTentativeHoliday = async () => {
+        if (!tentativeName.trim()) {
+            setError('Please enter the Festival or Holiday Name for the list');
+            setTimeout(() => setError(''), 3500);
+            return;
+        }
+        if (!tentativeDate) {
+            setError('Please select a date for the upcoming holiday');
+            setTimeout(() => setError(''), 3500);
+            return;
+        }
+        setSavingTentative(true);
+        setError('');
+        setSuccess('');
+        try {
+            const res = await api.post('/admin/holidays', {
+                date: tentativeDate,
+                dates: [tentativeDate],
+                name: tentativeName.trim(),
+                description: tentativeNote.trim(),
+                isTentative: true,
+                isPartial: false,
+                sendEmail: false
+            });
+            setSuccess(res.data?.message || `"${tentativeName.trim()}" added to Upcoming Holiday List!`);
+            setTentativeName('');
+            setTentativeNote('');
+            setTimeout(() => setSuccess(''), 4500);
+            fetchHolidays();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to add holiday to list');
+            setTimeout(() => setError(''), 4000);
+        } finally {
+            setSavingTentative(false);
+        }
     };
 
     const generateAiHolidayNotice = async () => {
@@ -436,7 +508,8 @@ const AttendanceManagement = () => {
                 isPartial: holidayIsPartial,
                 startTime: holidayIsPartial ? holidayStartTime : null,
                 endTime: holidayIsPartial ? holidayEndTime : null,
-                sendEmail: holidaySendEmail
+                sendEmail: holidaySendEmail,
+                isTentative: false
             };
             const res = await api.post('/admin/holidays', payload);
             setSuccess(res.data?.message || `Holiday declared for ${resolvedHolidayDates.length} day(s)!`);
@@ -1099,12 +1172,67 @@ const AttendanceManagement = () => {
     const appSelfMarkedCount = seatStudents.filter(s => s.selfMarked).length;
 
     const selectedHoliday = holidays.find(h => {
+        if (h.isTentative) return false;
         const hDate = new Date(h.date);
         hDate.setHours(0, 0, 0, 0);
         const selDate = new Date(selectedDate);
         selDate.setHours(0, 0, 0, 0);
         return hDate.getTime() === selDate.getTime();
     });
+
+    const getHolidayISTDateStr = (rawDate) => {
+        try {
+            return new Date(rawDate).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        } catch (_) {
+            const d = new Date(rawDate);
+            const offset = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - offset).toISOString().split('T')[0];
+        }
+    };
+
+    const availableHolidayYears = useMemo(() => {
+        const curY = new Date().getFullYear();
+        const setY = new Set([curY - 1, curY, curY + 1, curY + 2]);
+        holidays.forEach(h => {
+            const dIso = h.dateIST || getHolidayISTDateStr(h.date);
+            const y = parseInt(dIso.slice(0, 4), 10) || h.year;
+            if (y && !isNaN(y)) setY.add(y);
+        });
+        return Array.from(setY).sort((a, b) => a - b);
+    }, [holidays]);
+
+    const selectedYearAdminHolidays = useMemo(() => {
+        const todayIso = getLocalDate();
+        return [...holidays]
+            .map(h => {
+                const dIso = h.dateIST || getHolidayISTDateStr(h.date);
+                const y = parseInt(dIso.slice(0, 4), 10) || h.year || new Date(h.date).getFullYear();
+                return {
+                    ...h,
+                    dateIST: dIso,
+                    year: y,
+                    isPast: dIso < todayIso,
+                    isToday: dIso === todayIso,
+                    isUpcoming: dIso >= todayIso
+                };
+            })
+            .filter(h => Number(h.year) === Number(selectedHolidayYear))
+            .sort((a, b) => {
+                const cmp = (b.dateIST || '').localeCompare(a.dateIST || '');
+                if (cmp !== 0) return cmp;
+                return new Date(b.updatedAt || b.createdAt || b.date || 0) - new Date(a.updatedAt || a.createdAt || a.date || 0);
+            });
+    }, [holidays, selectedHolidayYear]);
+
+    const upcomingAdminHolidays = useMemo(() => {
+        const todayIso = getLocalDate();
+        return [...holidays]
+            .filter(h => {
+                const dIso = h.dateIST || getHolidayISTDateStr(h.date);
+                return dIso >= todayIso;
+            })
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+    }, [holidays]);
 
     // Search filter for seatStudents
     const searchedSeatStudents = useMemo(() => {
@@ -1173,8 +1301,27 @@ const AttendanceManagement = () => {
                     <div className="flex items-center gap-2.5 flex-wrap">
                         {!isSubAdmin && (
                             <button
-                                onClick={openHolidayModal}
-                                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-700 hover:text-amber-700 rounded-xl text-xs font-bold transition-all shadow-2xs"
+                                onClick={() => openHolidayModal('tentative_list')}
+                                className="flex items-center gap-1.5 px-3.5 py-2 bg-orange-50/80 hover:bg-orange-100 border border-orange-200 hover:border-orange-300 text-orange-800 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                                title="Manage Year-Wise Holiday List shown inside Student Attendance Card"
+                            >
+                                <IoCalendarOutline size={14} className="text-orange-600" />
+                                <span>Holiday List ({holidays.length})</span>
+                                <span
+                                    className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                                        showHolidayListOnDashboard
+                                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                            : 'bg-slate-200/80 text-slate-600'
+                                    }`}
+                                >
+                                    {showHolidayListOnDashboard ? 'Shown' : 'Hidden'}
+                                </span>
+                            </button>
+                        )}
+                        {!isSubAdmin && (
+                            <button
+                                onClick={() => openHolidayModal('declare')}
+                                className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-slate-700 hover:text-amber-700 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
                             >
                                 <IoSparkles size={14} className="text-amber-500" />
                                 <span>Declare Holiday</span>
@@ -1923,15 +2070,340 @@ const AttendanceManagement = () => {
                 )}
             </div>
 
-            {/* ── Holiday Declaration Modal ── */}
+            {/* ── Holiday Declaration & Upcoming Holiday List Modal ── */}
             <Modal
                 isOpen={showHolidayModal}
                 onClose={() => {
                     setShowHolidayModal(false);
                 }}
-                title="Declare Institutional Holiday"
+                title={holidayModalTab === 'tentative_list' ? `Manage ${selectedHolidayYear} Holiday List (1 Jan – 31 Dec)` : 'Declare Institutional Holiday'}
             >
                 <div className="space-y-4 pt-1 max-h-[78vh] overflow-y-auto pr-1">
+                    {/* Top Tab Switcher: Declare Official Holiday vs Year-Wise Holiday List */}
+                    <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl">
+                        <button
+                            type="button"
+                            onClick={() => setHolidayModalTab('declare')}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                holidayModalTab === 'declare'
+                                    ? 'bg-white text-orange-700 shadow-2xs border border-orange-200'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <IoSparkles size={13} />
+                            <span>Declare Official Holiday</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setHolidayModalTab('tentative_list')}
+                            className={`py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                holidayModalTab === 'tentative_list'
+                                    ? 'bg-white text-orange-700 shadow-2xs border border-orange-200'
+                                    : 'text-slate-600 hover:text-slate-900'
+                            }`}
+                        >
+                            <IoCalendarOutline size={13} />
+                            <span>Year-Wise Holiday List ({holidays.length})</span>
+                        </button>
+                    </div>
+
+                    {holidayModalTab === 'tentative_list' ? (
+                        <div className="space-y-4">
+                            {/* Student Dashboard Visibility Toggle (Default: Hidden) */}
+                            <div className="flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="text-xs font-extrabold text-slate-900">
+                                            Show Holiday List Inside Student Attendance Card
+                                        </p>
+                                        <span
+                                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                                showHolidayListOnDashboard
+                                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                            }`}
+                                        >
+                                            {showHolidayListOnDashboard ? 'Visible to Students' : 'Hidden (Default)'}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                        {showHolidayListOnDashboard
+                                            ? 'Students can click "Holiday List" inside their Attendance Card to view previous declared, upcoming & listed holidays by year (when count > 0).'
+                                            : 'Currently hidden from students. Toggle ON when you want students to see the Holiday List inside their Attendance Card.'}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={togglingHolidayListVisibility}
+                                    onClick={toggleHolidayListVisibility}
+                                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${
+                                        showHolidayListOnDashboard ? 'bg-orange-500' : 'bg-slate-300'
+                                    }`}
+                                    title={showHolidayListOnDashboard ? 'Click to Hide on Student Dashboard' : 'Click to Show on Student Dashboard'}
+                                >
+                                    <span
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                            showHolidayListOnDashboard ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Select Year Selector (1 Jan YYYY – 31 Dec YYYY) */}
+                            <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2.5 shadow-2xs">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div>
+                                        <p className="text-xs font-extrabold text-slate-900">
+                                            Select Year Holiday List (1 Jan – 31 Dec)
+                                        </p>
+                                        <p className="text-[11px] text-slate-500">
+                                            Each calendar year (`1 Jan` to `31 Dec`) is stored as a separate holiday list in the database
+                                        </p>
+                                    </div>
+                                    <span className="px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 text-[10px] font-black uppercase">
+                                        1 Jan {selectedHolidayYear} – 31 Dec {selectedHolidayYear}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {availableHolidayYears.map(yr => {
+                                        const yrCount = holidays.filter(h => {
+                                            const dIso = h.dateIST || getHolidayISTDateStr(h.date);
+                                            const y = parseInt(dIso.slice(0, 4), 10) || h.year;
+                                            return Number(y) === Number(yr);
+                                        }).length;
+                                        const isSelected = Number(selectedHolidayYear) === Number(yr);
+                                        return (
+                                            <button
+                                                key={yr}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedHolidayYear(yr);
+                                                    const curToday = getLocalDate();
+                                                    if (String(curToday).startsWith(String(yr))) {
+                                                        setTentativeDate(curToday);
+                                                    } else {
+                                                        setTentativeDate(`${yr}-01-01`);
+                                                    }
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                    isSelected
+                                                        ? 'bg-orange-500 text-white border-orange-600 shadow-2xs'
+                                                        : 'bg-slate-50 hover:bg-orange-50 text-slate-700 border-slate-200'
+                                                }`}
+                                            >
+                                                <span>{yr} Holiday List</span>
+                                                <span
+                                                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                                                        isSelected
+                                                            ? 'bg-white/25 text-white'
+                                                            : 'bg-white text-slate-600 border border-slate-200'
+                                                    }`}
+                                                >
+                                                    {yrCount}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Disclaimer Info Banner */}
+                            <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2">
+                                <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-amber-200/80">
+                                    <p className="text-xs font-extrabold text-amber-950">
+                                        Student Attendance Card &ldquo;Holiday List&rdquo; Rules
+                                    </p>
+                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-white text-amber-800 border border-amber-200">
+                                        Subject to Change
+                                    </span>
+                                </div>
+                                <div className="space-y-1.5 text-[11px] text-amber-900 leading-relaxed">
+                                    <div className="flex items-start gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                        <p><span className="font-extrabold">Previous + Upcoming + Listed:</span> Students can view all <span className="font-bold underline">previous declared holidays, upcoming declared holidays, and listed tentative holidays</span> for each year (`1 Jan` – `31 Dec`).</p>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                        <p><span className="font-extrabold">Closure Not Confirmed:</span> Students are informed that listed upcoming dates are <span className="font-bold underline">subject to change</span> and closure is <span className="font-bold underline">not confirmed</span> until officially declared.</p>
+                                    </div>
+                                    <div className="flex items-start gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                        <p><span className="font-extrabold">Separate Announcement:</span> Official holiday declarations &amp; timings are <span className="font-bold underline">announced separately</span>. Hidden automatically when count is 0 or toggle is off.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Manual Add Holiday to Selected Year List Form */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <p className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                                        + Add Holiday to {selectedHolidayYear} List (1 Jan – 31 Dec {selectedHolidayYear})
+                                    </p>
+                                    <span className="text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-md">
+                                        Year: {selectedHolidayYear}
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                            Festival / Holiday Name <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={tentativeName}
+                                            onChange={e => setTentativeName(e.target.value)}
+                                            placeholder="e.g. Republic Day, Holi, Diwali, Chhath Puja"
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                            Holiday Date in {selectedHolidayYear} (IST) <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={tentativeDate}
+                                            min={`${selectedHolidayYear}-01-01`}
+                                            max={`${selectedHolidayYear}-12-31`}
+                                            onChange={e => {
+                                                const v = e.target.value;
+                                                setTentativeDate(v);
+                                                if (v && v.length >= 4) {
+                                                    const y = parseInt(v.slice(0, 4), 10);
+                                                    if (!isNaN(y)) setSelectedHolidayYear(y);
+                                                }
+                                            }}
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-orange-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                                        Short Note / Remark (Optional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={tentativeNote}
+                                        onChange={e => setTentativeNote(e.target.value)}
+                                        placeholder="e.g. Tentative date — official closure timing to be announced separately"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-orange-500"
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={addTentativeHoliday}
+                                    disabled={savingTentative || !tentativeName.trim() || !tentativeDate}
+                                    className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    <IoCalendarOutline size={14} />
+                                    <span>{savingTentative ? 'Saving to List...' : `Save to ${selectedHolidayYear} Holiday List`}</span>
+                                </button>
+                            </div>
+
+                            {/* Stored Holidays List for Selected Year (1 Jan – 31 Dec) */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                        {selectedHolidayYear} Holiday List · 1 Jan – 31 Dec ({selectedYearAdminHolidays.length})
+                                    </p>
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold">
+                                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                            Previous: {selectedYearAdminHolidays.filter(h => h.isPast).length}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                            Declared: {selectedYearAdminHolidays.filter(h => !h.isTentative && !h.isPast).length}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                                            Listed: {selectedYearAdminHolidays.filter(h => h.isTentative && !h.isPast).length}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {selectedYearAdminHolidays.length === 0 ? (
+                                    <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl py-8 text-center">
+                                        <IoCalendarOutline size={26} className="mx-auto text-slate-300 mb-1.5" />
+                                        <p className="text-xs font-bold text-slate-600">No Holidays Stored for {selectedHolidayYear}</p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                            Add holidays for 1 Jan {selectedHolidayYear} – 31 Dec {selectedHolidayYear} above.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                        {selectedYearAdminHolidays.map(h => {
+                                            const dObj = new Date(h.date);
+                                            const dIso = h.dateIST || getHolidayISTDateStr(h.date);
+                                            return (
+                                                <div
+                                                    key={h._id}
+                                                    className={`flex items-center justify-between gap-2.5 border rounded-xl px-3.5 py-2.5 text-xs shadow-2xs ${
+                                                        h.isPast
+                                                            ? 'bg-slate-50/90 border-slate-200'
+                                                            : 'bg-white border-slate-200'
+                                                    }`}
+                                                >
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="font-extrabold text-slate-900 truncate">{h.name}</span>
+                                                            {h.isPast ? (
+                                                                <span className="px-2 py-0.5 rounded-md bg-slate-200/80 border border-slate-300 text-slate-700 text-[10px] font-bold">
+                                                                    Previous {h.isTentative ? 'Listed' : 'Declared'} ({h.isPartial ? `${formatTime12h(h.startTime)}–${formatTime12h(h.endTime)}` : 'Full Day'})
+                                                                </span>
+                                                            ) : h.isTentative ? (
+                                                                <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold">
+                                                                    Listed · Subject to Change
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">
+                                                                    Officially Declared ({h.isPartial ? `${formatTime12h(h.startTime)}–${formatTime12h(h.endTime)}` : 'Full Day'})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                                            {dObj.toLocaleDateString('en-IN', {
+                                                                timeZone: 'Asia/Kolkata',
+                                                                weekday: 'short',
+                                                                day: '2-digit',
+                                                                month: 'short',
+                                                                year: 'numeric'
+                                                            })}
+                                                            {h.isTentative && h.description ? ` · ${h.description}` : ''}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {h.isTentative && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setHolidayName(h.name);
+                                                                    setHolidaySelectionMode('single');
+                                                                    setHolidaySingleDate(dIso);
+                                                                    setHolidayDescription(h.description || '');
+                                                                    setHolidayModalTab('declare');
+                                                                }}
+                                                                className="px-2.5 py-1 rounded-lg bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 font-bold text-[10px] transition-colors cursor-pointer"
+                                                                title="Promote to Official Holiday Declaration"
+                                                            >
+                                                                Declare Official
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeHoliday(h._id, h.name, false)}
+                                                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                                            title="Remove from List"
+                                                        >
+                                                            <IoTrashOutline size={14} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                     {/* Neutral Attendance Policy Banner */}
                     <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
                         <IoSparkles size={16} className="text-amber-600 shrink-0 mt-0.5" />
@@ -2373,13 +2845,13 @@ const AttendanceManagement = () => {
                     </div>
 
                     {/* Recent / Upcoming Declared Holidays List */}
-                    {holidays.length > 0 && (
+                    {holidays.filter(h => !h.isTentative).length > 0 && (
                         <div className="pt-3 border-t border-slate-200">
                             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                                Declared Holidays ({holidays.length})
+                                Officially Declared Holidays ({holidays.filter(h => !h.isTentative).length})
                             </p>
                             <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                                {holidays.slice(0, 12).map(h => (
+                                {holidays.filter(h => !h.isTentative).slice(0, 12).map(h => (
                                     <div
                                         key={h._id}
                                         className="flex items-center justify-between gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs"
@@ -2392,7 +2864,7 @@ const AttendanceManagement = () => {
                                                 </span>
                                             </div>
                                             <p className="text-[11px] text-slate-500">
-                                                {new Date(h.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                                                {new Date(h.date).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
                                             </p>
                                         </div>
                                         <button
@@ -2407,6 +2879,8 @@ const AttendanceManagement = () => {
                                 ))}
                             </div>
                         </div>
+                    )}
+                    </>
                     )}
                 </div>
             </Modal>
