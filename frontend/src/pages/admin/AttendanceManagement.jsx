@@ -68,6 +68,7 @@ const AttendanceManagement = () => {
     const [holidays, setHolidays] = useState([]);
     const [showHolidayModal, setShowHolidayModal] = useState(false);
     const [holidayModalTab, setHolidayModalTab] = useState('declare'); // 'declare' | 'tentative_list'
+    const [showHolidayListRules, setShowHolidayListRules] = useState(false);
     const [selectedHolidayYear, setSelectedHolidayYear] = useState(() => new Date().getFullYear());
     const [tentativeName, setTentativeName] = useState('');
     const [tentativeDate, setTentativeDate] = useState(getLocalDate());
@@ -2160,9 +2161,40 @@ const AttendanceManagement = () => {
                                             Each calendar year (`1 Jan` to `31 Dec`) is stored as a separate holiday list in the database
                                         </p>
                                     </div>
-                                    <span className="px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 text-[10px] font-black uppercase">
-                                        1 Jan {selectedHolidayYear} – 31 Dec {selectedHolidayYear}
-                                    </span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="px-2.5 py-1 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 text-[10px] font-black uppercase">
+                                            1 Jan {selectedHolidayYear} – 31 Dec {selectedHolidayYear}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowHolidayListRules(prev => !prev)}
+                                            className="relative w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                                            style={{
+                                                background: showHolidayListRules
+                                                    ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
+                                                    : '#FFFBEB',
+                                                border: showHolidayListRules
+                                                    ? '1.5px solid #EA580C'
+                                                    : '1.5px solid #F59E0B',
+                                                color: showHolidayListRules ? '#FFFFFF' : '#D97706',
+                                                boxShadow: showHolidayListRules
+                                                    ? '0 4px 10px rgba(234,88,12,0.32)'
+                                                    : '0 2px 6px rgba(245,158,11,0.25)'
+                                            }}
+                                            title={showHolidayListRules ? 'Hide Holiday List Instructions' : 'View Holiday List Instructions'}
+                                            aria-label="Toggle Holiday List Instructions"
+                                        >
+                                            {!showHolidayListRules && (
+                                                <span className="absolute inset-0 rounded-full bg-amber-400/50 animate-ping pointer-events-none" />
+                                            )}
+                                            <span
+                                                className={`relative text-xs font-black leading-none select-none ${!showHolidayListRules ? 'animate-pulse' : ''}`}
+                                                style={{ fontFamily: 'Georgia, serif' }}
+                                            >
+                                                i
+                                            </span>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     {availableHolidayYears.map(yr => {
@@ -2207,31 +2239,41 @@ const AttendanceManagement = () => {
                                 </div>
                             </div>
 
-                            {/* Disclaimer Info Banner */}
-                            <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2">
-                                <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-amber-200/80">
-                                    <p className="text-xs font-extrabold text-amber-950">
-                                        Student Attendance Card &ldquo;Holiday List&rdquo; Rules
-                                    </p>
-                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-white text-amber-800 border border-amber-200">
-                                        Subject to Change
-                                    </span>
-                                </div>
-                                <div className="space-y-1.5 text-[11px] text-amber-900 leading-relaxed">
-                                    <div className="flex items-start gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
-                                        <p><span className="font-extrabold">Previous + Upcoming + Listed:</span> Students can view all <span className="font-bold underline">previous declared holidays, upcoming declared holidays, and listed tentative holidays</span> for each year (`1 Jan` – `31 Dec`).</p>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
-                                        <p><span className="font-extrabold">Closure Not Confirmed:</span> Students are informed that listed upcoming dates are <span className="font-bold underline">subject to change</span> and closure is <span className="font-bold underline">not confirmed</span> until officially declared.</p>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
-                                        <p><span className="font-extrabold">Separate Announcement:</span> Official holiday declarations &amp; timings are <span className="font-bold underline">announced separately</span>. Hidden automatically when count is 0 or toggle is off.</p>
-                                    </div>
-                                </div>
-                            </div>
+                            {/* Disclaimer Info Banner (Toggled via Blinking Circular 'i' Icon) */}
+                            <AnimatePresence>
+                                {showHolidayListRules && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -6 }}
+                                        transition={{ duration: 0.18 }}
+                                        className="bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2"
+                                    >
+                                        <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-amber-200/80">
+                                            <p className="text-xs font-extrabold text-amber-950">
+                                                Student Attendance Card &ldquo;Holiday List&rdquo; Rules
+                                            </p>
+                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-white text-amber-800 border border-amber-200">
+                                                Subject to Change
+                                            </span>
+                                        </div>
+                                        <div className="space-y-1.5 text-[11px] text-amber-900 leading-relaxed">
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                                <p><span className="font-extrabold">Previous + Upcoming + Listed:</span> Students can view all <span className="font-bold underline">previous declared holidays, upcoming declared holidays, and listed tentative holidays</span> for each year (`1 Jan` – `31 Dec`).</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                                <p><span className="font-extrabold">Closure Not Confirmed:</span> Students are informed that listed upcoming dates are <span className="font-bold underline">subject to change</span> and closure is <span className="font-bold underline">not confirmed</span> until officially declared.</p>
+                                            </div>
+                                            <div className="flex items-start gap-2">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-600 mt-1.5 shrink-0" />
+                                                <p><span className="font-extrabold">Separate Announcement:</span> Official holiday declarations &amp; timings are <span className="font-bold underline">announced separately</span>. Hidden automatically when count is 0 or toggle is off.</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Manual Add Holiday to Selected Year List Form */}
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
