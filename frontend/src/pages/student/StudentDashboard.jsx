@@ -672,6 +672,7 @@ const StudentDashboard = () => {
 
     const [showUpcomingHolidayListModal, setShowUpcomingHolidayListModal] = useState(false);
     const [showHolidayListInstructions, setShowHolidayListInstructions] = useState(false);
+    const [showHolidayGateInstructions, setShowHolidayGateInstructions] = useState(false);
     const currentISTYearNum = parseInt(todayISTStr.slice(0, 4), 10) || new Date().getFullYear();
     const [selectedStudentHolidayYear, setSelectedStudentHolidayYear] = useState(currentISTYearNum);
     const [studentHolidayFilter, setStudentHolidayFilter] = useState('all'); // 'all' | 'upcoming' | 'past'
@@ -1662,34 +1663,95 @@ const StudentDashboard = () => {
                             <div className="absolute -top-14 -right-14 w-36 h-36 rounded-full bg-amber-100/60 blur-2xl pointer-events-none" />
 
                             {/* Modal Header */}
-                            <div className="flex items-start gap-3.5 mb-5 relative z-10 shrink-0">
-                                <div className="w-13 h-13 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200 text-orange-600 shadow-sm">
-                                    <IoCalendarOutline size={26} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                        <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                                            Official Library Notice
-                                        </span>
-                                        {activeTodayHoliday && (
-                                            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
-                                                Active Today
-                                            </span>
-                                        )}
+                            <div className="flex items-start justify-between gap-3.5 mb-5 relative z-10 shrink-0">
+                                <div className="flex items-start gap-3.5 flex-1 min-w-0">
+                                    <div className="w-13 h-13 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br from-amber-50 to-orange-100 border border-amber-200 text-orange-600 shadow-sm">
+                                        <IoCalendarOutline size={26} />
                                     </div>
-                                    <h3 className="text-gray-900 font-black text-xl tracking-tight leading-snug">
-                                        {groupedHolidaysToDisplay.length === 1
-                                            ? groupedHolidaysToDisplay[0].name
-                                            : 'Declared Library Holiday Schedule'}
-                                    </h3>
-                                    <p className="text-xs font-semibold text-[#9B7B5A] mt-0.5">
-                                        Please review the holiday operational details below to access your dashboard
-                                    </p>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                            <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                                Official Library Notice
+                                            </span>
+                                            {activeTodayHoliday && (
+                                                <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200">
+                                                    Active Today
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="text-gray-900 font-black text-xl tracking-tight leading-snug">
+                                            {groupedHolidaysToDisplay.length === 1
+                                                ? groupedHolidaysToDisplay[0].name
+                                                : 'Declared Library Holiday Schedule'}
+                                        </h3>
+                                        <p className="text-xs font-semibold text-[#9B7B5A] mt-0.5">
+                                            Please review the holiday operational details below to access your dashboard
+                                        </p>
+                                    </div>
                                 </div>
+
+                                {/* Blinking Circular 'i' Icon Button to Toggle Instructions */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowHolidayGateInstructions(prev => !prev)}
+                                    className="relative w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shrink-0 mt-0.5"
+                                    style={{
+                                        background: showHolidayGateInstructions
+                                            ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
+                                            : '#FFFBEB',
+                                        border: showHolidayGateInstructions
+                                            ? '1.5px solid #EA580C'
+                                            : '1.5px solid #F59E0B',
+                                        color: showHolidayGateInstructions ? '#FFFFFF' : '#D97706',
+                                        boxShadow: showHolidayGateInstructions
+                                            ? '0 4px 12px rgba(234,88,12,0.35)'
+                                            : '0 2px 8px rgba(245,158,11,0.28)'
+                                    }}
+                                    title={showHolidayGateInstructions ? 'Hide Instructions' : 'View Instructions'}
+                                    aria-label="Toggle Holiday Instructions"
+                                >
+                                    {!showHolidayGateInstructions && (
+                                        <span className="absolute inset-0 rounded-full bg-amber-400/50 animate-ping pointer-events-none" />
+                                    )}
+                                    <span
+                                        className={`relative text-xs font-black leading-none select-none ${!showHolidayGateInstructions ? 'animate-pulse' : ''}`}
+                                        style={{ fontFamily: 'Georgia, serif' }}
+                                    >
+                                        i
+                                    </span>
+                                </button>
                             </div>
 
                             {/* Holiday Cards Body */}
                             <div className="overflow-y-auto flex-1 pr-1 space-y-3.5 my-1">
+                                <AnimatePresence>
+                                    {showHolidayGateInstructions && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="rounded-2xl p-4 bg-emerald-50/90 border border-emerald-200 space-y-2.5"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0 text-emerald-700 mt-0.5">
+                                                    <IoCheckmarkCircleOutline size={18} />
+                                                </div>
+                                                <div>
+                                                    <h5 className="text-xs font-black uppercase tracking-wider text-emerald-900">
+                                                        Attendance Percentage Protected (Neutral Policy)
+                                                    </h5>
+                                                    <p className="text-xs text-emerald-800 font-medium leading-relaxed mt-0.5">
+                                                        Your current attendance percentage ({dashboardData?.attendance?.percentage ?? 100}%) will remain completely unchanged — neither reduced nor increased — if you are absent on a declared holiday. If you attend and mark attendance (via self or admin), it will be counted as Present normally.
+                                                    </p>
+                                                    <p className="text-xs text-emerald-900 font-medium leading-relaxed mt-1.5 pt-1.5 border-t border-emerald-200/70">
+                                                        <strong>उपस्थिति नीति:</strong> घोषित अवकाश पर अनुपस्थित रहने से आपकी वर्तमान उपस्थिति प्रतिशत ({dashboardData?.attendance?.percentage ?? 100}%) पूर्णतः अपरिवर्तित (Neutral) रहेगी — न घटेगी और न बढ़ेगी। यदि आप उपस्थित होकर उपस्थिति दर्ज करते हैं, तो इसे सामान्य रूप से उपस्थित (Present) गिना जाएगा।
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                                 {groupedHolidaysToDisplay.map((grp) => {
                                     const todayIso = todayISTStr;
                                     const dateSummaryStr = grp.dates
@@ -1923,21 +1985,6 @@ const StudentDashboard = () => {
                                         </div>
                                     );
                                 })}
-
-                                {/* Neutral Attendance Assurance Policy Card */}
-                                <div className="rounded-2xl p-4 bg-emerald-50/80 border border-emerald-200 flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0 text-emerald-700 mt-0.5">
-                                        <IoCheckmarkCircleOutline size={18} />
-                                    </div>
-                                    <div>
-                                        <h5 className="text-xs font-black uppercase tracking-wider text-emerald-900">
-                                            Attendance Percentage Protected (Neutral Policy)
-                                        </h5>
-                                        <p className="text-xs text-emerald-800 font-medium leading-relaxed mt-0.5">
-                                            Your current attendance percentage ({dashboardData?.attendance?.percentage ?? 100}%) will remain completely unchanged — neither reduced nor increased — if you are absent on a declared holiday. If you attend and mark attendance (via self or admin), it will be counted as Present normally.
-                                        </p>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Remind Later & Got It CTA Buttons */}
@@ -3314,15 +3361,16 @@ const StudentDashboard = () => {
                                             e.stopPropagation();
                                             setShowUpcomingHolidayListModal(true);
                                         }}
-                                        className="w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shrink-0"
+                                        className="relative w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shrink-0"
                                         style={{
                                             background: '#FFFBEB',
                                             border: '1.5px solid #F59E0B',
                                             color: '#D97706',
-                                            boxShadow: '0 2px 6px rgba(245, 158, 11, 0.2)'
+                                            boxShadow: '0 2px 6px rgba(245, 158, 11, 0.25)'
                                         }}
                                     >
-                                        <span className="text-[12px] font-black leading-none" style={{ fontFamily: 'Georgia, serif' }}>i</span>
+                                        <span className="absolute inset-0 rounded-full bg-amber-400/50 animate-ping pointer-events-none" />
+                                        <span className="relative text-[12px] font-black leading-none animate-pulse" style={{ fontFamily: 'Georgia, serif' }}>i</span>
                                     </button>
                                 )}
                             </div>
