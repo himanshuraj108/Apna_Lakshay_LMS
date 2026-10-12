@@ -8,7 +8,7 @@ import Modal from '../../components/ui/Modal';
 import SkeletonLoader, { ProfileSkeleton } from '../../components/ui/SkeletonLoader';
 import { useAuth } from '../../context/AuthContext';
 import api, { BASE_URL, getDeterministicAvatar } from '../../utils/api';
-import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward, IoDocumentTextOutline, IoReceiptOutline, IoMaleFemale, IoSparkles } from 'react-icons/io5';
+import { IoArrowBack, IoPerson, IoMail, IoCall, IoLocation, IoCalendar, IoTime, IoSave, IoCamera, IoTrash, IoCloudUpload, IoClose, IoHelpCircle, IoLogOut, IoQrCode, IoSend, IoLockClosed, IoCheckmarkCircleOutline, IoCloseCircleOutline, IoBed as IoBedOutline, IoShieldCheckmark, IoChevronForward, IoDocumentTextOutline, IoReceiptOutline, IoMaleFemale, IoSparkles, IoFlash, IoTrendingUp, IoGift, IoKeypad, IoWarning, IoBulb } from 'react-icons/io5';
 import { QRCodeSVG } from 'qrcode.react';
 import SeatChangeModal from '../../components/student/SeatChangeModal';
 import CombinedSeatShiftModal from '../../components/student/CombinedSeatShiftModal';
@@ -689,13 +689,13 @@ const Profile = () => {
                                             <span style={{ fontSize:'7px', fontWeight:900, color:'#ffffff', letterSpacing:'0.12em', textTransform:'uppercase' }}>LMS Rules &amp; Rewards</span>
                                         </div>
                                         {[
-                                            { icon:'⚡', title:'Daily Streak', desc:'Check-in daily to keep your streak alive.' },
-                                            { icon:'✨', title:'Earn XP', desc:'+50 XP check-in · +70 XP Daily Quiz.' },
-                                            { icon:'📈', title:'Level Up', desc:'Every 1,000 XP = new rank level!' },
-                                            { icon:'🎁', title:'Rewards', desc:'Milestones unlock mock test credits.' },
+                                            { icon: <IoFlash size={10} style={{ color: '#F97316' }} />, title:'Daily Streak', desc:'Check-in daily to keep your streak alive.' },
+                                            { icon: <IoSparkles size={10} style={{ color: '#FBBF24' }} />, title:'Earn XP', desc:'+50 XP check-in · +70 XP Daily Quiz.' },
+                                            { icon: <IoTrendingUp size={10} style={{ color: '#34D399' }} />, title:'Level Up', desc:'Every 1,000 XP = new rank level!' },
+                                            { icon: <IoGift size={10} style={{ color: '#F472B6' }} />, title:'Rewards', desc:'Milestones unlock mock test credits.' },
                                         ].map((item, i) => (
-                                            <div key={i} style={{ display:'flex', gap:'5px', marginBottom:'5px' }}>
-                                                <span style={{ fontSize:'9px', flexShrink:0, lineHeight:1 }}>{item.icon}</span>
+                                            <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:'5px', marginBottom:'5px' }}>
+                                                <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:'1px' }}>{item.icon}</span>
                                                 <div>
                                                     <p style={{ fontSize:'7px', fontWeight:900, color:'#ffffff', margin:'0 0 1px', letterSpacing:'0.03em' }}>{item.title}</p>
                                                     <p style={{ fontSize:'6px', color:'rgba(255,255,255,0.45)', margin:0, lineHeight:1.4 }}>{item.desc}</p>
@@ -1007,7 +1007,7 @@ const Profile = () => {
                             style={{ background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.14)', padding: '14px 16px' }}>
                             <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full" style={{ background: '#6366f1' }} />
                             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(99,102,241,0.09)' }}>
-                                <span style={{ fontSize: 16, lineHeight: 1 }}>🔢</span>
+                                <IoKeypad size={16} style={{ color: '#6366f1' }} />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
@@ -1087,7 +1087,10 @@ const Profile = () => {
                             )}
                             {occupiedShifts.length > 0 && (
                                 <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-xs text-amber-600 font-bold mb-2">⚠️ Unavailable Shifts (Occupied)</p>
+                                    <p className="text-xs text-amber-600 font-bold mb-2 flex items-center gap-1.5">
+                                        <IoWarning size={14} className="shrink-0" />
+                                        Unavailable Shifts (Occupied)
+                                    </p>
                                     {occupiedShifts.map((o, i) => (
                                         <div key={i} className="text-sm text-amber-800 mb-1">• {o.name} ({o.startTime} - {o.endTime}) - {o.occupiedBy}</div>
                                     ))}
@@ -1111,19 +1114,28 @@ const Profile = () => {
                                 </select>
                             )}
                             <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                                <p className="text-xs text-orange-600 font-semibold mb-2">💡 Looking for different options?</p>
+                                <p className="text-xs text-orange-600 font-semibold mb-2 flex items-center gap-1.5">
+                                    <IoBulb size={14} className="shrink-0" />
+                                    Looking for different options?
+                                </p>
                                 <Button variant="primary" className="w-full !bg-gradient-to-r !from-orange-500 !to-amber-500 hover:!from-orange-400 hover:!to-amber-400 !border-none !text-white" onClick={() => { setShowRequestModal(false); setShowCombinedChangeModal(true); }}>
                                     Shift not available? Want to change seat? CLICK HERE
                                 </Button>
                             </div>
                             {availableShifts.length === 0 && !loadingShifts && (
                                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                    <p className="text-sm text-red-600">❌ No shifts available on your current seat (#{profile?.seat?.number || profile?.seat})</p>
+                                    <p className="text-sm text-red-600 flex items-center gap-1.5">
+                                        <IoCloseCircleOutline size={16} className="shrink-0" />
+                                        No shifts available on your current seat (#{profile?.seat?.number || profile?.seat})
+                                    </p>
                                 </div>
                             )}
                             {availableShifts.length > 0 && !loadingShifts && (
                                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <p className="text-xs text-green-600 font-bold mb-1">✓ {availableShifts.length} Available Shift{availableShifts.length !== 1 ? 's' : ''}</p>
+                                    <p className="text-xs text-green-600 font-bold mb-1 flex items-center gap-1.5">
+                                        <IoCheckmarkCircleOutline size={14} className="shrink-0" />
+                                        {availableShifts.length} Available Shift{availableShifts.length !== 1 ? 's' : ''}
+                                    </p>
                                     <p className="text-sm text-gray-600">Select one to submit your request.</p>
                                 </div>
                             )}

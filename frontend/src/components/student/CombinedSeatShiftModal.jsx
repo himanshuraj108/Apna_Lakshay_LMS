@@ -4,7 +4,7 @@ import api from '../../utils/api';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import StudentRoomGrid from './StudentRoomGrid';
-import { IoClose, IoAlertCircle } from 'react-icons/io5';
+import { IoClose, IoAlertCircle, IoCheckmarkCircle, IoLocation } from 'react-icons/io5';
 import useShifts from '../../hooks/useShifts';
 
 const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => {
@@ -238,7 +238,10 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                                 )}
                             </select>
                             {selectedShift ? (
-                                <p className="text-xs text-green-600 mt-2">✓ Showing seats available for {shifts.find(s => s.id === selectedShift)?.name || 'selected shift'}</p>
+                                <p className="text-xs text-green-600 mt-2 flex items-center gap-1.5">
+                                    <IoCheckmarkCircle size={14} className="shrink-0" />
+                                    Showing seats available for {shifts.find(s => s.id === selectedShift)?.name || 'selected shift'}
+                                </p>
                             ) : (
                                 <p className="text-xs text-gray-500 mt-2">Select a shift to filter available seats</p>
                             )}
@@ -363,7 +366,8 @@ const CombinedSeatShiftModal = ({ isOpen, onClose, currentSeat, onSuccess }) => 
                                         )}
                                         {currentSeat && selectedSeat._id === currentSeat._id && (
                                             <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl px-3 py-2 text-xs text-amber-400 col-span-2 flex items-center gap-2">
-                                                📍 This is your current seat
+                                                <IoLocation size={14} className="shrink-0" />
+                                                This is your current seat
                                             </div>
                                         )}
                                     </div>
