@@ -671,6 +671,7 @@ const StudentDashboard = () => {
     });
 
     const [showUpcomingHolidayListModal, setShowUpcomingHolidayListModal] = useState(false);
+    const [showHolidayListInstructions, setShowHolidayListInstructions] = useState(false);
     const currentISTYearNum = parseInt(todayISTStr.slice(0, 4), 10) || new Date().getFullYear();
     const [selectedStudentHolidayYear, setSelectedStudentHolidayYear] = useState(currentISTYearNum);
     const [studentHolidayFilter, setStudentHolidayFilter] = useState('all'); // 'all' | 'upcoming' | 'past'
@@ -2012,14 +2013,50 @@ const StudentDashboard = () => {
                                         </p>
                                     </div>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowUpcomingHolidayListModal(false)}
-                                    className="w-8 h-8 rounded-xl bg-[#FFF5EE] hover:bg-[#FEEBD8] border border-[#FDDCAE] text-[#78350F] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
-                                    title="Close"
-                                >
-                                    <IoCloseOutline size={18} />
-                                </button>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {/* Blinking Circular 'i' Icon Button to Toggle Instructions */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowHolidayListInstructions(prev => !prev)}
+                                        className="relative w-8 h-8 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shrink-0"
+                                        style={{
+                                            background: showHolidayListInstructions
+                                                ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
+                                                : '#FFFBEB',
+                                            border: showHolidayListInstructions
+                                                ? '1.5px solid #EA580C'
+                                                : '1.5px solid #F59E0B',
+                                            color: showHolidayListInstructions ? '#FFFFFF' : '#D97706',
+                                            boxShadow: showHolidayListInstructions
+                                                ? '0 4px 12px rgba(234,88,12,0.35)'
+                                                : '0 2px 8px rgba(245,158,11,0.28)'
+                                        }}
+                                        title={showHolidayListInstructions ? 'Hide Holiday Instructions' : 'View Holiday Instructions'}
+                                        aria-label="Toggle Holiday Instructions"
+                                    >
+                                        {!showHolidayListInstructions && (
+                                            <span className="absolute inset-0 rounded-full bg-amber-400/50 animate-ping pointer-events-none" />
+                                        )}
+                                        <span
+                                            className={`relative text-xs font-black leading-none select-none ${!showHolidayListInstructions ? 'animate-pulse' : ''}`}
+                                            style={{ fontFamily: 'Georgia, serif' }}
+                                        >
+                                            i
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowUpcomingHolidayListModal(false);
+                                            setShowHolidayListInstructions(false);
+                                        }}
+                                        className="w-8 h-8 rounded-xl bg-[#FFF5EE] hover:bg-[#FEEBD8] border border-[#FDDCAE] text-[#78350F] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                                        title="Close"
+                                    >
+                                        <IoCloseOutline size={18} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Year Selector Bar (1 Jan YYYY – 31 Dec YYYY) + Category Filter Pills */}
@@ -2089,114 +2126,124 @@ const StudentDashboard = () => {
 
                             {/* Scrollable Body */}
                             <div className="mt-3 space-y-3.5 overflow-y-auto pr-1 flex-1">
-                                {/* Prominent Subject-to-Change & Separate Announcement Disclaimer (Structured English + Hindi) */}
-                                <div className="rounded-2xl p-3.5 bg-[#FFFAF5] border border-[#FDDCAE] space-y-2.5">
-                                    {/* English Structured Block */}
-                                    <div className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2">
-                                        <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-dashed border-orange-200/70">
-                                            <div className="flex items-center gap-1.5">
-                                                <IoInformationCircleOutline size={15} className="text-orange-600 shrink-0" />
-                                                <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
-                                                    Important Notice · English Summary
-                                                </p>
-                                            </div>
-                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                                Subject to Change
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-2 pt-0.5">
-                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                                <p className="text-gray-700 font-medium">
-                                                    <span className="font-extrabold text-gray-900">Schedule Status: </span>
-                                                    This {activeSelectedHolidayYear} holiday list (1 Jan – 31 Dec) is{' '}
-                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                {/* Prominent Subject-to-Change & Separate Announcement Disclaimer (Toggled via Blinking 'i' Icon) */}
+                                <AnimatePresence>
+                                    {showHolidayListInstructions && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="rounded-2xl p-3.5 bg-[#FFFAF5] border border-[#FDDCAE] space-y-2.5"
+                                        >
+                                            {/* English Structured Block */}
+                                            <div className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2">
+                                                <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-dashed border-orange-200/70">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <IoInformationCircleOutline size={15} className="text-orange-600 shrink-0" />
+                                                        <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
+                                                            Important Notice · English Summary
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
                                                         Subject to Change
-                                                    </span>{' '}
-                                                    and includes previous declared, upcoming &amp; listed holidays.
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                                <p className="text-gray-700 font-medium">
-                                                    <span className="font-extrabold text-gray-900">Closure Confirmation: </span>
-                                                    For listed upcoming dates, it is{' '}
-                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
-                                                        Not Confirmed
-                                                    </span>{' '}
-                                                    that the library will remain closed on that day.
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                                <p className="text-gray-700 font-medium">
-                                                    <span className="font-extrabold text-gray-900">Official Declaration: </span>
-                                                    Final holiday confirmation and closure timings will be{' '}
-                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
-                                                        Announced Separately
-                                                    </span>{' '}
-                                                    by the administration.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Hindi Structured Block */}
-                                    <div className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2">
-                                        <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-dashed border-orange-200/70">
-                                            <div className="flex items-center gap-1.5">
-                                                <IoDocumentTextOutline size={14} className="text-orange-600 shrink-0" />
-                                                <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
-                                                    महत्वपूर्ण सूचना · हिंदी सारांश (Hindi Version)
-                                                </p>
-                                            </div>
-                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                                                परिवर्तन के अधीन
-                                            </span>
-                                        </div>
-
-                                        <div className="space-y-2 pt-0.5">
-                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                                <p className="text-gray-700 font-medium">
-                                                    <span className="font-extrabold text-gray-900">सूची की स्थिति: </span>
-                                                    यह {activeSelectedHolidayYear} अवकाश सूची (1 जनवरी – 31 दिसंबर) पूर्व घोषित एवं आगामी अवकाशों के लिए है तथा{' '}
-                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
-                                                        परिवर्तन के अधीन (Subject to Change)
-                                                    </span>{' '}
-                                                    है।
-                                                </p>
-                                            </div>
-
-                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                                <p className="text-gray-700 font-medium">
-                                                    <span className="font-extrabold text-gray-900">बंद रहने की पुष्टि: </span>
-                                                    सूचीबद्ध आगामी तिथियों पर पुस्तकालय बंद रहने की{' '}
-                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
-                                                        पुष्टि नहीं है (Not Confirmed)
                                                     </span>
-                                                    ।
-                                                </p>
+                                                </div>
+
+                                                <div className="space-y-2 pt-0.5">
+                                                    <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                        <p className="text-gray-700 font-medium">
+                                                            <span className="font-extrabold text-gray-900">Schedule Status: </span>
+                                                            This {activeSelectedHolidayYear} holiday list (1 Jan – 31 Dec) is{' '}
+                                                            <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                                Subject to Change
+                                                            </span>{' '}
+                                                            and includes previous declared, upcoming &amp; listed holidays.
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                        <p className="text-gray-700 font-medium">
+                                                            <span className="font-extrabold text-gray-900">Closure Confirmation: </span>
+                                                            For listed upcoming dates, it is{' '}
+                                                            <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                                Not Confirmed
+                                                            </span>{' '}
+                                                            that the library will remain closed on that day.
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                        <p className="text-gray-700 font-medium">
+                                                            <span className="font-extrabold text-gray-900">Official Declaration: </span>
+                                                            Final holiday confirmation and closure timings will be{' '}
+                                                            <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                                Announced Separately
+                                                            </span>{' '}
+                                                            by the administration.
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <div className="flex items-start gap-2 text-xs leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                                <p className="text-gray-700 font-medium">
-                                                    <span className="font-extrabold text-gray-900">आधिकारिक घोषणा: </span>
-                                                    अवकाश की अंतिम घोषणा एवं समय प्रशासन द्वारा{' '}
-                                                    <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
-                                                        अलग से सूचित (Announced Separately)
-                                                    </span>{' '}
-                                                    किया जाएगा।
-                                                </p>
+                                            {/* Hindi Structured Block */}
+                                            <div className="p-3.5 rounded-xl bg-white border border-[#EDE8E0] space-y-2">
+                                                <div className="flex items-center justify-between gap-2 flex-wrap pb-1.5 border-b border-dashed border-orange-200/70">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <IoDocumentTextOutline size={14} className="text-orange-600 shrink-0" />
+                                                        <p className="text-[10px] font-black uppercase tracking-wider text-[#9B7B5A]">
+                                                            महत्वपूर्ण सूचना · हिंदी सारांश (Hindi Version)
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                                        परिवर्तन के अधीन
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-2 pt-0.5">
+                                                    <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                        <p className="text-gray-700 font-medium">
+                                                            <span className="font-extrabold text-gray-900">सूची की स्थिति: </span>
+                                                            यह {activeSelectedHolidayYear} अवकाश सूची (1 जनवरी – 31 दिसंबर) पूर्व घोषित एवं आगामी अवकाशों के लिए है तथा{' '}
+                                                            <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                                परिवर्तन के अधीन (Subject to Change)
+                                                            </span>{' '}
+                                                            है।
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                        <p className="text-gray-700 font-medium">
+                                                            <span className="font-extrabold text-gray-900">बंद रहने की पुष्टि: </span>
+                                                            सूचीबद्ध आगामी तिथियों पर पुस्तकालय बंद रहने की{' '}
+                                                            <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                                पुष्टि नहीं है (Not Confirmed)
+                                                            </span>
+                                                            ।
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex items-start gap-2 text-xs leading-relaxed">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                                        <p className="text-gray-700 font-medium">
+                                                            <span className="font-extrabold text-gray-900">आधिकारिक घोषणा: </span>
+                                                            अवकाश की अंतिम घोषणा एवं समय प्रशासन द्वारा{' '}
+                                                            <span className="inline px-1.5 py-0.5 mx-0.5 rounded bg-orange-100 text-orange-800 border border-orange-300 font-extrabold text-[11px]">
+                                                                अलग से सूचित (Announced Separately)
+                                                            </span>{' '}
+                                                            किया जाएगा।
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
                                 {/* Chronological List of Holidays for Selected Year (1 Jan – 31 Dec) */}
                                 {displayedYearHolidays.length === 0 ? (
@@ -2326,7 +2373,10 @@ const StudentDashboard = () => {
                                 </span>
                                 <button
                                     type="button"
-                                    onClick={() => setShowUpcomingHolidayListModal(false)}
+                                    onClick={() => {
+                                        setShowUpcomingHolidayListModal(false);
+                                        setShowHolidayListInstructions(false);
+                                    }}
                                     className="px-5 py-2.5 rounded-xl font-black text-xs text-white transition-all active:scale-95 hover:opacity-95 cursor-pointer shrink-0"
                                     style={{
                                         background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
