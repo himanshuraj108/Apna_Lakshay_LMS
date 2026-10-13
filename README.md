@@ -48,9 +48,9 @@ API Server (Node.js + Express)
 
 | Role | Scope |
 |------|-------|
-| Super Admin | Full system access — student management, seats, walk-in slots, fees, shifts, settings, analytics, sub-admin management, QR kiosk refresh |
-| Sub Admin | Floor operations — attendance, seat check, student ID card printing, kiosk access, walk-in management, all 16 module cards, inactivation requests routed to super admin |
-| Student | Self-service portal — dashboard, seat view, flexible seating & walk-in booking, fees, AI tools, mock tests, discussion, doubt board, wallet, video learning |
+| Super Admin | Full system access — student lifecycle, seating matrix, walk-in slots, advance & regular fees, shifts, holiday management (AI bilingual notices, email broadcast), analytics, sub-admin control, QR kiosk refresh, system settings |
+| Sub Admin | Floor operations — attendance tracking, seat checks, student ID printing, kiosk access, walk-in requests, live holiday notices, module permissions (advance fees locked), inactivation requests routed to super admin |
+| Student | Self-service portal — dashboard, seat allocation, flexible seating & walk-in booking, advance & due fees, AI learning suite, mock tests, discussion, doubt board, wallet, video learning, holiday notifications, PIN security |
 
 ---
 
@@ -94,6 +94,10 @@ API Server (Node.js + Express)
   - Profile photo upload (Cloudinary) and avatar fallback with initials across all views
 - **Soft-Delete & Archive Safety:** Robust student deletion and archiving without requiring email fields, preventing validation failures
 - **Student Roster PDF:** Branded student directory export with watermark and telephone dialer links
+- **Modern Student Portal & Warm Design System:**
+  - Modern warm cream design palette (`#F7F3EC`) with subtle dot-grid texture, warm card borders (`#EDE8E0`), and energetic orange accents (`linear-gradient(135deg, #F97316, #EA580C)`)
+  - Vector icon standardization replacing raw emojis with crisp `react-icons/io5` across ID card rules, quick PIN login, shift change requests, and seat selection modals
+  - Quick App PIN management (configure, update, or remove 4–6 digit PIN for fast authentication)
 - Status history log per student
 - Sub-admin inactivation request routed to super admin with approval or disapproval
 - Seat restoration on disapproval with conflict-aware relocation
@@ -108,17 +112,38 @@ API Server (Node.js + Express)
 - Manual instant check-in (no scan required)
 - Location-bound attendance (geofence)
 - Login-triggered attendance
+- **Global Attendance Window Enforcement:**
+  - Attendance check-in is strictly allowed between **6:00 AM – 9:00 PM IST** (system locks out attendance between 9:00 PM and 6:00 AM IST) across both QR scan and manual check-in endpoints.
+  - Informative real-time UI status alerts and restrictions outside permitted operational hours.
+- **Shift Time Lock (Flexible Entry):**
+  - **Toggle OFF (default):** Backend enforces the global 6:00 AM – 9:00 PM IST window.
+  - **Toggle ON:** Students can only mark attendance 1 hour before shift start to 1 hour after shift end; attendance buttons and scanner lock outside this window with time countdown display.
+- **Neutral Holiday Attendance Policy:**
+  - Official library holidays and partial closures are strictly excluded from total operational days.
+  - Students' attendance percentages, performance scores, and study streaks are never penalized for library closures across Student Dashboard, Monthly Reports, and Admin Analytics.
+- **Interactive Blinking Instructions Icon:** Animated pulsing circular `i` icon (`animate-ping` + `animate-pulse`) for toggling instructions in holiday popup, student holiday list, attendance card, and admin holiday manager.
 - Attendance trend graphs and monthly/yearly report with seat and shift columns
 - **Monthly Attendance PDF Report:** Export formatted monthly reports featuring library logo watermark, lifetime overall attendance percentage calculation, top 75% attendance highlight badge, and direct phone dialer links
 - Top-5 student highlight toggle in attendance report
 - Absent tracking and daily log
-- Shift Time Lock — configurable per-library:
-  - **Toggle OFF (default):** Backend enforces 5 AM – 10 PM window only; no frontend restriction
-  - **Toggle ON (Flexible Entry):** Students can mark attendance 1 hour before shift start to 1 hour after shift end; button and QR scanner locked outside this window with time display
+
+### Holiday and Library Closure Management
+
+- **Multi-Day & Single-Day Declarations:** Super admin can declare single-day holidays, date ranges, recurring annual holidays, or multi-day batch entries (`batchId`).
+- **Partial Holiday & Custom Timings:** Declare partial library closures or modified operating hours with custom start/end times (e.g. library open only 10:00 AM – 4:00 PM or closed in evening).
+- **AI-Powered Bilingual Notice Generator:** Instant generation of compassionate, professional English and Hindi notices via Groq LLM (with stream decoding UTF-8 safety via `Buffer.concat` to ensure zero broken characters).
+- **Automated Bulk Email Notifications:** Sends mobile-responsive branded HTML emails to all active students with stylized date, timing, and library closure pills.
+- **Real-Time Asia/Kolkata (IST) Auto-Expiry:** Automatically clears expired holidays and ended partial timing windows across all student and admin dashboards without manual admin deletion.
+- **Blocking Notice Pop-Up & Sticky Banner:** Prominent modal with "Remind Later" and "Got It" dismissal options for students and sub-admins.
+- **Year-Wise Holiday Archive & Manager:** Group holidays by year, sort latest-on-top, and toggle public student list visibility.
+- **Neutral Attendance Calculation:** Automatically excludes holiday dates from total days in attendance metrics.
 
 ### Fee Management
 
 - Fee record creation, due tracking, and settlement
+- **Advance Fee Payment Tab:** Dedicated administrative tab with full active student roster, search, and upfront collection modal.
+- **Upcoming Due Collection Modal:** Collect payments in advance before regular billing cycle generation.
+- **Sub-Admin Permission Lock:** Advance payments restricted to authorized administrative personnel.
 - Razorpay online payment integration
 - Physical receipt generation (jsPDF + autotable)
 - Pending dues dashboard for admin
@@ -282,10 +307,12 @@ lms/
 | Settings | Global system configuration (includes flexibleEntry, timeRestrictionEnabled) |
 | SubAdmin | Sub-admin extended profile |
 | ArchivedStudent | Soft-deleted student records |
-| Holiday | Library holiday calendar |
+| Holiday | Library holiday calendar, multi-day batches, partial closure timings, email dispatch records |
 | DailyAbsence | Student daily absence records for temporary seat freeing |
 | WalkinSlot | Configurable walk-in session definitions, hours, fees, and eligible seats |
 | WalkinRequest | Walk-in seating requests, approvals, check-ins, check-outs, and fee charges |
+| PasswordLog | Administrative credential update and reset audit trail |
+| SystemUpdate | System version announcements and updates broadcast to users |
 
 ---
 
@@ -457,14 +484,14 @@ All API routes are prefixed with `/api`.
 
 | Prefix | Module |
 |--------|--------|
-| /api/auth | Login, register, forgot password, token refresh, duplicate mobile profile selection |
-| /api/admin | All super admin and sub-admin operations |
-| /api/student | All student self-service operations |
-| /api/walkin | Walk-in slots, daily absences, partial vacancy calculations, instant occupancy, requests, check-in/out |
-| /api/public | Public endpoints (settings, landing page data) |
-| /api/settings | System settings read and update |
-| /api/chat | Discussion room messages |
-| /api/study | Study planner operations |
+| /api/auth | Login, register, quick PIN authentication, forgot password, token refresh, duplicate mobile profile selection |
+| /api/admin | Super admin and sub-admin operations — student lifecycle, seating matrix, shifts, regular & advance fees, holiday management (AI bilingual generation, email broadcast), analytics, kiosk |
+| /api/student | Student self-service operations — dashboard, attendance check-in, seat view, fee payments, holidays, AI suite, doubt board, wallet, video learning, PIN security |
+| /api/walkin | Walk-in slots, daily absences, partial vacancy intervals, instant seat claim/release, requests, physical check-in/out |
+| /api/public | Public endpoints — library layout, available seats, settings, landing page data |
+| /api/settings | System settings read and update (maintenance, time restrictions, shift lock, holiday visibility) |
+| /api/chat | Public discussion room messages and real-time socket events |
+| /api/study | AI study planner operations |
 
 ---
 
