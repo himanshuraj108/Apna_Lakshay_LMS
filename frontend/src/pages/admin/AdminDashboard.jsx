@@ -684,6 +684,9 @@ const AdminDashboard = () => {
         }
     };
 
+    const currentHours = currentTime.getHours();
+    const isLibraryOpen = currentHours >= 6 && currentHours < 21;
+
     const METRIC_CARDS = [
         {
             title: 'Total Seats',
@@ -734,7 +737,9 @@ const AdminDashboard = () => {
         {
             title: 'Daily Check-In',
             value: (metrics.todayAttendance || 0).toLocaleString(),
-            sub: `${metrics.currentlyCheckedIn || 0} currently inside`,
+            sub: isLibraryOpen
+                ? `${metrics.currentlyCheckedIn || 0} currently inside`
+                : 'Closed after 9 PM · Opens 6 AM',
             badge: metrics.todayAttendance > 0 ? `${metrics.todayAttendance} Today` : 'No check-ins',
             badgeColor: metrics.todayAttendance > 0 ? 'bg-teal-50 text-teal-700 border-teal-200/80' : 'bg-stone-50 text-stone-500 border-stone-200/80',
             icon: IoCalendarOutline,
@@ -835,14 +840,17 @@ const AdminDashboard = () => {
     const occupiedCirc = totalDesksReal > 0 ? (occupiedDesksReal / totalDesksReal) * 239 : 0;
     const vacantCirc = totalDesksReal > 0 ? (vacantDesksReal / totalDesksReal) * 239 : 0;
 
-    /* ── Real-Time Live HUD Clock & Shift Computations ─────── */
+    /* ── Real-Time Live HUD Clock & Watch Computations ─────── */
+    const adminDisplayName = (() => {
+        if (!user?.name) return 'Admin';
+        const trimmed = user.name.trim();
+        if (/^system(\s+admin(istrator)?)?$/i.test(trimmed)) return 'Administrator';
+        return trimmed;
+    })();
+
     const hours = currentTime.getHours();
     const minutes = currentTime.getMinutes();
     const seconds = currentTime.getSeconds();
-
-    const isLibraryOpen = hours >= 6 && hours < 21;
-    const libraryStatusText = isLibraryOpen ? 'Library Open' : 'Library Closed';
-    const libraryTimingsText = '06:00 AM – 09:00 PM';
 
     const formattedDigitalTime = currentTime.toLocaleTimeString('en-IN', {
         hour: '2-digit',
@@ -860,7 +868,7 @@ const AdminDashboard = () => {
     const secondAngle = seconds * 6;
     const minuteAngle = (minutes + seconds / 60) * 6;
     const hourAngle = ((hours % 12) + minutes / 60) * 30;
-    const watchCircumference = 2 * Math.PI * 26; // ~163.36
+    const watchCircumference = 2 * Math.PI * 24; // ~150.8
     const watchDashOffset = watchCircumference * (1 - seconds / 60);
 
     const occupancyPercent = totalDesksReal > 0
@@ -1476,58 +1484,81 @@ const AdminDashboard = () => {
                     />
 
                     {/* ══════════════════════════════════════════════════════
-                        HERO GREETING BANNER
+                        HERO GREETING BANNER WITH PRECISION WATCH
                     ══════════════════════════════════════════════════════ */}
-                    <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-[#1C1917] via-[#292524] to-[#431407] text-white p-6 sm:p-7 shadow-lg border border-[#3E3835]">
-                        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#F59E0B_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
+                    <div
+                        className="relative rounded-3xl overflow-hidden p-6 sm:p-7 text-white transition-all shadow-xl shadow-black/10 border border-[#2E2824]"
+                        style={{
+                            background: 'linear-gradient(135deg, #1C1917 0%, #26211D 50%, #1A1715 100%)',
+                        }}
+                    >
+                        {/* Soft Luxury Amber Ambient Backlight (No harsh dots) */}
+                        <div
+                            className="absolute -top-24 -right-24 w-80 h-80 rounded-full pointer-events-none opacity-20 blur-3xl"
+                            style={{ background: 'radial-gradient(circle, #F97316 0%, transparent 70%)' }}
+                        />
+                        <div
+                            className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full pointer-events-none opacity-15 blur-3xl"
+                            style={{ background: 'radial-gradient(circle, #D97706 0%, transparent 70%)' }}
+                        />
+
                         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                            <div>
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-amber-300 text-xs font-bold mb-3 border border-white/15">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-                                    <span>Super Admin Control Deck</span>
+                            <div className="max-w-xl">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md text-amber-300 text-xs font-bold mb-3 border border-white/10">
+                                    <span className="w-2 h-2 rounded-full bg-orange-400" />
+                                    <span>Apna Lakshay Library · Sitamarhi</span>
                                 </div>
-                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                                    Welcome back, {user?.name ? user.name.split(' ')[0] : 'Admin'}!
+                                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+                                    Welcome back, {adminDisplayName}!
                                 </h2>
-                                <p className="text-stone-300 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed font-medium">
-                                    Live telemetry across student seats, student requests, shift rosters, and collections.
+                                <p className="text-stone-300 text-xs sm:text-sm mt-1.5 leading-relaxed font-normal">
+                                    Live operational overview across student seating, attendance, and daily collections.
                                 </p>
                             </div>
-                            
-                            {/* Circle Running Watch with Real-Time Digital Clock & Active Shift */}
-                            <div className="w-full md:w-auto bg-white/[0.07] hover:bg-white/[0.10] backdrop-blur-xl border border-white/15 rounded-2xl p-4 sm:p-4.5 shadow-2xl shadow-black/25 transition-all duration-300 flex items-center gap-4 sm:gap-5">
-                                {/* SVG Circular Running Watch Dial */}
+
+                            {/* Precision Chronometer Watch & Live Status HUD */}
+                            <div className="w-full md:w-auto bg-white/[0.06] hover:bg-white/[0.09] backdrop-blur-xl border border-white/12 rounded-2xl p-4 sm:p-4.5 shadow-xl shadow-black/20 transition-all duration-300 flex items-center gap-4 sm:gap-5">
+                                {/* Swiss Chronometer Style Running Watch Dial */}
                                 <div className="relative shrink-0 flex items-center justify-center">
-                                    <svg width="68" height="68" viewBox="0 0 64 64" className="drop-shadow-[0_2px_12px_rgba(249,115,22,0.3)]">
+                                    <svg width="72" height="72" viewBox="0 0 64 64" className="drop-shadow-[0_2px_14px_rgba(249,115,22,0.35)]">
                                         <defs>
-                                            <linearGradient id="watchSecondsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" stopColor="#F59E0B" />
+                                            <linearGradient id="watchGradOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stopColor="#FBBF24" />
                                                 <stop offset="50%" stopColor="#F97316" />
-                                                <stop offset="100%" stopColor="#EF4444" />
+                                                <stop offset="100%" stopColor="#EA580C" />
+                                            </linearGradient>
+                                            <linearGradient id="dialBezel" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stopColor="#2E2824" />
+                                                <stop offset="100%" stopColor="#171412" />
                                             </linearGradient>
                                         </defs>
 
-                                        {/* Dial Background Face */}
-                                        <circle cx="32" cy="32" r="28" fill="#1C1917" stroke="rgba(255,255,255,0.14)" strokeWidth="2" />
+                                        {/* Outer Bezel */}
+                                        <circle cx="32" cy="32" r="29" fill="url(#dialBezel)" stroke="rgba(255,255,255,0.18)" strokeWidth="1.5" />
+                                        {/* Inner Dial Face */}
+                                        <circle cx="32" cy="32" r="25.5" fill="#141210" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
 
                                         {/* 12 Hour Dial Ticks */}
-                                        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => (
-                                            <line
-                                                key={deg}
-                                                x1="32" y1="7" x2="32" y2={deg % 90 === 0 ? "10.5" : "8.5"}
-                                                stroke={deg % 90 === 0 ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.25)"}
-                                                strokeWidth={deg % 90 === 0 ? "1.5" : "1"}
-                                                strokeLinecap="round"
-                                                transform={`rotate(${deg} 32 32)`}
-                                            />
-                                        ))}
+                                        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(deg => {
+                                            const isCardinal = deg % 90 === 0;
+                                            return (
+                                                <line
+                                                    key={deg}
+                                                    x1="32" y1="8.5" x2="32" y2={isCardinal ? "12" : "10"}
+                                                    stroke={isCardinal ? "#F97316" : "rgba(255,255,255,0.35)"}
+                                                    strokeWidth={isCardinal ? "1.8" : "1"}
+                                                    strokeLinecap="round"
+                                                    transform={`rotate(${deg} 32 32)`}
+                                                />
+                                            );
+                                        })}
 
                                         {/* Circular Running Seconds Progress Track */}
                                         <circle
-                                            cx="32" cy="32" r="26"
+                                            cx="32" cy="32" r="24"
                                             fill="transparent"
-                                            stroke="url(#watchSecondsGrad)"
-                                            strokeWidth="2.5"
+                                            stroke="url(#watchGradOrange)"
+                                            strokeWidth="2.2"
                                             strokeLinecap="round"
                                             strokeDasharray={watchCircumference}
                                             strokeDashoffset={watchDashOffset}
@@ -1537,71 +1568,72 @@ const AdminDashboard = () => {
 
                                         {/* Hour Hand */}
                                         <line
-                                            x1="32" y1="32" x2="32" y2="18"
+                                            x1="32" y1="32" x2="32" y2="19"
                                             stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round"
                                             transform={`rotate(${hourAngle} 32 32)`}
                                         />
 
                                         {/* Minute Hand */}
                                         <line
-                                            x1="32" y1="32" x2="32" y2="12"
-                                            stroke="#FDBA74" strokeWidth="1.8" strokeLinecap="round"
+                                            x1="32" y1="32" x2="32" y2="13.5"
+                                            stroke="#FED7AA" strokeWidth="1.8" strokeLinecap="round"
                                             transform={`rotate(${minuteAngle} 32 32)`}
                                         />
 
-                                        {/* Running Second Hand */}
+                                        {/* Running Second Hand (with counter-balance tail) */}
                                         <line
-                                            x1="32" y1="36" x2="32" y2="9.5"
+                                            x1="32" y1="37" x2="32" y2="10"
                                             stroke="#F97316" strokeWidth="1.2" strokeLinecap="round"
                                             transform={`rotate(${secondAngle} 32 32)`}
                                         />
 
                                         {/* Center Pivot Pin */}
-                                        <circle cx="32" cy="32" r="2.5" fill="#F97316" stroke="#FFFFFF" strokeWidth="1" />
+                                        <circle cx="32" cy="32" r="2.8" fill="#F97316" stroke="#FFFFFF" strokeWidth="1" />
+                                        <circle cx="32" cy="32" r="1" fill="#FFFFFF" />
                                     </svg>
 
-                                    {/* Live pulsing status dot */}
+                                    {/* Live ticking indicator */}
                                     <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 border border-[#1C1917]" />
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500 border-2 border-[#1C1917]" />
                                     </span>
                                 </div>
 
                                 {/* Active Shift & Digital Time Details */}
                                 <div className="flex flex-col justify-center min-w-0">
-                                    {/* Operating Status Tag */}
+                                    {/* Operating Status Pill */}
                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full ${
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                                             isLibraryOpen
-                                                ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300'
-                                                : 'bg-rose-500/15 border border-rose-400/30 text-rose-300'
-                                        } text-[11px] font-extrabold tracking-wide`}>
+                                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
+                                                : 'bg-rose-500/15 text-rose-300 border border-rose-400/30'
+                                        }`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${
                                                 isLibraryOpen
-                                                    ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]'
+                                                    ? 'bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]'
                                                     : 'bg-rose-400'
                                             }`} />
-                                            <span>{libraryStatusText}</span>
+                                            <span>{isLibraryOpen ? 'Library Open' : 'Library Closed'}</span>
                                         </span>
-                                        <span className="text-[11px] font-bold text-amber-300">
-                                            6:00 AM – 9:00 PM Open
+                                        <span className="text-[11px] font-semibold text-stone-300">
+                                            {isLibraryOpen ? 'Closes at 9:00 PM' : 'Opens at 6:00 AM'}
                                         </span>
                                     </div>
 
                                     {/* Digital Running Time */}
                                     <div className="flex items-baseline gap-1 font-mono text-white tracking-wider">
-                                        <span className="text-2xl sm:text-3xl font-black">
+                                        <span className="text-2xl sm:text-3xl font-black tabular-nums">
                                             {formattedDigitalTime}
                                         </span>
                                     </div>
 
                                     {/* Date & Schedule Subtitle */}
-                                    <p className="text-[11px] font-medium text-stone-300 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                    <p className="text-[11px] font-medium text-stone-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                                         <IoCalendarOutline size={12} className="text-amber-400 shrink-0" />
                                         <span>{formattedFullDate}</span>
-                                        <span className="text-stone-500">·</span>
+                                        <span className="text-stone-600">·</span>
                                         <span className="text-[10px] text-stone-400 font-semibold">
-                                            {isLibraryOpen ? 'Open 6 AM to 9 PM (Closed after 9 PM · Every 7 Days)' : 'Closed after 9 PM · Opens at 6 AM (Every 7 Days)'}
+                                            Regular Hours 6:00 AM – 9:00 PM (Daily)
                                         </span>
                                     </p>
                                 </div>
@@ -2074,11 +2106,21 @@ const AdminDashboard = () => {
                                                         {t.month && t.year ? `${t.month}/${t.year}` : (t.type || 'Standard Fee')}
                                                     </td>
                                                     <td className="py-2.5 font-black text-stone-900 text-xs">
-                                                        ₹{(t.amount || 0).toLocaleString('en-IN')}
+                                                        ₹{((t.transactionAmount ?? t.lastPaymentAmount) || (t.status === 'partial' ? t.partialPaid : t.amount) || 0).toLocaleString('en-IN')}
+                                                        {t.status === 'partial' && (
+                                                            <span className="block text-[10px] text-stone-400 font-normal">of ₹{(t.amount || 0).toLocaleString('en-IN')}</span>
+                                                        )}
+                                                        {t.status === 'paid' && (t.transactionAmount || t.lastPaymentAmount) && (t.transactionAmount || t.lastPaymentAmount) < t.amount && (
+                                                            <span className="block text-[10px] text-emerald-600 font-normal">cleared ₹{(t.amount || 0).toLocaleString('en-IN')}</span>
+                                                        )}
                                                     </td>
                                                     <td className="py-2.5">
-                                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                            {t.status || 'Paid'}
+                                                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                                            t.status === 'partial'
+                                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                        }`}>
+                                                            {t.status === 'partial' ? 'Partial' : 'Paid'}
                                                         </span>
                                                     </td>
                                                 </tr>
