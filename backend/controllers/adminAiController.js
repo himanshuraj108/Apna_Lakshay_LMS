@@ -24,6 +24,62 @@ const getLiveOperationalMetrics = async () => {
     const startOfTodayIST = new Date(`${istDateStr}T00:00:00.000Z`);
     const endOfTodayIST   = new Date(`${istDateStr}T23:59:59.999Z`);
 
+    const hourIST = nowIST.getUTCHours();
+    const minIST = nowIST.getUTCMinutes();
+    const currentMinsIST = hourIST * 60 + minIST;
+    // Campus operating hours: 6:00 AM (360) to 9:00 PM (1260)
+    const isLibraryOpen = currentMinsIST >= 360 && currentMinsIST < 1260;
+
+    // Auto-close open attendance sessions when library is closed (past 21:00)
+    if (!isLibraryOpen && currentMinsIST >= 1260) {
+        try {
+            await Attendance.updateMany(
+                {
+                    date: { $gte: startOfTodayIST, $lte: endOfTodayIST },
+                    status: 'present',
+                    $or: [{ exitTime: null }, { exitTime: '' }, { exitTime: { $exists: false } }]
+                },
+                {
+                    $set: {
+                        exitTime: '21:00',
+                        isActive: false
+                    }
+                }
+            );
+        } catch (_) {}
+    }
+
+    // Self-heal: Backfill lastPaymentAmount and paymentHistory for fees collected/settled today
+    try {
+        const unbackfilledFees = await Fee.find({
+            status: { $in: ['paid', 'partial'] },
+            paidDate: { $gte: startOfTodayIST },
+            lastPaymentAmount: null
+        });
+        for (const fee of unbackfilledFees) {
+            const log = await ActionLog.findOne({
+                targetId: fee._id,
+                action: { $in: ['fee_marked_paid', 'fee_partial_paid'] }
+            }).sort({ createdAt: -1 });
+            if (log && log.targetName && log.targetName.includes('₹')) {
+                const parsed = Number(log.targetName.replace(/[^0-9]/g, ''));
+                if (parsed > 0) {
+                    fee.lastPaymentAmount = parsed;
+                    if (!fee.paymentHistory || fee.paymentHistory.length === 0) {
+                        fee.paymentHistory = [{
+                            amount: parsed,
+                            paidDate: fee.paidDate || log.createdAt,
+                            paymentType: fee.status === 'partial' ? 'partial' : 'full'
+                        }];
+                    }
+                    await fee.save();
+                }
+            }
+        }
+    } catch (e) {
+        // Non-blocking
+    }
+
     const [
         totalStudents,
         totalSeats,
@@ -50,7 +106,14 @@ const getLiveOperationalMetrics = async () => {
             }
         ]),
         Attendance.countDocuments({ date: { $gte: startOfTodayIST, $lte: endOfTodayIST }, status: 'present' }),
-        Attendance.countDocuments({ date: { $gte: startOfTodayIST, $lte: endOfTodayIST }, status: 'present', isActive: true }),
+        isLibraryOpen
+            ? Attendance.countDocuments({
+                date: { $gte: startOfTodayIST, $lte: endOfTodayIST },
+                status: 'present',
+                isActive: true,
+                exitTime: { $in: [null, ''] }
+            })
+            : 0,
         Fee.aggregate([
             { $match: { status: { $in: ['paid', 'partial'] } } },
             {
@@ -73,6 +136,7 @@ const getLiveOperationalMetrics = async () => {
                 $match: {
                     status: { $in: ['paid', 'partial'] },
                     $or: [
+                        { 'paymentHistory.paidDate': { $gte: startOfTodayIST } },
                         { paidDate: { $gte: startOfTodayIST } },
                         { paidDate: null, updatedAt: { $gte: startOfTodayIST } }
                     ]
@@ -83,18 +147,42 @@ const getLiveOperationalMetrics = async () => {
                     _id: null,
                     total: {
                         $sum: {
-                            $cond: [
-                                { $eq: ['$status', 'partial'] },
-                                { $ifNull: ['$partialPaid', 0] },
-                                '$amount'
-                            ]
+                            $let: {
+                                vars: {
+                                    todayPayments: {
+                                        $filter: {
+                                            input: { $ifNull: ['$paymentHistory', []] },
+                                            as: 'p',
+                                            cond: { $gte: ['$$p.paidDate', startOfTodayIST] }
+                                        }
+                                    }
+                                },
+                                in: {
+                                    $cond: [
+                                        { $gt: [{ $size: '$$todayPayments' }, 0] },
+                                        { $sum: '$$todayPayments.amount' },
+                                        {
+                                            $ifNull: [
+                                                '$lastPaymentAmount',
+                                                {
+                                                    $cond: [
+                                                        { $eq: ['$status', 'partial'] },
+                                                        { $ifNull: ['$partialPaid', 0] },
+                                                        '$amount'
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
                         }
                     }
                 }
             }
         ]),
         Fee.aggregate([
-            { $match: { status: { $in: ['pending', 'overdue'] } } },
+            { $match: { status: { $in: ['pending', 'overdue', 'partial'] } } },
             {
                 $lookup: {
                     from: 'users',
@@ -114,7 +202,15 @@ const getLiveOperationalMetrics = async () => {
                 $group: {
                     _id: null,
                     count: { $sum: 1 },
-                    totalAmount: { $sum: '$amount' }
+                    totalAmount: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'partial'] },
+                                { $ifNull: ['$outstanding', { $subtract: ['$amount', { $ifNull: ['$partialPaid', 0] }] }] },
+                                '$amount'
+                            ]
+                        }
+                    }
                 }
             }
         ]),
@@ -380,19 +476,48 @@ exports.getLiveDashboardData = async (req, res) => {
             };
         });
 
-        // 5. Real Recent Transactions (Fees paid)
-        const recentTransactions = await Fee.find({ status: 'paid' })
+        // 5. Real Recent Transactions (Fees paid / partial installments)
+        const recentFees = await Fee.find({ status: { $in: ['paid', 'partial'] } })
             .populate('student', 'name email mobile studentId')
             .sort({ paidDate: -1, updatedAt: -1 })
             .limit(6)
             .lean();
 
-        // 6. Real Pending Fees
-        const pendingFeesList = await Fee.find({ status: { $in: ['pending', 'overdue'] } })
-            .populate('student', 'name email mobile studentId')
+        const recentTransactions = await Promise.all(recentFees.map(async (fee) => {
+            let txAmount = fee.lastPaymentAmount;
+            if (txAmount == null) {
+                if (fee.status === 'paid') {
+                    const log = await ActionLog.findOne({
+                        targetId: fee._id,
+                        action: 'fee_marked_paid'
+                    }).sort({ createdAt: -1 }).lean();
+                    if (log && log.targetName && log.targetName.includes('₹')) {
+                        const parsed = Number(log.targetName.replace(/[^0-9]/g, ''));
+                        if (parsed > 0) txAmount = parsed;
+                    }
+                } else if (fee.status === 'partial') {
+                    txAmount = fee.partialPaid || fee.amount;
+                }
+                if (txAmount == null) txAmount = fee.amount;
+            }
+
+            return {
+                ...fee,
+                transactionAmount: txAmount
+            };
+        }));
+
+        // 6. Real Pending Fees (active students only)
+        const rawPending = await Fee.find({ status: { $in: ['pending', 'overdue', 'partial'] } })
+            .populate({
+                path: 'student',
+                match: { isActive: { $ne: false } },
+                select: 'name email mobile studentId'
+            })
             .sort({ dueDate: 1, createdAt: -1 })
-            .limit(6)
+            .limit(10)
             .lean();
+        const pendingFeesList = rawPending.filter(f => f.student).slice(0, 6);
 
         // 7. Real Announcements from Notification collection
         const notifications = await Notification.find({ type: 'announcement' })
