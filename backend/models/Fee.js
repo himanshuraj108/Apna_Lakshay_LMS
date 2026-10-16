@@ -33,6 +33,18 @@ const feeSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    lastPaymentAmount: {
+        type: Number,
+        default: null
+    },
+    paymentHistory: [{
+        amount: { type: Number, required: true },
+        paidDate: { type: Date, default: Date.now },
+        paymentType: { type: String, enum: ['full', 'partial', 'online'], default: 'full' },
+        markedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        razorpayPaymentId: { type: String, default: null },
+        note: { type: String, default: '' }
+    }],
     paidDate: {
         type: Date,
         default: null
