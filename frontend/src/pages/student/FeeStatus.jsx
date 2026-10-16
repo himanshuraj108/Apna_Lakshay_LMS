@@ -109,12 +109,18 @@ const FeeStatus = () => {
 
     const handlePayment = async (fee) => {
         try {
+            const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+            if (!razorpayKey) {
+                showToast('Online payment gateway is temporarily unavailable. Please pay at the library desk.', 'error');
+                return;
+            }
+
             // 1. Create order on backend
             const { data } = await api.post(`/student/fees/${fee._id}/create-order`);
             
             // 2. Setup Razorpay options
             const options = {
-                key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SeyCQ3mGQ4m7AH', // fallback strictly for demo
+                key: razorpayKey,
                 amount: data.amount,
                 currency: data.currency,
                 name: 'Library Management System',
@@ -162,7 +168,7 @@ const FeeStatus = () => {
             const shouldAutoPay = searchParams.get('pay') === 'now';
             if (shouldAutoPay) {
                 autoPayAttempted.current = true;
-                const pendingFee = fees.find(f => f.status !== 'paid');
+                const pendingFee = fees.find(f => f.status === 'pending' || f.status === 'overdue' || f.status === 'partial');
                 if (pendingFee) {
                     setSearchParams({}); // Clean up URL immediately
                     handlePayment(pendingFee);
@@ -176,6 +182,7 @@ const FeeStatus = () => {
     const totalPending = fees.filter(f => f.status === 'pending' || f.status === 'overdue').reduce((s, f) => s + f.amount, 0)
                         + fees.filter(f => f.status === 'partial').reduce((s, f) => s + (f.outstanding || 0), 0);
     const paidCount    = fees.filter(f => f.status === 'paid').length;
+    const pendingCount = fees.filter(f => f.status === 'pending' || f.status === 'overdue' || f.status === 'partial').length;
 
     return (
         <div className="min-h-screen text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -222,7 +229,7 @@ const FeeStatus = () => {
                 {/* ── Stat Chips ─────────────────────────────────────── */}
                 <div className="grid grid-cols-3 gap-3 mb-5">
                     <StatChip label="Total Paid"    value={`₹${totalPaid}`}    sub={`${paidCount} months`}              accentColor="#22c55e" icon={IoCashOutline}    delay={0} />
-                    <StatChip label="Pending"       value={`₹${totalPending}`} sub={`${fees.length - paidCount} months`} accentColor="#f59e0b" icon={IoTimeOutline}   delay={0.07} />
+                    <StatChip label="Pending"       value={`₹${totalPending}`} sub={`${pendingCount} months`}           accentColor="#f59e0b" icon={IoTimeOutline}   delay={0.07} />
                     <StatChip label="Total Records" value={fees.length}        sub="all months"                           accentColor="#6366f1" icon={IoReceiptOutline} delay={0.13} />
                 </div>
 
