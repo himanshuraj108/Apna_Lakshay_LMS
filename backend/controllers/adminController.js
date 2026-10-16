@@ -95,7 +95,14 @@ exports.getAnalytics = async (req, res) => {
         // 1. Current Occupancy (Exact date match for today's attendance document)
         const activeCount = await Attendance.countDocuments({
             date: today,
-            isActive: true
+            status: 'present',
+            $or: [
+                { isActive: true },
+                { exitTime: null },
+                { exitTime: '' },
+                { exitTime: { $exists: false } }
+            ],
+            exitTime: { $in: [null, ''] }
         });
 
         // 2. Daily Attendance Trends (Last X days)
@@ -682,27 +689,23 @@ exports.getDashboard = async (req, res) => {
 
         // 3b. expectedMonthlyFee already computed above
 
-        // 4. Fees Collected
+        // 4. Fees Collected (Lifetime across all students)
         const feesCollectedAgg = await Fee.aggregate([
-            { $match: { status: 'paid' } },
+            { $match: { status: { $in: ['paid', 'partial'] } } },
             {
-                $lookup: {
-                    from: 'users',
-                    localField: 'student',
-                    foreignField: '_id',
-                    as: 'studentInfo'
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'partial'] },
+                                { $ifNull: ['$partialPaid', 0] },
+                                '$amount'
+                            ]
+                        }
+                    }
                 }
-            },
-            { $unwind: '$studentInfo' },
-            {
-                $match: {
-                    $or: [
-                        { 'studentInfo.systemMode': mode },
-                        ...(mode === 'default' ? [{ 'studentInfo.systemMode': { $exists: false } }] : [])
-                    ]
-                }
-            },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
+            }
         ]);
         const feesCollected = feesCollectedAgg[0]?.total || 0;
 
@@ -713,31 +716,52 @@ exports.getDashboard = async (req, res) => {
         const todayFeesCollectedAgg = await Fee.aggregate([
             {
                 $match: {
-                    status: 'paid',
+                    status: { $in: ['paid', 'partial'] },
                     $or: [
+                        { 'paymentHistory.paidDate': { $gte: startOfToday } },
                         { paidDate: { $gte: startOfToday } },
                         { paidDate: null, updatedAt: { $gte: startOfToday } }
                     ]
                 }
             },
             {
-                $lookup: {
-                    from: 'users',
-                    localField: 'student',
-                    foreignField: '_id',
-                    as: 'studentInfo'
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: {
+                            $let: {
+                                vars: {
+                                    todayPayments: {
+                                        $filter: {
+                                            input: { $ifNull: ['$paymentHistory', []] },
+                                            as: 'p',
+                                            cond: { $gte: ['$$p.paidDate', startOfToday] }
+                                        }
+                                    }
+                                },
+                                in: {
+                                    $cond: [
+                                        { $gt: [{ $size: '$$todayPayments' }, 0] },
+                                        { $sum: '$$todayPayments.amount' },
+                                        {
+                                            $ifNull: [
+                                                '$lastPaymentAmount',
+                                                {
+                                                    $cond: [
+                                                        { $eq: ['$status', 'partial'] },
+                                                        { $ifNull: ['$partialPaid', 0] },
+                                                        '$amount'
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
                 }
-            },
-            { $unwind: '$studentInfo' },
-            {
-                $match: {
-                    $or: [
-                        { 'studentInfo.systemMode': mode },
-                        ...(mode === 'default' ? [{ 'studentInfo.systemMode': { $exists: false } }] : [])
-                    ]
-                }
-            },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
+            }
         ]);
         const todayFeesCollected = todayFeesCollectedAgg[0]?.total || 0;
 
@@ -1469,13 +1493,13 @@ exports.bulkUpdateStudentFees = async (req, res) => {
             }
 
             if (currentPrice == null || currentPrice === 0) {
-                if (seat) {
-                    currentPrice = seat.basePrices?.full || 1200;
-                } else if (student.currentFee) {
-                    currentPrice = student.currentFee;
+                const latestFee = await Fee.findOne({ student: student._id }).sort({ year: -1, month: -1 });
+                if (latestFee?.amount) {
+                    currentPrice = latestFee.amount;
+                } else if (seat) {
+                    currentPrice = seat.basePrices?.full || seat.basePrices?.day || seat.basePrices?.morning || 0;
                 } else {
-                    const latestFee = await Fee.findOne({ student: student._id }).sort({ year: -1, month: -1 });
-                    currentPrice = latestFee ? latestFee.amount : 1000;
+                    currentPrice = 0;
                 }
             }
 
@@ -2957,6 +2981,9 @@ exports.markAttendance = async (req, res) => {
                 updateData.entryTime = null;
                 updateData.exitTime = null;
                 updateData.duration = 0;
+                updateData.isActive = false;
+            } else if (status === 'present') {
+                updateData.isActive = !exitTime;
             }
 
             // Add optional fields if provided — treat empty string as null
@@ -3835,7 +3862,7 @@ exports.getVacantSeats = async (req, res) => {
 exports.getFees = async (req, res) => {
 
     try {
-        // Self-heal: sync all pending/overdue fee amounts to current seat assignment price
+        // Self-heal: only fix zero-amount or uninitialized pending/overdue fee records
         try {
             const activeSeatsForSync = await Seat.find({ 'assignments.status': 'active' }).lean();
             for (const seat of activeSeatsForSync) {
@@ -3843,7 +3870,11 @@ exports.getFees = async (req, res) => {
                 for (const assignment of activeAssignments) {
                     if (assignment.price && assignment.student) {
                         await Fee.updateMany(
-                            { student: assignment.student, status: { $in: ['pending', 'overdue'] } },
+                            {
+                                student: assignment.student,
+                                status: { $in: ['pending', 'overdue'] },
+                                $or: [{ amount: 0 }, { amount: null }, { amount: { $exists: false } }]
+                            },
                             { $set: { amount: assignment.price } }
                         );
                     }
@@ -3912,15 +3943,17 @@ exports.getFees = async (req, res) => {
             .populate(STUDENT_POPULATE)
             .sort({ year: -1, month: -1 });
 
-        // Filter out fees where student has been deleted (null) or is inactive
-        let filteredFees = fees.filter(fee => fee.student && fee.student.isActive !== false);
+        // Support includeInactive query param to allow viewing inactive student ledger history
+        const includeInactive = req.query.includeInactive === 'true';
+        let filteredFees = fees.filter(fee => fee.student && (includeInactive || fee.student.isActive !== false));
 
-        // Auto-generate missing next-month fees on the due date
+        // Auto-generate missing next-month fees on the due date ONLY for active students
         // NOTE: Only chain from non-cancelled fees — after reactivation, cancelled fees from
         // the inactive period must NOT trigger new pending fee generation.
         let generatedNew = false;
         const latestFees = {};
-        for (const fee of filteredFees) {
+        const activeFeesForGeneration = filteredFees.filter(f => f.student && f.student.isActive !== false);
+        for (const fee of activeFeesForGeneration) {
             const studentId = fee.student._id.toString();
             // Since fees are sorted descending, pick the latest NON-cancelled fee per student
             if (!latestFees[studentId] && fee.status !== 'cancelled') {
@@ -3983,7 +4016,7 @@ exports.getFees = async (req, res) => {
             fees = await Fee.find()
                 .populate(STUDENT_POPULATE)
                 .sort({ year: -1, month: -1 });
-            filteredFees = fees.filter(fee => fee.student && fee.student.isActive !== false);
+            filteredFees = fees.filter(fee => fee.student && (includeInactive || fee.student.isActive !== false));
         }
 
         // Calculate Billing Cycles and Enrich Student Profile details
@@ -4038,9 +4071,42 @@ exports.getFees = async (req, res) => {
             };
         });
 
+        // Lifetime collected revenue:
+        // When includeInactive is false, calculate only for active students; when true, calculate for all students.
+        const studentMatch = includeInactive ? {} : { 'studentData.isActive': { $ne: false }, 'studentData.showInFeeManagement': { $ne: false } };
+        const lifetimeRevenueAgg = await Fee.aggregate([
+            { $match: { status: { $in: ['paid', 'partial'] } } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'student',
+                    foreignField: '_id',
+                    as: 'studentData'
+                }
+            },
+            { $unwind: '$studentData' },
+            { $match: studentMatch },
+            {
+                $group: {
+                    _id: null,
+                    total: {
+                        $sum: {
+                            $cond: [
+                                { $eq: ['$status', 'partial'] },
+                                { $ifNull: ['$partialPaid', 0] },
+                                '$amount'
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+        const lifetimeRevenue = lifetimeRevenueAgg[0]?.total || 0;
+
         res.status(200).json({
             success: true,
-            fees: processedFees
+            fees: processedFees,
+            lifetimeRevenue
         });
     } catch (error) {
         res.status(500).json({
@@ -4069,6 +4135,14 @@ exports.markFeePaid = async (req, res) => {
         fee.outstanding = 0;
         fee.paidDate = new Date();
         fee.markedBy = req.user.id;
+        fee.lastPaymentAmount = settledAmount;
+        if (!fee.paymentHistory) fee.paymentHistory = [];
+        fee.paymentHistory.push({
+            amount: settledAmount,
+            paidDate: fee.paidDate,
+            paymentType: 'full',
+            markedBy: req.user.id
+        });
         await fee.save();
 
         await Notification.create({
@@ -4138,9 +4212,16 @@ exports.markFeePartialPaid = async (req, res) => {
         fee.status = 'partial';
         fee.partialPaid = newTotalPaid;
         fee.outstanding = newOutstanding;
-        // fee.amount is intentionally NOT changed — keeps original monthly price for future fee generation
         fee.paidDate = new Date();
         fee.markedBy = req.user.id;
+        fee.lastPaymentAmount = parsed;
+        if (!fee.paymentHistory) fee.paymentHistory = [];
+        fee.paymentHistory.push({
+            amount: parsed,
+            paidDate: fee.paidDate,
+            paymentType: 'partial',
+            markedBy: req.user.id
+        });
         await fee.save();
 
         // In-app notification
@@ -4199,7 +4280,7 @@ exports.getAdvancePaymentRoster = async (req, res) => {
 
         // 1. Fetch active students
         const students = await User.find({ role: 'student', isActive: { $ne: false } })
-            .select('name email mobile profileImage gender address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate currentFee showInFeeManagement')
+            .select('name email mobile profileImage gender address seat studentId fatherName guardianName guardianPhone dob aadharNo lockerNo registrationFee createdAt admissionDate showInFeeManagement')
             .populate({ path: 'seat', select: 'number room', populate: { path: 'room', select: 'name' } })
             .lean();
 
@@ -4310,7 +4391,7 @@ exports.getAdvancePaymentRoster = async (req, res) => {
             const nextDueDate = new Date(nextCycleEnd);
 
             // Fee amount
-            const suggestedAmount = seatInfo.price || student.currentFee || (latestFee ? latestFee.amount : 0) || 0;
+            const suggestedAmount = seatInfo.price || (latestFee ? latestFee.amount : 0) || 0;
 
             // Check if any advance payment is recorded
             const advanceFees = nonCancelledFees.filter(f => f.isAdvancePayment || (f.status === 'paid' && (f.year > currentCalendarYear || (f.year === currentCalendarYear && f.month > currentCalendarMonth))));
