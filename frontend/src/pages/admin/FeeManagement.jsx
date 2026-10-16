@@ -26,6 +26,7 @@ import {
     IoLocationOutline,
     IoLockClosedOutline,
     IoCalendarOutline,
+    IoTodayOutline,
     IoSaveOutline,
     IoCreateOutline,
     IoDocumentTextOutline,
@@ -67,6 +68,8 @@ const FeeManagement = () => {
     const [sortBy, setSortBy] = useState('dueDate_asc');
     const [showInactive, setShowInactive] = useState(false);
     const [monthlyFilter, setMonthlyFilter] = useState(false); // true = show only this month's fees
+    const [dailyFilter, setDailyFilter] = useState(false); // true = show only today's fee collections
+    const [lifetimeRevenue, setLifetimeRevenue] = useState(0); // All-time lifetime revenue across all students
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
 
@@ -205,19 +208,17 @@ const FeeManagement = () => {
         return { seatNumber, shiftName, roomName };
     };
 
-    useEffect(() => {
-        fetchFees();
-    }, []);
-
-    const fetchFees = async () => {
+    const fetchFees = async (includeInactiveOverride) => {
+        const inc = typeof includeInactiveOverride === 'boolean' ? includeInactiveOverride : showInactive;
         try {
             const [feesRes, settingsRes, floorsRes, advanceRes] = await Promise.all([
-                api.get('/admin/fees'),
+                api.get('/admin/fees', { params: { includeInactive: inc } }),
                 api.get('/admin/settings'),
                 api.get('/admin/floors').catch(() => ({ data: { floors: [] } })),
                 api.get('/admin/fees/advance-roster').catch(() => ({ data: { roster: [] } }))
             ]);
             setFees(feesRes.data?.fees || []);
+            setLifetimeRevenue(feesRes.data?.lifetimeRevenue || 0);
             setOnlinePaymentEnabled(settingsRes.data?.settings?.onlinePaymentEnabled !== false);
             setFloors(floorsRes.data?.floors || []);
             setAdvanceRoster(advanceRes.data?.roster || []);
@@ -227,6 +228,10 @@ const FeeManagement = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchFees(showInactive);
+    }, [showInactive]);
 
     const openAdvanceModal = (studentItem) => {
         const next = studentItem.nextUpcoming || {};
@@ -354,6 +359,14 @@ const FeeManagement = () => {
                     setPayLoading(false);
                     return;
                 }
+                const currentOutstanding = (payModal.status === 'partial' && payModal.outstanding > 0)
+                    ? payModal.outstanding
+                    : (payModal.amount - (payModal.partialPaid || 0));
+                if (Number(partialAmt) >= currentOutstanding) {
+                    setError(`Partial amount must be less than remaining balance (₹${currentOutstanding}). Use Full Settlement for complete payment.`);
+                    setPayLoading(false);
+                    return;
+                }
                 const res = await api.put(`/admin/fees/${payModal._id}/partial`, { partialAmount: Number(partialAmt) });
                 setSuccess(res.data?.message || 'Partial payment installment recorded!');
             }
@@ -389,13 +402,13 @@ const FeeManagement = () => {
             seatNo: seatInfo.seatNumber,
             shiftName: seatInfo.shiftName,
             mobile: student?.mobile || '',
-            aadharNo: student?.aadharNo || student?.idNumber || '',
+            aadharNo: student?.aadharNo || '',
             address: student?.address || '',
             registrationFee: regFee,
             lockerNo: fee.lockerNo || student?.lockerNo || '',
             monthlyFee: monthly,
             due: dueAmt,
-            total: monthly + regFee - dueAmt,
+            total: fee.status === 'paid' ? (monthly + regFee) : ((fee.partialPaid != null ? fee.partialPaid : (monthly - dueAmt)) + regFee),
             slNo: slNo || 101,
             paidDate: defaultDate
         });
@@ -452,14 +465,17 @@ const FeeManagement = () => {
         }
     };
 
-    // Active enrolled students
+    // Active enrolled students (or including inactive if showInactive toggle is on)
     const activeStudentFees = useMemo(() => {
-        return fees.filter(f => f.student && f.student.isActive !== false);
-    }, [fees]);
+        return fees.filter(f => f.student && (showInactive || f.student.isActive !== false));
+    }, [fees, showInactive]);
 
-    // Fees visible in normal ledger (showInFeeManagement !== false)
+    // Fees visible in normal ledger (ensures any pending/partial due is never hidden)
     const visibleFees = useMemo(() => {
-        return activeStudentFees.filter(f => f.student?.showInFeeManagement !== false);
+        return activeStudentFees.filter(f => {
+            if (f.status === 'pending' || f.status === 'partial' || f.status === 'overdue') return true;
+            return f.student?.showInFeeManagement !== false;
+        });
     }, [activeStudentFees]);
 
     // Base roster currently under display in Fee Management
@@ -483,18 +499,30 @@ const FeeManagement = () => {
         }, 0);
 
         const todayRevenue = visibleFees.reduce((sum, f) => {
+            const todayHistory = (f.paymentHistory || []).filter(p => p.paidDate && new Date(p.paidDate) >= today);
+            if (todayHistory.length > 0) {
+                return sum + todayHistory.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+            }
             if (!f.paidDate) return sum;
             const pd = new Date(f.paidDate);
             if (pd < today) return sum;
+            if (f.lastPaymentAmount != null) return sum + f.lastPaymentAmount;
             if (f.status === 'paid') return sum + (f.amount || 0);
             if (f.status === 'partial') return sum + (f.partialPaid || 0);
             return sum;
         }, 0);
 
         const monthlyRevenue = visibleFees.reduce((sum, f) => {
+            const monthHistory = (f.paymentHistory || []).filter(p => p.paidDate && new Date(p.paidDate) >= startOfMonth);
+            if (monthHistory.length > 0) {
+                return sum + monthHistory.reduce((pSum, p) => pSum + (p.amount || 0), 0);
+            }
             if (!f.paidDate) return sum;
             const pd = new Date(f.paidDate);
             if (pd < startOfMonth) return sum;
+            if (f.lastPaymentAmount != null && f.status === 'paid' && f.lastPaymentAmount < f.amount) {
+                return sum + f.lastPaymentAmount;
+            }
             if (f.status === 'paid') return sum + (f.amount || 0);
             if (f.status === 'partial') return sum + (f.partialPaid || 0);
             return sum;
@@ -517,7 +545,7 @@ const FeeManagement = () => {
         const counts = {
             all: visibleFees.length,
             paid: visibleFees.filter(f => f.status === 'paid').length,
-            online: visibleFees.filter(f => f.razorpayOrderId).length,
+            online: visibleFees.filter(f => f.razorpayPaymentId || (f.razorpayOrderId && f.status === 'paid')).length,
             pending: visibleFees.filter(f => f.status === 'pending').length,
             partial: visibleFees.filter(f => f.status === 'partial').length,
             pending_partial: visibleFees.filter(f => f.status === 'pending' || f.status === 'partial').length,
@@ -532,17 +560,28 @@ const FeeManagement = () => {
     // Filtered & Searched & Sorted records
     const processedFees = useMemo(() => {
         const now = new Date();
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
         return baseFees
             .filter(fee => {
+                if (dailyFilter) {
+                    const hasTodayHistory = (fee.paymentHistory || []).some(p => p.paidDate && new Date(p.paidDate) >= today);
+                    if (hasTodayHistory) return true;
+                    if (!fee.paidDate) return false;
+                    const pd = new Date(fee.paidDate);
+                    return pd >= today && (fee.status === 'paid' || fee.status === 'partial');
+                }
                 if (monthlyFilter) {
+                    const hasMonthHistory = (fee.paymentHistory || []).some(p => p.paidDate && new Date(p.paidDate) >= startOfMonth);
+                    if (hasMonthHistory) return true;
                     if (!fee.paidDate) return false;
                     const pd = new Date(fee.paidDate);
                     return pd >= startOfMonth && (fee.status === 'paid' || fee.status === 'partial');
                 }
                 if (filter === 'paid') return fee.status === 'paid';
-                if (filter === 'online') return !!fee.razorpayOrderId;
+                if (filter === 'online') return !!fee.razorpayPaymentId || (fee.razorpayOrderId && fee.status === 'paid');
                 if (filter === 'partial') return fee.status === 'partial';
                 if (filter === 'pending') return fee.status === 'pending';
                 if (filter === 'pending_partial') return fee.status === 'pending' || fee.status === 'partial';
@@ -569,7 +608,7 @@ const FeeManagement = () => {
                 if (sortBy === 'name_asc') return (a.student?.name || '').localeCompare(b.student?.name || '');
                 return 0;
             });
-    }, [baseFees, filter, monthlyFilter, searchQuery, sortBy]);
+    }, [baseFees, dailyFilter, filter, monthlyFilter, searchQuery, sortBy]);
 
     // Filtered Advance Roster for Advance Payment tab
     const filteredAdvanceRoster = useMemo(() => {
@@ -761,13 +800,13 @@ const FeeManagement = () => {
                     seatNo: seatInfo.seatNumber,
                     shiftName: seatInfo.shiftName,
                     mobile: student.mobile || '',
-                    aadharNo: student.aadharNo || student.idNumber || '',
+                    aadharNo: student.aadharNo || '',
                     address: student.address || '',
                     registrationFee: regFee,
                     lockerNo: fee.lockerNo || student.lockerNo || '',
                     monthlyFee: monthly,
                     due: dueAmt,
-                    total: monthly + regFee - dueAmt,
+                    total: fee.status === 'paid' ? (monthly + regFee) : ((fee.partialPaid != null ? fee.partialPaid : (monthly - dueAmt)) + regFee),
                     slNo: 101 + idx,
                     paidDate: defaultDate,
                 },
@@ -851,13 +890,13 @@ const FeeManagement = () => {
             seatNo: seatInfo.seatNumber,
             shiftName: seatInfo.shiftName,
             mobile: student.mobile || '',
-            aadharNo: student.aadharNo || student.idNumber || '',
+            aadharNo: student.aadharNo || '',
             address: student.address || '',
             registrationFee: regFee,
             lockerNo: fee.lockerNo || student.lockerNo || '',
             monthlyFee: monthly,
             due: dueAmt,
-            total: monthly + regFee - dueAmt,
+            total: fee.status === 'paid' ? (monthly + regFee) : ((fee.partialPaid != null ? fee.partialPaid : (monthly - dueAmt)) + regFee),
             slNo: 101 + (index || 0),
             paidDate: defaultDate,
         };
@@ -1057,54 +1096,36 @@ const FeeManagement = () => {
                     FINANCIAL KPI METRICS (PENDING ONLY FOR SUBADMIN)
                 ═════════════════════════════════════════════════════════ */}
                 {isSubAdmin ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-w-2xl">
-                        {/* This Month (Read-only for sub-admin) */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">This Month</span>
-                                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shadow-xs">
-                                    <IoCalendarOutline size={16} />
-                                </div>
-                            </div>
-                            <p className="text-2xl font-black text-blue-600 tabular-nums">₹{metrics.monthlyRevenue.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-medium mt-0.5 text-slate-400">
-                                1–{new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} {metrics.monthName}
-                            </p>
-                        </div>
-
-                        {/* Pending Dues */}
-                        <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-2xs bg-gradient-to-br from-white to-amber-50/40">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
-                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
-                                    <IoTimeOutline size={16} />
-                                </div>
-                            </div>
-                            <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-                        {/* Total Collected */}
-                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Collected</span>
-                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
-                                    <IoCheckmarkCircle size={16} />
-                                </div>
-                            </div>
-                            <p className="text-2xl font-black text-emerald-600 tabular-nums">₹{metrics.totalRevenue.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
-                                {metrics.todayRevenue > 0
-                                    ? `₹${metrics.todayRevenue.toLocaleString('en-IN')} collected today`
-                                    : 'Full paid + partial installments'}
-                            </p>
-                        </div>
-
-                        {/* This Month */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 max-w-3xl">
+                        {/* Today Collected (Sub-Admin) */}
                         <div
-                            onClick={() => setMonthlyFilter(f => !f)}
+                            onClick={() => {
+                                setDailyFilter(f => !f);
+                                setMonthlyFilter(false);
+                            }}
+                            className={`rounded-2xl p-4 shadow-2xs transition-all cursor-pointer select-none
+                                ${dailyFilter
+                                    ? 'bg-teal-50 border-2 border-teal-500 shadow-teal-100'
+                                    : 'bg-white border border-slate-200/90 hover:shadow-xs hover:border-teal-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Today Collected</span>
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-xs ${dailyFilter ? 'bg-teal-500 text-white' : 'bg-teal-100 text-teal-600'}`}>
+                                    <IoTodayOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-teal-600 tabular-nums">₹{metrics.todayRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium mt-0.5 text-teal-500">
+                                {dailyFilter ? 'Filtered — click to clear' : `${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} collections`}
+                            </p>
+                        </div>
+
+                        {/* This Month (Sub-Admin) */}
+                        <div
+                            onClick={() => {
+                                setMonthlyFilter(f => !f);
+                                setDailyFilter(false);
+                            }}
                             className={`rounded-2xl p-4 shadow-2xs transition-all cursor-pointer select-none
                                 ${monthlyFilter
                                     ? 'bg-blue-50 border-2 border-blue-500 shadow-blue-100'
@@ -1123,6 +1144,82 @@ const FeeManagement = () => {
                         </div>
 
                         {/* Pending Dues */}
+                        <div className="bg-white border border-amber-200/90 rounded-2xl p-4 shadow-2xs bg-gradient-to-br from-white to-amber-50/40">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Pending Dues</span>
+                                <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                                    <IoTimeOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">{metrics.counts.pending} pending{metrics.counts.partial > 0 ? ` + ${metrics.counts.partial} partial` : ''} awaiting payment</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                        {/* Total Collected */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Collected</span>
+                                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                                    <IoCheckmarkCircle size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-emerald-600 tabular-nums">
+                                ₹{(showInactive ? (lifetimeRevenue || metrics.totalRevenue) : metrics.totalRevenue).toLocaleString('en-IN')}
+                            </p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                                {showInactive ? 'All-time ledger revenue' : 'Active students ledger revenue'}
+                            </p>
+                        </div>
+
+                        {/* This Month */}
+                        <div
+                            onClick={() => {
+                                setMonthlyFilter(f => !f);
+                                setDailyFilter(false);
+                            }}
+                            className={`rounded-2xl p-4 shadow-2xs transition-all cursor-pointer select-none
+                                ${monthlyFilter
+                                    ? 'bg-blue-50 border-2 border-blue-500 shadow-blue-100'
+                                    : 'bg-white border border-slate-200/90 hover:shadow-xs hover:border-blue-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">This Month</span>
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-xs ${monthlyFilter ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-600'}`}>
+                                    <IoCalendarOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-blue-600 tabular-nums">₹{metrics.monthlyRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium mt-0.5 text-blue-400">
+                                {monthlyFilter ? 'Filtered — click to clear' : `1–${new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()} ${metrics.monthName}`}
+                            </p>
+                        </div>
+
+                        {/* Today Collected (Daily Filter) */}
+                        <div
+                            onClick={() => {
+                                setDailyFilter(f => !f);
+                                setMonthlyFilter(false);
+                            }}
+                            className={`rounded-2xl p-4 shadow-2xs transition-all cursor-pointer select-none
+                                ${dailyFilter
+                                    ? 'bg-teal-50 border-2 border-teal-500 shadow-teal-100'
+                                    : 'bg-white border border-slate-200/90 hover:shadow-xs hover:border-teal-300'}`}
+                        >
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Today Collected</span>
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-xs ${dailyFilter ? 'bg-teal-500 text-white' : 'bg-teal-100 text-teal-600'}`}>
+                                    <IoTodayOutline size={16} />
+                                </div>
+                            </div>
+                            <p className="text-2xl font-black text-teal-600 tabular-nums">₹{metrics.todayRevenue.toLocaleString('en-IN')}</p>
+                            <p className="text-[11px] font-medium mt-0.5 text-teal-500">
+                                {dailyFilter ? 'Filtered — click to clear' : `${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} collections`}
+                            </p>
+                        </div>
+
+                        {/* Pending Dues */}
                         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs hover:shadow-xs transition-shadow">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Pending Dues</span>
@@ -1131,7 +1228,9 @@ const FeeManagement = () => {
                                 </div>
                             </div>
                             <p className="text-2xl font-black text-amber-600 tabular-nums">₹{metrics.totalPending.toLocaleString('en-IN')}</p>
-                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">{metrics.counts.pending} invoices awaiting payment</p>
+                            <p className="text-[11px] font-medium text-slate-400 mt-0.5">
+                                {metrics.counts.pending} pending{metrics.counts.partial > 0 ? ` + ${metrics.counts.partial} partial` : ''} awaiting settlement
+                            </p>
                         </div>
 
                         {/* Overdue Risk */}
@@ -1164,6 +1263,23 @@ const FeeManagement = () => {
                     SEARCH & FILTER TOOLBAR
                 ═════════════════════════════════════════════════════════ */}
                 <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-4">
+                    {/* Daily filter active banner */}
+                    {dailyFilter && (
+                        <div className="flex items-center justify-between bg-teal-50 border border-teal-200 rounded-xl px-4 py-2.5 shadow-2xs">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                                <span className="text-xs font-bold text-teal-800">
+                                    Showing {processedFees.length} fee collection{processedFees.length === 1 ? '' : 's'} recorded today ({new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}) · Total: ₹{metrics.todayRevenue.toLocaleString('en-IN')}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setDailyFilter(false)}
+                                className="flex items-center gap-1 text-xs font-bold text-teal-600 hover:text-teal-800 bg-white border border-teal-200 hover:border-teal-300 px-2.5 py-1 rounded-lg transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <IoClose size={14} /> Clear Filter
+                            </button>
+                        </div>
+                    )}
                     {/* Monthly filter active banner */}
                     {monthlyFilter && (
                         <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 shadow-2xs">
@@ -1238,7 +1354,7 @@ const FeeManagement = () => {
                         <div className="flex items-center gap-1.5 flex-nowrap">
                             {TABS.map(tab => {
                                 const isLocked = !!tab.isLocked;
-                                const isActive = !isLocked && !monthlyFilter && filter === tab.key;
+                                const isActive = !isLocked && !monthlyFilter && !dailyFilter && filter === tab.key;
                                 return (
                                     <button
                                         key={tab.key}
@@ -1248,6 +1364,7 @@ const FeeManagement = () => {
                                             if (isLocked) return;
                                             setFilter(tab.key);
                                             setMonthlyFilter(false);
+                                            setDailyFilter(false);
                                         }}
                                         title={isLocked ? 'Advance Payment is restricted to Main Admin' : ''}
                                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
@@ -1644,7 +1761,7 @@ const FeeManagement = () => {
                                                 </div>
                                                 <div className="text-right">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                                        {fee.status === 'partial' ? 'Increased Due' : 'Invoice Total'}
+                                                        {fee.status === 'partial' ? 'Remaining Due' : 'Invoice Total'}
                                                     </span>
                                                     <span className={`text-sm font-black ${fee.status === 'partial' ? 'text-amber-900' : 'text-slate-900'}`}>
                                                         ₹{fee.status === 'partial' ? outstanding : fee.amount}
@@ -1652,6 +1769,11 @@ const FeeManagement = () => {
                                                     {fee.status === 'partial' && (
                                                         <span className="block text-[10px] text-slate-500 font-medium">
                                                             Total ₹{fee.amount} · ₹{fee.partialPaid || 0} Paid
+                                                        </span>
+                                                    )}
+                                                    {fee.status === 'paid' && (fee.paymentHistory?.length > 1 || (fee.lastPaymentAmount && fee.lastPaymentAmount < fee.amount)) && (
+                                                        <span className="block text-[10px] text-emerald-600 font-semibold">
+                                                            Cleared in installments · Last: ₹{fee.lastPaymentAmount || fee.amount}
                                                         </span>
                                                     )}
                                                 </div>
@@ -1685,7 +1807,7 @@ const FeeManagement = () => {
                                                             <span className="text-xs font-black text-emerald-800 tabular-nums">₹{fee.partialPaid || 0}</span>
                                                         </div>
                                                         <div className="bg-amber-50 border border-amber-300 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
-                                                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Increased Due</span>
+                                                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">Remaining Due</span>
                                                             <span className="text-xs font-black text-amber-900 tabular-nums">₹{outstanding}</span>
                                                         </div>
                                                     </div>
@@ -1794,7 +1916,7 @@ const FeeManagement = () => {
                                                 className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition-all"
                                             >
                                                 <IoWalletOutline size={15} />
-                                                <span>{fee.status === 'partial' ? `Pay Increased Fee (₹${outstanding})` : 'Collect Fee'}</span>
+                                                <span>{fee.status === 'partial' ? `Pay Remaining Due (₹${outstanding})` : 'Collect Fee'}</span>
                                             </motion.button>
                                         )}
                                     </div>
@@ -1879,7 +2001,7 @@ const FeeManagement = () => {
                                                     {fee.status === 'partial' ? (
                                                         <div>
                                                             <div className="font-black text-amber-900 text-sm">₹{fee.outstanding}</div>
-                                                            <div className="text-[10px] font-bold text-amber-700">Increased Due</div>
+                                                            <div className="text-[10px] font-bold text-amber-700">Remaining Due</div>
                                                             <div className="flex items-center justify-end gap-1.5 mt-1">
                                                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold tabular-nums">
                                                                     ₹{fee.partialPaid} Paid
@@ -1890,7 +2012,14 @@ const FeeManagement = () => {
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <div className="font-black text-slate-900 text-sm">₹{fee.amount}</div>
+                                                        <div>
+                                                            <div className="font-black text-slate-900 text-sm">₹{fee.amount}</div>
+                                                            {(fee.paymentHistory?.length > 1 || (fee.lastPaymentAmount && fee.lastPaymentAmount < fee.amount)) && (
+                                                                <span className="text-[10px] font-bold text-emerald-700 block mt-0.5">
+                                                                    Cleared in installments
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </td>
 
@@ -2000,7 +2129,7 @@ const FeeManagement = () => {
                                 <div className="text-right">
                                     <span className="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700 block">
                                         {payModal.status === 'partial'
-                                            ? `Increased Due: ₹${payModal.outstanding || (payModal.amount - (payModal.partialPaid || 0))}`
+                                            ? `Remaining Due: ₹${payModal.outstanding || (payModal.amount - (payModal.partialPaid || 0))}`
                                             : `Total ₹${payModal.amount}`}
                                     </span>
                                     {payModal.status === 'partial' && (
@@ -2059,33 +2188,38 @@ const FeeManagement = () => {
                         </div>
 
                         {/* Partial Amount Input if partial mode selected */}
-                        {payType === 'partial' && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="space-y-1.5"
-                            >
-                                <label className="block text-xs font-bold text-slate-700">
-                                    Partial Amount Collected (₹)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max={payModal.amount - 1}
-                                    value={partialAmt}
-                                    onChange={(e) => setPartialAmt(e.target.value)}
-                                    placeholder={`Enter amount (Max: ₹${payModal.amount - 1})`}
-                                    className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none"
-                                />
-                                {partialAmt && !isNaN(partialAmt) && Number(partialAmt) > 0 && Number(partialAmt) < payModal.amount && (
-                                    <div className="flex justify-between text-xs font-bold px-1 text-slate-600">
-                                        <span className="text-emerald-600">Recorded: ₹{Number(partialAmt)}</span>
-                                        <span className="text-amber-600">Remaining Balance: ₹{payModal.amount - Number(partialAmt)}</span>
-                                    </div>
-                                )}
-                            </motion.div>
-                        )}
+                        {payType === 'partial' && (() => {
+                            const currentOutstanding = (payModal.status === 'partial' && payModal.outstanding > 0)
+                                ? payModal.outstanding
+                                : (payModal.amount - (payModal.partialPaid || 0));
+                            return (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="space-y-1.5"
+                                >
+                                    <label className="block text-xs font-bold text-slate-700">
+                                        Partial Amount Collected (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max={currentOutstanding - 1}
+                                        value={partialAmt}
+                                        onChange={(e) => setPartialAmt(e.target.value)}
+                                        placeholder={`Enter amount (Max: ₹${currentOutstanding - 1})`}
+                                        className="w-full bg-slate-50 border border-slate-200 focus:border-orange-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none"
+                                    />
+                                    {partialAmt && !isNaN(partialAmt) && Number(partialAmt) > 0 && Number(partialAmt) < currentOutstanding && (
+                                        <div className="flex justify-between text-xs font-bold px-1 text-slate-600">
+                                            <span className="text-emerald-600">Recorded: ₹{Number(partialAmt)}</span>
+                                            <span className="text-amber-600">Remaining Balance: ₹{currentOutstanding - Number(partialAmt)}</span>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            );
+                        })()}
 
                         {/* Submit Actions */}
                         <div className="flex gap-2.5 pt-2">
@@ -2112,7 +2246,7 @@ const FeeManagement = () => {
                                         ? 'Recording...'
                                         : payType === 'full'
                                         ? (payModal.status === 'partial'
-                                            ? `Pay Increased Fee (₹${payModal.outstanding || (payModal.amount - (payModal.partialPaid || 0))})`
+                                            ? `Pay Remaining Balance (₹${payModal.outstanding || (payModal.amount - (payModal.partialPaid || 0))})`
                                             : 'Mark 100% Paid')
                                         : payType === 'cancel'
                                         ? 'Confirm Void'
