@@ -1441,6 +1441,7 @@ exports.createFeePaymentOrder = async (req, res) => {
         const fee = await Fee.findOne({ _id: req.params.id, student: req.user.id });
         if (!fee) return res.status(404).json({ success: false, message: 'Fee record not found' });
         if (fee.status === 'paid') return res.status(400).json({ success: false, message: 'Fee is already paid' });
+        if (fee.status === 'cancelled') return res.status(400).json({ success: false, message: 'This fee invoice is cancelled and cannot be paid' });
 
         if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
             return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
@@ -1451,8 +1452,11 @@ exports.createFeePaymentOrder = async (req, res) => {
             key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
 
+        // Use outstanding balance if fee was partially paid, otherwise full amount
+        const payableAmount = (fee.status === 'partial' && fee.outstanding > 0) ? fee.outstanding : fee.amount;
+
         const options = {
-            amount: fee.amount * 100, // Amount in paise
+            amount: Math.round(payableAmount * 100), // Amount in paise
             currency: 'INR',
             receipt: `receipt_fee_${fee._id}`,
         };
@@ -1491,10 +1495,21 @@ exports.verifyFeePayment = async (req, res) => {
             .digest("hex");
 
         if (expectedSignature === razorpay_signature) {
-            // Signature is valid. Mark as paid.
+            // Signature is valid. Mark as paid and clear outstanding balance.
+            const paidAmt = (fee.status === 'partial' && fee.outstanding > 0) ? fee.outstanding : fee.amount;
             fee.status = 'paid';
+            fee.partialPaid = fee.amount;
+            fee.outstanding = 0;
             fee.paidDate = new Date();
+            fee.lastPaymentAmount = paidAmt;
             fee.razorpayPaymentId = razorpay_payment_id;
+            if (!fee.paymentHistory) fee.paymentHistory = [];
+            fee.paymentHistory.push({
+                amount: paidAmt,
+                paidDate: fee.paidDate,
+                paymentType: 'online',
+                razorpayPaymentId: razorpay_payment_id
+            });
             await fee.save();
 
             return res.status(200).json({ success: true, message: 'Payment verified successfully.' });
