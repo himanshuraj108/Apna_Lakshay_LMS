@@ -6,14 +6,36 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
 
 let transporter;
 try {
-  transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD } });
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD }
+  });
 } catch (e) { console.error('Failed to create Gmail transporter:', e.message); }
 
 let brevoTransporter, brevoTransporter2525;
 if (process.env.BREVO_USER && process.env.BREVO_PASS) {
   try {
-    brevoTransporter = nodemailer.createTransport({ host: process.env.BREVO_HOST || 'smtp-relay.brevo.com', port: 587, secure: false, auth: { user: process.env.BREVO_USER, pass: process.env.BREVO_PASS } });
-    brevoTransporter2525 = nodemailer.createTransport({ host: process.env.BREVO_HOST || 'smtp-relay.brevo.com', port: 2525, secure: false, auth: { user: process.env.BREVO_USER, pass: process.env.BREVO_PASS } });
+    brevoTransporter = nodemailer.createTransport({
+      host: process.env.BREVO_HOST || 'smtp-relay.brevo.com',
+      port: 587,
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 100,
+      secure: false,
+      auth: { user: process.env.BREVO_USER, pass: process.env.BREVO_PASS }
+    });
+    brevoTransporter2525 = nodemailer.createTransport({
+      host: process.env.BREVO_HOST || 'smtp-relay.brevo.com',
+      port: 2525,
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 100,
+      secure: false,
+      auth: { user: process.env.BREVO_USER, pass: process.env.BREVO_PASS }
+    });
   } catch (e) { console.error('Failed to configure Brevo transporter:', e.message); }
 }
 
@@ -189,21 +211,12 @@ const sendEmail = async (to, subject, templateOptions) => {
     t.sendMail({ from, to, subject, html }).then(i => { clearTimeout(timer); resolve(i); }).catch(e => { clearTimeout(timer); reject(e); });
   });
 
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  // In production (Render/cloud), Gmail is blocked by IP — use Brevo first
-  // In development (local), Gmail works fine — use it first
-  const orderedTransports = isProduction
-    ? [
-        { t: brevoTransporter,     label: 'Brevo-587',  ms: 10000 },
-        { t: brevoTransporter2525, label: 'Brevo-2525', ms: 10000 },
-        { t: transporter,          label: 'Gmail',      ms: 8000  },
-      ]
-    : [
-        { t: transporter,          label: 'Gmail',      ms: 4000  },
-        { t: brevoTransporter,     label: 'Brevo-587',  ms: 10000 },
-        { t: brevoTransporter2525, label: 'Brevo-2525', ms: 10000 },
-      ];
+  // Prioritize Brevo SMTP (fast and reliable) with fallback to secondary port and Gmail
+  const orderedTransports = [
+    { t: brevoTransporter,     label: 'Brevo-587',  ms: 8000 },
+    { t: brevoTransporter2525, label: 'Brevo-2525', ms: 8000 },
+    { t: transporter,          label: 'Gmail',      ms: 6000 },
+  ];
 
   for (const { t, label, ms } of orderedTransports) {
     if (!t) continue;
@@ -664,43 +677,76 @@ exports.sendHolidayNoticeEmail = async (recipients, details) => {
     ? `<span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${startTime12h} to ${endTime12h}&nbsp;</span>`
     : `<span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;Full Day Closure&nbsp;</span>`;
 
-  let successCount = 0;
-  for (const recipient of recipients) {
-    if (!recipient?.email) continue;
-    const ok = await sendEmail(recipient.email, subject, {
-      badge,
-      headline,
-      body: `
-        <p style="margin:0 0 10px;font-size:14.5px;line-height:1.7;">Dear <strong>${recipient.name || 'Scholar'}</strong>,</p>
-        <p style="margin:0 0 16px;font-size:14px;line-height:1.85;word-break:break-word;">${
-          isPartial
-            ? `Please be informed that <strong>Apna Lakshay Library</strong> will remain non-functional from ${timeBadgeInline} on ${dateBadgeInline} due to ${nameBadgeInline}. Regular study sessions will operate normally outside this window.`
-            : `Please be informed that <strong>Apna Lakshay Library</strong> will observe a ${timeBadgeInline} on ${dateBadgeInline} on account of ${nameBadgeInline}.`
-        }</p>
-        ${enHtml ? `
-          <div style="margin:16px 0;padding:14px 15px;background:#fffaf5;border-left:4px solid #e85d26;border-radius:6px;border-top:1px solid #fed7aa;border-right:1px solid #fed7aa;border-bottom:1px solid #fed7aa;">
-            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#9a3412;margin-bottom:12px;line-height:1.4;">Official Notice Summary (English) — ${name}</div>
-            ${enHtml}
-          </div>
-        ` : ''}
-        <div style="margin:16px 0;padding:14px 15px;background:#fffbeb;border-left:4px solid #d97706;border-radius:6px;border-top:1px solid #fde68a;border-right:1px solid #fde68a;border-bottom:1px solid #fde68a;">
-          <div style="font-size:12px;font-weight:800;color:#92400e;margin-bottom:10px;line-height:1.4;">हिंदी आधिकारिक सूचना (Hindi Version) — ${name}</div>
-          <p style="margin:0 0 14px;font-size:13.5px;color:#374151;line-height:1.9;word-break:break-word;">
-            प्रिय <strong>${recipient.name || 'विद्यार्थी'}</strong>, आपको सूचित किया जाता है कि ${nameBadgeInline} के अवसर पर दिनांक ${dateBadgeInline} को <strong>अपना लक्ष्य लाइब्रेरी</strong> ${
-              isPartial
-                ? `में सेवाएं <span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${startTime12h} से ${endTime12h}&nbsp;</span> तक आंशिक रूप से बंद रहेंगी (शेष समय में पुस्तकालय सामान्य रूप से खुला रहेगा)।`
-                : `में <span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;पूर्ण दिवस अवकाश (Full Day Closure)&nbsp;</span> रहेगा।`
-            }
-          </p>
-          ${hiHtml || ''}
-        </div>
-      `,
-      table: { rows: tableRows },
-      cta: { label: 'Open Student Dashboard / डैशबोर्ड खोलें', url: `${APP_URL}/student/dashboard` },
-      note: 'Attendance Protection Policy / उपस्थिति नियम: Your current attendance percentage will remain completely unchanged (neither reduced nor increased) if you are absent on a declared holiday. / घोषित अवकाश के दिन अनुपस्थित रहने पर आपकी वर्तमान उपस्थिति प्रतिशत (Attendance %) बिल्कुल अपरिवर्तित रहेगी (न घटेगी, न बढ़ेगी)।'
-    });
-    if (ok) successCount++;
+  const validRecipients = recipients.filter(r => r && r.email && r.email.trim());
+  if (validRecipients.length === 0) {
+    return { success: false, total: 0, sentCount: 0, failedCount: 0, successful: [], failed: [] };
   }
-  return successCount > 0;
+
+  const results = {
+    total: validRecipients.length,
+    sentCount: 0,
+    failedCount: 0,
+    successful: [],
+    failed: []
+  };
+
+  // Concurrency limit of 4 to maximize throughput without exceeding SMTP socket limits
+  const BATCH_SIZE = 4;
+  for (let i = 0; i < validRecipients.length; i += BATCH_SIZE) {
+    const batch = validRecipients.slice(i, i + BATCH_SIZE);
+    const batchPromises = batch.map(async (recipient) => {
+      try {
+        const ok = await sendEmail(recipient.email, subject, {
+          badge,
+          headline,
+          body: `
+            <p style="margin:0 0 10px;font-size:14.5px;line-height:1.7;">Dear <strong>${recipient.name || 'Scholar'}</strong>,</p>
+            <p style="margin:0 0 16px;font-size:14px;line-height:1.85;word-break:break-word;">${
+              isPartial
+                ? `Please be informed that <strong>Apna Lakshay Library</strong> will remain non-functional from ${timeBadgeInline} on ${dateBadgeInline} due to ${nameBadgeInline}. Regular study sessions will operate normally outside this window.`
+                : `Please be informed that <strong>Apna Lakshay Library</strong> will observe a ${timeBadgeInline} on ${dateBadgeInline} on account of ${nameBadgeInline}.`
+            }</p>
+            ${enHtml ? `
+              <div style="margin:16px 0;padding:14px 15px;background:#fffaf5;border-left:4px solid #e85d26;border-radius:6px;border-top:1px solid #fed7aa;border-right:1px solid #fed7aa;border-bottom:1px solid #fed7aa;">
+                <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:#9a3412;margin-bottom:12px;line-height:1.4;">Official Notice Summary (English) — ${name}</div>
+                ${enHtml}
+              </div>
+            ` : ''}
+            <div style="margin:16px 0;padding:14px 15px;background:#fffbeb;border-left:4px solid #d97706;border-radius:6px;border-top:1px solid #fde68a;border-right:1px solid #fde68a;border-bottom:1px solid #fde68a;">
+              <div style="font-size:12px;font-weight:800;color:#92400e;margin-bottom:10px;line-height:1.4;">हिंदी आधिकारिक सूचना (Hindi Version) — ${name}</div>
+              <p style="margin:0 0 14px;font-size:13.5px;color:#374151;line-height:1.9;word-break:break-word;">
+                प्रिय <strong>${recipient.name || 'विद्यार्थी'}</strong>, आपको सूचित किया जाता है कि ${nameBadgeInline} के अवसर पर दिनांक ${dateBadgeInline} को <strong>अपना लक्ष्य लाइब्रेरी</strong> ${
+                  isPartial
+                    ? `में सेवाएं <span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;${startTime12h} से ${endTime12h}&nbsp;</span> तक आंशिक रूप से बंद रहेंगी (शेष समय में पुस्तकालय सामान्य रूप से खुला रहेगा)।`
+                    : `में <span style="color:#c2410c;font-weight:700;background-color:#ffedd5;border-radius:3px;">&nbsp;पूर्ण दिवस अवकाश (Full Day Closure)&nbsp;</span> रहेगा।`
+                }
+              </p>
+              ${hiHtml || ''}
+            </div>
+          `,
+          table: { rows: tableRows },
+          cta: { label: 'Open Student Dashboard / डैशबोर्ड खोलें', url: `${APP_URL}/student/dashboard` },
+          note: 'Attendance Protection Policy / उपस्थिति नियम: Your current attendance percentage will remain completely unchanged (neither reduced nor increased) if you are absent on a declared holiday. / घोषित अवकाश के दिन अनुपस्थित रहने पर आपकी वर्तमान उपस्थिति प्रतिशत (Attendance %) बिल्कुल अपरिवर्तित रहेगी (न घटेगी, न बढ़ेगी)।'
+        });
+
+        if (ok) {
+          results.sentCount++;
+          results.successful.push(recipient.email);
+        } else {
+          results.failedCount++;
+          results.failed.push({ email: recipient.email, reason: 'Transport failed' });
+        }
+      } catch (err) {
+        results.failedCount++;
+        results.failed.push({ email: recipient.email, reason: err.message });
+      }
+    });
+
+    await Promise.allSettled(batchPromises);
+  }
+
+  results.success = results.sentCount > 0;
+  console.log(`[Holiday Notice Email] Broadcast finished: ${results.sentCount}/${results.total} delivered successfully.`);
+  return results;
 };
 
