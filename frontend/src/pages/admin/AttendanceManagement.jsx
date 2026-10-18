@@ -22,7 +22,11 @@ import {
     IoSaveOutline,
     IoCopyOutline,
     IoChevronBack,
-    IoChevronForward
+    IoChevronForward,
+    IoMailOutline,
+    IoCheckmarkCircleOutline,
+    IoCloseCircleOutline,
+    IoPersonOutline
 } from 'react-icons/io5';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -92,6 +96,9 @@ const AttendanceManagement = () => {
     const [holidayStartTime, setHolidayStartTime] = useState('16:00');
     const [holidayEndTime, setHolidayEndTime] = useState('21:00');
     const [holidaySendEmail, setHolidaySendEmail] = useState(false);
+    const [selectedHolidayStudentIds, setSelectedHolidayStudentIds] = useState([]);
+    const [holidayStudentSearch, setHolidayStudentSearch] = useState('');
+    const [sendHolidayAdminCopy, setSendHolidayAdminCopy] = useState(true);
     const [viewTab, setViewTab] = useState('mark'); // 'mark' | 'reports'
     const [seatStudents, setSeatStudents] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -416,7 +423,37 @@ const AttendanceManagement = () => {
         setHolidayCustomDates([selectedDate || getLocalDate()]);
         setHolidayDatePickerInput(selectedDate || getLocalDate());
         setHolidaySendEmail(false); // Always default to NOT sent
+        const withEmail = (students || []).filter(s => s && s.email && s.email.trim()).map(s => s._id);
+        setSelectedHolidayStudentIds(withEmail);
+        setHolidayStudentSearch('');
+        setSendHolidayAdminCopy(true);
         setShowHolidayModal(true);
+    };
+
+    const toggleHolidayEmail = () => {
+        setHolidaySendEmail(prev => {
+            const next = !prev;
+            if (next && selectedHolidayStudentIds.length === 0) {
+                const withEmail = (students || []).filter(s => s && s.email && s.email.trim()).map(s => s._id);
+                setSelectedHolidayStudentIds(withEmail);
+            }
+            return next;
+        });
+    };
+
+    const toggleSelectStudentForHoliday = (id) => {
+        setSelectedHolidayStudentIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const selectAllStudentsForHoliday = () => {
+        const withEmail = (students || []).filter(s => s && s.email && s.email.trim()).map(s => s._id);
+        setSelectedHolidayStudentIds(withEmail);
+    };
+
+    const deselectAllStudentsForHoliday = () => {
+        setSelectedHolidayStudentIds([]);
     };
 
     const addTentativeHoliday = async () => {
@@ -497,6 +534,11 @@ const AttendanceManagement = () => {
             setError('Please specify both start time and end time for partial closure');
             return;
         }
+        if (holidaySendEmail && selectedHolidayStudentIds.length === 0 && !sendHolidayAdminCopy) {
+            setError('Please select at least one student or recipient to receive the holiday notice email, or turn off the email toggle');
+            setTimeout(() => setError(''), 4000);
+            return;
+        }
         setSaving(true);
         setError('');
         setSuccess('');
@@ -510,6 +552,8 @@ const AttendanceManagement = () => {
                 startTime: holidayIsPartial ? holidayStartTime : null,
                 endTime: holidayIsPartial ? holidayEndTime : null,
                 sendEmail: holidaySendEmail,
+                selectedStudentIds: holidaySendEmail ? selectedHolidayStudentIds : [],
+                sendAdminCopy: holidaySendEmail ? sendHolidayAdminCopy : false,
                 isTentative: false
             };
             const res = await api.post('/admin/holidays', payload);
@@ -519,7 +563,7 @@ const AttendanceManagement = () => {
             setHolidayIsPartial(false);
             setHolidaySendEmail(false);
             setShowHolidayModal(false);
-            setTimeout(() => setSuccess(''), 5000);
+            setTimeout(() => setSuccess(''), 6000);
             fetchHolidays();
             loadAttendance();
             fetchSeatView();
@@ -2837,29 +2881,192 @@ const AttendanceManagement = () => {
                         />
                     </div>
 
-                    {/* 5. Optional Email Notification Toggle (Default OFF) */}
-                    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5">
-                        <div>
-                            <p className="text-xs font-bold text-slate-800">Send Email Notification to Students</p>
-                            <p className="text-[11px] text-slate-500">
-                                {holidaySendEmail
-                                    ? 'Enabled — Active students will receive an email alert'
-                                    : 'Default: Not Sent — Only in-app dashboard notice will be shown'}
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setHolidaySendEmail(prev => !prev)}
-                            className={`relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
-                                holidaySendEmail ? 'bg-orange-500' : 'bg-slate-300'
-                            }`}
-                        >
-                            <span
-                                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-transform duration-200 ${
-                                    holidaySendEmail ? 'translate-x-6' : 'translate-x-0'
+                    {/* 5. Optional Email Notification Toggle & Student Selector */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-3 transition-all">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <IoMailOutline size={15} className="text-orange-600 shrink-0" />
+                                    <span>Send Email Notification to Students</span>
+                                </p>
+                                <p className="text-[11px] text-slate-500">
+                                    {holidaySendEmail
+                                        ? 'Enabled — Select which registered students receive the official notice email'
+                                        : 'Default: OFF — Only in-app dashboard announcement will be published'}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={toggleHolidayEmail}
+                                className={`relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0 cursor-pointer ${
+                                    holidaySendEmail ? 'bg-orange-500' : 'bg-slate-300'
                                 }`}
-                            />
-                        </button>
+                            >
+                                <span
+                                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-xs transition-transform duration-200 ${
+                                        holidaySendEmail ? 'translate-x-6' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Student Picker (Shown when email toggle is ON) */}
+                        {holidaySendEmail && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="pt-3 border-t border-slate-200/90 space-y-2.5"
+                            >
+                                {/* Header / Selection Counter & Quick Actions */}
+                                <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-bold text-slate-700">Recipients:</span>
+                                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                                            selectedHolidayStudentIds.length > 0
+                                                ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                                                : 'bg-rose-100 text-rose-700 border border-rose-200'
+                                        }`}>
+                                            {selectedHolidayStudentIds.length} of {students.filter(s => s && s.email && s.email.trim()).length} selected
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={selectAllStudentsForHoliday}
+                                            className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-orange-300 text-slate-700 hover:text-orange-700 text-[11px] font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                                        >
+                                            <IoCheckmarkCircleOutline size={13} className="text-emerald-600" />
+                                            <span>Select All</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={deselectAllStudentsForHoliday}
+                                            className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-rose-300 text-slate-700 hover:text-rose-700 text-[11px] font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                                        >
+                                            <IoCloseCircleOutline size={13} className="text-rose-500" />
+                                            <span>Deselect All</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Send Copy to Admin Checkbox */}
+                                {user?.email && (
+                                    <label className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-orange-300 transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={sendHolidayAdminCopy}
+                                            onChange={e => setSendHolidayAdminCopy(e.target.checked)}
+                                            className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 cursor-pointer"
+                                        />
+                                        <div className="flex-1 min-w-0 text-xs">
+                                            <span className="font-bold text-slate-800">Send confirmation copy to my email</span>
+                                            <span className="block text-[11px] text-slate-500 font-mono truncate">{user.email}</span>
+                                        </div>
+                                    </label>
+                                )}
+
+                                {/* Search Filter */}
+                                <div className="relative">
+                                    <IoSearchOutline size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        value={holidayStudentSearch}
+                                        onChange={e => setHolidayStudentSearch(e.target.value)}
+                                        placeholder="Filter by student name, seat, or email..."
+                                        className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-orange-500 transition-all"
+                                    />
+                                    {holidayStudentSearch && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setHolidayStudentSearch('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            <IoClose size={13} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Student Checklist Container */}
+                                <div className="max-h-52 overflow-y-auto divide-y divide-slate-100 bg-white border border-slate-200 rounded-xl shadow-2xs">
+                                    {(() => {
+                                        const query = holidayStudentSearch.trim().toLowerCase();
+                                        const filtered = (students || []).filter(s => {
+                                            if (!query) return true;
+                                            const nameMatch = (s.name || '').toLowerCase().includes(query);
+                                            const emailMatch = (s.email || '').toLowerCase().includes(query);
+                                            const studentIdMatch = (s.studentId || '').toLowerCase().includes(query);
+                                            const seatMatch = s.seat?.number && String(s.seat.number).includes(query);
+                                            return nameMatch || emailMatch || studentIdMatch || seatMatch;
+                                        });
+
+                                        if (filtered.length === 0) {
+                                            return (
+                                                <div className="py-6 text-center text-xs text-slate-400">
+                                                    No students match &quot;{holidayStudentSearch}&quot;
+                                                </div>
+                                            );
+                                        }
+
+                                        return filtered.map(student => {
+                                            const hasEmail = !!(student.email && student.email.trim());
+                                            const isSelected = selectedHolidayStudentIds.includes(student._id);
+
+                                            return (
+                                                <div
+                                                    key={student._id}
+                                                    onClick={() => hasEmail && toggleSelectStudentForHoliday(student._id)}
+                                                    className={`px-3 py-2 flex items-center justify-between gap-2.5 transition-colors select-none ${
+                                                        !hasEmail
+                                                            ? 'opacity-40 bg-slate-50 cursor-not-allowed'
+                                                            : isSelected
+                                                            ? 'bg-orange-50/60 hover:bg-orange-50 cursor-pointer'
+                                                            : 'hover:bg-slate-50 cursor-pointer'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            disabled={!hasEmail}
+                                                            onChange={() => {}} // Controlled via row click
+                                                            className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500 cursor-pointer shrink-0 disabled:cursor-not-allowed"
+                                                        />
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                <span className="text-xs font-bold text-slate-800 truncate">
+                                                                    {student.name}
+                                                                </span>
+                                                                {student.seat?.number && (
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                                                        Seat #{student.seat.number}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <span className="block text-[11px] text-slate-500 font-mono truncate">
+                                                                {student.email || 'No email registered'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {!hasEmail && (
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                                                            No Email
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+
+                                {selectedHolidayStudentIds.length === 0 && !sendHolidayAdminCopy && (
+                                    <div className="p-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 font-medium">
+                                        ⚠️ No students selected. Please select at least one student above, or turn off the email notification toggle.
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
                     </div>
 
                     {/* Action Buttons */}
