@@ -193,6 +193,8 @@ exports.declareHoliday = async (req, res) => {
             startTime = null,
             endTime = null,
             sendEmail = false,
+            selectedStudentIds = null,
+            sendAdminCopy = false,
             isTentative = false
         } = req.body;
 
@@ -394,24 +396,24 @@ exports.declareHoliday = async (req, res) => {
             }
         }
 
+        const dateSummary = targetDates.length === 1
+            ? formatDatePretty(targetDates[0])
+            : `${ targetDates.map(d => formatDatePretty(d)).join(' | ') }`;
+
+        const operationalMsg = isPartial
+            ? `Library will remain non-functional from ${formatTime12h(startTime)} to ${formatTime12h(endTime)}.`
+            : `Library will remain closed for the full day.`;
+
+        const fullMessage = [
+            `Occasion: ${cleanName}`,
+            `Date(s): ${dateSummary}`,
+            `Schedule: ${operationalMsg}`,
+            cleanDesc ? `Details: ${cleanDesc}` : null,
+            `Note: Your attendance percentage will remain unchanged at its current level if you do not attend during this holiday.`
+        ].filter(Boolean).join('\n');
+
         // Create in-app notification for all active students
         if (students.length > 0) {
-            const dateSummary = targetDates.length === 1
-                ? formatDatePretty(targetDates[0])
-                : `${ targetDates.map(d => formatDatePretty(d)).join(' | ') }`;
-
-            const operationalMsg = isPartial
-                ? `Library will remain non-functional from ${formatTime12h(startTime)} to ${formatTime12h(endTime)}.`
-                : `Library will remain closed for the full day.`;
-
-            const fullMessage = [
-                `Occasion: ${cleanName}`,
-                `Date(s): ${dateSummary}`,
-                `Schedule: ${operationalMsg}`,
-                cleanDesc ? `Details: ${cleanDesc}` : null,
-                `Note: Your attendance percentage will remain unchanged at its current level if you do not attend during this holiday.`
-            ].filter(Boolean).join('\n');
-
             const notifDocs = students.map(s => ({
                 recipient: s._id,
                 title: isPartial ? `Partial Library Closure: ${cleanName}` : `Holiday Declared: ${cleanName}`,
@@ -425,13 +427,49 @@ exports.declareHoliday = async (req, res) => {
             } catch (notifErr) {
                 console.error('Holiday notification insert error:', notifErr.message);
             }
+        }
 
-            // Optional Email Broadcast (ONLY sent if sendEmail === true; default is false)
-            if (sendEmail === true && emailService) {
-                const emailRecipients = students.filter(s => s.email && s.email.trim());
-                if (emailRecipients.length > 0) {
+        // Optional Email Broadcast (sent if sendEmail is truthy; default is false)
+        const shouldSendEmail = sendEmail === true || sendEmail === 'true' || sendEmail === 1 || sendEmail === '1';
+        let emailResult = { sent: false, count: 0, total: 0 };
+
+        if (shouldSendEmail && emailService) {
+            // Determine target student list: if admin explicitly selected students, use those; otherwise all active students with email
+            let targetList = [];
+            if (Array.isArray(selectedStudentIds) && selectedStudentIds.length > 0) {
+                const selSet = new Set(selectedStudentIds.map(String));
+                targetList = students.filter(s => selSet.has(s._id.toString()));
+                if (targetList.length < selectedStudentIds.length) {
+                    const missingIds = selectedStudentIds.filter(id => !targetList.some(t => t._id.toString() === String(id)));
+                    if (missingIds.length > 0) {
+                        const extraUsers = await User.find({ _id: { $in: missingIds } }).select('_id name email role').lean();
+                        targetList = [...targetList, ...extraUsers];
+                    }
+                }
+            } else {
+                targetList = [...students];
+            }
+
+            // If admin requested a copy, append the requesting admin's email
+            const adminEmail = req.user?.email || process.env.EMAIL_USER;
+            if (sendAdminCopy && adminEmail) {
+                const alreadyIncluded = targetList.some(r => r.email && r.email.toLowerCase() === adminEmail.toLowerCase());
+                if (!alreadyIncluded) {
+                    targetList.push({
+                        _id: req.user?._id || 'admin-copy',
+                        name: `${req.user?.name || 'Administrator'} (Admin Copy)`,
+                        email: adminEmail
+                    });
+                }
+            }
+
+            const emailRecipients = targetList.filter(s => s.email && s.email.includes('@') && s.email.trim());
+            console.log(`[Holiday Email] Found ${emailRecipients.length} target recipients for "${cleanName}". Dispatching...`);
+
+            if (emailRecipients.length > 0) {
+                try {
                     if (typeof emailService.sendHolidayNoticeEmail === 'function') {
-                        emailService.sendHolidayNoticeEmail(emailRecipients, {
+                        const sendOutcome = await emailService.sendHolidayNoticeEmail(emailRecipients, {
                             name: cleanName,
                             dateSummary,
                             daysCount: targetDates.length,
@@ -439,26 +477,42 @@ exports.declareHoliday = async (req, res) => {
                             startTime12h: isPartial ? formatTime12h(startTime) : '',
                             endTime12h: isPartial ? formatTime12h(endTime) : '',
                             structuredNotice: cleanDesc
-                        }).catch(err => {
-                            console.error('Holiday email broadcast error:', err.message);
                         });
+                        emailResult = {
+                            sent: !!sendOutcome?.success,
+                            count: sendOutcome?.sentCount || 0,
+                            failedCount: sendOutcome?.failedCount || 0,
+                            total: emailRecipients.length
+                        };
                     } else if (typeof emailService.sendAnnouncementEmail === 'function') {
                         const emailSubject = isPartial
                             ? `Notice: Partial Library Closure — ${cleanName}`
                             : `Holiday Notice: ${cleanName}`;
-                        emailService.sendAnnouncementEmail(emailRecipients, emailSubject, fullMessage).catch(err => {
-                            console.error('Holiday email broadcast error:', err.message);
-                        });
+                        const ok = await emailService.sendAnnouncementEmail(emailRecipients, emailSubject, fullMessage);
+                        emailResult = {
+                            sent: !!ok,
+                            count: ok ? emailRecipients.length : 0,
+                            total: emailRecipients.length
+                        };
                     }
+                } catch (broadcastErr) {
+                    console.error('[Holiday Email Broadcast Error]:', broadcastErr.message);
                 }
             }
         }
 
+        const emailMsg = (sendEmail === true || sendEmail === 'true')
+            ? (emailResult.sent
+                ? ` Email notice successfully dispatched to ${emailResult.count} recipient(s).`
+                : ` (Email notice attempted for ${emailResult.total} student(s) — see server logs).`)
+            : '';
+
         res.status(201).json({
             success: true,
-            message: `Holiday "${cleanName}" declared for ${daysLabel} (${timingLabel}). Attendance percentage remains neutral for absent students${totalPreservedPresent > 0 ? ` (${totalPreservedPresent} present record(s) preserved)` : ''}.`,
+            message: `Holiday "${cleanName}" declared for ${daysLabel} (${timingLabel}). Attendance percentage remains neutral for absent students${totalPreservedPresent > 0 ? ` (${totalPreservedPresent} present record(s) preserved)` : ''}.${emailMsg}`,
             holiday: savedHolidays[0],
-            holidays: savedHolidays
+            holidays: savedHolidays,
+            emailResult
         });
     } catch (error) {
         console.error('declareHoliday error:', error);
