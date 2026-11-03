@@ -497,4 +497,4 @@ All API routes are prefixed with `/api`.
 
 ## License
 
-This project is proprietary software. All rights reserved. Unauthorised copying, distribution, or modification is prohibited.
+This project is proprietary software. All rights reserved 2026. Unauthorised copying, distribution, or modification is prohibited.
